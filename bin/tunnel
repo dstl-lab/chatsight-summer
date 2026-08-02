@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# bin/tunnel — port-forward to the raw-log Postgres, auto-reconnect on drop.
+# Same access pattern as sibling project ChatSight (read-only DB user).
+set -euo pipefail
+while true; do
+  kubectl port-forward pod/dsc10-tutor-logs-prod-0 5432:5432 -n dsc-10-llm || true
+  echo "[tunnel] connection lost; reconnecting in 3s..." >&2
+  sleep 3
+done

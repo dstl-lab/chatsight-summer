@@ -11,6 +11,7 @@ dependencies = [
     # labeling subsystem: raw-log DB (read-only, via kubectl tunnel) + Gemini classifier
     "psycopg2-binary>=2.9.11",
     "google-genai>=1.66.0",
+    "sqlalchemy>=2.0",
 ]
 
 [dependency-groups]
@@ -19,4 +20,4 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["src"]
+testpaths = ["tests"]

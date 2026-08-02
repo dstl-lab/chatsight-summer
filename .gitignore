@@ -1,10 +1,11 @@
 # Student data — NEVER commit (IRB-covered, DSC 10). See CLAUDE.md rule 4.
 data/
 
-# Env / secrets
+# Env / secrets (template with key names only is allowed)
 .env
 .env.local
 .env.*
+!.env.example
 
 # Python
 .venv/
