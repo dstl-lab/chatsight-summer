@@ -61,6 +61,20 @@ ORDER BY id ASC
 """
 
 
+_COUNT_SQL = (
+    "SELECT COUNT(DISTINCT payload->>'conversation_id') FROM events "
+    "WHERE event_type IN ('tutor_query', 'tutor_response')"
+)
+
+
+def count_conversations(ext_db_url: str) -> int:
+    """Read-only: total distinct conversations available in the DB (no LIMIT).
+    Used to compute the true excluded_conversations count for the manifest."""
+    engine = create_engine(ext_db_url)
+    with engine.connect() as conn:
+        return conn.execute(text(_COUNT_SQL)).scalar_one()
+
+
 def fetch_conversations(ext_db_url: str, limit: int | None = None) -> list[Conversation]:
     engine = create_engine(ext_db_url)
     sql = _CONV_SQL + (f"\nLIMIT {int(limit)}" if limit is not None else "")

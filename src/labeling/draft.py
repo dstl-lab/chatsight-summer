@@ -49,6 +49,23 @@ def _labels_block(schema: LabelSchema) -> str:
     )
 
 
+def _validated_verdicts(v: LabelVerdicts, schema: LabelSchema
+                        ) -> tuple[dict[str, bool], dict[str, str]]:
+    """Drop hallucinated label names not in the schema; default any missing
+    expected label to False so labels.jsonl only ever contains real names."""
+    expected = [l.name for l in schema.labels]
+    labels: dict[str, bool] = {}
+    rationales: dict[str, str] = {}
+    for name in expected:
+        if name in v.verdicts:
+            labels[name] = v.verdicts[name]
+            rationales[name] = v.rationales.get(name, "(no verdict returned)")
+        else:
+            labels[name] = False
+            rationales[name] = "(no verdict returned)"
+    return labels, rationales
+
+
 def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                  generate: Generate) -> list[MessageLabels]:
     out: list[MessageLabels] = []
@@ -59,9 +76,10 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
             text=m.text, context_after=m.context_after or "",
         )
         v: LabelVerdicts = generate(prompt, LabelVerdicts)
+        labels, rationales = _validated_verdicts(v, schema)
         out.append(MessageLabels(chatlog_id=m.chatlog_id,
                                  message_index=m.message_index,
-                                 labels=v.verdicts, rationales=v.rationales))
+                                 labels=labels, rationales=rationales))
     return out
 
 

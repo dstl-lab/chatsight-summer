@@ -7,7 +7,7 @@ import sys
 from typing import Callable
 
 from src.config import Settings
-from src.ingest.rawlog import Conversation, fetch_conversations
+from src.ingest.rawlog import Conversation, count_conversations, fetch_conversations
 from src.labeling.draft import draft_labels
 from src.labeling.elicit import draft_schema, revise_schema
 from src.labeling.llm import DEFAULT_MODEL, Generate, make_generate
@@ -76,9 +76,12 @@ def main() -> None:
           "(is bin/tunnel running?)...")
     conversations = fetch_conversations(settings.ext_db_url,
                                         limit=args.max_conversations)
-    print(f"Fetched {len(conversations)} conversations. Conversations beyond "
-          f"--max-conversations={args.max_conversations} are EXCLUDED from "
-          "this run and the snapshot.")
+    total_conversations = count_conversations(settings.ext_db_url)
+    excluded_conversations = max(0, total_conversations - len(conversations))
+    print(f"Fetched {len(conversations)} conversations. DB holds "
+          f"{total_conversations} total; {excluded_conversations} are "
+          f"EXCLUDED from this run and the snapshot "
+          f"(--max-conversations={args.max_conversations}).")
 
     schema = run_loop(intent, conversations, generate,
                       sample_size=args.sample_size, seed=args.seed,
@@ -92,12 +95,19 @@ def main() -> None:
           f"{len(conversations)} conversations...")
     all_messages = stratified_sample(conversations, n=10**9, seed=args.seed)
     labeled = draft_labels(all_messages, schema, generate)
-    repo_sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                              capture_output=True, text=True,
-                              cwd=settings.repo_root).stdout.strip()
+    try:
+        repo_sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                                  capture_output=True, text=True,
+                                  cwd=settings.repo_root).stdout.strip()
+    except OSError:
+        repo_sha = ""
+    if not repo_sha:
+        print("WARNING: could not determine repo_sha from git; "
+              "recording 'unknown' in the manifest.")
+        repo_sha = "unknown"
     path = emit_snapshot(conversations, labeled, schema, model=DEFAULT_MODEL,
                          repo_sha=repo_sha, data_dir=settings.data_dir,
-                         excluded_conversations=0)
+                         excluded_conversations=excluded_conversations)
     print(f"Snapshot written: {path}")
     print("Add a row to snapshots.md with this manifest's provenance.")
 

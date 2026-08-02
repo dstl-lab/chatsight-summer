@@ -15,8 +15,9 @@ class Settings:
     data_dir: Path
 
     @classmethod
-    def load(cls) -> "Settings":
-        load_dotenv(_REPO_ROOT / ".env")
+    def load(cls, dotenv: bool = True) -> "Settings":
+        if dotenv:
+            load_dotenv(_REPO_ROOT / ".env")
         ext_db_url = os.environ.get("EXT_DB_URL")
         if not ext_db_url:
             pg_password = os.environ["PG_PASSWORD"]

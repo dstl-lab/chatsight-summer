@@ -1,5 +1,5 @@
 # tests/test_rawlog.py  — all text is invented; never paste real student messages
-from src.ingest.rawlog import Conversation, Turn, assemble_turns
+from src.ingest.rawlog import Conversation, Turn, assemble_turns, _COUNT_SQL
 
 
 ROWS = [
@@ -19,6 +19,19 @@ def test_assemble_turns_roles_and_indices():
     ]
     assert [t.student_index for t in turns] == [0, None, 1]
     assert turns[0].text == "how do I sort a table?"
+
+
+def test_count_conversations_sql_is_select_only():
+    # count_conversations must never mutate the external DB: assert its SQL
+    # is a single SELECT COUNT(DISTINCT ...) over the same event types used
+    # by fetch_conversations, with no other statement present.
+    normalized = " ".join(_COUNT_SQL.split()).upper()
+    assert normalized.startswith("SELECT COUNT(DISTINCT PAYLOAD->>'CONVERSATION_ID')")
+    assert "FROM EVENTS" in normalized
+    assert "TUTOR_QUERY" in normalized and "TUTOR_RESPONSE" in normalized
+    assert normalized.count("SELECT") == 1
+    for forbidden in ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", ";"):
+        assert forbidden not in normalized
 
 
 def test_conversation_student_turns():

@@ -37,6 +37,26 @@ def test_draft_labels_one_result_per_message():
     assert "concept-confusion" in fake_generate.prompts[0]
 
 
+def fake_generate_stray_and_missing(prompt: str, response_model):
+    assert response_model is LabelVerdicts
+    # "concept-confusion" is the only real label in _schema(); this response
+    # hallucinates "extra-label" and omits "concept-confusion" entirely.
+    return LabelVerdicts(
+        verdicts={"extra-label": True},
+        rationales={"extra-label": "hallucinated"},
+    )
+
+
+def test_draft_labels_filters_stray_keys_and_defaults_missing():
+    results = draft_labels([_msg(0)], _schema(), fake_generate_stray_and_missing)
+    assert len(results) == 1
+    r = results[0]
+    assert "extra-label" not in r.labels
+    assert "extra-label" not in r.rationales
+    assert r.labels == {"concept-confusion": False}
+    assert r.rationales == {"concept-confusion": "(no verdict returned)"}
+
+
 def test_classifier_hash_pins_schema_and_model():
     s = _schema()
     h = classifier_hash(s, "gemini-2.5-flash")
