@@ -1,0 +1,22 @@
+[project]
+name = "learner-agents"
+version = "0.1.0"
+description = "Learner-agent simulation grounded in ChatSight-labeled tutoring logs"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.2.2",
+    "numpy>=2.4.4",
+    "scikit-learn>=1.8.0",
+    # ChatSight is pinned at an exact SHA once the export/packaging mechanism lands
+    # (open decision #6). Note: its pyproject lives at server/python/, so the pin will
+    # need `#subdirectory=server/python` or a submodule. Never vendor its code here.
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["src"]

@@ -1,0 +1,29 @@
+# Student data — NEVER commit (IRB-covered, DSC 10). See CLAUDE.md rule 4.
+data/
+
+# Env / secrets
+.env
+.env.local
+.env.*
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# Notebooks: checkpoints always; outputs may quote student text — strip before commit
+.ipynb_checkpoints/
+
+# SQLite (should never exist here — this repo never opens a DB — but ignore defensively)
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+
+# OS / tooling
+.DS_Store
+.claude/
+.agents/
+.superpowers/
