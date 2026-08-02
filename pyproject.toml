@@ -8,9 +8,9 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "numpy>=2.4.4",
     "scikit-learn>=1.8.0",
-    # ChatSight is pinned at an exact SHA once the export/packaging mechanism lands
-    # (open decision #6). Note: its pyproject lives at server/python/, so the pin will
-    # need `#subdirectory=server/python` or a submodule. Never vendor its code here.
+    # labeling subsystem: raw-log DB (read-only, via kubectl tunnel) + Gemini classifier
+    "psycopg2-binary>=2.9.11",
+    "google-genai>=1.66.0",
 ]
 
 [dependency-groups]

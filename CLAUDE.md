@@ -1,18 +1,25 @@
-# CLAUDE.md — Learner-Agent Simulation (standalone repo)
+# CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
 ## What this project is
 
-Research codebase for simulating *learners*: LLM agents grounded in real students' logged
-behavior with an AI tutor, used to screen tutor-policy changes ("never give direct answers,"
-"answer-then-probe") against a synthetic cohort **before any real student is exposed**.
+Research codebase with two subsystems (decision memo:
+`docs/2026-08-01-topdown-labeling-same-repo.md`):
 
-This repo is the simulation side of a two-repo system. The labeling side is **ChatSight**
-(`github.com/minchan/chatsight`, local: `~/github/chatsight`) — a working instructor-facing
-tool where instructors label student–AI tutoring conversations bottom-up and hand off to
-Gemini classifiers to label the rest. ChatSight compiles raw chat logs into instructor-defined
-behavioral constructs; this repo consumes those constructs as the **state space of the
-simulation**. Full research plan: `docs/2026-08-01-labeling-to-agents-pipeline.md` (copy it
-into this repo's `docs/` on day one, together with `2026-08-01-learner-agents-direction.md`).
+1. **Labeling — top-down, instructor-facing.** The instructor states what trends they want
+   to see from the data — conceptual ("which topics are students struggling with"),
+   behavioral/affective ("confused, satisfied, angry"), or other. The tool pulls a
+   *stratified* sample of real messages, drafts labels against that intent, and shows the
+   labeled sample. Instructor accepts the direction → mass-label the corpus; or tweaks by
+   describing what they want differently → new prompt, new draft, review again. Every tweak
+   iteration is a new schema version.
+2. **Simulation.** LLM agents grounded in real students' logged behavior with an AI tutor,
+   used to screen tutor-policy changes ("never give direct answers," "answer-then-probe")
+   against a synthetic cohort **before any real student is exposed**. Consumes the labeling
+   subsystem's output as the **state space of the simulation**.
+
+Raw data: DSC 10 tutor chat logs in an external PostgreSQL database (`dsc10_tutor_logs`),
+reached read-only via `kubectl port-forward` into the Kubernetes cluster — the same access
+pattern ChatSight uses (see its README for tunnel setup; replicate the pattern, not the code).
 
 An agent is a thing that moves through label-space ("instrumental ask" → "got hint" →
 "re-engaged" vs. → "extracted answer" vs. → went silent). The classifiers are the projection
@@ -21,33 +28,32 @@ in the distribution of trajectories through it.
 
 ## The relationship to ChatSight — READ THIS FIRST
 
-This repo was deliberately created *outside* ChatSight so research cadence never destabilizes
-ChatSight's fall instructor pilots. That separation creates two scientific risks you must
-actively manage; they are the reason most of the rules below exist.
+**ChatSight (`github.com/minchan/chatsight`, local: `~/github/chatsight`) is a sibling, not
+an upstream.** It does bottom-up labeling (instructor labels first, classifier generalizes)
+for its fall instructor pilots; this repo does top-down intent-compiled labeling. Both read
+the same raw-log database. This repo was deliberately created outside ChatSight so research
+cadence never destabilizes those pilots.
 
-**Rule 1 — ChatSight is upstream. Never modify it from here, never fork its logic.**
-No copying service code into this repo "to make it easier." If a change to ChatSight is
-needed (e.g., an export endpoint), it happens in the ChatSight repo through its normal
-workflow, and this repo consumes the result.
+**Rule 1 — Never modify ChatSight from here, never import or vendor its code.**
+Reference its conventions freely (kubectl tunnel pattern, backend stack, .env layout). This
+repo's classifier is a deliberate independent reimplementation — not a fork claiming
+equivalence. Corollary: **labels produced here and labels produced by ChatSight are never
+compared or mixed in any claim** unless a dedicated calibration study earns it.
 
-**Rule 2 — Classifier parity is the load-bearing wall.**
+**Rule 2 — Classifier parity is the load-bearing wall (now internal).**
 Every fidelity and policy claim depends on synthetic transcripts being scored by *the same
-classifier that labeled the real corpus*. Cross-repo, "same" must be enforced mechanically:
+classifier that labeled the real corpus* — same prompt/config hash, same schema version.
+Every results artifact records: schema version ID, classifier prompt/config hash, corpus
+snapshot ID, model IDs. No orphan numbers.
 
-- Pin ChatSight as a dependency at an exact commit SHA (git submodule or
-  `pip install git+...@<sha>`). The pinned SHA is part of every experiment's provenance.
-- Scoring calls ChatSight's `binary_autolabel_service` **through the pinned package,
-  unmodified**. If you find yourself editing a vendored copy, stop — that experiment's
-  results are already invalid.
-- Every results artifact records: ChatSight SHA, schema version ID, classifier prompt/config
-  hash, corpus snapshot ID. No orphan numbers.
-
-**Rule 3 — Data arrives as versioned snapshots, never live DB access.**
-This repo never opens ChatSight's database. ChatSight exports a labeled-corpus snapshot
-(JSONL: conversations, turns, label applications, schema version, embeddings if needed) with
-a manifest (export date, chatsight SHA, schema version, row counts). Snapshots are immutable
-inputs; experiments pin one. If the labels change upstream, that is a *new snapshot*, and
-old experiments still reproduce against the old one.
+**Rule 3 — The live-DB boundary runs inside this repo.**
+`src/labeling/` and `src/ingest/` may open the raw-log Postgres (read-only, through the
+tunnel). The labeling subsystem's output is an immutable labeled-corpus snapshot in
+`data/snapshots/<id>/` (JSONL: conversations, turns, label applications, schema version)
+with a manifest (export date, schema version, classifier hash, row counts). The simulation
+subsystems (`eval/`, `trajectories/`, `agents/`, `replay/`) consume **only snapshots, never
+the DB**. If labels change, that is a *new snapshot*; old experiments still reproduce
+against the old one.
 
 **Rule 4 — Student data never enters git.**
 Snapshots contain real students' conversations (IRB-covered, DSC 10). `data/` is gitignored
@@ -84,6 +90,15 @@ history, tell Minchan.
 7. **Agents must be able to not respond.** Quiet exit (student silently defects to ChatGPT /
    gives up) is the most important negative signal in the framing. An agent that always
    replies cannot reproduce it; model non-response as a first-class action from day one.
+8. **Blind measurement, anchored drafting.** The review-and-tweak loop shows model-drafted
+   labels — anchored, fine for *drafting*. Reliability numbers for the admission threshold
+   come only from instructor labels produced blind (messages without model labels), on a
+   held-out sample never used in the tweak loop. Approval of a shown label is not ground
+   truth; anchoring inflates agreement.
+9. **Stratified review samples.** Samples shown to the instructor are deliberately composed
+   (model-uncertain, embedding-diverse, boundary cases), never the first N or a uniform
+   random pull — rare behaviors (quiet exit, answer-extraction) are the point and won't
+   surface in a quick random sample.
 
 ## Phase plan (full details in the pipeline memo)
 
@@ -93,10 +108,11 @@ must win.
 - **Phase 0 — classifier eval harness. START HERE; blocks everything.** Per-label
   precision/recall vs. human-audited held-out real messages; human-agreement ceiling from
   double-labeled samples; admission threshold proposal. Runnable on the first DSC 10 snapshot.
-- **Phase 1 — intent-compiled schema.** Elicit the instructor's *what-if question*, backward-
-  chain to required constructs, verification gate = boundary cases + negative-space coverage
-  + per-label reliability (rule 3). Mostly happens ChatSight-side; this repo consumes the
-  resulting schema version and contributes the reliability check.
+- **Phase 1 — intent-compiled schema.** Elicit the instructor's *what-if question* / desired
+  trends, backward-chain to required constructs, run the draft→review→tweak loop
+  (invariants 8–9), verification gate = boundary cases + negative-space coverage + per-label
+  reliability (invariant 3). Lives in this repo's `src/labeling/` — the first
+  instructor-facing surface.
 - **Phase 2 — trajectories.** Mass-labeled corpus → label trajectories per conversation →
   empirical transition matrix (grounding data, fidelity target, and screening baseline all at
   once) → 4–7 clustered archetypes. *Standalone paper fallback: descriptive dynamics of
@@ -122,12 +138,14 @@ docs/                      ← memos, dated `YYYY-MM-DD-topic.md`, discussion-me
 data/                      ← gitignored; snapshots/<snapshot_id>/ with manifest.json
 snapshots.md               ← human-readable ledger of known snapshots + provenance
 src/
-  ingest/                  ← snapshot loader + manifest validation
+  ingest/                  ← raw-log DB access (tunnel) + snapshot loader/manifest validation
+  labeling/                ← Phase 1: intent elicitation, stratified sampling, draft
+                             classifier, review/tweak loop, mass-label → snapshot emission
   eval/                    ← Phase 0 harness (first real code)
   trajectories/            ← Phase 2 extraction, transition matrices, archetype clustering
   agents/                  ← Phase 3 persona construction + generation (incl. non-response)
   replay/                  ← Phase 4 engine + policy variants
-  scoring/                 ← thin wrapper around pinned ChatSight classifier — no logic here
+  scoring/                 ← thin wrapper pinning this repo's classifier config — no logic here
 experiments/               ← one dir per experiment: config (pins), results, notebook
 ```
 
@@ -137,8 +155,11 @@ memos until then.
 
 ## Decisions already made (don't relitigate without new information)
 
-- Separate repo, with the parity/snapshot rules above as the price. Chosen so pilot-facing
-  ChatSight stays stable through fall; the one-way dependency keeps later re-merging cheap.
+- Separate repo from ChatSight, as a *sibling* sharing only the raw-log data source
+  (2026-08-01 memo). Chosen so pilot-facing ChatSight stays stable through fall. Price:
+  independent classifier with no label-continuity to ChatSight's corpus.
+- Labeling is top-down intent compilation with an instructor review/tweak loop; drafting may
+  be anchored, measurement must be blind (invariants 8–9).
 - Archetype-level personas, not per-student (invariant 4).
 - Intent-first (top-down) schema drafting is *compilation of instructor intent*, arbitrated
   on real data — not a return to upfront rubrics. The instructor's arbitration sample is the
@@ -155,8 +176,9 @@ memos until then.
    amendment scope **before Phase 3 code exists**.
 5. Who owns the DSC 10 tutor's prompt/policy surface (prerequisite for any replay; open
    since the July memo — it's an email, chase it).
-6. Snapshot export mechanism on the ChatSight side (needs a change in that repo, via its
-   workflow).
+6. Kubernetes credentials/namespace for this repo's own read-only tunnel to
+   `dsc10_tutor_logs` (replaces the dissolved ChatSight-export question).
+7. Permanent name for this repo/tool — current name is explicitly temporary.
 
 ## Related work you must know before writing anything
 

@@ -1,1 +1,1 @@
-"""Thin wrapper around the pinned ChatSight binary_autolabel_service. NO logic here; editing a vendored copy invalidates the experiment (rule 2)."""
+"""Thin wrapper pinning this repo's classifier config (prompt hash + schema version). Same pinned classifier scores real and synthetic transcripts within an experiment. NO logic here (rule 2)."""

@@ -1,0 +1,1 @@
+"""Phase 1: top-down labeling. Intent elicitation, stratified sampling, draft classifier, instructor review/tweak loop (anchored drafting, blind measurement — invariants 8-9), mass-label, snapshot emission. May open the raw-log DB read-only."""
