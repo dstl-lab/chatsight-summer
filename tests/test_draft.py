@@ -1,0 +1,46 @@
+from src.labeling.draft import (CLASSIFY_PROMPT, LabelVerdicts, MessageLabels,
+                                classifier_hash, draft_labels)
+from src.labeling.elicit import draft_schema
+from src.labeling.sampler import SampledMessage
+from src.labeling.schema import LabelDef
+import tests.test_elicit as te
+
+
+def _msg(i: int) -> SampledMessage:
+    return SampledMessage(chatlog_id=100 + i, conv_id="c", message_index=i,
+                          text=f"invented question {i}", context_before=None,
+                          context_after="try a hint", stratum="short/early")
+
+
+def fake_generate(prompt: str, response_model):
+    assert response_model is LabelVerdicts
+    fake_generate.prompts.append(prompt)
+    return LabelVerdicts(
+        verdicts={"concept-confusion": True},
+        rationales={"concept-confusion": "mentions not understanding"},
+    )
+
+
+fake_generate.prompts = []
+
+
+def _schema():
+    return draft_schema("who is confused", te.fake_generate)
+
+
+def test_draft_labels_one_result_per_message():
+    fake_generate.prompts = []
+    results = draft_labels([_msg(0), _msg(1)], _schema(), fake_generate)
+    assert [r.message_index for r in results] == [0, 1]
+    assert results[0].labels == {"concept-confusion": True}
+    assert "invented question 0" in fake_generate.prompts[0]
+    assert "concept-confusion" in fake_generate.prompts[0]
+
+
+def test_classifier_hash_pins_schema_and_model():
+    s = _schema()
+    h = classifier_hash(s, "gemini-2.5-flash")
+    assert len(h) == 12
+    assert h != classifier_hash(s, "gemini-3.0")
+    revised = draft_schema("who is angry", te.fake_generate)
+    assert h != classifier_hash(revised, "gemini-2.5-flash")
