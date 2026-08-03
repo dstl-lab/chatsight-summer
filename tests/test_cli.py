@@ -1,5 +1,5 @@
 from src.labeling.cli import run_loop
-from src.labeling.draft import LabelVerdicts
+from src.labeling.draft import LabelVerdict, LabelVerdicts
 from src.labeling.elicit import DraftedLabels
 from src.labeling.schema import LabelDef
 from tests.test_sampler import CONVS
@@ -16,7 +16,8 @@ def make_fake_generate():
             fake_generate.schema_calls += 1
             name = f"label-v{fake_generate.schema_calls}"
             return DraftedLabels(labels=[_label(name)])
-        return LabelVerdicts(verdicts={"x": True}, rationales={"x": "r"})
+        return LabelVerdicts(verdicts=[
+            LabelVerdict(label="x", applies=True, rationale="r")])
     fake_generate.schema_calls = 0
     return fake_generate
 

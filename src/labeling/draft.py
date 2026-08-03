@@ -10,9 +10,17 @@ from src.labeling.sampler import SampledMessage
 from src.labeling.schema import LabelSchema
 
 
+# Wire format for Gemini structured output. Must stay free of dict[...] fields:
+# pydantic renders those as JSON-schema additionalProperties, which the Gemini
+# Developer API rejects. Lists of typed items only.
+class LabelVerdict(BaseModel):
+    label: str
+    applies: bool
+    rationale: str
+
+
 class LabelVerdicts(BaseModel):
-    verdicts: dict[str, bool]
-    rationales: dict[str, str]
+    verdicts: list[LabelVerdict]
 
 
 class MessageLabels(BaseModel):
@@ -38,7 +46,8 @@ STUDENT MESSAGE TO LABEL:
 Tutor message after (may be empty):
 {context_after}
 
-Return verdicts and rationales keyed by exact label name."""
+Return one verdict entry per label: label (exact name), applies (true/false), \
+rationale (one sentence)."""
 
 
 def _labels_block(schema: LabelSchema) -> str:
@@ -54,12 +63,13 @@ def _validated_verdicts(v: LabelVerdicts, schema: LabelSchema
     """Drop hallucinated label names not in the schema; default any missing
     expected label to False so labels.jsonl only ever contains real names."""
     expected = [l.name for l in schema.labels]
+    by_name = {item.label: item for item in v.verdicts}
     labels: dict[str, bool] = {}
     rationales: dict[str, str] = {}
     for name in expected:
-        if name in v.verdicts:
-            labels[name] = v.verdicts[name]
-            rationales[name] = v.rationales.get(name, "(no verdict returned)")
+        if name in by_name:
+            labels[name] = by_name[name].applies
+            rationales[name] = by_name[name].rationale or "(no verdict returned)"
         else:
             labels[name] = False
             rationales[name] = "(no verdict returned)"

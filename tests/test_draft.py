@@ -1,4 +1,4 @@
-from src.labeling.draft import (CLASSIFY_PROMPT, LabelVerdicts, MessageLabels,
+from src.labeling.draft import (CLASSIFY_PROMPT, LabelVerdict, LabelVerdicts, MessageLabels,
                                 classifier_hash, draft_labels)
 from src.labeling.elicit import draft_schema
 from src.labeling.sampler import SampledMessage
@@ -15,10 +15,10 @@ def _msg(i: int) -> SampledMessage:
 def fake_generate(prompt: str, response_model):
     assert response_model is LabelVerdicts
     fake_generate.prompts.append(prompt)
-    return LabelVerdicts(
-        verdicts={"concept-confusion": True},
-        rationales={"concept-confusion": "mentions not understanding"},
-    )
+    return LabelVerdicts(verdicts=[LabelVerdict(
+        label="concept-confusion", applies=True,
+        rationale="mentions not understanding",
+    )])
 
 
 fake_generate.prompts = []
@@ -41,10 +41,9 @@ def fake_generate_stray_and_missing(prompt: str, response_model):
     assert response_model is LabelVerdicts
     # "concept-confusion" is the only real label in _schema(); this response
     # hallucinates "extra-label" and omits "concept-confusion" entirely.
-    return LabelVerdicts(
-        verdicts={"extra-label": True},
-        rationales={"extra-label": "hallucinated"},
-    )
+    return LabelVerdicts(verdicts=[LabelVerdict(
+        label="extra-label", applies=True, rationale="hallucinated",
+    )])
 
 
 def test_draft_labels_filters_stray_keys_and_defaults_missing():
