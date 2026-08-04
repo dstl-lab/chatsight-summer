@@ -48,7 +48,7 @@ Spec: `docs/superpowers/specs/2026-08-03-labeling-web-ui-design.md`.
 }
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/test_webapp.py
@@ -153,12 +153,12 @@ def test_job_error_surfaces_and_quit_recovers(tmp_path):
     assert session.state()["phase"] == "idle"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/test_webapp.py -v`
 Expected: FAIL/ERROR with `ModuleNotFoundError`/`ImportError` on `src.labeling.webapp`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # src/labeling/webapp.py
@@ -330,12 +330,12 @@ class LoopSession:
             }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/test_webapp.py -v` — expected: all PASS.
 Then: `uv run pytest -q` — expected: whole suite PASS (no regressions).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/labeling/webapp.py tests/test_webapp.py
@@ -355,7 +355,7 @@ git commit -m "feat: LoopSession state machine for labeling web UI"
 - Consumes: `LoopSession`, `PhaseError` from Task 1; `Settings.load()` (src/config.py); `make_generate(api_key)` (src/labeling/llm.py).
 - Produces: `create_app(session: LoopSession) -> FastAPI` with routes `GET /` (page, added Task 3), `GET /api/state`, `POST /api/start` `{intent, max_conversations?, sample_size?, seed?}`, `POST /api/tweak` `{feedback}`, `POST /api/accept`, `POST /api/quit`; `PhaseError` → HTTP 409 `{"detail": ...}`; `main()` console entry `label-loop-web`.
 
-- [ ] **Step 1: Add dependencies and script**
+- [x] **Step 1: Add dependencies and script**
 
 In `pyproject.toml`, extend `dependencies` with:
 
@@ -373,7 +373,7 @@ label-loop-web = "src.labeling.webapp:main"
 
 Run: `uv sync` — expected: resolves and installs cleanly.
 
-- [ ] **Step 2: Write the failing API tests**
+- [x] **Step 2: Write the failing API tests**
 
 Append to `tests/test_webapp.py`:
 
@@ -412,12 +412,12 @@ def test_api_invalid_phase_returns_409(tmp_path):
     assert client.get("/api/state").json()["phase"] == "idle"
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `uv run pytest tests/test_webapp.py -v`
 Expected: new tests FAIL with `ImportError: cannot import name 'create_app'`.
 
-- [ ] **Step 4: Implement the app factory and main**
+- [x] **Step 4: Implement the app factory and main**
 
 Append to `src/labeling/webapp.py`:
 
@@ -513,11 +513,11 @@ def main() -> None:
 
 Note: `host="127.0.0.1"` is a Global Constraint — never widen it.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `uv run pytest -q` — expected: whole suite PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/labeling/webapp.py tests/test_webapp.py pyproject.toml uv.lock
@@ -536,7 +536,7 @@ git commit -m "feat: FastAPI app + label-loop-web entry point"
 - Consumes: the Task 2 API exactly as specified (`/api/state` shape from Task 1).
 - Produces: the instructor-facing page; `GET /` serves it.
 
-- [ ] **Step 1: Write the failing route test**
+- [x] **Step 1: Write the failing route test**
 
 ```python
 def test_index_served(tmp_path):
@@ -549,7 +549,7 @@ def test_index_served(tmp_path):
 Run: `uv run pytest tests/test_webapp.py::test_index_served -v`
 Expected: FAIL (file missing → 500/404).
 
-- [ ] **Step 2: Write the page**
+- [x] **Step 2: Write the page**
 
 Create `src/labeling/static/index.html` — self-contained, no external assets, vanilla JS polling `/api/state` every 1.5s. Screens keyed off `phase`:
 
@@ -561,17 +561,17 @@ Create `src/labeling/static/index.html` — self-contained, no external assets, 
 
 All content is DOM-inserted via `textContent` (never `innerHTML` with server data — messages are student text). Single `<style>` block; readable defaults (max-width column, system font stack, muted chips); no gradients or animation beyond the spinner.
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run: `uv run pytest -q` — expected: whole suite PASS.
 
-- [ ] **Step 4: Manual smoke check (no DB/LLM needed)**
+- [x] **Step 4: Manual smoke check (no DB/LLM needed)**
 
 Verify the wheel would include the page and the app serves it:
 `uv run python -c "from src.labeling.webapp import STATIC_DIR; print((STATIC_DIR/'index.html').exists())"` → `True`.
 Full live check (tunnel + Gemini key) stays with existing manual Task 9 (`label-loop` smoke test) — record `label-loop-web` there too.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/labeling/static/index.html tests/test_webapp.py
