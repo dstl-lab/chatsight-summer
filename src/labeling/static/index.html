@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>label-loop</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         max-width: 52rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; }
+  textarea, input { font: inherit; width: 100%; box-sizing: border-box;
+                    margin: .25rem 0 .75rem; padding: .4rem; }
+  input[type=number] { width: 8rem; display: block; }
+  button { font: inherit; padding: .4rem 1rem; margin-right: .5rem; cursor: pointer; }
+  .note { border-left: 4px solid #b8860b; padding: .5rem .75rem; margin: 1rem 0;
+          background: rgba(184, 134, 11, .08); }
+  .provenance { color: gray; font-size: .9rem; }
+  .msg { border: 1px solid rgba(128,128,128,.35); border-radius: 6px;
+         padding: .6rem .8rem; margin: .6rem 0; }
+  .stratum { font-size: .75rem; color: gray; text-transform: uppercase;
+             letter-spacing: .05em; }
+  .chip { display: inline-block; font-size: .8rem; border: 1px solid rgba(128,128,128,.5);
+          border-radius: 999px; padding: 0 .6rem; margin: .3rem .3rem 0 0; }
+  .rationale { font-size: .85rem; color: gray; margin: .15rem 0 0 .5rem; }
+  .schema-label { margin: .3rem 0; }
+  .kind { font-size: .8rem; color: gray; }
+  .error { color: #c0392b; }
+  .spinner { display: inline-block; width: 1em; height: 1em; margin-right: .5em;
+             border: 2px solid rgba(128,128,128,.4); border-top-color: currentColor;
+             border-radius: 50%; animation: spin 0.9s linear infinite;
+             vertical-align: -0.15em; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none; }
+  code { font-size: .9em; }
+</style>
+</head>
+<body>
+<h1>label-loop</h1>
+
+<section id="screen-idle" class="hidden">
+  <p>What trends do you want to see in the chat data (conceptual, behavioral, …)?</p>
+  <textarea id="intent" rows="3"></textarea>
+  <label>Max conversations <input id="max-conversations" type="number" value="200"></label>
+  <label>Sample size <input id="sample-size" type="number" value="25"></label>
+  <label>Seed <input id="seed" type="number" value="0"></label>
+  <button id="btn-start">Start</button>
+  <p class="provenance">Reads the raw-log DB through the tunnel — is <code>bin/tunnel</code> running?</p>
+</section>
+
+<section id="screen-working" class="hidden">
+  <p><span class="spinner"></span><span id="working-text"></span></p>
+</section>
+
+<section id="screen-review" class="hidden">
+  <p class="provenance" id="provenance"></p>
+  <h2>Schema <code id="schema-version"></code></h2>
+  <div id="schema-labels"></div>
+  <div class="note" id="accept-note"></div>
+  <h2>Labeled sample</h2>
+  <div id="sample"></div>
+  <h2>Tweak</h2>
+  <p>Describe what you want differently (each tweak is a new schema version):</p>
+  <textarea id="feedback" rows="2"></textarea>
+  <button id="btn-tweak">Tweak</button>
+  <button id="btn-accept">Accept &amp; mass-label</button>
+  <button id="btn-quit">Quit</button>
+</section>
+
+<section id="screen-done" class="hidden">
+  <h2>Snapshot written</h2>
+  <p><code id="snapshot-path"></code></p>
+  <p>Add a row to <code>snapshots.md</code> with this manifest's provenance.</p>
+  <button id="btn-reset-done">Start over</button>
+</section>
+
+<section id="screen-error" class="hidden">
+  <h2 class="error">Error</h2>
+  <p class="error" id="error-text"></p>
+  <button id="btn-reset-error">Reset</button>
+</section>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const screens = ["idle", "working", "review", "done", "error"];
+
+async function post(path, body) {
+  const r = await fetch(path, {
+    method: "POST",
+    headers: body ? { "Content-Type": "application/json" } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok && r.status !== 409) alert("Request failed: " + r.status);
+  refresh();
+}
+
+function show(name) {
+  for (const s of screens)
+    $("screen-" + s).classList.toggle("hidden", s !== name);
+}
+
+function renderReview(state) {
+  const p = state.provenance;
+  $("provenance").textContent = p
+    ? `Fetched ${p.fetched} of ${p.total} conversations; ${p.excluded} ` +
+      `EXCLUDED from this run and the snapshot.`
+    : "";
+  $("schema-version").textContent = state.schema.version_id;
+  const labels = $("schema-labels");
+  labels.replaceChildren();
+  for (const l of state.schema.labels) {
+    const div = document.createElement("div");
+    div.className = "schema-label";
+    const name = document.createElement("strong");
+    name.textContent = l.name;
+    const kind = document.createElement("span");
+    kind.className = "kind";
+    kind.textContent = ` (${l.kind}): `;
+    const desc = document.createElement("span");
+    desc.textContent = l.description;
+    div.append(name, kind, desc);
+    labels.append(div);
+  }
+  $("accept-note").textContent = state.accept_note;
+  const sample = $("sample");
+  sample.replaceChildren();
+  // student text: always textContent, never innerHTML
+  for (const m of state.sample || []) {
+    const box = document.createElement("div");
+    box.className = "msg";
+    const stratum = document.createElement("div");
+    stratum.className = "stratum";
+    stratum.textContent = m.stratum;
+    const text = document.createElement("div");
+    text.textContent = m.text;
+    box.append(stratum, text);
+    if (m.labels.length === 0) {
+      const none = document.createElement("span");
+      none.className = "chip";
+      none.textContent = "(no labels)";
+      box.append(none);
+    }
+    for (const name of m.labels) {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = name;
+      box.append(chip);
+      const rat = document.createElement("div");
+      rat.className = "rationale";
+      rat.textContent = `${name}: ${m.rationales[name] || ""}`;
+      box.append(rat);
+    }
+    sample.append(box);
+  }
+}
+
+function render(state) {
+  const phase = state.phase;
+  if (phase === "idle") show("idle");
+  else if (phase === "review") { renderReview(state); show("review"); }
+  else if (phase === "done") {
+    $("snapshot-path").textContent = state.snapshot_path || "";
+    show("done");
+  } else if (phase === "error") {
+    $("error-text").textContent = state.error || "unknown error";
+    show("error");
+  } else {
+    $("working-text").textContent = {
+      fetching: "Fetching conversations from the raw-log DB…",
+      drafting: "Drafting schema and labeling the review sample…",
+      mass_labeling: "Labeling the full corpus — this takes a while…",
+    }[phase] || phase;
+    show("working");
+  }
+}
+
+async function refresh() {
+  try {
+    const r = await fetch("/api/state");
+    render(await r.json());
+  } catch (e) { /* server restarting; keep polling */ }
+}
+
+$("btn-start").addEventListener("click", () => post("/api/start", {
+  intent: $("intent").value,
+  max_conversations: Number($("max-conversations").value),
+  sample_size: Number($("sample-size").value),
+  seed: Number($("seed").value),
+}));
+$("btn-tweak").addEventListener("click", () =>
+  post("/api/tweak", { feedback: $("feedback").value }));
+$("btn-accept").addEventListener("click", () => post("/api/accept"));
+$("btn-quit").addEventListener("click", () => post("/api/quit"));
+$("btn-reset-done").addEventListener("click", () => post("/api/quit"));
+$("btn-reset-error").addEventListener("click", () => post("/api/quit"));
+
+refresh();
+setInterval(refresh, 1500);
+</script>
+</body>
+</html>

@@ -133,3 +133,10 @@ def test_api_invalid_phase_returns_409(tmp_path):
     assert client.post("/api/start", json={"intent": "i"}).status_code == 409
     assert client.post("/api/quit").status_code == 200
     assert client.get("/api/state").json()["phase"] == "idle"
+
+
+def test_index_served(tmp_path):
+    client = TestClient(create_app(make_session(tmp_path)))
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "label-loop" in r.text
