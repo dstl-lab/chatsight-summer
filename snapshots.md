@@ -14,4 +14,4 @@ on load.
 
 | snapshot_id | export date | course | repo SHA | schema version | classifier hash | conversations | notes |
 |---|---|---|---|---|---|---|---|
-| _(none yet — labeling subsystem not built; k8s tunnel access is open decision #6)_ | | | | | | | |
+| 20260803-275ba59cc0fb-73419b | 2026-08-03 | DSC 10 | 3f3ec7b | 275ba59cc0fb | 73419b573364 | 151 (9,289 excluded by --max-conversations cap) | First real snapshot, emitted via label-loop-web; 2,745 turns, 1,381 label applications |
