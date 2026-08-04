@@ -97,3 +97,39 @@ def test_job_error_surfaces_and_quit_recovers(tmp_path):
     assert "tunnel down" in s["error"]
     session.quit()
     assert session.state()["phase"] == "idle"
+
+
+# --- API layer -------------------------------------------------------------
+
+from fastapi.testclient import TestClient
+
+from src.labeling.webapp import create_app
+
+
+def test_api_happy_path(tmp_path):
+    client = TestClient(create_app(make_session(tmp_path)))
+    assert client.get("/api/state").json()["phase"] == "idle"
+    r = client.post("/api/start", json={
+        "intent": "what confuses students", "max_conversations": 4,
+        "sample_size": 4, "seed": 0})
+    assert r.status_code == 200
+    s = client.get("/api/state").json()
+    assert s["phase"] == "review"
+    assert s["accept_note"] == ACCEPT_NOTE
+    assert client.post("/api/tweak",
+                       json={"feedback": "split it"}).status_code == 200
+    assert client.post("/api/accept").status_code == 200
+    s = client.get("/api/state").json()
+    assert s["phase"] == "done"
+    assert s["snapshot_path"] is not None
+
+
+def test_api_invalid_phase_returns_409(tmp_path):
+    client = TestClient(create_app(make_session(tmp_path)))
+    assert client.post("/api/accept").status_code == 409
+    assert client.post("/api/tweak", json={"feedback": "x"}).status_code == 409
+    client.post("/api/start", json={"intent": "i", "max_conversations": 4,
+                                    "sample_size": 4})
+    assert client.post("/api/start", json={"intent": "i"}).status_code == 409
+    assert client.post("/api/quit").status_code == 200
+    assert client.get("/api/state").json()["phase"] == "idle"

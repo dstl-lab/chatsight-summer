@@ -164,3 +164,93 @@ class LoopSession:
                 "snapshot_path": (str(self.snapshot_path)
                                   if self.snapshot_path else None),
             }
+
+
+# --- FastAPI layer ---------------------------------------------------------
+
+import sys
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
+
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+class StartRequest(BaseModel):
+    intent: str
+    max_conversations: int = 200
+    sample_size: int = 25
+    seed: int = 0
+
+
+class TweakRequest(BaseModel):
+    feedback: str
+
+
+def create_app(session: LoopSession) -> FastAPI:
+    app = FastAPI(title="label-loop")
+
+    @app.exception_handler(PhaseError)
+    async def phase_error(request, exc: PhaseError):
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+    @app.get("/")
+    def index() -> FileResponse:
+        return FileResponse(STATIC_DIR / "index.html")
+
+    @app.get("/api/state")
+    def state() -> dict:
+        return session.state()
+
+    @app.post("/api/start")
+    def start(req: StartRequest) -> dict:
+        session.start(req.intent, max_conversations=req.max_conversations,
+                      sample_size=req.sample_size, seed=req.seed)
+        return {"ok": True}
+
+    @app.post("/api/tweak")
+    def tweak(req: TweakRequest) -> dict:
+        session.tweak(req.feedback)
+        return {"ok": True}
+
+    @app.post("/api/accept")
+    def accept() -> dict:
+        session.accept()
+        return {"ok": True}
+
+    @app.post("/api/quit")
+    def quit_() -> dict:
+        session.quit()
+        return {"ok": True}
+
+    return app
+
+
+def _repo_sha(repo_root: Path) -> str:
+    import subprocess
+    try:
+        sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                             capture_output=True, text=True,
+                             cwd=repo_root).stdout.strip()
+    except OSError:
+        sha = ""
+    return sha or "unknown"
+
+
+def main() -> None:
+    import uvicorn
+
+    from src.config import Settings
+    from src.labeling.llm import make_generate
+
+    settings = Settings.load()
+    if not settings.gemini_api_key:
+        sys.exit("GEMINI_API_KEY missing from .env")
+    session = LoopSession(generate=make_generate(settings.gemini_api_key),
+                          ext_db_url=settings.ext_db_url,
+                          data_dir=settings.data_dir,
+                          repo_sha=_repo_sha(settings.repo_root))
+    # 127.0.0.1 only: student text never leaves the machine (CLAUDE.md rule 4)
+    print("label-loop web UI on http://127.0.0.1:8321 (is bin/tunnel running?)")
+    uvicorn.run(create_app(session), host="127.0.0.1", port=8321)
