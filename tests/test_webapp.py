@@ -1,0 +1,99 @@
+"""Hermetic tests for the labeling web UI. No DB, no Gemini, no network."""
+from pathlib import Path
+
+import pytest
+
+from src.labeling.cli import ACCEPT_NOTE
+from src.labeling.webapp import LoopSession, PhaseError
+from tests.test_cli import make_fake_generate
+from tests.test_sampler import CONVS
+
+
+def make_session(tmp_path: Path) -> LoopSession:
+    return LoopSession(
+        fetch=lambda url, limit: CONVS[:limit] if limit else CONVS,
+        count=lambda url: len(CONVS) + 3,   # 3 "excluded" beyond the fetch cap
+        generate=make_fake_generate(),
+        ext_db_url="postgresql+psycopg2://unused",
+        data_dir=tmp_path,
+        repo_sha="testsha",
+        runner=lambda job: job(),           # synchronous in tests
+    )
+
+
+def test_initial_state_is_idle(tmp_path):
+    s = make_session(tmp_path).state()
+    assert s["phase"] == "idle"
+    assert s["accept_note"] == ACCEPT_NOTE
+    assert s["schema"] is None and s["sample"] is None
+
+
+def test_start_reaches_review_with_schema_sample_provenance(tmp_path):
+    session = make_session(tmp_path)
+    session.start("what confuses students", max_conversations=4,
+                  sample_size=4, seed=0)
+    s = session.state()
+    assert s["phase"] == "review"
+    assert s["schema"]["labels"][0]["name"] == "label-v1"
+    assert s["schema"]["intent"] == "what confuses students"
+    assert len(s["sample"]) == 4
+    assert all("stratum" in m and "text" in m for m in s["sample"])
+    assert s["provenance"] == {"fetched": 4, "total": len(CONVS) + 3,
+                               "excluded": len(CONVS) + 3 - 4}
+
+
+def test_tweak_produces_new_chained_schema_version(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    v1 = session.state()["schema"]["version_id"]
+    session.tweak("split confusion by cause")
+    s = session.state()
+    assert s["phase"] == "review"
+    assert s["schema"]["labels"][0]["name"] == "label-v2"
+    assert s["schema"]["version_id"] != v1
+
+
+def test_accept_emits_snapshot_and_saves_schema(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.accept()
+    s = session.state()
+    assert s["phase"] == "done"
+    snap = Path(s["snapshot_path"])
+    assert (snap / "manifest.json").exists()
+    assert list((tmp_path / "labeling" / "schemas").glob("*.json"))  # save_schema ran
+
+
+def test_invalid_phase_actions_raise(tmp_path):
+    session = make_session(tmp_path)
+    with pytest.raises(PhaseError):
+        session.tweak("nope")           # idle: no tweak
+    with pytest.raises(PhaseError):
+        session.accept()                # idle: no accept
+    with pytest.raises(PhaseError):
+        session.quit()                  # idle: nothing to quit
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    with pytest.raises(PhaseError):
+        session.start("again")          # review: no restart without quit
+
+
+def test_quit_resets_to_idle(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.quit()
+    s = session.state()
+    assert s["phase"] == "idle"
+    assert s["schema"] is None and s["sample"] is None
+
+
+def test_job_error_surfaces_and_quit_recovers(tmp_path):
+    def boom(url, limit):
+        raise RuntimeError("tunnel down")
+    session = make_session(tmp_path)
+    session.fetch = boom
+    session.start("intent")
+    s = session.state()
+    assert s["phase"] == "error"
+    assert "tunnel down" in s["error"]
+    session.quit()
+    assert session.state()["phase"] == "idle"
