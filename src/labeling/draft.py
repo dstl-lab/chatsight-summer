@@ -2,6 +2,7 @@
 classifier_hash is the provenance pin: same hash <=> same prompt template,
 schema version, and model (CLAUDE.md rule 2)."""
 import hashlib
+from typing import Callable
 
 from pydantic import BaseModel
 
@@ -77,10 +78,12 @@ def _validated_verdicts(v: LabelVerdicts, schema: LabelSchema
 
 
 def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
-                 generate: Generate) -> list[MessageLabels]:
+                 generate: Generate,
+                 on_progress: Callable[[int, int], None] | None = None
+                 ) -> list[MessageLabels]:
     out: list[MessageLabels] = []
     block = _labels_block(schema)
-    for m in messages:
+    for i, m in enumerate(messages):
         prompt = CLASSIFY_PROMPT.format(
             labels=block, context_before=m.context_before or "",
             text=m.text, context_after=m.context_after or "",
@@ -90,6 +93,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
         out.append(MessageLabels(chatlog_id=m.chatlog_id,
                                  message_index=m.message_index,
                                  labels=labels, rationales=rationales))
+        if on_progress:
+            on_progress(i + 1, len(messages))
     return out
 
 

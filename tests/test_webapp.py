@@ -140,3 +140,31 @@ def test_index_served(tmp_path):
     r = client.get("/")
     assert r.status_code == 200
     assert "label-loop" in r.text
+
+
+# --- progress reporting ----------------------------------------------------
+
+from src.labeling.draft import draft_labels
+from src.labeling.sampler import stratified_sample
+
+
+def test_draft_labels_reports_progress():
+    sample = stratified_sample(CONVS, n=4, seed=0)
+    seen: list[tuple[int, int]] = []
+    schema_gen = make_fake_generate()
+    from src.labeling.elicit import draft_schema
+    schema = draft_schema("intent", schema_gen)
+    draft_labels(sample, schema, schema_gen,
+                 on_progress=lambda done, total: seen.append((done, total)))
+    assert seen == [(1, 4), (2, 4), (3, 4), (4, 4)]
+
+
+def test_state_exposes_progress_after_mass_label(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert session.state()["progress"] is not None  # review drafting reported
+    session.accept()
+    s = session.state()
+    assert s["phase"] == "done"
+    p = s["progress"]
+    assert p["done"] == p["total"] > 0

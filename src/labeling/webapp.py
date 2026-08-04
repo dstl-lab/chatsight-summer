@@ -54,7 +54,12 @@ class LoopSession:
         self.sample: list[SampledMessage] = []
         self.labeled: list[MessageLabels] = []
         self.snapshot_path: Path | None = None
+        self.progress: dict | None = None
         self.seed = 0
+
+    def _set_progress(self, done: int, total: int) -> None:
+        with self._lock:
+            self.progress = {"done": done, "total": total}
 
     def _run(self, job: Callable[[], None]) -> None:
         def guarded() -> None:
@@ -88,7 +93,8 @@ class LoopSession:
                 self.phase = "drafting"
             schema = draft_schema(intent, self.generate)
             sample = stratified_sample(convs, n=sample_size, seed=seed)
-            labeled = draft_labels(sample, schema, self.generate)
+            labeled = draft_labels(sample, schema, self.generate,
+                                   on_progress=self._set_progress)
             with self._lock:
                 self.schema, self.sample, self.labeled = schema, sample, labeled
                 self.phase = "review"
@@ -98,10 +104,12 @@ class LoopSession:
         with self._lock:
             self._require("review")
             self.phase = "drafting"
+            self.progress = None
 
         def job() -> None:
             schema = revise_schema(self.schema, feedback, self.generate)
-            labeled = draft_labels(self.sample, schema, self.generate)
+            labeled = draft_labels(self.sample, schema, self.generate,
+                                   on_progress=self._set_progress)
             with self._lock:
                 self.schema, self.labeled = schema, labeled
                 self.phase = "review"
@@ -111,12 +119,14 @@ class LoopSession:
         with self._lock:
             self._require("review")
             self.phase = "mass_labeling"
+            self.progress = None
 
         def job() -> None:
             save_schema(self.schema, self.data_dir)
             all_messages = stratified_sample(self.conversations, n=10**9,
                                              seed=self.seed)
-            labeled = draft_labels(all_messages, self.schema, self.generate)
+            labeled = draft_labels(all_messages, self.schema, self.generate,
+                                   on_progress=self._set_progress)
             path = emit_snapshot(
                 self.conversations, labeled, self.schema, model=DEFAULT_MODEL,
                 repo_sha=self.repo_sha, data_dir=self.data_dir,
@@ -159,6 +169,7 @@ class LoopSession:
                 "error": self.error,
                 "accept_note": ACCEPT_NOTE,
                 "provenance": self.provenance,
+                "progress": self.progress,
                 "schema": schema,
                 "sample": sample,
                 "snapshot_path": (str(self.snapshot_path)

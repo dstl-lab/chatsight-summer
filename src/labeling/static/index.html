@@ -170,11 +170,17 @@ function render(state) {
     $("error-text").textContent = state.error || "unknown error";
     show("error");
   } else {
-    $("working-text").textContent = {
+    let text = {
       fetching: "Fetching conversations from the raw-log DB…",
       drafting: "Drafting schema and labeling the review sample…",
       mass_labeling: "Labeling the full corpus — this takes a while…",
     }[phase] || phase;
+    const p = state.progress;
+    if (p) {
+      const pct = Math.floor((p.done / p.total) * 100);
+      text += ` ${p.done} / ${p.total} messages (${pct}%)`;
+    }
+    $("working-text").textContent = text;
     show("working");
   }
 }
