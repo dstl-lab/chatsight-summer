@@ -126,8 +126,10 @@ function renderReview(state) {
   $("accept-note").textContent = state.accept_note;
   const sample = $("sample");
   sample.replaceChildren();
+  let hidden = 0;
   // student text: always textContent, never innerHTML
   for (const m of state.sample || []) {
+    if (m.labels.length === 0) { hidden++; continue; }
     const box = document.createElement("div");
     box.className = "msg";
     const stratum = document.createElement("div");
@@ -136,12 +138,6 @@ function renderReview(state) {
     const text = document.createElement("div");
     text.textContent = m.text;
     box.append(stratum, text);
-    if (m.labels.length === 0) {
-      const none = document.createElement("span");
-      none.className = "chip";
-      none.textContent = "(no labels)";
-      box.append(none);
-    }
     for (const name of m.labels) {
       const chip = document.createElement("span");
       chip.className = "chip";
@@ -153,6 +149,13 @@ function renderReview(state) {
       box.append(rat);
     }
     sample.append(box);
+  }
+  if (hidden > 0) {
+    const note = document.createElement("p");
+    note.className = "provenance";
+    note.textContent = `${hidden} sampled message(s) with no labels hidden — ` +
+      `they are still part of the sample and the snapshot.`;
+    sample.append(note);
   }
 }
 
