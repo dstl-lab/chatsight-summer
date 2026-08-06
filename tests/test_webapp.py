@@ -205,8 +205,13 @@ def test_recent_holds_last_three_newest_first(tmp_path):
     recent = session.state()["status"]["recent"]
     assert len(recent) == 3
     assert all(set(r) == {"text", "labels"} for r in recent)
-    # newest-first: the last sample message labeled is first in the list
-    assert recent[0]["text"] != recent[2]["text"]
+    # newest-first, positionally: labeling proceeds in session.sample order
+    # (draft_labels/_label_incremental label sequentially), so the last three
+    # sample messages appear in recent, most-recently-labeled first.
+    labeled_order = session.sample
+    assert recent[0]["text"] == labeled_order[-1].text
+    assert recent[1]["text"] == labeled_order[-2].text
+    assert recent[2]["text"] == labeled_order[-3].text
 
 
 def test_tweak_clears_labels_and_recent_for_new_schema(tmp_path):
@@ -219,6 +224,41 @@ def test_tweak_clears_labels_and_recent_for_new_schema(tmp_path):
     # all 4 sample messages relabeled under the new schema (not skipped)
     assert len(session.labeled) == 4
     assert all("label-v2" in r.labels for r in session.labeled)
+
+
+def test_label_incremental_guards_against_stale_schema_labels(tmp_path):
+    """CLAUDE.md rule 2 / invariant 6: the manifest stamps a single
+    schema_version/classifier_hash over the whole snapshot, so accumulated
+    labels must never survive an untracked schema swap. `tweak()` clears
+    self.labeled itself; this test proves _label_incremental's own guard
+    (self._labeled_schema) catches a swap that skips that clear, so a future
+    code path (not just tweak) can't silently mix label vintages."""
+    from src.labeling.elicit import revise_schema
+
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    v1_labeled = list(session.labeled)
+    assert len(v1_labeled) == 4
+    assert session._labeled_schema == session.schema.version_id
+
+    # Simulate a future path swapping the schema WITHOUT clearing
+    # self.labeled/self.recent (i.e. without going through tweak()).
+    session.schema = revise_schema(session.schema, "split it", session.generate)
+    assert session._labeled_schema != session.schema.version_id
+
+    session._label_incremental(session.sample, "label")
+
+    # Stale v1 labels were not reused: every message was relabeled under the
+    # new schema, and the label objects are fresh (not the old v1 ones).
+    assert len(session.labeled) == 4
+    assert all("label-v2" in r.labels for r in session.labeled)
+    assert session.labeled != v1_labeled
+    assert session._labeled_schema == session.schema.version_id
+    # recent was cleared alongside labeled, so it now reflects only the
+    # relabeling pass just run (not stale entries from before the swap)
+    assert len(session.recent) == 3
+    sample_texts = {m.text for m in session.sample}
+    assert all(r["text"] in sample_texts for r in session.recent)
 
 
 def test_note_retry_surfaces_in_state(tmp_path):

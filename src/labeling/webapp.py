@@ -54,6 +54,7 @@ class LoopSession:
         self.schema: LabelSchema | None = None
         self.sample: list[SampledMessage] = []
         self.labeled: list[MessageLabels] = []
+        self._labeled_schema: str | None = None
         self.snapshot_path: Path | None = None
         self.steps: list[dict] = []
         self.retry_info: dict | None = None
@@ -111,7 +112,21 @@ class LoopSession:
                            key: str) -> None:
         """Label `messages`, skipping any already in self.labeled (same
         schema), appending each result as it completes so a mid-run failure
-        keeps finished work. Progress counts are over the FULL message list."""
+        keeps finished work. Progress counts are over the FULL message list.
+
+        Accumulated labels are only reused when they belong to the current
+        schema version (self._labeled_schema == self.schema.version_id); a
+        mismatch (e.g. a future path swapping self.schema without clearing
+        self.labeled) clears self.labeled/self.recent instead of silently
+        mixing label vintages into one snapshot (CLAUDE.md rule 2 /
+        invariant 6)."""
+        if (self.schema is not None and self._labeled_schema is not None
+                and self._labeled_schema != self.schema.version_id):
+            with self._lock:
+                self.labeled = []
+                self.recent = []
+            self._labeled_schema = None
+
         done_keys = {(r.chatlog_id, r.message_index) for r in self.labeled}
         todo = [m for m in messages
                 if (m.chatlog_id, m.message_index) not in done_keys]
@@ -122,6 +137,7 @@ class LoopSession:
         def on_result(m: SampledMessage, r: MessageLabels) -> None:
             with self._lock:
                 self.labeled.append(r)
+                self._labeled_schema = self.schema.version_id
             self._note_recent(m, r)
 
         draft_labels(todo, self.schema, self.generate,
