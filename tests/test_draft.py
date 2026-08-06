@@ -1,9 +1,11 @@
 from src.labeling.draft import (CLASSIFY_PROMPT, LabelVerdict, LabelVerdicts, MessageLabels,
                                 classifier_hash, draft_labels)
 from src.labeling.elicit import draft_schema
-from src.labeling.sampler import SampledMessage
+from src.labeling.sampler import SampledMessage, stratified_sample
 from src.labeling.schema import LabelDef
 import tests.test_elicit as te
+from tests.test_cli import make_fake_generate
+from tests.test_sampler import CONVS
 
 
 def _msg(i: int) -> SampledMessage:
@@ -63,3 +65,15 @@ def test_classifier_hash_pins_schema_and_model():
     assert h != classifier_hash(s, "gemini-3.0")
     revised = draft_schema("who is angry", te.fake_generate)
     assert h != classifier_hash(revised, "gemini-2.5-flash")
+
+
+def test_draft_labels_calls_on_result_per_message():
+    gen = make_fake_generate()
+    schema = draft_schema("intent", gen)
+    sample = stratified_sample(CONVS, n=4, seed=0)
+    seen: list[tuple[int, int]] = []
+    results = draft_labels(
+        sample, schema, gen,
+        on_result=lambda m, r: seen.append((m.chatlog_id, m.message_index)))
+    assert seen == [(m.chatlog_id, m.message_index) for m in sample]
+    assert len(results) == 4

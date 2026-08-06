@@ -10,8 +10,14 @@ from tests.test_sampler import CONVS
 
 
 def make_session(tmp_path: Path) -> LoopSession:
+    def fake_fetch(url, limit, on_progress=None):
+        convs = CONVS[:limit] if limit else CONVS
+        if on_progress:
+            for i in range(len(convs)):
+                on_progress(i + 1, len(convs))
+        return convs
     return LoopSession(
-        fetch=lambda url, limit: CONVS[:limit] if limit else CONVS,
+        fetch=fake_fetch,
         count=lambda url: len(CONVS) + 3,   # 3 "excluded" beyond the fetch cap
         generate=make_fake_generate(),
         ext_db_url="postgresql+psycopg2://unused",
@@ -87,7 +93,7 @@ def test_quit_resets_to_idle(tmp_path):
 
 
 def test_job_error_surfaces_and_quit_recovers(tmp_path):
-    def boom(url, limit):
+    def boom(url, limit, on_progress=None):
         raise RuntimeError("tunnel down")
     session = make_session(tmp_path)
     session.fetch = boom
@@ -159,12 +165,281 @@ def test_draft_labels_reports_progress():
     assert seen == [(1, 4), (2, 4), (3, 4), (4, 4)]
 
 
-def test_state_exposes_progress_after_mass_label(tmp_path):
+def test_status_steps_after_start(tmp_path):
     session = make_session(tmp_path)
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
-    assert session.state()["progress"] is not None  # review drafting reported
+    st = session.state()["status"]
+    assert [s["key"] for s in st["steps"]] == ["count", "fetch", "schema",
+                                               "label"]
+    assert all(s["state"] == "done" for s in st["steps"])
+    count = st["steps"][0]
+    assert str(len(CONVS) + 3) in count["name"]       # "Counted N conversations"
+    fetch = st["steps"][1]
+    assert "4" in fetch["name"]                      # "Fetched 4 conversations"
+    assert fetch["progress"] == {"done": 4, "total": 4}
+    label = st["steps"][3]
+    assert label["progress"] == {"done": 4, "total": 4}
+    assert label["started_at"] is not None
+    assert st["retry"] is None
+
+
+def test_status_steps_after_accept_and_review_labels_reused(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    labeled_after_review = len(session.labeled)
+    session.accept()
+    st = session.state()["status"]
+    assert [s["key"] for s in st["steps"]] == ["save", "sample", "label",
+                                               "snapshot"]
+    assert all(s["state"] == "done" for s in st["steps"])
+    label = st["steps"][2]
+    # corpus total, with the review-sample labels counted as already done
+    assert label["progress"]["done"] == label["progress"]["total"]
+    assert label["progress"]["total"] >= labeled_after_review
+    # every corpus message labeled exactly once (review labels reused, not redone)
+    keys = [(r.chatlog_id, r.message_index) for r in session.labeled]
+    assert len(keys) == len(set(keys)) == label["progress"]["total"]
+    assert session.state()["snapshot_path"] is not None
+
+
+def test_recent_holds_last_three_newest_first(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    recent = session.state()["status"]["recent"]
+    assert len(recent) == 3
+    assert all(set(r) == {"text", "labels"} for r in recent)
+    # newest-first, positionally: labeling proceeds in session.sample order
+    # (draft_labels/_label_incremental label sequentially), so the last three
+    # sample messages appear in recent, most-recently-labeled first.
+    labeled_order = session.sample
+    assert recent[0]["text"] == labeled_order[-1].text
+    assert recent[1]["text"] == labeled_order[-2].text
+    assert recent[2]["text"] == labeled_order[-3].text
+
+
+def test_tweak_clears_labels_and_recent_for_new_schema(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.tweak("split it")
+    st = session.state()
+    assert st["phase"] == "review"
+    assert [s["key"] for s in st["status"]["steps"]] == ["schema", "label"]
+    # all 4 sample messages relabeled under the new schema (not skipped)
+    assert len(session.labeled) == 4
+    assert all("label-v2" in r.labels for r in session.labeled)
+
+
+def test_label_incremental_guards_against_stale_schema_labels(tmp_path):
+    """CLAUDE.md rule 2 / invariant 6: the manifest stamps a single
+    schema_version/classifier_hash over the whole snapshot, so accumulated
+    labels must never survive an untracked schema swap. `tweak()` clears
+    self.labeled itself; this test proves _label_incremental's own guard
+    (self._labeled_schema) catches a swap that skips that clear, so a future
+    code path (not just tweak) can't silently mix label vintages."""
+    from src.labeling.elicit import revise_schema
+
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    v1_labeled = list(session.labeled)
+    assert len(v1_labeled) == 4
+    assert session._labeled_schema == session.schema.version_id
+
+    # Simulate a future path swapping the schema WITHOUT clearing
+    # self.labeled/self.recent (i.e. without going through tweak()).
+    session.schema = revise_schema(session.schema, "split it", session.generate)
+    assert session._labeled_schema != session.schema.version_id
+
+    session._label_incremental(session.sample, "label")
+
+    # Stale v1 labels were not reused: every message was relabeled under the
+    # new schema, and the label objects are fresh (not the old v1 ones).
+    assert len(session.labeled) == 4
+    assert all("label-v2" in r.labels for r in session.labeled)
+    assert session.labeled != v1_labeled
+    assert session._labeled_schema == session.schema.version_id
+    # recent was cleared alongside labeled, so it now reflects only the
+    # relabeling pass just run (not stale entries from before the swap)
+    assert len(session.recent) == 3
+    sample_texts = {m.text for m in session.sample}
+    assert all(r["text"] in sample_texts for r in session.recent)
+
+
+def test_note_retry_surfaces_in_state(tmp_path):
+    session = make_session(tmp_path)
+    session.note_retry({"attempt": 2, "max": 4, "wait_s": 4.0})
+    assert session.state()["status"]["retry"] == {
+        "attempt": 2, "max": 4, "wait_s": 4.0}
+    session.note_retry(None)
+    assert session.state()["status"]["retry"] is None
+
+
+def test_retry_banner_cleared_by_fresh_actions(tmp_path):
+    """A retry banner set before a run dies must not survive into a fresh
+    action (start/tweak/accept) or a retry_step() re-entry — otherwise a
+    stale 'retry 4 of 4' banner renders over an unrelated, healthy run."""
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.note_retry({"attempt": 4, "max": 4, "wait_s": 8.0})
+    assert session.state()["status"]["retry"] is not None
+    session.tweak("split it")
+    assert session.state()["status"]["retry"] is None
+
+    # same via retry_step() on an error
+    session2 = make_session(tmp_path)
+    session2.generate = make_flaky_generate(fail_at=1)
+    session2.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert session2.state()["phase"] == "error"
+    session2.note_retry({"attempt": 4, "max": 4, "wait_s": 8.0})
+    session2.generate = make_fake_generate()
+    session2.retry_step()
+    assert session2.state()["status"]["retry"] is None
+
+
+# --- resumable errors --------------------------------------------------------
+
+
+def make_flaky_generate(fail_at: int):
+    """Delegates to make_fake_generate() but raises on the fail_at-th
+    labeling call (schema calls never fail)."""
+    inner = make_fake_generate()
+    label_calls = {"n": 0}
+
+    def gen(prompt, response_model):
+        from src.labeling.draft import LabelVerdicts
+        if response_model is LabelVerdicts:
+            label_calls["n"] += 1
+            if label_calls["n"] == fail_at:
+                raise RuntimeError("boom")
+        return inner(prompt, response_model)
+    return gen
+
+
+def test_error_keeps_partial_labels_and_retry_resumes(tmp_path):
+    session = make_session(tmp_path)
+    session.generate = make_flaky_generate(fail_at=3)  # 3rd sample msg dies
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    s = session.state()
+    assert s["phase"] == "error"
+    assert "boom" in s["error"]
+    assert s["recovery"]["can_retry"] is True
+    assert s["recovery"]["labeled_count"] == 2        # first two survived
+    session.retry_step()                              # flaky gen now passes
+    s = session.state()
+    assert s["phase"] == "review"
+    assert s["error"] is None
+    # exactly 4 labels, none duplicated
+    keys = [(r.chatlog_id, r.message_index) for r in session.labeled]
+    assert len(keys) == len(set(keys)) == 4
+
+
+def test_error_during_mass_label_retry_completes_snapshot(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    total_sample_labels = len(session.labeled)
+    session.generate = make_flaky_generate(fail_at=1)  # 1st corpus call dies
+    session.accept()
+    assert session.state()["phase"] == "error"
+    assert len(session.labeled) == total_sample_labels  # review work kept
+    session.retry_step()
+    s = session.state()
+    assert s["phase"] == "done"
+    assert s["snapshot_path"] is not None
+
+
+def test_back_to_review_from_error(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.generate = make_flaky_generate(fail_at=1)
+    session.accept()
+    assert session.state()["phase"] == "error"
+    assert session.state()["recovery"]["can_review"] is True
+    session.back_to_review()
+    s = session.state()
+    assert s["phase"] == "review"
+    assert s["error"] is None
+
+
+def test_recovery_invalid_outside_error(tmp_path):
+    session = make_session(tmp_path)
+    with pytest.raises(PhaseError):
+        session.retry_step()
+    with pytest.raises(PhaseError):
+        session.back_to_review()
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    with pytest.raises(PhaseError):
+        session.retry_step()          # review is not error
+
+
+def test_api_retry_and_back_to_review_endpoints(tmp_path):
+    session = make_session(tmp_path)
+    client = TestClient(create_app(session))
+    assert client.post("/api/retry").status_code == 409
+    client.post("/api/start", json={"intent": "i", "max_conversations": 4,
+                                    "sample_size": 4})
+    session.generate = make_flaky_generate(fail_at=1)
+    client.post("/api/accept")
+    assert client.get("/api/state").json()["phase"] == "error"
+    assert client.post("/api/back-to-review").status_code == 200
+    assert client.get("/api/state").json()["phase"] == "review"
+
+
+def test_summary_only_in_done(tmp_path):
+    session = make_session(tmp_path)
+    assert session.state()["summary"] is None
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert session.state()["summary"] is None          # review
     session.accept()
     s = session.state()
     assert s["phase"] == "done"
-    p = s["progress"]
-    assert p["done"] == p["total"] > 0
+    summary = s["summary"]
+    assert summary["totals"]["messages"] == 13         # corpus of CONVS[:4]
+    assert [p["name"] for p in summary["per_label"]] == ["label-v1"]
+    assert summary["coverage"] is not None
+    session.quit()
+    assert session.state()["summary"] is None          # reset clears it
+
+
+def test_summary_includes_classifier_hash_and_model(tmp_path):
+    from src.labeling.draft import classifier_hash
+    from src.labeling.llm import DEFAULT_MODEL
+
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.accept()
+    s = session.state()
+    classifier = s["summary"]["classifier"]
+    assert set(classifier) == {"hash", "model"}
+    assert classifier["model"] == DEFAULT_MODEL
+    assert classifier["hash"] == classifier_hash(session.schema, DEFAULT_MODEL)
+
+
+def test_examples_endpoint(tmp_path):
+    session = make_session(tmp_path)
+    client = TestClient(create_app(session))
+    assert client.get("/api/examples", params={"label": "x"}).status_code == 409
+    client.post("/api/start", json={"intent": "i", "max_conversations": 4,
+                                    "sample_size": 4})
+    client.post("/api/accept")
+    assert client.get("/api/state").json()["phase"] == "done"
+    r = client.get("/api/examples",
+                   params={"label": "label-v1", "n": 3, "seed": 1})
+    assert r.status_code == 200
+    ex = r.json()["examples"]
+    assert 0 <= len(ex) <= 3
+    assert all(set(e) == {"text", "rationale", "conv", "week"} for e in ex)
+    assert client.get("/api/examples",
+                      params={"label": "nope"}).status_code == 404
+
+
+def test_examples_endpoint_clamps_n(tmp_path):
+    session = make_session(tmp_path)
+    client = TestClient(create_app(session))
+    client.post("/api/start", json={"intent": "i", "max_conversations": 4,
+                                    "sample_size": 4})
+    client.post("/api/accept")
+    for n in (-1, 100000):
+        r = client.get("/api/examples",
+                       params={"label": "label-v1", "n": n, "seed": 1})
+        assert r.status_code == 200
+        ex = r.json()["examples"]
+        assert 0 <= len(ex) <= 25

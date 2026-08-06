@@ -1,7 +1,7 @@
 """Raw-log access. The SQL edge is fetch_conversations; everything else is pure.
 Read-only: never execute anything but SELECT against the external DB."""
 from datetime import datetime
-from typing import Literal
+from typing import Callable, Literal
 
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
@@ -75,13 +75,15 @@ def count_conversations(ext_db_url: str) -> int:
         return conn.execute(text(_COUNT_SQL)).scalar_one()
 
 
-def fetch_conversations(ext_db_url: str, limit: int | None = None) -> list[Conversation]:
+def fetch_conversations(ext_db_url: str, limit: int | None = None,
+                        on_progress: Callable[[int, int], None] | None = None
+                        ) -> list[Conversation]:
     engine = create_engine(ext_db_url)
     sql = _CONV_SQL + (f"\nLIMIT {int(limit)}" if limit is not None else "")
     out: list[Conversation] = []
     with engine.connect() as conn:
         heads = conn.execute(text(sql)).mappings().all()
-        for h in heads:
+        for i, h in enumerate(heads):
             rows = [tuple(r) for r in conn.execute(
                 text(_TURNS_SQL), {"conv_id": h["conv_id"]}
             ).fetchall()]
@@ -91,4 +93,6 @@ def fetch_conversations(ext_db_url: str, limit: int | None = None) -> list[Conve
                     conv_id=h["conv_id"], chatlog_id=h["chatlog_id"],
                     notebook=h["notebook"], started_at=h["started_at"], turns=turns,
                 ))
+            if on_progress:
+                on_progress(i + 1, len(heads))
     return out

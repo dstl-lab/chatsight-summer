@@ -79,8 +79,9 @@ def _validated_verdicts(v: LabelVerdicts, schema: LabelSchema
 
 def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                  generate: Generate,
-                 on_progress: Callable[[int, int], None] | None = None
-                 ) -> list[MessageLabels]:
+                 on_progress: Callable[[int, int], None] | None = None,
+                 on_result: Callable[[SampledMessage, MessageLabels], None]
+                 | None = None) -> list[MessageLabels]:
     out: list[MessageLabels] = []
     block = _labels_block(schema)
     for i, m in enumerate(messages):
@@ -93,6 +94,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
         out.append(MessageLabels(chatlog_id=m.chatlog_id,
                                  message_index=m.message_index,
                                  labels=labels, rationales=rationales))
+        if on_result:
+            on_result(m, out[-1])
         if on_progress:
             on_progress(i + 1, len(messages))
     return out

@@ -39,3 +39,27 @@ def test_persistent_failure_raises_after_attempts_exhausted():
     with pytest.raises(RuntimeError, match="503"):
         generate("p", Out)
     assert calls["n"] == 3
+
+
+def test_with_retries_reports_and_clears_retry():
+    calls: list[int] = []
+    events: list[dict | None] = []
+
+    def flaky(prompt, response_model):
+        calls.append(1)
+        if len(calls) < 3:
+            raise RuntimeError("429")
+        return "ok"
+
+    g = with_retries(flaky, sleep=lambda s: None, on_retry=events.append)
+    assert g("p", None) == "ok"
+    assert events == [
+        {"attempt": 2, "max": 4, "wait_s": 2.0},
+        {"attempt": 3, "max": 4, "wait_s": 4.0},
+        None,
+    ]
+
+
+def test_with_retries_without_callback_still_works():
+    g = with_retries(lambda p, m: "ok", sleep=lambda s: None)
+    assert g("p", None) == "ok"
