@@ -67,6 +67,66 @@
   .error { color: #c0392b; }
   .hidden { display: none; }
   code { font-size: .9em; }
+
+  /* done screen */
+  .plate { background: #1b2530; color: #e9edf2; border-radius: 8px;
+    padding: 1.5rem 1.75rem 1.4rem; margin-bottom: 1.4rem; }
+  .plate-stamp { font-family: ui-monospace, monospace; font-size: .7rem;
+    letter-spacing: .08em; opacity: .6; text-transform: uppercase; }
+  .plate-intent { font-size: 1.5rem; font-weight: 700; line-height: 1.2;
+    max-width: 36rem; margin: .7rem 0 .55rem; }
+  .plate-lede { font-size: .92rem; opacity: .75; max-width: 40rem; }
+  .done-layout { display: grid; grid-template-columns: 1fr 15rem;
+    gap: 2.5rem; font-variant-numeric: tabular-nums; }
+  @media (max-width: 44rem) { .done-layout { grid-template-columns: 1fr; } }
+  .answer-intro { font-size: .9rem; opacity: .75; max-width: 38rem;
+    margin-bottom: 1.1rem; }
+  .lbl-row { margin-bottom: 1.35rem; cursor: pointer; }
+  .lbl-row:focus-visible { outline: 2px solid #4472c4; outline-offset: 3px;
+    border-radius: 4px; }
+  .lbl-head { display: flex; justify-content: space-between;
+    align-items: baseline; margin-bottom: .2rem; }
+  .lbl-name { font-size: .95rem; font-weight: 650; }
+  .lbl-count { font-family: ui-monospace, monospace; font-size: .85rem;
+    opacity: .75; }
+  .lbl-bar { background: rgba(128,128,128,.11); border-radius: 3px;
+    height: 16px; margin-bottom: .45rem; }
+  .lbl-bar > div { height: 100%; border-radius: 3px 4px 4px 3px; width: 0; }
+  .lbl-example { font-size: .84rem; padding-left: .9rem;
+    border-left: 2px solid; }
+  .lbl-example .quote { font-style: italic; opacity: .85; }
+  .lbl-example .attr { font-size: .75rem; opacity: .65; }
+  .lbl-more { margin: .4rem 0 0 .9rem; }
+  .trend { border-top: 1px solid rgba(128,128,128,.22); padding-top: 1rem; }
+  .trend-caption { font-size: .88rem; margin-bottom: .35rem; }
+  .marginrec { font-size: .8rem;
+    border-left: 1px solid rgba(128,128,128,.22); padding-left: 1.25rem; }
+  @media (max-width: 44rem) { .marginrec { border-left: 0; padding-left: 0;
+    border-top: 1px solid rgba(128,128,128,.22); padding-top: 1rem; } }
+  .ledger { font-family: ui-monospace, monospace; font-size: .72rem;
+    line-height: 1.7; opacity: .75; margin-bottom: 1.25rem;
+    white-space: pre; overflow-x: auto; }
+  .marginrec .note { padding: .5rem .65rem; background: rgba(184,134,11,.08);
+    border-left: 2px solid #b8860b; font-size: .76rem;
+    margin-bottom: 1.25rem; }
+  .pairs { font-family: ui-monospace, monospace; font-size: .74rem;
+    line-height: 1.8; margin-bottom: 1.25rem; white-space: pre;
+    overflow-x: auto; }
+  .mr-head { opacity: .8; margin-bottom: .35rem; }
+  .cov-note { font-size: .74rem; opacity: .7; margin-bottom: 1.5rem; }
+  .next { opacity: .8; margin: 0 0 .5rem; }
+  #btn-reset-done { background: #1b2530; color: #e9edf2; border: none;
+    border-radius: 6px; }
+  /* controls styled as links but focusable/keyboard-operable as buttons
+     (resample, read them, the trend show-all toggle) */
+  .linklike { cursor: pointer; text-decoration: underline; }
+  .linklike:focus-visible { outline: 2px solid #4472c4; outline-offset: 2px;
+    border-radius: 2px; }
+  .trend-toggle { display: inline-block; margin-top: .5rem; font-size: .78rem;
+    opacity: .75; }
+  @media (prefers-reduced-motion: no-preference) {
+    .lbl-bar > div { transition: width 220ms ease-out; }
+  }
 </style>
 </head>
 <body>
@@ -119,10 +179,29 @@
 </section>
 
 <section id="screen-done" class="hidden">
-  <h2>Snapshot written</h2>
-  <p><code id="snapshot-path"></code></p>
-  <p>Add a row to <code>snapshots.md</code> with this manifest's provenance.</p>
-  <button id="btn-reset-done">Start over</button>
+  <div class="plate">
+    <div class="plate-stamp" id="done-stamp"></div>
+    <div class="plate-intent" id="done-intent"></div>
+    <div class="plate-lede" id="done-lede"></div>
+  </div>
+  <div class="done-layout">
+    <div class="answer">
+      <p class="answer-intro">Where the labels landed — one sampled message
+        under each. Click a label to read more; examples are drawn at random,
+        never the most confident hits.</p>
+      <div id="done-labels"></div>
+      <div id="done-trend" class="trend hidden"></div>
+    </div>
+    <div class="marginrec">
+      <div class="ledger" id="done-ledger"></div>
+      <div class="note">Drafted labels — descriptive counts, not audited
+        measurements. Phase 0 owns reliability.</div>
+      <div id="done-pairs"></div>
+      <div id="done-coverage"></div>
+      <div class="next">Next: add this run to <code>snapshots.md</code>.</div>
+      <button id="btn-reset-done">Start a new run</button>
+    </div>
+  </div>
 </section>
 
 <section id="screen-error" class="hidden">
@@ -138,6 +217,20 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const screens = ["idle", "working", "review", "done", "error"];
+const PALETTE = ["#3d64ad", "#b25a3a", "#7d549b", "#1c8a6f", "#3468a8",
+                 "#9c7a12"];  // final hexes from the validator run
+const INK = "#1b2530";
+// >6 labels: identity stays textual (never cycle hues). The fallback mark
+// used to be INK (#1b2530), which is invisible on a dark surface since the
+// page is `color-scheme: light dark` — label-name text now falls back to
+// currentColor (readable in either scheme) and bar fills / tick borders
+// fall back to this mid gray (same one coverageSvg already uses).
+const FALLBACK_MARK = "#8896a6";
+const colorFor = (i, total) => total > PALETTE.length ? null : PALETTE[i];
+const textColor = (i, total) => colorFor(i, total) || "currentColor";
+const markColor = (i, total) => colorFor(i, total) || FALLBACK_MARK;
+const pct = (x) => Math.round(x * 100) + "%";
+let doneRendered = null;   // schema version we last rendered (render once)
 
 async function post(path, body) {
   const r = await fetch(path, {
@@ -319,6 +412,352 @@ function renderWorking(state) {
   });
 }
 
+// Shared "looks like a link, works like a button" control: focusable
+// (role=button + tabindex=0), fires on click and on Enter/Space (Space is
+// prevented from scrolling the page), and never lets the keypress/click
+// bubble to an ancestor row (which may have its own click/keydown handler,
+// e.g. the label rows' expand/collapse toggle).
+function linkButton(text, onActivate) {
+  const el = document.createElement("span");
+  el.className = "linklike";
+  el.setAttribute("role", "button");
+  el.tabIndex = 0;
+  el.textContent = text;
+  el.addEventListener("click", (e) => { e.stopPropagation(); onActivate(e); });
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      onActivate(e);
+    }
+  });
+  return el;
+}
+
+function exampleNode(ex, color) {
+  const div = document.createElement("div");
+  div.className = "lbl-example";
+  div.style.borderLeftColor = color;
+  const q = document.createElement("span");
+  q.className = "quote";
+  q.textContent = `“${ex.text}”`;   // student text: textContent only
+  const attr = document.createElement("span");
+  attr.className = "attr";
+  attr.textContent = ` — conv #${ex.conv}` +
+    (ex.week === null ? "" : `, week ${ex.week + 1}`);
+  const rat = document.createElement("div");
+  rat.className = "attr";
+  rat.textContent = ex.rationale;
+  div.append(q, attr, rat);
+  return div;
+}
+
+async function expandLabel(row, name, color) {
+  const seed = Math.floor(Math.random() * 1e6);
+  const r = await fetch(`/api/examples?label=${encodeURIComponent(name)}` +
+                        `&n=5&seed=${seed}`);
+  if (!r.ok) return;
+  const box = row.querySelector(".lbl-more");
+  box.replaceChildren();
+  for (const ex of (await r.json()).examples)
+    box.append(exampleNode(ex, color));
+  const re = linkButton("resample", () => expandLabel(row, name, color));
+  re.classList.add("attr");
+  box.append(re);
+}
+
+function renderTrend(summary) {
+  const el = $("done-trend");
+  const w = summary.weekly, jump = summary.largest_jump;
+  el.classList.toggle("hidden", !w || !jump);
+  if (!w || !jump) return;
+  el.replaceChildren();
+  const total = summary.per_label.length;
+  const idx = summary.per_label.findIndex((p) => p.name === jump.label);
+  const mark = markColor(idx, total);
+  const cap = document.createElement("div");
+  cap.className = "trend-caption";
+  const nm = document.createElement("span");
+  nm.style.color = textColor(idx, total); nm.style.fontWeight = "650";
+  nm.textContent = jump.label;
+  const rest = document.createElement("span");
+  const sign = jump.delta >= 0 ? "+" : "−";
+  rest.textContent = ` by course week — largest change: week ${jump.week + 1},`
+    + ` ${sign}${Math.round(Math.abs(jump.delta) * 100)}pts`;
+  rest.style.opacity = ".75";
+  cap.append(nm, rest);
+  el.append(cap);
+
+  const chart = document.createElement("div");
+  el.append(chart);
+
+  let showingAll = false;
+  const renderChart = () => {
+    chart.replaceChildren();
+    if (!showingAll) {
+      chart.append(trendSvg(w, [{ label: jump.label, color: mark,
+                                 values: w.series[jump.label] }]));
+      return;
+    }
+    // "show all labels": one line per label with any positives, identity
+    // color, no per-point labels — direct-labeled at the right end instead.
+    const lines = summary.per_label
+      .map((p, i) => ({ label: p.name, color: markColor(i, total),
+                        values: w.series[p.name] || [] }))
+      .filter((l) => l.values.some((v) => v > 0));
+    chart.append(trendSvg(w, lines, { endLabels: true }));
+  };
+  renderChart();
+
+  const toggle = linkButton("show all labels", () => {
+    showingAll = !showingAll;
+    toggle.textContent = showingAll ? "show one label" : "show all labels";
+    renderChart();
+  });
+  toggle.classList.add("trend-toggle");
+  el.append(toggle);
+}
+
+function trendSvg(w, lines, { endLabels = false } = {}) {
+  const W = 560, H = 90, PAD = 8, BASE = 74;
+  const RIGHT_MARGIN = endLabels ? 34 : 0;   // room for end-of-line labels
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.style.width = "100%"; svg.style.height = "auto";
+  const weeks = w.weeks;
+  // x positions by WEEK VALUE, not list index — `weeks` is sparse (e.g.
+  // [0, 1, 3]), so index-based spacing would draw a gap week adjacent to
+  // its neighbor instead of leaving visible space for the missing week.
+  const wMin = weeks[0], wMax = weeks[weeks.length - 1];
+  const span = Math.max(1, wMax - wMin);
+  const plotW = W - 2 * PAD - RIGHT_MARGIN;
+  const xOf = (wk) => PAD + (wk - wMin) / span * plotW;
+  const allVals = lines.flatMap((l) => l.values);
+  const max = Math.max(...allVals, 0.01);
+  const yOf = (v) => BASE - v / max * 60;
+  const axis = document.createElementNS(svg.namespaceURI, "line");
+  axis.setAttribute("x1", PAD); axis.setAttribute("x2", W - PAD);
+  axis.setAttribute("y1", BASE); axis.setAttribute("y2", BASE);
+  axis.setAttribute("stroke", "rgba(128,128,128,.25)");
+  svg.append(axis);
+  for (const { color, values } of lines) {
+    const line = document.createElementNS(svg.namespaceURI, "polyline");
+    line.setAttribute("points",
+      weeks.map((wk, i) => `${xOf(wk)},${yOf(values[i])}`).join(" "));
+    line.setAttribute("fill", "none");
+    line.setAttribute("stroke", color);
+    line.setAttribute("stroke-width", endLabels ? "2" : "2.2");
+    svg.append(line);
+  }
+  if (endLabels) {
+    for (const { label, color, values } of lines) {
+      const t = document.createElementNS(svg.namespaceURI, "text");
+      t.setAttribute("x", xOf(weeks[weeks.length - 1]) + 4);
+      t.setAttribute("y", yOf(values[values.length - 1]) + 3);
+      t.setAttribute("font-size", "9"); t.setAttribute("fill", color);
+      t.textContent = label;
+      svg.append(t);
+    }
+  } else {
+    const t0 = document.createElementNS(svg.namespaceURI, "text");
+    t0.setAttribute("x", PAD); t0.setAttribute("y", H - 4);
+    t0.setAttribute("font-size", "9"); t0.setAttribute("fill", "currentColor");
+    t0.setAttribute("opacity", ".5");
+    t0.textContent = `wk ${weeks[0] + 1}`;
+    const t1 = document.createElementNS(svg.namespaceURI, "text");
+    t1.setAttribute("x", W - 40); t1.setAttribute("y", H - 4);
+    t1.setAttribute("font-size", "9"); t1.setAttribute("fill", "currentColor");
+    t1.setAttribute("opacity", ".5");
+    t1.textContent = `wk ${weeks[weeks.length - 1] + 1}`;
+    svg.append(t0, t1);
+  }
+  return svg;
+}
+
+// Snapshot basenames are `YYYYMMDD-<schema>-<hash>[-n]` (snapshot.py). Parse
+// the leading date for the hero stamp; return null (segment omitted, never
+// garbage) when the prefix doesn't parse.
+function snapshotDate(basename) {
+  const m = /^(\d{4})(\d{2})(\d{2})-/.exec(basename || "");
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+function addLedgerLine(ledger, text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  ledger.append(div);
+  return div;
+}
+
+function renderDone(state) {
+  const s = state.summary;
+  if (!s || doneRendered === state.schema.version_id) return;
+
+  const snap = (state.snapshot_path || "").split("/").slice(-1)[0];
+  const date = snapshotDate(snap);
+  $("done-stamp").textContent = "run complete" + (date ? ` · ${date}` : "")
+    + ` · snapshot ${snap} · schema ${state.schema.version_id}`;
+  $("done-intent").textContent = `“${state.schema.intent}”`;
+
+  if (!s.per_label.length) {
+    // Nothing to answer with (e.g. an empty schema) — a half-painted answer
+    // column that assumes per_label entries exist (the rarest-label lede,
+    // bars, trend) would throw; fall back to the minimal receipt instead.
+    $("done-lede").textContent = "No labels were applied in this run.";
+    $("done-labels").replaceChildren();
+    $("done-trend").classList.add("hidden");
+    const ledger = $("done-ledger");
+    ledger.replaceChildren();
+    const snapLine = addLedgerLine(ledger, "snapshot   ");
+    const snapSpan = document.createElement("span");
+    snapSpan.textContent = snap;
+    snapSpan.title = state.snapshot_path || "";
+    snapLine.append(snapSpan);
+    $("done-pairs").replaceChildren();
+    $("done-coverage").replaceChildren();
+    doneRendered = state.schema.version_id;   // render once, only after success
+    return;
+  }
+
+  const t = s.totals;
+  const rare = [...s.per_label].sort((a, b) => a.count - b.count)[0];
+  $("done-lede").textContent =
+    `${t.messages.toLocaleString()} messages from ${t.conversations} ` +
+    `conversations, labeled against schema ${state.schema.version_id}. ` +
+    `${t.with_label.toLocaleString()} carry at least one label — ` +
+    `${t.labels_per_labeled} each, on average. Rarest: ${rare.name}, ` +
+    `${rare.count.toLocaleString()} messages.`;
+
+  const total = s.per_label.length;
+  const labels = $("done-labels");
+  labels.replaceChildren();
+  s.per_label.forEach((p, i) => {
+    const mark = markColor(i, total);
+    const row = document.createElement("div");
+    row.className = "lbl-row";
+    row.tabIndex = 0;
+    const head = document.createElement("div");
+    head.className = "lbl-head";
+    const nm = document.createElement("span");
+    nm.className = "lbl-name"; nm.style.color = textColor(i, total);
+    nm.textContent = p.name;
+    const ct = document.createElement("span");
+    ct.className = "lbl-count";
+    ct.textContent = `${p.count.toLocaleString()} · ${pct(p.share)}`;
+    head.append(nm, ct);
+    const bar = document.createElement("div");
+    bar.className = "lbl-bar";
+    const fill = document.createElement("div");
+    fill.style.background = mark;
+    bar.append(fill);
+    row.append(head, bar);
+    if (p.example) row.append(exampleNode(p.example, mark));
+    const more = document.createElement("div");
+    more.className = "lbl-more";
+    row.append(more);
+    // Clicking (or Enter/Space on) an already-expanded row COLLAPSES it;
+    // otherwise it expands. The "resample" control inside stays the only
+    // path to a fresh sample.
+    const toggle = () => {
+      if (more.childElementCount > 0) { more.replaceChildren(); return; }
+      expandLabel(row, p.name, mark);
+    };
+    row.addEventListener("click", toggle);
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();   // Space must not scroll the page
+        toggle();
+      }
+    });
+    labels.append(row);
+    const maxCount = Math.max(...s.per_label.map((q) => q.count), 1);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        fill.style.width = pct(p.count / maxCount);  // bars scale to the max
+      }));
+  });
+
+  renderTrend(s);
+
+  const prov = state.provenance || {};
+  const ledger = $("done-ledger");
+  ledger.replaceChildren();
+  addLedgerLine(ledger, `schema     ${state.schema.version_id} · ${total} labels`);
+  addLedgerLine(ledger,
+    `corpus     ${t.conversations} conv · ${t.messages.toLocaleString()} msg`);
+  addLedgerLine(ledger, `excluded   ${prov.excluded ?? "?"} conversations`);
+  if (s.weekly && s.weekly.undated > 0)
+    addLedgerLine(ledger,
+      `undated    ${s.weekly.undated} conversations (not in trend)`);
+  if (s.classifier) {
+    addLedgerLine(ledger, `classifier ${s.classifier.hash}`);
+    addLedgerLine(ledger, `model      ${s.classifier.model}`);
+  }
+  const snapLine = addLedgerLine(ledger, "snapshot   ");
+  const snapSpan = document.createElement("span");
+  snapSpan.textContent = snap;                       // basename, not the
+  snapSpan.title = state.snapshot_path || "";         // full path (that's the title)
+  snapLine.append(snapSpan);
+
+  const pairs = $("done-pairs");
+  pairs.replaceChildren();
+  if (s.top_pairs.length) {
+    const h = document.createElement("div");
+    h.className = "mr-head";
+    h.textContent = "Pairs that land together most:";
+    const list = document.createElement("div");
+    list.className = "pairs";
+    list.textContent = s.top_pairs.map((p) =>
+      `${p.a} × ${p.b}  ${pct(p.share)}`).join("\n");
+    pairs.append(h, list);
+  }
+
+  const cov = $("done-coverage");
+  cov.replaceChildren();
+  const ch = document.createElement("div");
+  ch.className = "mr-head";
+  ch.textContent = "Coverage:";
+  cov.append(ch, coverageSvg(s.coverage));
+  const note = document.createElement("div");
+  note.className = "cov-note";
+  note.textContent = `Labels per conversation. ` +
+    `${s.coverage.zero_conversations} conversations carry none`;
+  if (s.coverage.zero_examples.length) {
+    note.textContent += " — ";
+    const read = linkButton("read them", () => {
+      const box = document.createElement("div");
+      for (const z of s.coverage.zero_examples)
+        box.append(exampleNode(
+          {text: z.text, rationale: "", conv: z.conv, week: null}, INK));
+      note.after(box);
+      read.remove();
+    });
+    note.append(read);
+  }
+  cov.append(note);
+
+  doneRendered = state.schema.version_id;   // render once, only after a
+                                             // full, successful render
+}
+
+function coverageSvg(coverage) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 180 64");
+  svg.style.width = "100%"; svg.style.height = "auto";
+  const max = Math.max(...coverage.bins, 1);
+  coverage.bins.forEach((n, i) => {
+    if (!n && i > 0) return;
+    const h = Math.max(2, n / max * 56);
+    const r = document.createElementNS(svg.namespaceURI, "rect");
+    r.setAttribute("x", 2 + i * 11); r.setAttribute("y", 60 - h);
+    r.setAttribute("width", 9); r.setAttribute("height", h);
+    r.setAttribute("rx", 2);
+    r.setAttribute("fill", i === 0 ? "#5d6b7c" : "#8896a6");
+    svg.append(r);
+  });
+  return svg;
+}
+
 function renderError(state) {
   $("error-text").textContent = state.error || "unknown error";
   const rec = state.recovery;
@@ -335,12 +774,10 @@ function render(state) {
   const phase = state.phase;
   const working = ["fetching", "drafting", "mass_labeling"].includes(phase);
   document.body.classList.toggle("wide", working);
-  if (phase === "idle") show("idle");
+  if (phase === "idle") { doneRendered = null; show("idle"); }
   else if (phase === "review") { renderReview(state); show("review"); }
-  else if (phase === "done") {
-    $("snapshot-path").textContent = state.snapshot_path || "";
-    show("done");
-  } else if (phase === "error") { renderError(state); show("error"); }
+  else if (phase === "done") { renderDone(state); show("done"); }
+  else if (phase === "error") { renderError(state); show("error"); }
   else { renderWorking(state); show("working"); }
 }
 
