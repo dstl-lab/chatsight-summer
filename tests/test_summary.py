@@ -151,5 +151,36 @@ def test_coverage_binning_caps_at_15():
 
 def test_largest_jump():
     s = compute_summary(CONVS, LABELED, FakeSchema(), seed=0)
-    # confused: [1.0, 0.0, 0.5] -> biggest |delta| is week 1, -1.0
+    # confused: [1.0, 0.0, 0.5] over weeks [0, 1, 3] -> only the 0->1
+    # transition is adjacent (1->3 spans a gap and is ineligible), so the
+    # biggest ELIGIBLE |delta| is week 1, -1.0.
     assert s["largest_jump"] == {"label": "confused", "week": 1, "delta": -1.0}
+
+
+def test_largest_jump_skips_gap_spanning_delta_for_smaller_adjacent_one():
+    """weeks = [0, 1, 4]: the raw largest delta (frustrated, week 4, +1.0,
+    or confused, week 4, -0.6) spans the 1->4 gap (diff=3) and must be
+    skipped; only the smaller 0->1 adjacent delta (confused, +0.1) is
+    eligible, so it wins even though it is not the biggest raw change."""
+    convs = [
+        _conv("a", 1, 2, T0),                        # week 0
+        _conv("b", 2, 5, T0 + timedelta(days=8)),    # week 1
+        _conv("c", 3, 2, T0 + timedelta(days=29)),   # week 4
+    ]
+    labeled = [
+        _ml(1, 0, confused=True),                     # wk0 confused: 1/2
+        _ml(1, 2),
+        _ml(2, 0, confused=True),                      # wk1 confused: 3/5
+        _ml(2, 2, confused=True),
+        _ml(2, 4, confused=True),
+        _ml(2, 6),
+        _ml(2, 8),
+        _ml(3, 0, frustrated=True),                    # wk4 frustrated: 2/2
+        _ml(3, 2, frustrated=True),
+    ]
+    s = compute_summary(convs, labeled, FakeSchema(), seed=0)
+    assert s["weekly"]["weeks"] == [0, 1, 4]
+    assert s["weekly"]["series"]["confused"] == [0.5, 0.6, 0.0]
+    assert s["weekly"]["series"]["frustrated"] == [0.0, 0.0, 1.0]
+    assert s["largest_jump"] == {
+        "label": "confused", "week": 1, "delta": round(0.6 - 0.5, 4)}

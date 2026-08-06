@@ -11,7 +11,7 @@ from typing import Callable
 
 from src.ingest.rawlog import Conversation, count_conversations, fetch_conversations
 from src.labeling.cli import ACCEPT_NOTE
-from src.labeling.draft import MessageLabels, draft_labels
+from src.labeling.draft import MessageLabels, classifier_hash, draft_labels
 from src.labeling.elicit import draft_schema, revise_schema
 from src.labeling.llm import DEFAULT_MODEL, Generate
 from src.labeling.sampler import SampledMessage, stratified_sample
@@ -285,6 +285,10 @@ class LoopSession:
                            detail=str(path))
             summary = compute_summary(self.conversations, self.labeled,
                                       self.schema, seed=self.seed)
+            summary["classifier"] = {
+                "hash": classifier_hash(self.schema, DEFAULT_MODEL),
+                "model": DEFAULT_MODEL,
+            }
             with self._lock:
                 self.snapshot_path = path
                 self.summary = summary
@@ -436,6 +440,7 @@ def create_app(session: LoopSession) -> FastAPI:
         if label not in {l.name for l in session.schema.labels}:
             raise HTTPException(status_code=404,
                                 detail=f"label {label!r} not in schema")
+        n = max(1, min(25, n))
         return {"examples": sample_examples(session.conversations,
                                             session.labeled, label,
                                             n=n, seed=seed)}

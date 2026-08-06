@@ -399,6 +399,20 @@ def test_summary_only_in_done(tmp_path):
     assert session.state()["summary"] is None          # reset clears it
 
 
+def test_summary_includes_classifier_hash_and_model(tmp_path):
+    from src.labeling.draft import classifier_hash
+    from src.labeling.llm import DEFAULT_MODEL
+
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.accept()
+    s = session.state()
+    classifier = s["summary"]["classifier"]
+    assert set(classifier) == {"hash", "model"}
+    assert classifier["model"] == DEFAULT_MODEL
+    assert classifier["hash"] == classifier_hash(session.schema, DEFAULT_MODEL)
+
+
 def test_examples_endpoint(tmp_path):
     session = make_session(tmp_path)
     client = TestClient(create_app(session))
@@ -415,3 +429,17 @@ def test_examples_endpoint(tmp_path):
     assert all(set(e) == {"text", "rationale", "conv", "week"} for e in ex)
     assert client.get("/api/examples",
                       params={"label": "nope"}).status_code == 404
+
+
+def test_examples_endpoint_clamps_n(tmp_path):
+    session = make_session(tmp_path)
+    client = TestClient(create_app(session))
+    client.post("/api/start", json={"intent": "i", "max_conversations": 4,
+                                    "sample_size": 4})
+    client.post("/api/accept")
+    for n in (-1, 100000):
+        r = client.get("/api/examples",
+                       params={"label": "label-v1", "n": n, "seed": 1})
+        assert r.status_code == 200
+        ex = r.json()["examples"]
+        assert 0 <= len(ex) <= 25

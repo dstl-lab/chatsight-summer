@@ -70,6 +70,10 @@ def _weekly(conversations, labeled, label_names):
     weeks = sorted(msgs_by_week)
     labels_with_data = [n for n in label_names
                         if any(r.labels.get(n) for r in labeled)]
+    # Omission rule is "fewer than 3 POPULATED weeks" by choice — stricter
+    # than the memo's span wording (weeks with zero labeled messages, e.g. a
+    # gap in `weeks`, don't count toward the 3, since there's nothing to plot
+    # or compare across the gap).
     if len(weeks) < 3 or len(labels_with_data) < 2:
         return None
     series = {}
@@ -112,14 +116,21 @@ def _coverage(conversations, labeled, seed):
 
 
 def _largest_jump(weekly):
+    """Only ADJACENT weeks (weeks[i] - weeks[i-1] == 1) are eligible: `weeks`
+    is sparse (a course week with no labeled messages is simply absent), so a
+    raw index-to-index delta across a gap would compare non-adjacent weeks
+    and misrepresent the "week-over-week" claim in the trend annotation."""
     if weekly is None:
         return None
+    weeks = weekly["weeks"]
     best = None
     for name, values in weekly["series"].items():
         for i in range(1, len(values)):
+            if weeks[i] - weeks[i - 1] != 1:
+                continue
             delta = values[i] - values[i - 1]
             if best is None or abs(delta) > abs(best[2]):
-                best = (name, weekly["weeks"][i], delta)
+                best = (name, weeks[i], delta)
     if best is None:
         return None
     return {"label": best[0], "week": best[1], "delta": round(best[2], 4)}
