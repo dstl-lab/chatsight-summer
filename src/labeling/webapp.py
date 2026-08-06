@@ -20,6 +20,17 @@ from src.labeling.snapshot import emit_snapshot
 from src.labeling.summary import compute_summary, sample_examples
 
 WORKING_PHASES = ("fetching", "drafting", "mass_labeling")
+PEEK_FETCH_CAP = 40   # conversations; spec: docs/superpowers/specs/2026-08-06
+
+_TERCILE_WORDS = {"short": "short conversation", "mid": "medium conversation",
+                  "long": "long conversation"}
+_POSITION_WORDS = {"early": "early turn", "late": "late turn"}
+
+
+def _plain_stratum(stratum: str) -> str:
+    tercile, _, position = stratum.partition("/")
+    return (f"{_TERCILE_WORDS.get(tercile, tercile)} · "
+            f"{_POSITION_WORDS.get(position, position)}")
 
 
 class PhaseError(Exception):
@@ -319,6 +330,21 @@ class LoopSession:
             self.error = None
             self.phase = "review"
 
+    def peek(self, n: int = 6, seed: int = 0) -> dict:
+        """Display-only sample for the idle screen. Reads through the tunnel
+        but retains nothing: no session state, no snapshot contact."""
+        with self._lock:
+            self._require("idle")
+        n = max(1, min(12, n))
+        convs = self.fetch(self.ext_db_url, PEEK_FETCH_CAP)
+        picks = stratified_sample(convs, n=n, seed=seed)
+        return {
+            "messages": [{"text": m.text,
+                          "stratum": _plain_stratum(m.stratum)}
+                         for m in picks],
+            "total_messages": sum(len(c.student_turns) for c in convs),
+        }
+
     def state(self) -> dict:
         with self._lock:
             by_key = {(r.chatlog_id, r.message_index): r for r in self.labeled}
@@ -444,6 +470,10 @@ def create_app(session: LoopSession) -> FastAPI:
         return {"examples": sample_examples(session.conversations,
                                             session.labeled, label,
                                             n=n, seed=seed)}
+
+    @app.get("/api/peek")
+    def peek(n: int = 6, seed: int = 0) -> dict:
+        return session.peek(n=n, seed=seed)
 
     return app
 

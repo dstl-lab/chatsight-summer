@@ -443,3 +443,54 @@ def test_examples_endpoint_clamps_n(tmp_path):
         assert r.status_code == 200
         ex = r.json()["examples"]
         assert 0 <= len(ex) <= 25
+
+
+# --- /api/peek (first-load data peek) --------------------------------------
+
+def test_peek_returns_plain_word_stratified_messages(tmp_path):
+    session = make_session(tmp_path)
+    out = session.peek(n=3, seed=0)
+    assert len(out["messages"]) == 3
+    for m in out["messages"]:
+        assert m["text"]
+        assert " · " in m["stratum"]      # plain words with a separator...
+        assert "/" not in m["stratum"]    # ...never the raw "short/early" key
+    assert out["total_messages"] == sum(len(c.student_turns) for c in CONVS)
+
+
+def test_peek_rejected_outside_idle(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    with pytest.raises(PhaseError):
+        session.peek()
+
+
+def test_peek_does_not_mutate_session_state(tmp_path):
+    session = make_session(tmp_path)
+    session.peek()
+    assert session.state()["phase"] == "idle"
+    assert session.conversations == []    # display-only: nothing retained
+
+
+def test_peek_fetch_is_capped_at_40(tmp_path):
+    session = make_session(tmp_path)
+    seen = {}
+    orig = session.fetch
+
+    def spy(url, limit, on_progress=None):
+        seen["limit"] = limit
+        return orig(url, limit, on_progress)
+
+    session.fetch = spy
+    session.peek()
+    assert seen["limit"] == 40
+
+
+def test_peek_endpoint_shape_and_phase_guard(tmp_path):
+    session = make_session(tmp_path)
+    client = TestClient(create_app(session))
+    r = client.get("/api/peek?n=2&seed=1")
+    assert r.status_code == 200
+    assert len(r.json()["messages"]) == 2
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert client.get("/api/peek").status_code == 409
