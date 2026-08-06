@@ -105,3 +105,51 @@ def test_sample_examples_week_from_conversation_date():
     ex = sample_examples(CONVS, LABELED, "frustrated", n=99, seed=0)
     weeks = {e["conv"]: e["week"] for e in ex}
     assert weeks[1] == 0 and weeks[2] == 1   # chatlog 1 wk0, chatlog 2 wk1
+
+
+def test_weekly_series_and_undated_count():
+    s = compute_summary(CONVS, LABELED, FakeSchema(), seed=0)
+    w = s["weekly"]
+    assert w is not None
+    assert w["weeks"] == [0, 1, 3]
+    assert w["undated"] == 1                      # conv d has no date
+    # week 0 = conv a: 2 messages, confused on both -> share 1.0
+    assert w["series"]["confused"] == [1.0, 0.0, 0.5]
+    # week 1 = conv b: 3 messages, frustrated on one -> 1/3
+    assert abs(w["series"]["frustrated"][1] - 1 / 3) < 1e-9
+
+
+def test_weekly_none_when_span_too_short():
+    convs = [_conv("a", 1, 2, T0), _conv("b", 2, 3, T0 + timedelta(days=8))]
+    labeled = [r for r in LABELED if r.chatlog_id in (1, 2)]
+    s = compute_summary(convs, labeled, FakeSchema(), seed=0)
+    assert s["weekly"] is None and s["largest_jump"] is None
+
+
+def test_top_pairs():
+    s = compute_summary(CONVS, LABELED, FakeSchema(), seed=0)
+    assert s["top_pairs"] == [
+        {"a": "confused", "b": "frustrated", "share": 1 / 8}]
+
+
+def test_coverage_bins_zero_conversations_and_examples():
+    s = compute_summary(CONVS, LABELED, FakeSchema(), seed=0)
+    cov = s["coverage"]
+    # conv a: 2 labeled msgs, b: 1, c: 1, d: 0
+    assert cov["bins"][0] == 1 and cov["bins"][1] == 2 and cov["bins"][2] == 1
+    assert sum(cov["bins"]) == 4
+    assert cov["zero_conversations"] == 1
+    assert cov["zero_examples"] == [{"text": "d q0", "conv": 4}]
+
+
+def test_coverage_binning_caps_at_15():
+    conv = _conv("big", 9, 20, T0)
+    labeled = [_ml(9, 2 * i, confused=True) for i in range(20)]
+    s = compute_summary([conv], labeled, FakeSchema(), seed=0)
+    assert s["coverage"]["bins"][15] == 1
+
+
+def test_largest_jump():
+    s = compute_summary(CONVS, LABELED, FakeSchema(), seed=0)
+    # confused: [1.0, 0.0, 0.5] -> biggest |delta| is week 1, -1.0
+    assert s["largest_jump"] == {"label": "confused", "week": 1, "delta": -1.0}

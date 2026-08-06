@@ -57,6 +57,74 @@ def sample_examples(conversations: list[Conversation],
     return out
 
 
+def _weekly(conversations, labeled, label_names):
+    earliest = _earliest_start(conversations)
+    week_of = {c.chatlog_id: conversation_week(c, earliest)
+               for c in conversations}
+    undated = sum(1 for c in conversations if c.started_at is None)
+    msgs_by_week: dict[int, list[MessageLabels]] = {}
+    for r in labeled:
+        w = week_of.get(r.chatlog_id)
+        if w is not None:
+            msgs_by_week.setdefault(w, []).append(r)
+    weeks = sorted(msgs_by_week)
+    labels_with_data = [n for n in label_names
+                        if any(r.labels.get(n) for r in labeled)]
+    if len(weeks) < 3 or len(labels_with_data) < 2:
+        return None
+    series = {}
+    for name in label_names:
+        series[name] = [
+            sum(1 for r in msgs_by_week[w] if r.labels.get(name))
+            / len(msgs_by_week[w])
+            for w in weeks
+        ]
+    return {"weeks": weeks, "series": series, "undated": undated}
+
+
+def _top_pairs(labeled, limit=3):
+    counts: Counter = Counter()
+    for r in labeled:
+        on = sorted(k for k, v in r.labels.items() if v)
+        counts.update(combinations(on, 2))
+    return [{"a": a, "b": b, "share": c / len(labeled)}
+            for (a, b), c in counts.most_common(limit) if c > 0]
+
+
+def _coverage(conversations, labeled, seed):
+    labeled_count = Counter()
+    for r in labeled:
+        if any(r.labels.values()):
+            labeled_count[r.chatlog_id] += 1
+    bins = [0] * 16
+    zero_convs = []
+    for c in conversations:
+        n = labeled_count.get(c.chatlog_id, 0)
+        bins[min(n, 15)] += 1
+        if n == 0:
+            zero_convs.append(c)
+    rng = random.Random(seed)
+    rng.shuffle(zero_convs)
+    zero_examples = [{"text": c.student_turns[0].text, "conv": c.chatlog_id}
+                     for c in zero_convs[:5] if c.student_turns]
+    return {"bins": bins, "zero_conversations": len(zero_convs),
+            "zero_examples": zero_examples}
+
+
+def _largest_jump(weekly):
+    if weekly is None:
+        return None
+    best = None
+    for name, values in weekly["series"].items():
+        for i in range(1, len(values)):
+            delta = values[i] - values[i - 1]
+            if best is None or abs(delta) > abs(best[2]):
+                best = (name, weekly["weeks"][i], delta)
+    if best is None:
+        return None
+    return {"label": best[0], "week": best[1], "delta": round(best[2], 4)}
+
+
 def compute_summary(conversations: list[Conversation],
                     labeled: list[MessageLabels], schema,
                     seed: int) -> dict:
@@ -80,11 +148,13 @@ def compute_summary(conversations: list[Conversation],
             "share": (count / len(labeled)) if labeled else 0.0,
             "example": examples[0] if examples else None,
         })
+    label_names = [l.name for l in schema.labels]
+    weekly = _weekly(conversations, labeled, label_names)
     return {
         "totals": totals,
         "per_label": per_label,
-        "weekly": None,        # Task 2
-        "top_pairs": [],       # Task 2
-        "coverage": None,      # Task 2
-        "largest_jump": None,  # Task 2
+        "weekly": weekly,
+        "top_pairs": _top_pairs(labeled),
+        "coverage": _coverage(conversations, labeled, seed),
+        "largest_jump": _largest_jump(weekly),
     }
