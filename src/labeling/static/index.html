@@ -494,7 +494,7 @@ async function loadPeek() {
     for (const m of data.messages) {
       const div = document.createElement("div");
       div.className = "peek-msg";
-      div.textContent = `"${m.text}"`;
+      div.textContent = `“${m.text}”`;
       const meta = document.createElement("span");
       meta.className = "meta";
       meta.textContent = m.stratum;
