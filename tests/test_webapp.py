@@ -268,3 +268,91 @@ def test_note_retry_surfaces_in_state(tmp_path):
         "attempt": 2, "max": 4, "wait_s": 4.0}
     session.note_retry(None)
     assert session.state()["status"]["retry"] is None
+
+
+# --- resumable errors --------------------------------------------------------
+
+
+def make_flaky_generate(fail_at: int):
+    """Delegates to make_fake_generate() but raises on the fail_at-th
+    labeling call (schema calls never fail)."""
+    inner = make_fake_generate()
+    label_calls = {"n": 0}
+
+    def gen(prompt, response_model):
+        from src.labeling.draft import LabelVerdicts
+        if response_model is LabelVerdicts:
+            label_calls["n"] += 1
+            if label_calls["n"] == fail_at:
+                raise RuntimeError("boom")
+        return inner(prompt, response_model)
+    return gen
+
+
+def test_error_keeps_partial_labels_and_retry_resumes(tmp_path):
+    session = make_session(tmp_path)
+    session.generate = make_flaky_generate(fail_at=3)  # 3rd sample msg dies
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    s = session.state()
+    assert s["phase"] == "error"
+    assert "boom" in s["error"]
+    assert s["recovery"]["can_retry"] is True
+    assert s["recovery"]["labeled_count"] == 2        # first two survived
+    session.retry_step()                              # flaky gen now passes
+    s = session.state()
+    assert s["phase"] == "review"
+    assert s["error"] is None
+    # exactly 4 labels, none duplicated
+    keys = [(r.chatlog_id, r.message_index) for r in session.labeled]
+    assert len(keys) == len(set(keys)) == 4
+
+
+def test_error_during_mass_label_retry_completes_snapshot(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    total_sample_labels = len(session.labeled)
+    session.generate = make_flaky_generate(fail_at=1)  # 1st corpus call dies
+    session.accept()
+    assert session.state()["phase"] == "error"
+    assert len(session.labeled) == total_sample_labels  # review work kept
+    session.retry_step()
+    s = session.state()
+    assert s["phase"] == "done"
+    assert s["snapshot_path"] is not None
+
+
+def test_back_to_review_from_error(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.generate = make_flaky_generate(fail_at=1)
+    session.accept()
+    assert session.state()["phase"] == "error"
+    assert session.state()["recovery"]["can_review"] is True
+    session.back_to_review()
+    s = session.state()
+    assert s["phase"] == "review"
+    assert s["error"] is None
+
+
+def test_recovery_invalid_outside_error(tmp_path):
+    session = make_session(tmp_path)
+    with pytest.raises(PhaseError):
+        session.retry_step()
+    with pytest.raises(PhaseError):
+        session.back_to_review()
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    with pytest.raises(PhaseError):
+        session.retry_step()          # review is not error
+
+
+def test_api_retry_and_back_to_review_endpoints(tmp_path):
+    session = make_session(tmp_path)
+    client = TestClient(create_app(session))
+    assert client.post("/api/retry").status_code == 409
+    client.post("/api/start", json={"intent": "i", "max_conversations": 4,
+                                    "sample_size": 4})
+    session.generate = make_flaky_generate(fail_at=1)
+    client.post("/api/accept")
+    assert client.get("/api/state").json()["phase"] == "error"
+    assert client.post("/api/back-to-review").status_code == 200
+    assert client.get("/api/state").json()["phase"] == "review"

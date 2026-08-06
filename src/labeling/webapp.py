@@ -277,6 +277,24 @@ class LoopSession:
             self._require("review", "error", "done")
             self._reset()
 
+    def retry_step(self) -> None:
+        with self._lock:
+            self._require("error")
+            if self._retry_job is None:
+                raise PhaseError(self.phase)
+            self.error = None
+            self.phase = self._retry_phase
+            job = self._retry_job
+        self._run(job)
+
+    def back_to_review(self) -> None:
+        with self._lock:
+            self._require("error")
+            if self.schema is None or not self.sample:
+                raise PhaseError(self.phase)
+            self.error = None
+            self.phase = "review"
+
     def state(self) -> dict:
         with self._lock:
             by_key = {(r.chatlog_id, r.message_index): r for r in self.labeled}
@@ -310,6 +328,12 @@ class LoopSession:
                     "retry": self.retry_info,
                     "recent": [dict(r) for r in self.recent],
                 },
+                "recovery": ({
+                    "can_retry": self._retry_job is not None,
+                    "can_review": self.schema is not None and bool(self.sample),
+                    "labeled_count": len(self.labeled),
+                    "conversations": len(self.conversations),
+                } if self.phase == "error" else None),
                 "schema": schema,
                 "sample": sample,
                 "snapshot_path": (str(self.snapshot_path)
@@ -373,6 +397,16 @@ def create_app(session: LoopSession) -> FastAPI:
     @app.post("/api/quit")
     def quit_() -> dict:
         session.quit()
+        return {"ok": True}
+
+    @app.post("/api/retry")
+    def retry() -> dict:
+        session.retry_step()
+        return {"ok": True}
+
+    @app.post("/api/back-to-review")
+    def back_to_review() -> dict:
+        session.back_to_review()
         return {"ok": True}
 
     return app
