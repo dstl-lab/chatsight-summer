@@ -5,6 +5,7 @@ is fine for drafting and forbidden for measurement (CLAUDE.md invariant 8).
 Single in-process session: this is a one-instructor localhost research tool.
 Binds 127.0.0.1 only — student text never leaves the machine (rule 4)."""
 import threading
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -54,12 +55,79 @@ class LoopSession:
         self.sample: list[SampledMessage] = []
         self.labeled: list[MessageLabels] = []
         self.snapshot_path: Path | None = None
-        self.progress: dict | None = None
+        self.steps: list[dict] = []
+        self.retry_info: dict | None = None
+        self.recent: list[dict] = []
+        self._retry_job: Callable[[], None] | None = None
+        self._retry_phase: str = "idle"
         self.seed = 0
 
-    def _set_progress(self, done: int, total: int) -> None:
+    def _init_steps(self, *specs: tuple[str, str]) -> None:
         with self._lock:
-            self.progress = {"done": done, "total": total}
+            self.steps = [{"key": k, "name": n, "detail": "",
+                           "state": "pending", "progress": None,
+                           "started_at": None} for k, n in specs]
+
+    def _step(self, key: str) -> dict:
+        return next(s for s in self.steps if s["key"] == key)
+
+    def _begin_step(self, key: str) -> None:
+        with self._lock:
+            s = self._step(key)
+            s["state"], s["started_at"] = "active", time.time()
+
+    def _end_step(self, key: str, name: str | None = None,
+                  detail: str = "") -> None:
+        with self._lock:
+            s = self._step(key)
+            s["state"] = "done"
+            if name:
+                s["name"] = name
+            if detail:
+                s["detail"] = detail
+
+    def _step_progress(self, key: str) -> Callable[[int, int], None]:
+        def cb(done: int, total: int) -> None:
+            with self._lock:
+                self._step(key)["progress"] = {"done": done, "total": total}
+        return cb
+
+    def note_retry(self, info: dict | None) -> None:
+        with self._lock:
+            self.retry_info = info
+
+    def _note_recent(self, message: SampledMessage,
+                     result: MessageLabels) -> None:
+        applied = [k for k, v in result.labels.items() if v]
+        with self._lock:
+            self.recent = ([{"text": message.text, "labels": applied}]
+                           + self.recent)[:3]
+
+    def _launch(self, job: Callable[[], None], retry_phase: str) -> None:
+        self._retry_job, self._retry_phase = job, retry_phase
+        self._run(job)
+
+    def _label_incremental(self, messages: list[SampledMessage],
+                           key: str) -> None:
+        """Label `messages`, skipping any already in self.labeled (same
+        schema), appending each result as it completes so a mid-run failure
+        keeps finished work. Progress counts are over the FULL message list."""
+        done_keys = {(r.chatlog_id, r.message_index) for r in self.labeled}
+        todo = [m for m in messages
+                if (m.chatlog_id, m.message_index) not in done_keys]
+        offset = len(messages) - len(todo)
+        progress = self._step_progress(key)
+        progress(offset, len(messages))
+
+        def on_result(m: SampledMessage, r: MessageLabels) -> None:
+            with self._lock:
+                self.labeled.append(r)
+            self._note_recent(m, r)
+
+        draft_labels(todo, self.schema, self.generate,
+                     on_progress=lambda done, total:
+                         progress(offset + done, len(messages)),
+                     on_result=on_result)
 
     def _run(self, job: Callable[[], None]) -> None:
         def guarded() -> None:
@@ -82,59 +150,111 @@ class LoopSession:
             self._reset()
             self.seed = seed
             self.phase = "fetching"
+        self._init_steps(("fetch", "Fetching conversations"),
+                         ("schema", "Drafting schema"),
+                         ("label", "Labeling review sample"))
 
         def job() -> None:
-            convs = self.fetch(self.ext_db_url, max_conversations)
-            total = self.count(self.ext_db_url)
+            self._begin_step("fetch")
+            if not self.conversations:
+                convs = self.fetch(self.ext_db_url, max_conversations,
+                                   on_progress=self._step_progress("fetch"))
+                total = self.count(self.ext_db_url)
+                with self._lock:
+                    self.conversations = convs
+                    self.provenance = {"fetched": len(convs), "total": total,
+                                       "excluded": max(0, total - len(convs))}
+            self._end_step(
+                "fetch",
+                name=f"Fetched {len(self.conversations)} conversations",
+                detail=f"{self.provenance['excluded']} excluded")
             with self._lock:
-                self.conversations = convs
-                self.provenance = {"fetched": len(convs), "total": total,
-                                   "excluded": max(0, total - len(convs))}
                 self.phase = "drafting"
-            schema = draft_schema(intent, self.generate)
-            sample = stratified_sample(convs, n=sample_size, seed=seed)
-            labeled = draft_labels(sample, schema, self.generate,
-                                   on_progress=self._set_progress)
+            self._begin_step("schema")
+            if self.schema is None:
+                schema = draft_schema(intent, self.generate)
+                with self._lock:
+                    self.schema = schema
+                    self.sample = stratified_sample(
+                        self.conversations, n=sample_size, seed=seed)
+            self._end_step(
+                "schema", name=f"Schema {self.schema.version_id} drafted",
+                detail=f"{len(self.schema.labels)} labels")
+            self._begin_step("label")
+            self._label_incremental(self.sample, "label")
+            self._end_step(
+                "label", name=f"Labeled {len(self.sample)} sample messages")
             with self._lock:
-                self.schema, self.sample, self.labeled = schema, sample, labeled
                 self.phase = "review"
-        self._run(job)
+        self._launch(job, "fetching")
 
     def tweak(self, feedback: str) -> None:
         with self._lock:
             self._require("review")
             self.phase = "drafting"
-            self.progress = None
+            self.labeled = []      # new schema version: old labels invalid
+            self.recent = []
+        self._init_steps(("schema", "Revising schema"),
+                         ("label", "Labeling review sample"))
+        revised = {"done": False}  # retry guard: never revise twice
 
         def job() -> None:
-            schema = revise_schema(self.schema, feedback, self.generate)
-            labeled = draft_labels(self.sample, schema, self.generate,
-                                   on_progress=self._set_progress)
+            self._begin_step("schema")
+            if not revised["done"]:
+                schema = revise_schema(self.schema, feedback, self.generate)
+                revised["done"] = True
+                with self._lock:
+                    self.schema = schema
+            self._end_step(
+                "schema", name=f"Schema {self.schema.version_id} revised",
+                detail=f"{len(self.schema.labels)} labels")
+            self._begin_step("label")
+            self._label_incremental(self.sample, "label")
+            self._end_step(
+                "label", name=f"Labeled {len(self.sample)} sample messages")
             with self._lock:
-                self.schema, self.labeled = schema, labeled
                 self.phase = "review"
-        self._run(job)
+        self._launch(job, "drafting")
 
     def accept(self) -> None:
         with self._lock:
             self._require("review")
             self.phase = "mass_labeling"
-            self.progress = None
+            self.recent = []
+        self._init_steps(("save", "Saving schema"),
+                         ("sample", "Sampling corpus"),
+                         ("label", "Labeling messages"),
+                         ("snapshot", "Writing snapshot"))
 
         def job() -> None:
+            self._begin_step("save")
             save_schema(self.schema, self.data_dir)
+            self._end_step(
+                "save", name=f"Schema {self.schema.version_id} saved",
+                detail=f"{len(self.schema.labels)} labels")
+            self._begin_step("sample")
             all_messages = stratified_sample(self.conversations, n=10**9,
                                              seed=self.seed)
-            labeled = draft_labels(all_messages, self.schema, self.generate,
-                                   on_progress=self._set_progress)
+            self._end_step(
+                "sample", name=f"Sampled {len(all_messages)} messages",
+                detail=f"from {len(self.conversations)} conversations")
+            self._begin_step("label")
+            # review-sample labels are same-schema, same-classifier: reused
+            self._label_incremental(all_messages, "label")
+            self._end_step(
+                "label", name=f"Labeled {len(all_messages)} messages")
+            self._begin_step("snapshot")
             path = emit_snapshot(
-                self.conversations, labeled, self.schema, model=DEFAULT_MODEL,
-                repo_sha=self.repo_sha, data_dir=self.data_dir,
+                self.conversations, self.labeled, self.schema,
+                model=DEFAULT_MODEL, repo_sha=self.repo_sha,
+                data_dir=self.data_dir,
                 excluded_conversations=self.provenance["excluded"])
+            self._end_step("snapshot", name="Snapshot written",
+                           detail=str(path))
             with self._lock:
                 self.snapshot_path = path
                 self.phase = "done"
-        self._run(job)
+        self._launch(job, "mass_labeling")
 
     def quit(self) -> None:
         with self._lock:
@@ -169,7 +289,11 @@ class LoopSession:
                 "error": self.error,
                 "accept_note": ACCEPT_NOTE,
                 "provenance": self.provenance,
-                "progress": self.progress,
+                "status": {
+                    "steps": [dict(s) for s in self.steps],
+                    "retry": self.retry_info,
+                    "recent": [dict(r) for r in self.recent],
+                },
                 "schema": schema,
                 "sample": sample,
                 "snapshot_path": (str(self.snapshot_path)
@@ -258,7 +382,11 @@ def main() -> None:
     settings = Settings.load()
     if not settings.gemini_api_key:
         sys.exit("GEMINI_API_KEY missing from .env")
-    session = LoopSession(generate=make_generate(settings.gemini_api_key),
+    session: LoopSession | None = None
+    generate = make_generate(
+        settings.gemini_api_key,
+        on_retry=lambda info: session.note_retry(info) if session else None)
+    session = LoopSession(generate=generate,
                           ext_db_url=settings.ext_db_url,
                           data_dir=settings.data_dir,
                           repo_sha=_repo_sha(settings.repo_root))

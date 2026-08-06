@@ -10,8 +10,14 @@ from tests.test_sampler import CONVS
 
 
 def make_session(tmp_path: Path) -> LoopSession:
+    def fake_fetch(url, limit, on_progress=None):
+        convs = CONVS[:limit] if limit else CONVS
+        if on_progress:
+            for i in range(len(convs)):
+                on_progress(i + 1, len(convs))
+        return convs
     return LoopSession(
-        fetch=lambda url, limit: CONVS[:limit] if limit else CONVS,
+        fetch=fake_fetch,
         count=lambda url: len(CONVS) + 3,   # 3 "excluded" beyond the fetch cap
         generate=make_fake_generate(),
         ext_db_url="postgresql+psycopg2://unused",
@@ -87,7 +93,7 @@ def test_quit_resets_to_idle(tmp_path):
 
 
 def test_job_error_surfaces_and_quit_recovers(tmp_path):
-    def boom(url, limit):
+    def boom(url, limit, on_progress=None):
         raise RuntimeError("tunnel down")
     session = make_session(tmp_path)
     session.fetch = boom
@@ -159,12 +165,66 @@ def test_draft_labels_reports_progress():
     assert seen == [(1, 4), (2, 4), (3, 4), (4, 4)]
 
 
-def test_state_exposes_progress_after_mass_label(tmp_path):
+def test_status_steps_after_start(tmp_path):
     session = make_session(tmp_path)
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
-    assert session.state()["progress"] is not None  # review drafting reported
+    st = session.state()["status"]
+    assert [s["key"] for s in st["steps"]] == ["fetch", "schema", "label"]
+    assert all(s["state"] == "done" for s in st["steps"])
+    fetch = st["steps"][0]
+    assert "4" in fetch["name"]                      # "Fetched 4 conversations"
+    assert fetch["progress"] == {"done": 4, "total": 4}
+    label = st["steps"][2]
+    assert label["progress"] == {"done": 4, "total": 4}
+    assert label["started_at"] is not None
+    assert st["retry"] is None
+
+
+def test_status_steps_after_accept_and_review_labels_reused(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    labeled_after_review = len(session.labeled)
     session.accept()
-    s = session.state()
-    assert s["phase"] == "done"
-    p = s["progress"]
-    assert p["done"] == p["total"] > 0
+    st = session.state()["status"]
+    assert [s["key"] for s in st["steps"]] == ["save", "sample", "label",
+                                               "snapshot"]
+    assert all(s["state"] == "done" for s in st["steps"])
+    label = st["steps"][2]
+    # corpus total, with the review-sample labels counted as already done
+    assert label["progress"]["done"] == label["progress"]["total"]
+    assert label["progress"]["total"] >= labeled_after_review
+    # every corpus message labeled exactly once (review labels reused, not redone)
+    keys = [(r.chatlog_id, r.message_index) for r in session.labeled]
+    assert len(keys) == len(set(keys)) == label["progress"]["total"]
+    assert session.state()["snapshot_path"] is not None
+
+
+def test_recent_holds_last_three_newest_first(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    recent = session.state()["status"]["recent"]
+    assert len(recent) == 3
+    assert all(set(r) == {"text", "labels"} for r in recent)
+    # newest-first: the last sample message labeled is first in the list
+    assert recent[0]["text"] != recent[2]["text"]
+
+
+def test_tweak_clears_labels_and_recent_for_new_schema(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.tweak("split it")
+    st = session.state()
+    assert st["phase"] == "review"
+    assert [s["key"] for s in st["status"]["steps"]] == ["schema", "label"]
+    # all 4 sample messages relabeled under the new schema (not skipped)
+    assert len(session.labeled) == 4
+    assert all("label-v2" in r.labels for r in session.labeled)
+
+
+def test_note_retry_surfaces_in_state(tmp_path):
+    session = make_session(tmp_path)
+    session.note_retry({"attempt": 2, "max": 4, "wait_s": 4.0})
+    assert session.state()["status"]["retry"] == {
+        "attempt": 2, "max": 4, "wait_s": 4.0}
+    session.note_retry(None)
+    assert session.state()["status"]["retry"] is None
