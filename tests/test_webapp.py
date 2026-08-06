@@ -169,12 +169,15 @@ def test_status_steps_after_start(tmp_path):
     session = make_session(tmp_path)
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
     st = session.state()["status"]
-    assert [s["key"] for s in st["steps"]] == ["fetch", "schema", "label"]
+    assert [s["key"] for s in st["steps"]] == ["count", "fetch", "schema",
+                                               "label"]
     assert all(s["state"] == "done" for s in st["steps"])
-    fetch = st["steps"][0]
+    count = st["steps"][0]
+    assert str(len(CONVS) + 3) in count["name"]       # "Counted N conversations"
+    fetch = st["steps"][1]
     assert "4" in fetch["name"]                      # "Fetched 4 conversations"
     assert fetch["progress"] == {"done": 4, "total": 4}
-    label = st["steps"][2]
+    label = st["steps"][3]
     assert label["progress"] == {"done": 4, "total": 4}
     assert label["started_at"] is not None
     assert st["retry"] is None
@@ -268,6 +271,28 @@ def test_note_retry_surfaces_in_state(tmp_path):
         "attempt": 2, "max": 4, "wait_s": 4.0}
     session.note_retry(None)
     assert session.state()["status"]["retry"] is None
+
+
+def test_retry_banner_cleared_by_fresh_actions(tmp_path):
+    """A retry banner set before a run dies must not survive into a fresh
+    action (start/tweak/accept) or a retry_step() re-entry — otherwise a
+    stale 'retry 4 of 4' banner renders over an unrelated, healthy run."""
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.note_retry({"attempt": 4, "max": 4, "wait_s": 8.0})
+    assert session.state()["status"]["retry"] is not None
+    session.tweak("split it")
+    assert session.state()["status"]["retry"] is None
+
+    # same via retry_step() on an error
+    session2 = make_session(tmp_path)
+    session2.generate = make_flaky_generate(fail_at=1)
+    session2.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert session2.state()["phase"] == "error"
+    session2.note_retry({"attempt": 4, "max": 4, "wait_s": 8.0})
+    session2.generate = make_fake_generate()
+    session2.retry_step()
+    assert session2.state()["status"]["retry"] is None
 
 
 # --- resumable errors --------------------------------------------------------

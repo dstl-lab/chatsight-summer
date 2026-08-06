@@ -51,6 +51,7 @@ class LoopSession:
         self.error: str | None = None
         self.conversations: list[Conversation] = []
         self.provenance: dict | None = None
+        self._total_conversations: int | None = None
         self.schema: LabelSchema | None = None
         self.sample: list[SampledMessage] = []
         self.labeled: list[MessageLabels] = []
@@ -106,6 +107,8 @@ class LoopSession:
 
     def _launch(self, job: Callable[[], None], retry_phase: str) -> None:
         self._retry_job, self._retry_phase = job, retry_phase
+        with self._lock:
+            self.retry_info = None
         self._run(job)
 
     def _label_incremental(self, messages: list[SampledMessage],
@@ -166,16 +169,25 @@ class LoopSession:
             self._reset()
             self.seed = seed
             self.phase = "fetching"
-        self._init_steps(("fetch", "Fetching conversations"),
+        self._init_steps(("count", "Counting conversations"),
+                         ("fetch", "Fetching conversations"),
                          ("schema", "Drafting schema"),
                          ("label", "Labeling review sample"))
 
         def job() -> None:
+            self._begin_step("count")
+            if self._total_conversations is None:
+                total = self.count(self.ext_db_url)
+                with self._lock:
+                    self._total_conversations = total
+            self._end_step(
+                "count",
+                name=f"Counted {self._total_conversations} conversations")
             self._begin_step("fetch")
             if not self.conversations:
                 convs = self.fetch(self.ext_db_url, max_conversations,
                                    on_progress=self._step_progress("fetch"))
-                total = self.count(self.ext_db_url)
+                total = self._total_conversations
                 with self._lock:
                     self.conversations = convs
                     self.provenance = {"fetched": len(convs), "total": total,
@@ -191,6 +203,8 @@ class LoopSession:
                 schema = draft_schema(intent, self.generate)
                 with self._lock:
                     self.schema = schema
+            if not self.sample:
+                with self._lock:
                     self.sample = stratified_sample(
                         self.conversations, n=sample_size, seed=seed)
             self._end_step(
@@ -284,6 +298,7 @@ class LoopSession:
                 raise PhaseError(self.phase)
             self.error = None
             self.phase = self._retry_phase
+            self.retry_info = None
             job = self._retry_job
         self._run(job)
 
