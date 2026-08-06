@@ -463,6 +463,55 @@ function linkButton(text, onActivate) {
   return el;
 }
 
+// --- idle-screen data peek -------------------------------------------------
+// Loads once per visit to the idle screen; doubles as a live tunnel check
+// (if the sample renders, bin/tunnel is provably up before Start).
+let peekLoaded = false;
+
+function peekStatus(text) {
+  const p = document.createElement("p");
+  p.className = "provenance";
+  p.textContent = text;
+  return p;
+}
+
+async function loadPeek() {
+  const head = $("peek-head"), body = $("peek-body");
+  head.replaceChildren();
+  head.append("What students sounded like");
+  body.replaceChildren(peekStatus("reading your course's chats…"));
+  try {
+    const seed = Math.floor(Math.random() * 1e6);
+    const r = await fetch(`/api/peek?n=6&seed=${seed}`);
+    if (!r.ok) throw new Error("peek failed: " + r.status);
+    const data = await r.json();
+    head.replaceChildren();
+    head.append(`What students sounded like — ${data.messages.length} of ` +
+                `${data.total_messages.toLocaleString()} messages · `);
+    head.append(linkButton("resample", loadPeek));
+    body.replaceChildren();
+    // student text: always textContent, never innerHTML
+    for (const m of data.messages) {
+      const div = document.createElement("div");
+      div.className = "peek-msg";
+      div.textContent = `"${m.text}"`;
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = m.stratum;
+      div.append(meta);
+      body.append(div);
+    }
+  } catch (e) {
+    body.replaceChildren();
+    const fail = peekStatus("Couldn't reach the chat logs — is ");
+    const code = document.createElement("code");
+    code.textContent = "bin/tunnel";
+    fail.append(code, " running? ");
+    fail.append(linkButton("retry", loadPeek));
+    body.append(fail);
+  }
+}
+
 function exampleNode(ex, color) {
   const div = document.createElement("div");
   div.className = "lbl-example";
@@ -803,7 +852,12 @@ function render(state) {
   const phase = state.phase;
   const working = ["fetching", "drafting", "mass_labeling"].includes(phase);
   document.body.classList.toggle("wide", working || phase === "idle");
-  if (phase === "idle") { doneRendered = null; show("idle"); }
+  if (phase !== "idle") peekLoaded = false;
+  if (phase === "idle") {
+    doneRendered = null;
+    if (!peekLoaded) { peekLoaded = true; loadPeek(); }
+    show("idle");
+  }
   else if (phase === "review") { renderReview(state); show("review"); }
   else if (phase === "done") { renderDone(state); show("done"); }
   else if (phase === "error") { renderError(state); show("error"); }
