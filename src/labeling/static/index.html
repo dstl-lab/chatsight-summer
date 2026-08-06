@@ -127,19 +127,48 @@
   @media (prefers-reduced-motion: no-preference) {
     .lbl-bar > div { transition: width 220ms ease-out; }
   }
+
+  /* idle screen */
+  .idle-layout .action { flex: 1.6; }
+  .peek-rail { flex: 1; min-width: 0; }
+  .peek-msg { font-size: .84rem; font-style: italic; opacity: .85;
+    border-left: 2px solid rgba(128,128,128,.35); padding-left: .6rem;
+    margin: .55rem 0; }
+  .peek-msg .meta { display: block; font-style: normal; font-size: .72rem;
+    opacity: .6; }
+  .run-settings { margin-top: 1rem; font-size: .85rem; }
+  .run-settings summary { cursor: pointer; opacity: .7; }
+  .run-settings label { display: block; margin-top: .5rem; }
 </style>
 </head>
 <body>
 <h1>label-loop</h1>
 
 <section id="screen-idle" class="hidden">
-  <p>What trends do you want to see in the chat data (conceptual, behavioral, …)?</p>
-  <textarea id="intent" rows="3"></textarea>
-  <label>Max conversations <input id="max-conversations" type="number" value="200"></label>
-  <label>Sample size <input id="sample-size" type="number" value="25"></label>
-  <label>Seed <input id="seed" type="number" value="0"></label>
-  <button id="btn-start">Start</button>
-  <p class="provenance">Reads the raw-log DB through the tunnel — is <code>bin/tunnel</code> running?</p>
+  <div class="plate">
+    <div class="plate-stamp">label-loop · new run</div>
+    <div class="plate-intent">What do you want to see in your course's tutor chats?</div>
+    <div class="plate-lede">Describe the trends you care about — topics students
+      struggle with, help-seeking behavior, affect. Your words become the label
+      schema; you'll review a labeled sample before anything is final.</div>
+  </div>
+  <div class="layout idle-layout">
+    <div class="action">
+      <textarea id="intent" rows="6"
+        placeholder="Brief the labeler like you'd brief a TA — the more specific about what matters to you, the sharper the labels."></textarea>
+      <button id="btn-start">Draft labels from this →</button>
+      <details class="run-settings">
+        <summary>run settings</summary>
+        <label>Max conversations <input id="max-conversations" type="number" value="200"></label>
+        <label>Sample size <input id="sample-size" type="number" value="25"></label>
+        <label>Seed <input id="seed" type="number" value="0"></label>
+      </details>
+    </div>
+    <div class="peek-rail">
+      <div class="stratum" id="peek-head">What students sounded like</div>
+      <div id="peek-body"></div>
+    </div>
+  </div>
 </section>
 
 <section id="screen-working" class="hidden">
@@ -432,6 +461,55 @@ function linkButton(text, onActivate) {
     }
   });
   return el;
+}
+
+// --- idle-screen data peek -------------------------------------------------
+// Loads once per visit to the idle screen; doubles as a live tunnel check
+// (if the sample renders, bin/tunnel is provably up before Start).
+let peekLoaded = false;
+
+function peekStatus(text) {
+  const p = document.createElement("p");
+  p.className = "provenance";
+  p.textContent = text;
+  return p;
+}
+
+async function loadPeek() {
+  const head = $("peek-head"), body = $("peek-body");
+  head.replaceChildren();
+  head.append("What students sounded like");
+  body.replaceChildren(peekStatus("reading your course's chats…"));
+  try {
+    const seed = Math.floor(Math.random() * 1e6);
+    const r = await fetch(`/api/peek?n=6&seed=${seed}`);
+    if (!r.ok) throw new Error("peek failed: " + r.status);
+    const data = await r.json();
+    head.replaceChildren();
+    head.append(`What students sounded like — ${data.messages.length} of ` +
+                `${data.total_messages.toLocaleString()} messages · `);
+    head.append(linkButton("resample", loadPeek));
+    body.replaceChildren();
+    // student text: always textContent, never innerHTML
+    for (const m of data.messages) {
+      const div = document.createElement("div");
+      div.className = "peek-msg";
+      div.textContent = `“${m.text}”`;
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = m.stratum;
+      div.append(meta);
+      body.append(div);
+    }
+  } catch (e) {
+    body.replaceChildren();
+    const fail = peekStatus("Couldn't reach the chat logs — is ");
+    const code = document.createElement("code");
+    code.textContent = "bin/tunnel";
+    fail.append(code, " running? ");
+    fail.append(linkButton("retry", loadPeek));
+    body.append(fail);
+  }
 }
 
 function exampleNode(ex, color) {
@@ -773,8 +851,13 @@ function renderError(state) {
 function render(state) {
   const phase = state.phase;
   const working = ["fetching", "drafting", "mass_labeling"].includes(phase);
-  document.body.classList.toggle("wide", working);
-  if (phase === "idle") { doneRendered = null; show("idle"); }
+  document.body.classList.toggle("wide", working || phase === "idle");
+  if (phase !== "idle") peekLoaded = false;
+  if (phase === "idle") {
+    doneRendered = null;
+    if (!peekLoaded) { peekLoaded = true; loadPeek(); }
+    show("idle");
+  }
   else if (phase === "review") { renderReview(state); show("review"); }
   else if (phase === "done") { renderDone(state); show("done"); }
   else if (phase === "error") { renderError(state); show("error"); }
