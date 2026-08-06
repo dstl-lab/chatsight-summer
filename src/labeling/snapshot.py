@@ -14,9 +14,13 @@ def emit_snapshot(conversations: list[Conversation], labels: list[MessageLabels]
                   schema: LabelSchema, model: str, repo_sha: str, data_dir: Path,
                   excluded_conversations: int) -> Path:
     chash = classifier_hash(schema, model)
-    snapshot_id = f"{date.today():%Y%m%d}-{schema.version_id}-{chash[:6]}"
+    base_id = f"{date.today():%Y%m%d}-{schema.version_id}-{chash[:6]}"
+    snapshot_id, n = base_id, 2
+    while (data_dir / "snapshots" / snapshot_id).exists():
+        snapshot_id = f"{base_id}-{n}"       # never overwrite (rule 3):
+        n += 1                               # a collision gets a NEW dir
     path = data_dir / "snapshots" / snapshot_id
-    path.mkdir(parents=True, exist_ok=False)  # immutability: never overwrite
+    path.mkdir(parents=True, exist_ok=False)
 
     with (path / "conversations.jsonl").open("w") as f:
         for c in conversations:

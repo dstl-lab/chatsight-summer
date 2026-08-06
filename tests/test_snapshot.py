@@ -35,10 +35,19 @@ def test_emit_snapshot_writes_manifest_and_rows(tmp_path: Path):
     assert len((path / "labels.jsonl").read_text().splitlines()) == 1
 
 
-def test_snapshots_are_immutable(tmp_path: Path):
+def test_snapshot_collision_gets_unique_dir_not_overwrite(tmp_path: Path):
     convs, schema, labels = _fixtures()
-    emit_snapshot(convs, labels, schema, model="m", repo_sha="abc",
-                  data_dir=tmp_path, excluded_conversations=0)
-    with pytest.raises(FileExistsError):
-        emit_snapshot(convs, labels, schema, model="m", repo_sha="abc",
-                      data_dir=tmp_path, excluded_conversations=0)
+    first = emit_snapshot(convs, labels, schema, model="m", repo_sha="abc",
+                          data_dir=tmp_path, excluded_conversations=0)
+    second = emit_snapshot(convs, labels, schema, model="m", repo_sha="abc",
+                           data_dir=tmp_path, excluded_conversations=0)
+    third = emit_snapshot(convs, labels, schema, model="m", repo_sha="abc",
+                          data_dir=tmp_path, excluded_conversations=0)
+    assert first != second != third
+    assert second.name == first.name + "-2"
+    assert third.name == first.name + "-3"
+    # first snapshot untouched (immutability), and every manifest's
+    # snapshot_id matches its directory name
+    for path in (first, second, third):
+        manifest = json.loads((path / "manifest.json").read_text())
+        assert manifest["snapshot_id"] == path.name
