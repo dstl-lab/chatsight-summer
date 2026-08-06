@@ -8,6 +8,44 @@
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
          max-width: 52rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  body.wide { max-width: 60rem; }
+  .layout { display: flex; gap: 2.5rem; }
+  @media (max-width: 44rem) { .layout { flex-direction: column; gap: 1.5rem; } }
+  .rail { flex: 0 0 16rem; position: relative; padding-left: 1.5rem; }
+  .rail-track, .rail-fill { position: absolute; left: .48rem; top: .6rem;
+    width: 4px; border-radius: 2px; }
+  .rail-track { bottom: .6rem; background: rgba(128,128,128,.2); }
+  .rail-fill { background: linear-gradient(#3a9d5d, #4a7fd4); }
+  .gate { position: relative; margin-bottom: 2rem; }
+  .gate:last-child { margin-bottom: 0; }
+  .gate .dot { position: absolute; left: -1.5rem; top: .15rem; width: 1rem;
+    height: 1rem; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: .65rem; color: #fff; }
+  .gate.done .dot { background: #3a9d5d; }
+  .gate.active .dot { width: 1.2rem; height: 1.2rem; left: -1.6rem; top: .05rem;
+    background: #4a7fd4; animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 14px rgba(74,127,212,.9); } }
+  .gate.pending .dot { border: 2px solid rgba(128,128,128,.4); }
+  .gate .name { font-size: .95rem; font-weight: 600; }
+  .gate.active .name { color: #4a7fd4; font-weight: 700; }
+  .gate.pending .name { opacity: .45; font-weight: 400; }
+  .gate .detail { font-size: .78rem; opacity: .6; }
+  .action { flex: 1; min-width: 0; }
+  .action-head { display: flex; justify-content: space-between;
+    align-items: baseline; flex-wrap: wrap; gap: .25rem; margin-bottom: .5rem; }
+  .action-head .stats { font-size: .82rem; opacity: .7; }
+  .bar { background: rgba(128,128,128,.2); border-radius: 4px; height: 8px;
+    overflow: hidden; margin-bottom: .7rem; }
+  .bar > div { background: #4a7fd4; height: 100%; transition: width .8s; }
+  .retry-banner { padding: .4rem .65rem; border-left: 3px solid #b8860b;
+    background: rgba(184,134,11,.08); font-size: .82rem;
+    margin-bottom: 1.1rem; border-radius: 0 4px 4px 0; }
+  .feed-item { font-size: .88rem; padding: .45rem 0;
+    border-bottom: 1px solid rgba(128,128,128,.18); }
+  .feed-item:last-child { border-bottom: 0; }
+  .feed-item .msg-text { font-style: italic; opacity: .85; }
+  .feed-item.old { opacity: .65; }
+  .feed-item.oldest { opacity: .4; }
   h1 { font-size: 1.3rem; }
   h2 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; }
   textarea, input { font: inherit; width: 100%; box-sizing: border-box;
@@ -50,7 +88,24 @@
 </section>
 
 <section id="screen-working" class="hidden">
-  <p><span class="spinner"></span><span id="working-text"></span></p>
+  <p class="provenance" id="working-provenance"></p>
+  <div class="layout">
+    <div class="rail">
+      <div class="rail-track"></div>
+      <div class="rail-fill" id="rail-fill"></div>
+      <div id="gates"></div>
+    </div>
+    <div class="action">
+      <div class="action-head">
+        <span id="action-step"></span>
+        <span class="stats" id="action-stats"></span>
+      </div>
+      <div class="bar"><div id="action-bar"></div></div>
+      <div class="retry-banner hidden" id="retry-banner"></div>
+      <div class="stratum">Recently labeled</div>
+      <div id="feed"></div>
+    </div>
+  </div>
 </section>
 
 <section id="screen-review" class="hidden">
@@ -78,7 +133,10 @@
 <section id="screen-error" class="hidden">
   <h2 class="error">Error</h2>
   <p class="error" id="error-text"></p>
-  <button id="btn-reset-error">Reset</button>
+  <p class="provenance" id="error-survived"></p>
+  <button id="btn-retry" class="hidden">Retry from where it stopped</button>
+  <button id="btn-back-review" class="hidden">Back to review</button>
+  <button id="btn-reset-error">Start over</button>
 </section>
 
 <script>
@@ -159,30 +217,126 @@ function renderReview(state) {
   }
 }
 
+const PHASE_TITLES = {
+  fetching: "Fetching from the raw-log DB",
+  drafting: "Drafting and labeling the review sample",
+  mass_labeling: "Labeling the full corpus",
+};
+
+// rolling (time, done) samples for rate/ETA; reset when the active step changes
+let etaSamples = [];
+let etaKey = null;
+
+function renderStats(step) {
+  const p = step.progress;
+  if (!p || !p.total) return "";
+  const now = Date.now() / 1000;
+  const key = step.key + ":" + (step.started_at || 0);
+  if (key !== etaKey) { etaKey = key; etaSamples = []; }
+  etaSamples.push({ t: now, done: p.done });
+  etaSamples = etaSamples.filter((s) => now - s.t < 60);
+  let parts = [`${p.done} / ${p.total} (${Math.floor(p.done / p.total * 100)}%)`];
+  const first = etaSamples[0];
+  if (etaSamples.length > 1 && p.done > first.done) {
+    const rate = (p.done - first.done) / (now - first.t);
+    const left = (p.total - p.done) / rate;
+    parts.push(`~${rate.toFixed(1)} msg/s`);
+    parts.push(left > 90 ? `about ${Math.round(left / 60)} min left`
+                         : `about ${Math.round(left)}s left`);
+  }
+  if (step.started_at) {
+    const el = Math.max(0, Math.round(now - step.started_at));
+    parts.push(`elapsed ${Math.floor(el / 60)}:${String(el % 60).padStart(2, "0")}`);
+  }
+  return parts.join(" · ");
+}
+
+function renderWorking(state) {
+  const steps = (state.status && state.status.steps) || [];
+  $("working-provenance").textContent = PHASE_TITLES[state.phase] || state.phase;
+
+  const gates = $("gates");
+  gates.replaceChildren();
+  let doneCount = 0, activeFrac = 0, active = null;
+  for (const s of steps) {
+    if (s.state === "done") doneCount++;
+    if (s.state === "active") {
+      active = s;
+      if (s.progress && s.progress.total)
+        activeFrac = s.progress.done / s.progress.total;
+    }
+    const gate = document.createElement("div");
+    gate.className = "gate " + s.state;
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    dot.textContent = s.state === "done" ? "✓" : s.state === "active" ? "◌" : "";
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = s.name;
+    const detail = document.createElement("div");
+    detail.className = "detail";
+    detail.textContent = s.state === "active" && s.progress
+      ? `${s.progress.done} / ${s.progress.total}` : s.detail;
+    gate.append(dot, name, detail);
+    gates.append(gate);
+  }
+  const frac = steps.length ? (doneCount + activeFrac) / steps.length : 0;
+  $("rail-fill").style.height = (frac * 100).toFixed(1) + "%";
+
+  $("action-step").textContent = active ? active.name : "Working…";
+  $("action-stats").textContent = active ? renderStats(active) : "";
+  $("action-bar").style.width = active && active.progress && active.progress.total
+    ? (active.progress.done / active.progress.total * 100).toFixed(1) + "%" : "0%";
+
+  const retry = state.status && state.status.retry;
+  $("retry-banner").classList.toggle("hidden", !retry);
+  if (retry)
+    $("retry-banner").textContent = `⚠ Gemini call failed — retry ${retry.attempt} ` +
+      `of ${retry.max}, waiting ${retry.wait_s}s`;
+
+  const feed = $("feed");
+  feed.replaceChildren();
+  // student text: always textContent, never innerHTML
+  (state.status && state.status.recent || []).forEach((r, i) => {
+    const item = document.createElement("div");
+    item.className = "feed-item" + (i === 1 ? " old" : i >= 2 ? " oldest" : "");
+    const text = document.createElement("span");
+    text.className = "msg-text";
+    text.textContent = `“${r.text}”`;
+    item.append(text);
+    for (const name of r.labels) {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = name;
+      item.append(chip);
+    }
+    feed.append(item);
+  });
+}
+
+function renderError(state) {
+  $("error-text").textContent = state.error || "unknown error";
+  const rec = state.recovery;
+  $("error-survived").textContent = rec
+    ? `Still in memory: ${rec.conversations} conversations, ` +
+      `${rec.labeled_count} labeled messages. Retry continues from there; ` +
+      `Start over discards everything.`
+    : "";
+  $("btn-retry").classList.toggle("hidden", !(rec && rec.can_retry));
+  $("btn-back-review").classList.toggle("hidden", !(rec && rec.can_review));
+}
+
 function render(state) {
   const phase = state.phase;
+  const working = ["fetching", "drafting", "mass_labeling"].includes(phase);
+  document.body.classList.toggle("wide", working);
   if (phase === "idle") show("idle");
   else if (phase === "review") { renderReview(state); show("review"); }
   else if (phase === "done") {
     $("snapshot-path").textContent = state.snapshot_path || "";
     show("done");
-  } else if (phase === "error") {
-    $("error-text").textContent = state.error || "unknown error";
-    show("error");
-  } else {
-    let text = {
-      fetching: "Fetching conversations from the raw-log DB…",
-      drafting: "Drafting schema and labeling the review sample…",
-      mass_labeling: "Labeling the full corpus — this takes a while…",
-    }[phase] || phase;
-    const p = state.progress;
-    if (p) {
-      const pct = Math.floor((p.done / p.total) * 100);
-      text += ` ${p.done} / ${p.total} messages (${pct}%)`;
-    }
-    $("working-text").textContent = text;
-    show("working");
-  }
+  } else if (phase === "error") { renderError(state); show("error"); }
+  else { renderWorking(state); show("working"); }
 }
 
 async function refresh() {
@@ -204,6 +358,8 @@ $("btn-accept").addEventListener("click", () => post("/api/accept"));
 $("btn-quit").addEventListener("click", () => post("/api/quit"));
 $("btn-reset-done").addEventListener("click", () => post("/api/quit"));
 $("btn-reset-error").addEventListener("click", () => post("/api/quit"));
+$("btn-retry").addEventListener("click", () => post("/api/retry"));
+$("btn-back-review").addEventListener("click", () => post("/api/back-to-review"));
 
 refresh();
 setInterval(refresh, 1500);
