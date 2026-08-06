@@ -17,6 +17,7 @@ from src.labeling.llm import DEFAULT_MODEL, Generate
 from src.labeling.sampler import SampledMessage, stratified_sample
 from src.labeling.schema import LabelSchema, save_schema
 from src.labeling.snapshot import emit_snapshot
+from src.labeling.summary import compute_summary, sample_examples
 
 WORKING_PHASES = ("fetching", "drafting", "mass_labeling")
 
@@ -57,6 +58,7 @@ class LoopSession:
         self.labeled: list[MessageLabels] = []
         self._labeled_schema: str | None = None
         self.snapshot_path: Path | None = None
+        self.summary: dict | None = None
         self.steps: list[dict] = []
         self.retry_info: dict | None = None
         self.recent: list[dict] = []
@@ -281,8 +283,11 @@ class LoopSession:
                 excluded_conversations=self.provenance["excluded"])
             self._end_step("snapshot", name="Snapshot written",
                            detail=str(path))
+            summary = compute_summary(self.conversations, self.labeled,
+                                      self.schema, seed=self.seed)
             with self._lock:
                 self.snapshot_path = path
+                self.summary = summary
                 self.phase = "done"
         self._launch(job, "mass_labeling")
 
@@ -353,6 +358,7 @@ class LoopSession:
                 "sample": sample,
                 "snapshot_path": (str(self.snapshot_path)
                                   if self.snapshot_path else None),
+                "summary": self.summary if self.phase == "done" else None,
             }
 
 
@@ -360,7 +366,7 @@ class LoopSession:
 
 import sys
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -423,6 +429,16 @@ def create_app(session: LoopSession) -> FastAPI:
     def back_to_review() -> dict:
         session.back_to_review()
         return {"ok": True}
+
+    @app.get("/api/examples")
+    def examples(label: str, n: int = 5, seed: int = 0) -> dict:
+        session._require("done")
+        if label not in {l.name for l in session.schema.labels}:
+            raise HTTPException(status_code=404,
+                                detail=f"label {label!r} not in schema")
+        return {"examples": sample_examples(session.conversations,
+                                            session.labeled, label,
+                                            n=n, seed=seed)}
 
     return app
 
