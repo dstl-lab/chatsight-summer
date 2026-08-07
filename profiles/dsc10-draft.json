@@ -1,6 +1,6 @@
 {
   "base": {
-    "course_name": "Data Science Fundamentals with Python",
+    "course_name": "DSC 10",
     "domain_description": "This course covers fundamental concepts and practical skills in data analysis and manipulation using Python, focusing on data structures like DataFrames and Series, common operations such as grouping, filtering, and aggregation, error handling, and basic data visualization.",
     "tooling": "Students primarily use Python in Jupyter notebooks, utilizing data analysis libraries such as pandas and numpy. A simplified library, 'baby pandas' (bpd), is also used, sometimes causing confusion regarding method availability.",
     "paste_conventions": "Students frequently paste full code blocks, specific lines of code, complete error messages (including traceback), problem statements, or assignment questions directly into the chat.",
@@ -129,14 +129,14 @@
   "affect_labels": [
     {
       "name": "Frustration",
-      "kind": "conceptual",
+      "kind": "behavioral",
       "description": "Student expresses strong negative feelings, self-doubt, or exasperation about their performance or inability to solve a problem.",
-      "positive_criteria": "Contains phrases like 'why do I suck at coding?', 'I keep failing', 'I'm a fraud', 'I'm stuck', 'I'm lost', 'still not working'.",
+      "positive_criteria": "Self-deprecating statements about their own coding ability; exasperation that repeated attempts still fail; declarations of being stuck or lost that carry personal distress.",
       "negative_criteria": "Does not contain direct requests for information only; expresses personal distress beyond simple confusion."
     },
     {
       "name": "Confusion",
-      "kind": "conceptual",
+      "kind": "behavioral",
       "description": "Student indicates a lack of understanding regarding a concept, error, or expected output, often in a questioning tone.",
       "positive_criteria": "Includes phrases such as 'why is X not working?', 'I don't understand', 'what is wrong with my code?', 'what does X do?', 'I don't follow'.",
       "negative_criteria": "Does not involve strong emotional language indicative of frustration or self-blame."
