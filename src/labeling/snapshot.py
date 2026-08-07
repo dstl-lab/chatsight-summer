@@ -15,8 +15,9 @@ from src.labeling.schema import LabelSchema
 
 def emit_snapshot(conversations: list[Conversation], labels: list[MessageLabels],
                   schema: LabelSchema, model: str, repo_sha: str, data_dir: Path,
-                  excluded_conversations: int, profile: CourseProfile) -> Path:
-    chash = classifier_hash(schema, model, profile)
+                  excluded_conversations: int, profile: CourseProfile,
+                  profile2=None) -> Path:
+    chash = classifier_hash(schema, model, profile, profile2=profile2)
     base_id = f"{date.today():%Y%m%d}-{schema.version_id}-{chash[:6]}"
     snapshots_dir = data_dir / "snapshots"
     snapshots_dir.mkdir(parents=True, exist_ok=True)
@@ -47,6 +48,10 @@ def emit_snapshot(conversations: list[Conversation], labels: list[MessageLabels]
             "classifier_hash": chash,
             "course_profile": profile.model_dump(),
             "profile_id": profile.profile_id,
+            # v2 exploration artifact, when one grounded this run
+            # (2026-08-07 memo); the artifact itself is git-tracked.
+            "profile2_id": (profile2.profile_id
+                            if profile2 is not None else None),
             "row_counts": {
                 "conversations": len(conversations),
                 "turns": sum(len(c.turns) for c in conversations),

@@ -107,6 +107,37 @@ def lint_profile(v2: CourseProfileV2,
     return findings
 
 
+def compose_schema(v2: CourseProfileV2,
+                   instructor: "LabelSchema") -> "LabelSchema":
+    """Layered composition (2026-08-07 memo): instructor labels ride on top
+    of the accepted profile's promoted concepts and affect/intent layers.
+    Non-promoted concepts stay a coverage facet, never labels. The result
+    version-chains from the instructor schema (invariant 6)."""
+    from src.labeling.schema import LabelSchema
+    if not v2.accepted:
+        raise ValueError(
+            f"profile {v2.profile_id} is not accepted; review the draft, "
+            "set accepted:true, and commit it first")
+    layered: list[LabelDef] = list(instructor.labels)
+    for c in v2.concepts:
+        if c.promoted:
+            layered.append(LabelDef(
+                name=c.name, kind="conceptual", description=c.description,
+                positive_criteria=c.positive_criteria,
+                negative_criteria=c.negative_criteria))
+    layered += v2.affect_labels + v2.intent_labels
+    seen: set[str] = set()
+    for l in layered:
+        if l.name in seen:
+            raise ValueError(f"label name collision in composition: "
+                             f"{l.name!r}")
+        seen.add(l.name)
+    return LabelSchema(
+        instructor_intent=instructor.instructor_intent, labels=layered,
+        parent_version=instructor.version_id,
+        feedback_applied=f"composed with profile {v2.profile_id}")
+
+
 def save_profile(v2: CourseProfileV2, path: Path) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

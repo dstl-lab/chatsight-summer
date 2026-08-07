@@ -20,6 +20,19 @@ ACCEPT_NOTE = ("NOTE: acceptance is a drafting decision, not a reliability "
                "measurement (blind audit comes in Phase 0).")
 
 
+def load_accepted_profile(path: str):
+    """Load a CourseProfile v2 artifact, refusing drafts: the accept gate is
+    git review of the artifact (2026-08-07 memo), so an accepted:false file
+    reaching the classify path means review was skipped."""
+    from src.labeling.profile2 import load_profile
+    v2 = load_profile(path)
+    if not v2.accepted:
+        sys.exit(f"profile {path} has accepted: false — review the draft, "
+                 "set accepted:true, rename per the explore CLI's "
+                 "instructions, and commit it first.")
+    return v2
+
+
 def _render(schema: LabelSchema, sample: list[SampledMessage],
             labeled, say: Callable[[str], None]) -> None:
     say(f"\n=== Schema {schema.version_id} ===")
@@ -41,12 +54,12 @@ def run_loop(intent: str, conversations: list[Conversation], generate: Generate,
              *, profile: CourseProfile, sample_size: int, seed: int,
              ask: Callable[[str], str],
              say: Callable[[str], None],
-             workers: int = 8) -> LabelSchema | None:
+             workers: int = 8, profile2=None) -> LabelSchema | None:
     schema = draft_schema(intent, profile, generate)
     sample = stratified_sample(conversations, n=sample_size, seed=seed)
     while True:
         labeled = draft_labels(sample, schema, profile, generate,
-                               workers=workers)
+                               workers=workers, profile2=profile2)
         _render(schema, sample, labeled, say)
         say(f"\n{ACCEPT_NOTE}")
         choice = ask("accept/tweak/quit> ").strip().lower()
@@ -68,6 +81,9 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=None,
                         help="parallel Gemini calls (default: "
                              "LABELING_WORKERS or 8)")
+    parser.add_argument("--profile", default=None,
+                        help="accepted CourseProfile v2 artifact "
+                             "(profiles/<slug>.json) to ground this run")
     args = parser.parse_args()
 
     settings = Settings.load()
@@ -75,6 +91,7 @@ def main() -> None:
         sys.exit("GEMINI_API_KEY missing from .env")
     workers = (args.workers if args.workers is not None
               else settings.labeling_workers)
+    profile2 = load_accepted_profile(args.profile) if args.profile else None
     generate = make_generate(settings.gemini_api_key)
 
     intent = args.intent or input(
@@ -95,17 +112,27 @@ def main() -> None:
     schema = run_loop(intent, conversations, generate,
                       profile=DSC10_PROFILE,
                       sample_size=args.sample_size, seed=args.seed,
-                      ask=input, say=print, workers=workers)
+                      ask=input, say=print, workers=workers,
+                      profile2=profile2)
     if schema is None:
         print("Quit without accepting; nothing written.")
         return
 
     save_schema(schema, settings.data_dir)
+    if profile2 is not None:
+        # Layered composition (2026-08-07 memo): promoted concepts and
+        # accepted affect/intent layers join the accepted instructor schema
+        # for the mass pass; chains parent_version (invariant 6).
+        from src.labeling.profile2 import compose_schema
+        schema = compose_schema(profile2, schema)
+        save_schema(schema, settings.data_dir)
+        print(f"Composed with profile {profile2.profile_id}: "
+              f"schema {schema.version_id} ({len(schema.labels)} labels)")
     print(f"Accepted schema {schema.version_id}. Mass-labeling "
           f"{len(conversations)} conversations...")
     all_messages = stratified_sample(conversations, n=10**9, seed=args.seed)
     labeled = draft_labels(all_messages, schema, DSC10_PROFILE, generate,
-                           workers=workers)
+                           workers=workers, profile2=profile2)
     abstained = sum(1 for r in labeled if r.no_label_fits)
     if labeled:
         print(f"Coverage: {abstained} of {len(labeled)} messages "
@@ -124,7 +151,7 @@ def main() -> None:
     path = emit_snapshot(conversations, labeled, schema, model=DEFAULT_MODEL,
                          repo_sha=repo_sha, data_dir=settings.data_dir,
                          excluded_conversations=excluded_conversations,
-                         profile=DSC10_PROFILE)
+                         profile=DSC10_PROFILE, profile2=profile2)
     print(f"Snapshot written: {path}")
     print("Add a row to snapshots.md with this manifest's provenance.")
 
