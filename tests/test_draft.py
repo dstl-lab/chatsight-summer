@@ -282,3 +282,55 @@ def test_coverage_prompt_carries_form_taxonomy():
     # declared before the coverage question so the model commits to the
     # surface reading first
     assert cov[0].index("pasted-assignment") < cov[0].index("no_label_fits")
+
+
+def _v2_profile():
+    from src.labeling.profile2 import ConceptDef, CourseProfileV2
+    return CourseProfileV2(
+        base=PROFILE,
+        concepts=[
+            ConceptDef(name="loops", description="iteration"),
+            ConceptDef(name="tables", description="tabular data"),
+            ConceptDef(name="promoted-one", description="p", promoted=True,
+                       positive_criteria="p", negative_criteria="n")],
+        affect_labels=[], intent_labels=[], explored_on="2026-08-07",
+        corpus_sample={"conversations": 1, "seed": 0},
+        materials_provided=False, repo_sha="x", accepted=True)
+
+
+def test_concepts_land_filtered_and_default():
+    def gen(prompt, response_model):
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=False, rationale="r")
+        return CoverageVerdict(concepts=["loops", "hallucinated"],
+                               no_label_fits=False)
+
+    out = draft_labels([_msg()], SCHEMA, PROFILE, gen,
+                       profile2=_v2_profile())
+    assert out[0].concepts == ["loops"]
+    # without a v2 profile the field defaults empty and old snapshots parse
+    r = MessageLabels(chatlog_id=1, message_index=0, labels={},
+                      rationales={})
+    assert r.concepts == []
+
+
+def test_coverage_prompt_lists_nonpromoted_concepts_only():
+    gen = make_fake()
+    draft_labels([_msg()], SCHEMA, PROFILE, gen, profile2=_v2_profile())
+    cov = [p for k, p in gen.calls if k == "CoverageVerdict"][0]
+    assert "loops" in cov and "tables" in cov
+    assert "promoted-one" not in cov
+    # single-label prompts unaffected by the concept block
+    single = [p for k, p in gen.calls if k == "SingleLabelVerdict"][0]
+    assert "loops" not in single
+
+
+def test_v1_golden_hash_unchanged_and_v2_hash_moves():
+    h1 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
+    assert h1 == "d7583927c8b9"          # v1 path: byte-identical to before
+    v2 = _v2_profile()
+    h2 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE, profile2=v2)
+    assert h2 != h1
+    edited = v2.model_copy(update={"concepts": v2.concepts[:1]})
+    assert classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE,
+                           profile2=edited) != h2

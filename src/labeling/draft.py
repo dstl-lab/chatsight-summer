@@ -44,6 +44,9 @@ class CoverageVerdict(BaseModel):
     # `forms` is declared first so the model commits to the surface reading
     # of the message before judging coverage.
     forms: list[str] = []
+    # Course-concept facet (2026-08-07 memo): non-promoted concepts are
+    # analytics-grade coverage data, not labels.
+    concepts: list[str] = []
     # Detection channel, not a labeling one (2026-08-06 memos): the model may
     # flag "no label fits" and describe the act, but never name a label.
     no_label_fits: bool
@@ -58,6 +61,7 @@ class MessageLabels(BaseModel):
     no_label_fits: bool = False   # default: old snapshots still parse
     coverage_note: str = ""       # ditto
     forms: list[str] = []         # ditto
+    concepts: list[str] = []      # ditto
 
 
 _SHARED_RULES = """\
@@ -117,7 +121,7 @@ First declare the message's surface form(s) in forms — every value that \
 applies, from exactly this list: {{form_taxonomy}}. A message can be a \
 hybrid (e.g. a pasted assignment prompt plus an authored question).
 
-Then set no_label_fits=true only if this message shows a student act that NONE \
+{{concept_section}}Then set no_label_fits=true only if this message shows a student act that NONE \
 of the labels capture (a message can be partially captured: some act \
 labeled, another not — that still counts). If true, describe the uncaptured \
 act in one sentence in note; do not propose or name any label. Otherwise \
@@ -126,6 +130,29 @@ no_label_fits=false and note empty."""
 
 def _coverage_labels_block(schema: LabelSchema) -> str:
     return "\n".join(f"- {l.name}: {l.description}" for l in schema.labels)
+
+
+# Rendered into COVERAGE_PROMPT's {concept_section} slot only when a v2
+# profile is in use; the v1 path renders the slot empty, keeping the
+# rendered prompt — and therefore the v1 classifier_hash — byte-identical
+# to the pre-concepts vintage (2026-08-07 memo: no retroactive re-vintage).
+CONCEPTS_SECTION = """Course concepts taught in this course:
+{concept_block}
+
+In concepts, list every course concept from that list this message engages \
+— exact names only; empty list if none apply.
+
+"""
+
+
+def _concepts_block(profile2) -> str:
+    """Non-promoted concepts only: promoted ones are real labels with their
+    own single-label calls, not coverage facets (2026-08-07 memo, hybrid)."""
+    if profile2 is None:
+        return "(none)"
+    lines = [f"- {c.name}: {c.description}"
+             for c in profile2.concepts if not c.promoted]
+    return "\n".join(lines) or "(none)"
 
 
 def _render_window(turns: list[Turn]) -> str:
@@ -138,7 +165,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                  profile: CourseProfile, generate: Generate,
                  on_progress: Callable[[int, int], None] | None = None,
                  on_result: Callable[[SampledMessage, MessageLabels], None]
-                 | None = None, workers: int = 8) -> list[MessageLabels]:
+                 | None = None, workers: int = 8,
+                 profile2=None) -> list[MessageLabels]:
     """Call-level fan-out: (message x label) verdict calls plus one coverage
     call per message on a bounded pool. A message's record assembles when all
     its calls land; callbacks fire under the internal lock (serialized,
@@ -147,6 +175,10 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
     a resuming caller (webapp done-set) re-runs only the rest. Concurrency is
     not a provenance input (classifier_hash unchanged by `workers`)."""
     n = len(messages)
+    concept_names = ({c.name for c in profile2.concepts if not c.promoted}
+                     if profile2 is not None else set())
+    concept_section = ("" if profile2 is None else CONCEPTS_SECTION.format(
+        concept_block=_concepts_block(profile2)))
     results: list[MessageLabels | None] = [None] * n
     calls_per_msg = len(schema.labels) + 1
     slots = [{"labels": {}, "rationales": {}, "coverage": None,
@@ -167,7 +199,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                 verdict = generate(
                     COVERAGE_PROMPT.format(
                         labels=_coverage_labels_block(schema),
-                        form_taxonomy=", ".join(FORM_TAXONOMY), **common),
+                        form_taxonomy=", ".join(FORM_TAXONOMY),
+                        concept_section=concept_section, **common),
                     CoverageVerdict)
             else:
                 verdict = generate(
@@ -206,7 +239,9 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                         labels=slot["labels"], rationales=slot["rationales"],
                         no_label_fits=cov.no_label_fits,
                         coverage_note=cov.note if cov.no_label_fits else "",
-                        forms=[f for f in cov.forms if f in FORM_TAXONOMY])
+                        forms=[f for f in cov.forms if f in FORM_TAXONOMY],
+                        concepts=[c for c in cov.concepts
+                                  if c in concept_names])
                     results[idx] = r
                     state["done"] += 1
                     if on_result:
@@ -228,11 +263,16 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
 
 
 def classifier_hash(schema: LabelSchema, model: str,
-                    profile: CourseProfile) -> str:
+                    profile: CourseProfile, profile2=None) -> str:
     # \x1e-joined provenance components: none of them may themselves contain
-    # \x1e, or the join stops being unambiguous.
+    # \x1e, or the join stops being unambiguous. A v1-only run (profile2
+    # None) hashes exactly as before the 2026-08-07 concepts facet — no
+    # retroactive re-vintage; a v2 run appends the artifact canonical and
+    # the rendered concept block.
     canonical = "\x1e".join([
-        SINGLE_LABEL_PROMPT, COVERAGE_PROMPT, schema.version_id, model,
+        SINGLE_LABEL_PROMPT,
+        COVERAGE_PROMPT.replace("{concept_section}", ""),
+        schema.version_id, model,
         profile.canonical(), profile.render_context(),
         f"window={WINDOW_TURNS}",
         "forms=" + ",".join(FORM_TAXONOMY),
@@ -244,4 +284,8 @@ def classifier_hash(schema: LabelSchema, model: str,
                 LabelDef(name="x", kind="other", description="x",
                         positive_criteria="x", negative_criteria="x")])),
     ])
+    if profile2 is not None:
+        canonical = "\x1e".join([canonical, profile2.canonical(),
+                                 CONCEPTS_SECTION,
+                                 _concepts_block(profile2)])
     return hashlib.sha256(canonical.encode()).hexdigest()[:12]
