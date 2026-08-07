@@ -307,8 +307,12 @@ def make_flaky_generate(fail_at: int):
     label_calls = {"n": 0}
 
     def gen(prompt, response_model):
-        from src.labeling.draft import LabelVerdicts
-        if response_model is LabelVerdicts:
+        from src.labeling.draft import SingleLabelVerdict
+        # Count only the single-label call, one per message (this test's
+        # schema always has exactly one label) — so fail_at still means
+        # "the fail_at-th sample message dies," matching the old
+        # one-call-per-message semantics the test's comments describe.
+        if response_model is SingleLabelVerdict:
             label_calls["n"] += 1
             if label_calls["n"] == fail_at:
                 raise RuntimeError("boom")

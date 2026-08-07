@@ -1,6 +1,6 @@
 from src.labeling.cli import run_loop
 from src.labeling.course import DSC10_PROFILE
-from src.labeling.draft import LabelVerdict, LabelVerdicts
+from src.labeling.draft import CoverageVerdict, SingleLabelVerdict
 from src.labeling.elicit import DraftedLabels
 from src.labeling.schema import LabelDef
 from tests.test_sampler import CONVS
@@ -17,8 +17,10 @@ def make_fake_generate():
             fake_generate.schema_calls += 1
             name = f"label-v{fake_generate.schema_calls}"
             return DraftedLabels(labels=[_label(name)])
-        return LabelVerdicts(verdicts=[
-            LabelVerdict(label="x", applies=True, rationale="r")])
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=True, rationale="r")
+        if response_model is CoverageVerdict:
+            return CoverageVerdict(no_label_fits=False, note="")
     fake_generate.schema_calls = 0
     return fake_generate
 
