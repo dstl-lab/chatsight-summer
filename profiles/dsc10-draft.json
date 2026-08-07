@@ -1,0 +1,197 @@
+{
+  "base": {
+    "course_name": "Data Science Fundamentals with Python",
+    "domain_description": "This course covers fundamental concepts and practical skills in data analysis and manipulation using Python, focusing on data structures like DataFrames and Series, common operations such as grouping, filtering, and aggregation, error handling, and basic data visualization.",
+    "tooling": "Students primarily use Python in Jupyter notebooks, utilizing data analysis libraries such as pandas and numpy. A simplified library, 'baby pandas' (bpd), is also used, sometimes causing confusion regarding method availability.",
+    "paste_conventions": "Students frequently paste full code blocks, specific lines of code, complete error messages (including traceback), problem statements, or assignment questions directly into the chat.",
+    "reference_conventions": "Students commonly reference assignment items by question number (e.g., 'Question 1.6', '1.4.2', '3.5'), refer to their current code as 'my code' or 'this code', or mention specific notebooks by name (e.g., 'midterm-project.ipynb').",
+    "message_shape_notes": "Messages vary in length from terse question numbers ('1.6', '1.3') to long pasted code blocks with extensive error tracebacks. Many messages are direct questions about code behavior, errors, or problem approaches. Some messages contain non-English characters."
+  },
+  "concepts": [
+    {
+      "name": "DataFrame",
+      "description": "A two-dimensional, size-mutable, potentially heterogeneous tabular data structure with labeled axes (rows and columns).",
+      "aliases": [
+        "df",
+        "table"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Series",
+      "description": "A one-dimensional labeled array capable of holding any data type.",
+      "aliases": [
+        "column"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Data Aggregation",
+      "description": "The process of computing summary statistics for grouped data, typically using methods like count, sum, or mean.",
+      "aliases": [
+        "groupby",
+        "summarize"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Data Filtering",
+      "description": "Selecting a subset of data based on specified conditions.",
+      "aliases": [
+        "subset",
+        "select rows"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Error Handling",
+      "description": "Understanding and resolving common Python and pandas errors like TypeError, ValueError, and AttributeError.",
+      "aliases": [
+        "debugging",
+        "troubleshooting"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Method Chaining",
+      "description": "Calling multiple methods on an object in a single, continuous line of code.",
+      "aliases": [
+        "fluent API"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Data Types",
+      "description": "Understanding and converting between fundamental data types like string, integer, and float.",
+      "aliases": [
+        "type conversion",
+        "data casting"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Missing Values",
+      "description": "Handling and identifying missing or inconsistent data entries within a dataset.",
+      "aliases": [
+        "NaN",
+        "null values"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Data Visualization",
+      "description": "Creating visual representations of data to understand patterns, such as bar charts and histograms.",
+      "aliases": [
+        "plotting",
+        "charting"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "Apply Method",
+      "description": "Applying a function along an axis of a DataFrame or Series.",
+      "aliases": [
+        "custom function"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    },
+    {
+      "name": "String Methods",
+      "description": "Using built-in functions to manipulate string data, such as `str.contains` or `replace`.",
+      "aliases": [
+        "text processing"
+      ],
+      "promoted": false,
+      "positive_criteria": "",
+      "negative_criteria": ""
+    }
+  ],
+  "affect_labels": [
+    {
+      "name": "Frustration",
+      "kind": "conceptual",
+      "description": "Student expresses strong negative feelings, self-doubt, or exasperation about their performance or inability to solve a problem.",
+      "positive_criteria": "Contains phrases like 'why do I suck at coding?', 'I keep failing', 'I'm a fraud', 'I'm stuck', 'I'm lost', 'still not working'.",
+      "negative_criteria": "Does not contain direct requests for information only; expresses personal distress beyond simple confusion."
+    },
+    {
+      "name": "Confusion",
+      "kind": "conceptual",
+      "description": "Student indicates a lack of understanding regarding a concept, error, or expected output, often in a questioning tone.",
+      "positive_criteria": "Includes phrases such as 'why is X not working?', 'I don't understand', 'what is wrong with my code?', 'what does X do?', 'I don't follow'.",
+      "negative_criteria": "Does not involve strong emotional language indicative of frustration or self-blame."
+    },
+    {
+      "name": "Seeking Validation",
+      "kind": "behavioral",
+      "description": "Student asks for confirmation or approval of their code, approach, or understanding of a solution.",
+      "positive_criteria": "Contains questions like 'can you check my code?', 'am I right?', 'did I get X right?', 'is this correct?', 'is there a way to do X without altering the dataframe?'.",
+      "negative_criteria": "Does not primarily seek a new solution or debugging help, but rather confirmation of an existing one."
+    }
+  ],
+  "intent_labels": [
+    {
+      "name": "Debugging Request",
+      "kind": "behavioral",
+      "description": "Student seeks assistance in identifying and resolving errors in their code.",
+      "positive_criteria": "Includes error messages (Traceback, AttributeError, TypeError, ValueError), phrases like 'why am I getting this error?', 'it still says the same error', 'help me fix my code', 'why is X wrong'.",
+      "negative_criteria": "Does not primarily ask for conceptual explanations or alternative methods."
+    },
+    {
+      "name": "Conceptual Clarification",
+      "kind": "conceptual",
+      "description": "Student asks for an explanation of a concept, method, or the difference between related items.",
+      "positive_criteria": "Questions like 'what is X?', 'what does Y mean?', 'what's the difference between A, B, and C?', 'explain what's wrong'.",
+      "negative_criteria": "Does not involve pasted code snippets that are clearly attempting a specific task."
+    },
+    {
+      "name": "Code Implementation Query",
+      "kind": "behavioral",
+      "description": "Student asks for guidance on how to write code to achieve a specific task or complete an assignment question.",
+      "positive_criteria": "Phrases such as 'how to do X', 'how to calculate Y', 'how to make Z correct?', 'how should I go about X', 'what steps are needed to do X'.",
+      "negative_criteria": "Does not include existing code that is failing or explicitly request a full solution."
+    },
+    {
+      "name": "Alternative Method Query",
+      "kind": "behavioral",
+      "description": "Student asks for different ways to achieve a task, or an alternative to a specific method.",
+      "positive_criteria": "Questions like 'is there a way to do X without Y?', 'what can I use instead of X?', 'what is a different method?', 'what if I can't use lambda X?'.",
+      "negative_criteria": "Does not simply ask how to use a specific method they already know."
+    },
+    {
+      "name": "Direct Solution Request",
+      "kind": "behavioral",
+      "description": "Student explicitly asks for the complete or correct code to solve a problem or a specific part of an assignment.",
+      "positive_criteria": "Phrases like 'give me the correct cell for question X', 'solve X entirely', 'so just give me the code', 'what's the answer to Q1.1'.",
+      "negative_criteria": "Does not include their own attempt at a solution or ask for hints."
+    }
+  ],
+  "explored_on": "2026-08-07",
+  "corpus_sample": {
+    "conversations": 63,
+    "seed": 0
+  },
+  "materials_provided": false,
+  "repo_sha": "6ad5f29",
+  "accepted": false
+}
