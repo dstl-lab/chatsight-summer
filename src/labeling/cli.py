@@ -8,6 +8,7 @@ from typing import Callable
 
 from src.config import Settings
 from src.ingest.rawlog import Conversation, count_conversations, fetch_conversations
+from src.labeling.course import DSC10_PROFILE, CourseProfile
 from src.labeling.draft import draft_labels
 from src.labeling.elicit import draft_schema, revise_schema
 from src.labeling.llm import DEFAULT_MODEL, Generate, make_generate
@@ -37,12 +38,13 @@ def _render(schema: LabelSchema, sample: list[SampledMessage],
 
 
 def run_loop(intent: str, conversations: list[Conversation], generate: Generate,
-             *, sample_size: int, seed: int, ask: Callable[[str], str],
+             *, profile: CourseProfile, sample_size: int, seed: int,
+             ask: Callable[[str], str],
              say: Callable[[str], None]) -> LabelSchema | None:
-    schema = draft_schema(intent, generate)
+    schema = draft_schema(intent, profile, generate)
     sample = stratified_sample(conversations, n=sample_size, seed=seed)
     while True:
-        labeled = draft_labels(sample, schema, generate)
+        labeled = draft_labels(sample, schema, profile, generate)
         _render(schema, sample, labeled, say)
         say(f"\n{ACCEPT_NOTE}")
         choice = ask("accept/tweak/quit> ").strip().lower()
@@ -52,7 +54,7 @@ def run_loop(intent: str, conversations: list[Conversation], generate: Generate,
             return None
         if choice == "tweak":
             feedback = ask("what should change? ")
-            schema = revise_schema(schema, feedback, generate)
+            schema = revise_schema(schema, feedback, profile, generate)
 
 
 def main() -> None:
@@ -84,6 +86,7 @@ def main() -> None:
           f"(--max-conversations={args.max_conversations}).")
 
     schema = run_loop(intent, conversations, generate,
+                      profile=DSC10_PROFILE,
                       sample_size=args.sample_size, seed=args.seed,
                       ask=input, say=print)
     if schema is None:
@@ -94,7 +97,7 @@ def main() -> None:
     print(f"Accepted schema {schema.version_id}. Mass-labeling "
           f"{len(conversations)} conversations...")
     all_messages = stratified_sample(conversations, n=10**9, seed=args.seed)
-    labeled = draft_labels(all_messages, schema, generate)
+    labeled = draft_labels(all_messages, schema, DSC10_PROFILE, generate)
     try:
         repo_sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
                                   capture_output=True, text=True,
@@ -107,7 +110,8 @@ def main() -> None:
         repo_sha = "unknown"
     path = emit_snapshot(conversations, labeled, schema, model=DEFAULT_MODEL,
                          repo_sha=repo_sha, data_dir=settings.data_dir,
-                         excluded_conversations=excluded_conversations)
+                         excluded_conversations=excluded_conversations,
+                         profile=DSC10_PROFILE)
     print(f"Snapshot written: {path}")
     print("Add a row to snapshots.md with this manifest's provenance.")
 

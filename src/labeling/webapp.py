@@ -11,6 +11,7 @@ from typing import Callable
 
 from src.ingest.rawlog import Conversation, count_conversations, fetch_conversations
 from src.labeling.cli import ACCEPT_NOTE
+from src.labeling.course import DSC10_PROFILE, CourseProfile
 from src.labeling.draft import MessageLabels, classifier_hash, draft_labels
 from src.labeling.elicit import draft_schema, revise_schema
 from src.labeling.llm import DEFAULT_MODEL, Generate
@@ -47,7 +48,7 @@ class LoopSession:
     def __init__(self, *, fetch=fetch_conversations, count=count_conversations,
                  generate: Generate, ext_db_url: str, data_dir: Path,
                  repo_sha: str, runner: Callable[[Callable[[], None]], None]
-                 = _thread_runner):
+                 = _thread_runner, profile: CourseProfile = DSC10_PROFILE):
         self.fetch = fetch
         self.count = count
         self.generate = generate
@@ -55,6 +56,7 @@ class LoopSession:
         self.data_dir = data_dir
         self.repo_sha = repo_sha
         self.runner = runner
+        self.profile = profile
         self._lock = threading.Lock()
         self._reset()
 
@@ -156,7 +158,7 @@ class LoopSession:
                 self._labeled_schema = self.schema.version_id
             self._note_recent(m, r)
 
-        draft_labels(todo, self.schema, self.generate,
+        draft_labels(todo, self.schema, self.profile, self.generate,
                      on_progress=lambda done, total:
                          progress(offset + done, len(messages)),
                      on_result=on_result)
@@ -213,7 +215,7 @@ class LoopSession:
                 self.phase = "drafting"
             self._begin_step("schema")
             if self.schema is None:
-                schema = draft_schema(intent, self.generate)
+                schema = draft_schema(intent, self.profile, self.generate)
                 with self._lock:
                     self.schema = schema
             if not self.sample:
@@ -244,7 +246,8 @@ class LoopSession:
         def job() -> None:
             self._begin_step("schema")
             if not revised["done"]:
-                schema = revise_schema(self.schema, feedback, self.generate)
+                schema = revise_schema(self.schema, feedback, self.profile,
+                                       self.generate)
                 revised["done"] = True
                 with self._lock:
                     self.schema = schema
@@ -291,14 +294,17 @@ class LoopSession:
                 self.conversations, self.labeled, self.schema,
                 model=DEFAULT_MODEL, repo_sha=self.repo_sha,
                 data_dir=self.data_dir,
-                excluded_conversations=self.provenance["excluded"])
+                excluded_conversations=self.provenance["excluded"],
+                profile=self.profile)
             self._end_step("snapshot", name="Snapshot written",
                            detail=str(path))
             summary = compute_summary(self.conversations, self.labeled,
                                       self.schema, seed=self.seed)
             summary["classifier"] = {
-                "hash": classifier_hash(self.schema, DEFAULT_MODEL),
+                "hash": classifier_hash(self.schema, DEFAULT_MODEL,
+                                        self.profile),
                 "model": DEFAULT_MODEL,
+                "profile_id": self.profile.profile_id,
             }
             with self._lock:
                 self.snapshot_path = path

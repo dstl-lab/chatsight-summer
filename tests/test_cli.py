@@ -1,4 +1,5 @@
 from src.labeling.cli import run_loop
+from src.labeling.course import DSC10_PROFILE
 from src.labeling.draft import LabelVerdict, LabelVerdicts
 from src.labeling.elicit import DraftedLabels
 from src.labeling.schema import LabelDef
@@ -24,7 +25,8 @@ def make_fake_generate():
 
 def test_accept_returns_first_schema():
     answers = iter(["accept"])
-    schema = run_loop("intent", CONVS, make_fake_generate(), sample_size=4,
+    schema = run_loop("intent", CONVS, make_fake_generate(),
+                      profile=DSC10_PROFILE, sample_size=4,
                       seed=0, ask=lambda _: next(answers), say=lambda _: None)
     assert schema is not None
     assert schema.labels[0].name == "label-v1"
@@ -33,7 +35,8 @@ def test_accept_returns_first_schema():
 
 def test_tweak_then_accept_chains_versions():
     answers = iter(["tweak", "split confusion by cause", "accept"])
-    schema = run_loop("intent", CONVS, make_fake_generate(), sample_size=4,
+    schema = run_loop("intent", CONVS, make_fake_generate(),
+                      profile=DSC10_PROFILE, sample_size=4,
                       seed=0, ask=lambda _: next(answers), say=lambda _: None)
     assert schema.labels[0].name == "label-v2"
     assert schema.parent_version is not None
@@ -43,7 +46,8 @@ def test_tweak_then_accept_chains_versions():
 def test_quit_returns_none_and_renders_sample():
     lines: list[str] = []
     answers = iter(["quit"])
-    result = run_loop("intent", CONVS, make_fake_generate(), sample_size=4,
+    result = run_loop("intent", CONVS, make_fake_generate(),
+                      profile=DSC10_PROFILE, sample_size=4,
                       seed=6, ask=lambda _: next(answers), say=lines.append)
     assert result is None
     joined = "\n".join(lines)
