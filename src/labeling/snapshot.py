@@ -8,14 +8,15 @@ from datetime import date
 from pathlib import Path
 
 from src.ingest.rawlog import Conversation
+from src.labeling.course import CourseProfile
 from src.labeling.draft import MessageLabels, classifier_hash
 from src.labeling.schema import LabelSchema
 
 
 def emit_snapshot(conversations: list[Conversation], labels: list[MessageLabels],
                   schema: LabelSchema, model: str, repo_sha: str, data_dir: Path,
-                  excluded_conversations: int) -> Path:
-    chash = classifier_hash(schema, model)
+                  excluded_conversations: int, profile: CourseProfile) -> Path:
+    chash = classifier_hash(schema, model, profile)
     base_id = f"{date.today():%Y%m%d}-{schema.version_id}-{chash[:6]}"
     snapshots_dir = data_dir / "snapshots"
     snapshots_dir.mkdir(parents=True, exist_ok=True)
@@ -44,6 +45,8 @@ def emit_snapshot(conversations: list[Conversation], labels: list[MessageLabels]
             "repo_sha": repo_sha,
             "schema_version": schema.version_id,
             "classifier_hash": chash,
+            "course_profile": profile.model_dump(),
+            "profile_id": profile.profile_id,
             "row_counts": {
                 "conversations": len(conversations),
                 "turns": sum(len(c.turns) for c in conversations),
