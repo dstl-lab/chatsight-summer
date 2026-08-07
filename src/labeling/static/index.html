@@ -770,6 +770,7 @@ function renderDone(state) {
   if (s.classifier) {
     addLedgerLine(ledger, `classifier ${s.classifier.hash}`);
     addLedgerLine(ledger, `model      ${s.classifier.model}`);
+    addLedgerLine(ledger, `profile    ${s.classifier.profile_id}`);
   }
   const snapLine = addLedgerLine(ledger, "snapshot   ");
   const snapSpan = document.createElement("span");
@@ -813,6 +814,23 @@ function renderDone(state) {
     note.append(read);
   }
   cov.append(note);
+
+  if (s.coverage.abstained > 0) {
+    const ab = document.createElement("p");
+    ab.textContent =
+      `${s.coverage.abstained} messages the classifier could not fit to ` +
+      `any label — review candidates for a schema tweak`;
+    cov.append(ab);
+    if (s.coverage.abstained_examples.length) {
+      const ul = document.createElement("ul");
+      for (const z of s.coverage.abstained_examples) {
+        const li = document.createElement("li");
+        li.textContent = z.text;
+        ul.append(li);
+      }
+      cov.append(ul);
+    }
+  }
 
   doneRendered = state.schema.version_id;   // render once, only after a
                                              // full, successful render
