@@ -10,7 +10,11 @@ from collections import defaultdict
 
 from pydantic import BaseModel
 
-from src.ingest.rawlog import Conversation
+from src.ingest.rawlog import Conversation, Turn
+
+# Hash-visible context parameter (2026-08-06 memo): folded into
+# classifier_hash via draft.classifier_hash. Changing it is a new classifier.
+WINDOW_TURNS = 6
 
 
 class SampledMessage(BaseModel):
@@ -18,7 +22,7 @@ class SampledMessage(BaseModel):
     conv_id: str
     message_index: int
     text: str
-    context_before: str | None
+    context: list[Turn]
     context_after: str | None
     stratum: str
 
@@ -32,12 +36,14 @@ def _length_tercile(conversations: list[Conversation]) -> dict[str, str]:
     return out
 
 
-def _neighbors(conv: Conversation, turn_index: int) -> tuple[str | None, str | None]:
-    before = next((t.text for t in reversed(conv.turns[:turn_index])
-                   if t.role == "tutor"), None)
+def _context(conv: Conversation, turn_index: int) -> tuple[list[Turn], str | None]:
+    """Last WINDOW_TURNS turns before the target (both roles: 71% of student
+    turns are <40 chars and deictic — one adjacent tutor message is not
+    enough; 2026-08-06 memo), plus the next tutor reply."""
+    window = conv.turns[max(0, turn_index - WINDOW_TURNS):turn_index]
     after = next((t.text for t in conv.turns[turn_index + 1:]
                   if t.role == "tutor"), None)
-    return before, after
+    return list(window), after
 
 
 def stratified_sample(conversations: list[Conversation], n: int,
@@ -49,11 +55,11 @@ def stratified_sample(conversations: list[Conversation], n: int,
         for turn in conv.student_turns:
             position = "early" if turn.student_index < n_student / 2 else "late"
             stratum = f"{tercile[conv.conv_id]}/{position}"
-            before, after = _neighbors(conv, turn.index)
+            window, after = _context(conv, turn.index)
             strata[stratum].append(SampledMessage(
                 chatlog_id=conv.chatlog_id, conv_id=conv.conv_id,
                 message_index=turn.index, text=turn.text,
-                context_before=before, context_after=after, stratum=stratum,
+                context=window, context_after=after, stratum=stratum,
             ))
     rng = random.Random(seed)
     for bucket in strata.values():

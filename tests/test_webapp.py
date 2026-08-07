@@ -157,10 +157,11 @@ from src.labeling.sampler import stratified_sample
 def test_draft_labels_reports_progress():
     sample = stratified_sample(CONVS, n=4, seed=0)
     seen: list[tuple[int, int]] = []
+    from src.labeling.course import DSC10_PROFILE
     schema_gen = make_fake_generate()
     from src.labeling.elicit import draft_schema
-    schema = draft_schema("intent", schema_gen)
-    draft_labels(sample, schema, schema_gen,
+    schema = draft_schema("intent", DSC10_PROFILE, schema_gen)
+    draft_labels(sample, schema, DSC10_PROFILE, schema_gen,
                  on_progress=lambda done, total: seen.append((done, total)))
     assert seen == [(1, 4), (2, 4), (3, 4), (4, 4)]
 
@@ -246,7 +247,8 @@ def test_label_incremental_guards_against_stale_schema_labels(tmp_path):
 
     # Simulate a future path swapping the schema WITHOUT clearing
     # self.labeled/self.recent (i.e. without going through tweak()).
-    session.schema = revise_schema(session.schema, "split it", session.generate)
+    session.schema = revise_schema(session.schema, "split it",
+                                   session.profile, session.generate)
     assert session._labeled_schema != session.schema.version_id
 
     session._label_incremental(session.sample, "label")
@@ -408,9 +410,19 @@ def test_summary_includes_classifier_hash_and_model(tmp_path):
     session.accept()
     s = session.state()
     classifier = s["summary"]["classifier"]
-    assert set(classifier) == {"hash", "model"}
+    assert set(classifier) == {"hash", "model", "profile_id"}
     assert classifier["model"] == DEFAULT_MODEL
-    assert classifier["hash"] == classifier_hash(session.schema, DEFAULT_MODEL)
+    assert classifier["hash"] == classifier_hash(session.schema, DEFAULT_MODEL,
+                                                 session.profile)
+    assert classifier["profile_id"] == session.profile.profile_id
+
+
+def test_done_summary_carries_profile_id(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.accept()
+    assert session.state()["summary"]["classifier"]["profile_id"] == \
+        session.profile.profile_id
 
 
 def test_examples_endpoint(tmp_path):

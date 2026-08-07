@@ -149,6 +149,20 @@ def test_coverage_binning_caps_at_15():
     assert s["coverage"]["bins"][15] == 1
 
 
+def test_coverage_reports_abstained_pile():
+    labeled = [
+        _ml(1, 0, confused=True),
+        MessageLabels(chatlog_id=1, message_index=2,
+                     labels={"confused": False, "frustrated": False},
+                     rationales={"confused": "r", "frustrated": "r"},
+                     no_label_fits=True),
+    ]
+    s = compute_summary(CONVS, labeled, FakeSchema(), seed=0)
+    cov = s["coverage"]
+    assert cov["abstained"] == 1
+    assert cov["abstained_examples"] == [{"text": "a q1", "conv": 1}]
+
+
 def test_largest_jump():
     s = compute_summary(CONVS, LABELED, FakeSchema(), seed=0)
     # confused: [1.0, 0.0, 0.5] over weeks [0, 1, 3] -> only the 0->1
