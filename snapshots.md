@@ -16,3 +16,4 @@ on load.
 |---|---|---|---|---|---|---|---|
 | 20260803-275ba59cc0fb-73419b | 2026-08-03 | DSC 10 | 3f3ec7b | 275ba59cc0fb | 73419b573364 | 151 (9,289 excluded by --max-conversations cap) | First real snapshot, emitted via label-loop-web; 2,745 turns, 1,381 label applications |
 | 20260806-003cb322c943-2aa40b | 2026-08-06 | DSC 10 | 065f899 | 003cb322c943 | 2aa40bd1d96e | 19 (9,423 excluded by --max-conversations cap) | Smoke test of single-label parallel labeler (branch parallelize-labeling); 586 turns, 299 label rows; NOT for research use. Quality pilot ran against it (docs/2026-08-06-label-quality-pilot.md) |
+| 20260807-c1c39e153ff2-168d80 | 2026-08-07 | DSC 10 | e0d3fec | c1c39e153ff2 | 168d80bb8385 | 8 (--max-conversations 10; 2 empty) | Smoke test of corpus-grounded layered labeling (profile2 233fdbe8c236, composed 13 labels, concept facet); 89 label rows, 3 abstentions; NOT for research use (docs/2026-08-07-corpus-grounded-curated-labeling.md) |
