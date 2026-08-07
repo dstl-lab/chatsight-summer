@@ -25,6 +25,9 @@
   .gate.active .dot { width: 1.2rem; height: 1.2rem; left: -1.6rem; top: .05rem;
     background: #4a7fd4; animation: pulse 1.6s ease-in-out infinite; }
   @keyframes pulse { 50% { box-shadow: 0 0 14px rgba(74,127,212,.9); } }
+  @media (prefers-reduced-motion: reduce) {
+    .gate.active .dot { animation: none; }
+  }
   .gate.pending .dot { border: 2px solid rgba(128,128,128,.4); }
   .gate .name { font-size: .95rem; font-weight: 600; }
   .gate.active .name { color: #4a7fd4; font-weight: 700; }
@@ -40,14 +43,27 @@
   .retry-banner { padding: .4rem .65rem; border-left: 3px solid #b8860b;
     background: rgba(184,134,11,.08); font-size: .82rem;
     margin-bottom: 1.1rem; border-radius: 0 4px 4px 0; }
-  .feed-item { font-size: .88rem; padding: .45rem 0;
+  .feed-item { font-size: .88rem; padding: .5rem 0;
     border-bottom: 1px solid rgba(128,128,128,.18); }
   .feed-item:last-child { border-bottom: 0; }
-  .feed-item .msg-text { font-style: italic; opacity: .85; }
+  /* Quotes clamp to two lines so one pasted traceback can't swallow the
+     panel; overflow-wrap lets unbroken runs (doctest banners) wrap instead
+     of stretching the column past the progress bar. Labeled-feed rows are
+     additionally fixed-height (2-line quote + chip row, slack at the
+     bottom) so the abstention section below never jumps as messages of
+     wildly different lengths rotate through. */
+  .feed-item .msg-text { display: -webkit-box; -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+    overflow-wrap: anywhere; line-height: 1.45;
+    font-style: italic; opacity: .85; }
+  #feed .feed-item { min-height: 4.1rem; }
   .feed-item.old { opacity: .65; }
   .feed-item.oldest { opacity: .4; }
-  .abstention { margin-top: 12px; }
-  .abstention .head { font-weight: 600; margin-bottom: 4px; }
+  .abstention { margin-top: 1.6rem; }
+  .abstention .abstain-note { display: -webkit-box;
+    -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+    overflow: hidden; overflow-wrap: anywhere; font-size: .8rem;
+    font-style: normal; margin-top: .1rem; }
   h1 { font-size: 1.3rem; }
   h2 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; }
   textarea, input { font: inherit; width: 100%; box-sizing: border-box;
@@ -59,6 +75,8 @@
   .provenance { color: gray; font-size: .9rem; }
   .msg { border: 1px solid rgba(128,128,128,.35); border-radius: 6px;
          padding: .6rem .8rem; margin: .6rem 0; }
+  /* every surface that shows raw student text must survive unbroken runs */
+  .msg, .peek-msg, .lbl-example, #done-coverage { overflow-wrap: anywhere; }
   .stratum { font-size: .75rem; color: gray; text-transform: uppercase;
              letter-spacing: .05em; }
   .chip { display: inline-block; font-size: .8rem; border: 1px solid rgba(128,128,128,.5);
@@ -431,16 +449,19 @@ function renderWorking(state) {
   (state.status && state.status.recent || []).forEach((r, i) => {
     const item = document.createElement("div");
     item.className = "feed-item" + (i === 1 ? " old" : i >= 2 ? " oldest" : "");
-    const text = document.createElement("span");
+    const text = document.createElement("div");
     text.className = "msg-text";
     text.textContent = `“${r.text}”`;
-    item.append(text);
+    text.title = r.text;   // clamped to two lines; full text on hover
+    const chips = document.createElement("div");
+    chips.className = "chips";   // always present so rows stay one height
     for (const name of r.labels) {
       const chip = document.createElement("span");
       chip.className = "chip";
       chip.textContent = name;
-      item.append(chip);
+      chips.append(chip);
     }
+    item.append(text, chips);
     feed.append(item);
   });
 
@@ -450,21 +471,23 @@ function renderWorking(state) {
   if (ab && ab.count) {
     abEl.replaceChildren();
     const head = document.createElement("div");
-    head.className = "head";
+    head.className = "stratum";   // same voice as the "Recently labeled" head
     head.textContent =
       `${ab.count} abstention${ab.count === 1 ? "" : "s"} — acts no label captures`;
     abEl.append(head);
     for (const a of ab.recent) {
       const row = document.createElement("div");
       row.className = "feed-item";
-      const t = document.createElement("span");
+      const t = document.createElement("div");
       t.className = "msg-text";
       t.textContent = `“${a.text}”`;
+      t.title = a.text;   // clamped to two lines; full text on hover
       row.append(t);
       if (a.note) {
-        const note = document.createElement("span");
+        const note = document.createElement("div");
         note.className = "abstain-note";
         note.textContent = a.note;
+        note.title = a.note;
         row.append(note);
       }
       abEl.append(row);
