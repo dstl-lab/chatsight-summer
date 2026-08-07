@@ -1,13 +1,15 @@
 """Draft classification of sampled messages against a schema version.
 classifier_hash is the provenance pin: same hash <=> same prompt template,
-schema version, and model (CLAUDE.md rule 2)."""
+schema version, model, course profile, and context window (CLAUDE.md rule 2)."""
 import hashlib
 from typing import Callable
 
 from pydantic import BaseModel
 
+from src.ingest.rawlog import Turn
+from src.labeling.course import CourseProfile
 from src.labeling.llm import Generate
-from src.labeling.sampler import SampledMessage
+from src.labeling.sampler import WINDOW_TURNS, SampledMessage
 from src.labeling.schema import LabelSchema
 
 
@@ -22,6 +24,10 @@ class LabelVerdict(BaseModel):
 
 class LabelVerdicts(BaseModel):
     verdicts: list[LabelVerdict]
+    # Detection channel, not a labeling one (2026-08-06 memo): the model may
+    # say "no label fits" but may never name a new label. Feeds the
+    # instructor's coverage pile; round-trips through the tweak loop.
+    no_label_fits: bool = False
 
 
 class MessageLabels(BaseModel):
@@ -29,26 +35,45 @@ class MessageLabels(BaseModel):
     message_index: int
     labels: dict[str, bool]
     rationales: dict[str, str]
+    no_label_fits: bool = False   # default: old snapshots still parse
 
 
 CLASSIFY_PROMPT = """You label one student message from a student–AI tutor \
-conversation. For EACH label below decide true/false and give a one-sentence \
-rationale. Judge only the student message; context is for disambiguation.
+conversation.
+
+Course context:
+{course_context}
+
+For EACH label below decide true/false and give a one-sentence rationale. \
+Judge the student's act in THIS message — what the student is doing at this \
+point in the conversation — using the preceding turns to resolve short or \
+deictic messages (a bare "?", a question number, a pasted error).
+
+Rules:
+- Distinguish student-authored words from pasted material. A pasted \
+assignment prompt or bare error output expresses no affect by itself; label \
+it by what the student is using it to do.
+- Very short messages inherit their meaning from the immediately preceding \
+turns, including the student's own previous message.
+- If a label cannot be judged from this message even with context, mark it \
+false and say why in the rationale.
 
 Labels:
 {labels}
 
-Tutor message before (may be empty):
-{context_before}
+Conversation so far (most recent last; may be empty):
+{context}
 
 STUDENT MESSAGE TO LABEL:
 {text}
 
-Tutor message after (may be empty):
+Tutor reply after (may be empty):
 {context_after}
 
-Return one verdict entry per label: label (exact name), applies (true/false), \
-rationale (one sentence)."""
+Return one verdict entry per label: label (exact name), applies \
+(true/false), rationale (one sentence). Also set no_label_fits=true if this \
+message shows a student act that none of the labels capture; otherwise \
+false. Do not invent label names."""
 
 
 def _labels_block(schema: LabelSchema) -> str:
@@ -57,6 +82,12 @@ def _labels_block(schema: LabelSchema) -> str:
         f"| does NOT apply when: {l.negative_criteria}"
         for l in schema.labels
     )
+
+
+def _render_window(turns: list[Turn]) -> str:
+    if not turns:
+        return "(conversation start)"
+    return "\n".join(f"{t.role}: {t.text}" for t in turns)
 
 
 def _validated_verdicts(v: LabelVerdicts, schema: LabelSchema
@@ -78,7 +109,7 @@ def _validated_verdicts(v: LabelVerdicts, schema: LabelSchema
 
 
 def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
-                 generate: Generate,
+                 profile: CourseProfile, generate: Generate,
                  on_progress: Callable[[int, int], None] | None = None,
                  on_result: Callable[[SampledMessage, MessageLabels], None]
                  | None = None) -> list[MessageLabels]:
@@ -86,14 +117,16 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
     block = _labels_block(schema)
     for i, m in enumerate(messages):
         prompt = CLASSIFY_PROMPT.format(
-            labels=block, context_before=m.context_before or "",
-            text=m.text, context_after=m.context_after or "",
+            course_context=profile.render_context(), labels=block,
+            context=_render_window(m.context), text=m.text,
+            context_after=m.context_after or "",
         )
         v: LabelVerdicts = generate(prompt, LabelVerdicts)
         labels, rationales = _validated_verdicts(v, schema)
         out.append(MessageLabels(chatlog_id=m.chatlog_id,
                                  message_index=m.message_index,
-                                 labels=labels, rationales=rationales))
+                                 labels=labels, rationales=rationales,
+                                 no_label_fits=v.no_label_fits))
         if on_result:
             on_result(m, out[-1])
         if on_progress:
@@ -101,6 +134,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
     return out
 
 
-def classifier_hash(schema: LabelSchema, model: str) -> str:
-    canonical = "\x1e".join([CLASSIFY_PROMPT, schema.version_id, model])
+def classifier_hash(schema: LabelSchema, model: str,
+                    profile: CourseProfile) -> str:
+    canonical = "\x1e".join([CLASSIFY_PROMPT, schema.version_id, model,
+                             profile.canonical(), f"window={WINDOW_TURNS}"])
     return hashlib.sha256(canonical.encode()).hexdigest()[:12]
