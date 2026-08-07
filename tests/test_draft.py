@@ -227,3 +227,27 @@ def test_workers_one_is_strictly_sequential():
                        workers=1)
     assert active["max"] == 1
     assert [r.message_index for r in out] == [0, 1, 2]
+
+
+def test_on_result_exception_propagates_and_keeps_finished_messages():
+    def gen(prompt, response_model):
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=True, rationale="r")
+        return CoverageVerdict(no_label_fits=False)
+
+    def on_result(m, r):
+        if m.message_index == 1:
+            raise ValueError("callback boom")
+        delivered.append(m.message_index)
+
+    msgs = [_msg_i(i) for i in range(3)]
+    delivered = []
+    try:
+        draft_labels(msgs, SCHEMA, PROFILE, gen, workers=1,
+                     on_result=on_result)
+        raise AssertionError("should have raised")
+    except ValueError as e:
+        assert str(e) == "callback boom"
+    # workers=1 is sequential: message 0 completed and was delivered before
+    # message 1's on_result raised; message 2 never ran.
+    assert delivered == [0]

@@ -164,30 +164,40 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                 if state["failure"] is None:
                     state["failure"] = e
             return
-        with lock:
-            if state["failure"] is not None:
-                return
-            slot = slots[idx]
-            if label is None:
-                slot["coverage"] = verdict
-            else:
-                slot["labels"][label.name] = verdict.applies
-                slot["rationales"][label.name] = (verdict.rationale
-                                                  or "(no rationale returned)")
-            slot["remaining"] -= 1
-            if slot["remaining"] == 0:
-                cov = slot["coverage"]
-                r = MessageLabels(
-                    chatlog_id=m.chatlog_id, message_index=m.message_index,
-                    labels=slot["labels"], rationales=slot["rationales"],
-                    no_label_fits=cov.no_label_fits,
-                    coverage_note=cov.note if cov.no_label_fits else "")
-                results[idx] = r
-                state["done"] += 1
-                if on_result:
-                    on_result(m, r)
-                if on_progress:
-                    on_progress(state["done"], n)
+        # Assembly and callbacks run under the same lock/failure protocol as
+        # generate() itself: on_result/on_progress are caller-supplied and
+        # can raise (bad callback, assertion in a test, etc.) — that must
+        # abort the run and propagate, not vanish into a discarded Future.
+        try:
+            with lock:
+                if state["failure"] is not None:
+                    return
+                slot = slots[idx]
+                if label is None:
+                    slot["coverage"] = verdict
+                else:
+                    slot["labels"][label.name] = verdict.applies
+                    slot["rationales"][label.name] = (
+                        verdict.rationale or "(no rationale returned)")
+                slot["remaining"] -= 1
+                if slot["remaining"] == 0:
+                    cov = slot["coverage"]
+                    r = MessageLabels(
+                        chatlog_id=m.chatlog_id,
+                        message_index=m.message_index,
+                        labels=slot["labels"], rationales=slot["rationales"],
+                        no_label_fits=cov.no_label_fits,
+                        coverage_note=cov.note if cov.no_label_fits else "")
+                    results[idx] = r
+                    state["done"] += 1
+                    if on_result:
+                        on_result(m, r)
+                    if on_progress:
+                        on_progress(state["done"], n)
+        except BaseException as e:
+            with lock:
+                if state["failure"] is None:
+                    state["failure"] = e
 
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         for idx in range(n):
