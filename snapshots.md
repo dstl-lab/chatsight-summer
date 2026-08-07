@@ -15,3 +15,4 @@ on load.
 | snapshot_id | export date | course | repo SHA | schema version | classifier hash | conversations | notes |
 |---|---|---|---|---|---|---|---|
 | 20260803-275ba59cc0fb-73419b | 2026-08-03 | DSC 10 | 3f3ec7b | 275ba59cc0fb | 73419b573364 | 151 (9,289 excluded by --max-conversations cap) | First real snapshot, emitted via label-loop-web; 2,745 turns, 1,381 label applications |
+| 20260806-003cb322c943-2aa40b | 2026-08-06 | DSC 10 | 065f899 | 003cb322c943 | 2aa40bd1d96e | 19 (9,423 excluded by --max-conversations cap) | Smoke test of single-label parallel labeler (branch parallelize-labeling); 586 turns, 299 label rows; NOT for research use. Quality pilot ran against it (docs/2026-08-06-label-quality-pilot.md) |
