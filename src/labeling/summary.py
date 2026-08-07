@@ -127,7 +127,8 @@ def _coverage(conversations, labeled, seed):
     for r in abstained[:5]:
         hit = lookup.get((r.chatlog_id, r.message_index))
         if hit:
-            abstained_examples.append({"text": hit[0], "conv": r.chatlog_id})
+            abstained_examples.append({"text": hit[0], "conv": r.chatlog_id,
+                                       "note": r.coverage_note})
 
     return {"bins": bins, "zero_conversations": len(zero_convs),
             "zero_examples": zero_examples,

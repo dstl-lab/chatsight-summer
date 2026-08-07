@@ -514,3 +514,52 @@ def test_peek_endpoint_shape_and_phase_guard(tmp_path):
     assert len(r.json()["messages"]) == 2
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
     assert client.get("/api/peek").status_code == 409
+
+
+# --- abstention feed ---------------------------------------------------------
+
+
+def make_abstaining_generate():
+    """Every coverage check abstains, for exercising the abstention feed.
+    Invented text only (CLAUDE.md rule 4: no student data in fixtures)."""
+    inner = make_fake_generate()
+
+    def gen(prompt, response_model):
+        from src.labeling.draft import CoverageVerdict
+        if response_model is CoverageVerdict:
+            return CoverageVerdict(no_label_fits=True,
+                                   note="asks about grades")
+        return inner(prompt, response_model)
+    return gen
+
+
+def test_state_carries_abstention_feed(tmp_path):
+    # workers=1: ordering assertion below (recent newest-first) assumes
+    # sequential completion.
+    session = make_session(tmp_path, workers=1)
+    session.generate = make_abstaining_generate()
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    state = session.state()
+    ab = state["status"]["abstention"]
+    assert ab["count"] == len(session.labeled)
+    assert ab["recent"][0]["note"] == "asks about grades"
+    assert all(set(r) == {"text", "note"} for r in ab["recent"])
+    assert len(ab["recent"]) <= 3
+
+
+def test_no_abstention_state_is_zeroed(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert session.state()["status"]["abstention"] == {"count": 0,
+                                                        "recent": []}
+
+
+def test_tweak_clears_abstention_feed(tmp_path):
+    session = make_session(tmp_path, workers=1)
+    session.generate = make_abstaining_generate()
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert session.state()["status"]["abstention"]["count"] > 0
+    session.generate = make_fake_generate()  # new schema's checks all fit
+    session.tweak("split it")
+    assert session.state()["status"]["abstention"] == {"count": 0,
+                                                        "recent": []}

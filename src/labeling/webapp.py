@@ -77,6 +77,8 @@ class LoopSession:
         self.steps: list[dict] = []
         self.retry_info: dict | None = None
         self.recent: list[dict] = []
+        self.abstained_count = 0
+        self.abstained_recent: list[dict] = []
         self._retry_job: Callable[[], None] | None = None
         self._retry_phase: str = "idle"
         self.seed = 0
@@ -145,6 +147,8 @@ class LoopSession:
             with self._lock:
                 self.labeled = []
                 self.recent = []
+                self.abstained_count = 0
+                self.abstained_recent = []
             self._labeled_schema = None
 
         done_keys = {(r.chatlog_id, r.message_index) for r in self.labeled}
@@ -158,6 +162,11 @@ class LoopSession:
             with self._lock:
                 self.labeled.append(r)
                 self._labeled_schema = self.schema.version_id
+                if r.no_label_fits:
+                    self.abstained_count += 1
+                    self.abstained_recent = (
+                        [{"text": m.text, "note": r.coverage_note}]
+                        + self.abstained_recent)[:3]
             self._note_recent(m, r)
 
         draft_labels(todo, self.schema, self.profile, self.generate,
@@ -241,6 +250,8 @@ class LoopSession:
             self.phase = "drafting"
             self.labeled = []      # new schema version: old labels invalid
             self.recent = []
+            self.abstained_count = 0
+            self.abstained_recent = []
         self._init_steps(("schema", "Revising schema"),
                          ("label", "Labeling review sample"))
         revised = {"done": False}  # retry guard: never revise twice
@@ -385,6 +396,9 @@ class LoopSession:
                     "steps": [dict(s) for s in self.steps],
                     "retry": self.retry_info,
                     "recent": [dict(r) for r in self.recent],
+                    "abstention": {"count": self.abstained_count,
+                                   "recent": [dict(a) for a in
+                                              self.abstained_recent]},
                 },
                 "recovery": ({
                     "can_retry": self._retry_job is not None,
