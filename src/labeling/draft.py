@@ -1,6 +1,8 @@
 """Draft classification of sampled messages against a schema version.
 classifier_hash is the provenance pin: same hash <=> same prompt template,
-schema version, model, course profile, and context window (CLAUDE.md rule 2)."""
+schema version, model, course profile (both field-level canonical() and
+rendered render_context() wording), and context window (window size, the
+empty-window sentinel, and the per-turn line format), per CLAUDE.md rule 2."""
 import hashlib
 from typing import Callable
 
@@ -136,6 +138,14 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
 
 def classifier_hash(schema: LabelSchema, model: str,
                     profile: CourseProfile) -> str:
-    canonical = "\x1e".join([CLASSIFY_PROMPT, schema.version_id, model,
-                             profile.canonical(), f"window={WINDOW_TURNS}"])
+    # \x1e-joined provenance components: none of them may themselves contain
+    # \x1e, or the join stops being unambiguous.
+    canonical = "\x1e".join([
+        CLASSIFY_PROMPT, schema.version_id, model,
+        profile.canonical(), profile.render_context(),
+        f"window={WINDOW_TURNS}",
+        _render_window([]),
+        _render_window([Turn(index=0, role="student", text="x",
+                             student_index=0)]),
+    ])
     return hashlib.sha256(canonical.encode()).hexdigest()[:12]

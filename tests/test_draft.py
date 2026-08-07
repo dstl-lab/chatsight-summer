@@ -134,3 +134,14 @@ def test_hash_covers_profile_and_window():
     h2 = classifier_hash(SCHEMA, "m",
                          PROFILE.model_copy(update={"tooling": "other"}))
     assert h1 != h2
+
+
+def test_classifier_hash_golden_regression():
+    # Golden value computed once from the current CLASSIFY_PROMPT,
+    # CourseProfile.canonical()/render_context(), and _render_window's
+    # sentinel/format. ANY intentional change to the prompt template, the
+    # rendered course context wording, or the window rendering (sentinel
+    # text or "role: text" line format) must update this literal — that
+    # update, and only that update, is the point of this test.
+    h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
+    assert h == "2877d889c7a0"
