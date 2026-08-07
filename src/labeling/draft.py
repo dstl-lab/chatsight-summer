@@ -31,7 +31,19 @@ class SingleLabelVerdict(BaseModel):
     rationale: str
 
 
+# Surface form of the message (2026-08-06 prompt-redesign memo, Option B):
+# a mechanical facet like message length, repo-authored rather than
+# instructor-compiled, so it does not violate the top-down principle.
+# List-valued because hybrids (pasted prompt + authored question in one
+# message) are common. Hash-visible: folded into classifier_hash.
+FORM_TAXONOMY = ("authored-question", "pasted-assignment", "pasted-error",
+                 "code-share", "nudge", "answer-reply", "other")
+
+
 class CoverageVerdict(BaseModel):
+    # `forms` is declared first so the model commits to the surface reading
+    # of the message before judging coverage.
+    forms: list[str] = []
     # Detection channel, not a labeling one (2026-08-06 memos): the model may
     # flag "no label fits" and describe the act, but never name a label.
     no_label_fits: bool
@@ -45,6 +57,7 @@ class MessageLabels(BaseModel):
     rationales: dict[str, str]
     no_label_fits: bool = False   # default: old snapshots still parse
     coverage_note: str = ""       # ditto
+    forms: list[str] = []         # ditto
 
 
 _SHARED_RULES = """\
@@ -100,7 +113,11 @@ The label set:
 
 {_SHARED_CONTEXT}
 
-Set no_label_fits=true only if this message shows a student act that NONE \
+First declare the message's surface form(s) in forms — every value that \
+applies, from exactly this list: {{form_taxonomy}}. A message can be a \
+hybrid (e.g. a pasted assignment prompt plus an authored question).
+
+Then set no_label_fits=true only if this message shows a student act that NONE \
 of the labels capture (a message can be partially captured: some act \
 labeled, another not — that still counts). If true, describe the uncaptured \
 act in one sentence in note; do not propose or name any label. Otherwise \
@@ -149,7 +166,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
             if label is None:
                 verdict = generate(
                     COVERAGE_PROMPT.format(
-                        labels=_coverage_labels_block(schema), **common),
+                        labels=_coverage_labels_block(schema),
+                        form_taxonomy=", ".join(FORM_TAXONOMY), **common),
                     CoverageVerdict)
             else:
                 verdict = generate(
@@ -187,7 +205,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                         message_index=m.message_index,
                         labels=slot["labels"], rationales=slot["rationales"],
                         no_label_fits=cov.no_label_fits,
-                        coverage_note=cov.note if cov.no_label_fits else "")
+                        coverage_note=cov.note if cov.no_label_fits else "",
+                        forms=[f for f in cov.forms if f in FORM_TAXONOMY])
                     results[idx] = r
                     state["done"] += 1
                     if on_result:
@@ -216,6 +235,7 @@ def classifier_hash(schema: LabelSchema, model: str,
         SINGLE_LABEL_PROMPT, COVERAGE_PROMPT, schema.version_id, model,
         profile.canonical(), profile.render_context(),
         f"window={WINDOW_TURNS}",
+        "forms=" + ",".join(FORM_TAXONOMY),
         _render_window([]),
         _render_window([Turn(index=0, role="student", text="x",
                              student_index=0)]),

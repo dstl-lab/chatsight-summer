@@ -3,10 +3,10 @@ import time
 
 from src.ingest.rawlog import Turn
 from src.labeling.course import CourseProfile
-from src.labeling.draft import (COVERAGE_PROMPT, SINGLE_LABEL_PROMPT,
-                                CoverageVerdict, MessageLabels,
-                                SingleLabelVerdict, _render_window,
-                                classifier_hash, draft_labels)
+from src.labeling.draft import (COVERAGE_PROMPT, FORM_TAXONOMY,
+                                SINGLE_LABEL_PROMPT, CoverageVerdict,
+                                MessageLabels, SingleLabelVerdict,
+                                _render_window, classifier_hash, draft_labels)
 from src.labeling.sampler import SampledMessage
 from src.labeling.schema import LabelDef, LabelSchema
 
@@ -149,7 +149,7 @@ def test_classifier_hash_golden_regression():
     # those must update this literal — that update, and only that update,
     # is the point of the test.
     h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h == "5fb866447400"
+    assert h == "d7583927c8b9"
 
 
 def test_calls_run_concurrently():
@@ -252,3 +252,33 @@ def test_on_result_exception_propagates_and_keeps_finished_messages():
     # workers=1 is sequential: message 0 completed and was delivered before
     # message 1's on_result raised; message 2 never ran.
     assert delivered == [0]
+
+
+def test_forms_land_filtered_and_ordered():
+    def gen(prompt, response_model):
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=False, rationale="r")
+        return CoverageVerdict(forms=["pasted-assignment", "invented-form",
+                                      "authored-question"],
+                               no_label_fits=False)
+
+    out = draft_labels([_msg()], SCHEMA, PROFILE, gen)
+    # unknown form names dropped, taxonomy order NOT imposed (model order kept)
+    assert out[0].forms == ["pasted-assignment", "authored-question"]
+
+
+def test_forms_default_parses_old_snapshots():
+    r = MessageLabels(chatlog_id=1, message_index=0, labels={}, rationales={})
+    assert r.forms == []
+
+
+def test_coverage_prompt_carries_form_taxonomy():
+    gen = make_fake()
+    draft_labels([_msg()], SCHEMA, PROFILE, gen)
+    cov = [p for k, p in gen.calls if k == "CoverageVerdict"]
+    assert len(cov) == 1
+    for form in FORM_TAXONOMY:
+        assert form in cov[0]
+    # declared before the coverage question so the model commits to the
+    # surface reading first
+    assert cov[0].index("pasted-assignment") < cov[0].index("no_label_fits")
