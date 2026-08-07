@@ -1,7 +1,8 @@
 # 2026-08-06 — Classifier prompt redesign: grounding CLASSIFY_PROMPT in what the corpus actually looks like
 
-Status: **draft for discussion (Minchan + Sam). No code changed.** Any option below moves
-`classifier_hash`, so adopting one is a decision point, not a tweak.
+Status: **adopted (A + CourseProfile + abstention channel) — implemented on
+branch `classifier-prompt`, 2026-08-06. B (message-form facet) and C
+(few-shot exemplars) remain open.**
 
 ## Problem
 
