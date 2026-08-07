@@ -10,6 +10,8 @@ field-level canonical() and rendered render_context() wording), and context
 window (window size, the empty-window sentinel, and the per-turn line
 format), per CLAUDE.md rule 2."""
 import hashlib
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 from pydantic import BaseModel
@@ -115,47 +117,85 @@ def _render_window(turns: list[Turn]) -> str:
     return "\n".join(f"{t.role}: {t.text}" for t in turns)
 
 
-def _classify_message(m: SampledMessage, schema: LabelSchema,
-                      profile: CourseProfile,
-                      generate: Generate) -> MessageLabels:
-    common = dict(course_context=profile.render_context(),
-                  context=_render_window(m.context), text=m.text,
-                  context_after=m.context_after or "")
-    labels: dict[str, bool] = {}
-    rationales: dict[str, str] = {}
-    for l in schema.labels:
-        v: SingleLabelVerdict = generate(
-            SINGLE_LABEL_PROMPT.format(
-                label_name=l.name, label_description=l.description,
-                positive_criteria=l.positive_criteria,
-                negative_criteria=l.negative_criteria, **common),
-            SingleLabelVerdict)
-        labels[l.name] = v.applies
-        rationales[l.name] = v.rationale or "(no rationale returned)"
-    c: CoverageVerdict = generate(
-        COVERAGE_PROMPT.format(labels=_coverage_labels_block(schema),
-                               **common),
-        CoverageVerdict)
-    return MessageLabels(chatlog_id=m.chatlog_id,
-                         message_index=m.message_index, labels=labels,
-                         rationales=rationales,
-                         no_label_fits=c.no_label_fits,
-                         coverage_note=c.note if c.no_label_fits else "")
-
-
 def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                  profile: CourseProfile, generate: Generate,
                  on_progress: Callable[[int, int], None] | None = None,
                  on_result: Callable[[SampledMessage, MessageLabels], None]
-                 | None = None) -> list[MessageLabels]:
-    out: list[MessageLabels] = []
-    for i, m in enumerate(messages):
-        out.append(_classify_message(m, schema, profile, generate))
-        if on_result:
-            on_result(m, out[-1])
-        if on_progress:
-            on_progress(i + 1, len(messages))
-    return out
+                 | None = None, workers: int = 8) -> list[MessageLabels]:
+    """Call-level fan-out: (message x label) verdict calls plus one coverage
+    call per message on a bounded pool. A message's record assembles when all
+    its calls land; callbacks fire under the internal lock (serialized,
+    progress strictly increasing, per completed message). First failure stops
+    further work; already-completed messages were delivered via on_result, so
+    a resuming caller (webapp done-set) re-runs only the rest. Concurrency is
+    not a provenance input (classifier_hash unchanged by `workers`)."""
+    n = len(messages)
+    results: list[MessageLabels | None] = [None] * n
+    calls_per_msg = len(schema.labels) + 1
+    slots = [{"labels": {}, "rationales": {}, "coverage": None,
+              "remaining": calls_per_msg} for _ in messages]
+    lock = threading.Lock()
+    state = {"done": 0, "failure": None}
+
+    def run_call(idx: int, label) -> None:
+        with lock:
+            if state["failure"] is not None:
+                return
+        m = messages[idx]
+        common = dict(course_context=profile.render_context(),
+                      context=_render_window(m.context), text=m.text,
+                      context_after=m.context_after or "")
+        try:
+            if label is None:
+                verdict = generate(
+                    COVERAGE_PROMPT.format(
+                        labels=_coverage_labels_block(schema), **common),
+                    CoverageVerdict)
+            else:
+                verdict = generate(
+                    SINGLE_LABEL_PROMPT.format(
+                        label_name=label.name,
+                        label_description=label.description,
+                        positive_criteria=label.positive_criteria,
+                        negative_criteria=label.negative_criteria, **common),
+                    SingleLabelVerdict)
+        except BaseException as e:
+            with lock:
+                if state["failure"] is None:
+                    state["failure"] = e
+            return
+        with lock:
+            if state["failure"] is not None:
+                return
+            slot = slots[idx]
+            if label is None:
+                slot["coverage"] = verdict
+            else:
+                slot["labels"][label.name] = verdict.applies
+                slot["rationales"][label.name] = (verdict.rationale
+                                                  or "(no rationale returned)")
+            slot["remaining"] -= 1
+            if slot["remaining"] == 0:
+                cov = slot["coverage"]
+                r = MessageLabels(
+                    chatlog_id=m.chatlog_id, message_index=m.message_index,
+                    labels=slot["labels"], rationales=slot["rationales"],
+                    no_label_fits=cov.no_label_fits,
+                    coverage_note=cov.note if cov.no_label_fits else "")
+                results[idx] = r
+                state["done"] += 1
+                if on_result:
+                    on_result(m, r)
+                if on_progress:
+                    on_progress(state["done"], n)
+
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        for idx in range(n):
+            for label in [*schema.labels, None]:
+                pool.submit(run_call, idx, label)
+    if state["failure"] is not None:
+        raise state["failure"]
+    return [r for r in results if r is not None]
 
 
 def classifier_hash(schema: LabelSchema, model: str,

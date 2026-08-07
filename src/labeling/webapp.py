@@ -158,10 +158,14 @@ class LoopSession:
                 self._labeled_schema = self.schema.version_id
             self._note_recent(m, r)
 
+        # workers=1: keep this call site sequential for now. The UI's
+        # "recent" panel and resumable-error accounting assume messages
+        # complete in sample order (fan-out ordering is a follow-up task's
+        # concern, not this one's).
         draft_labels(todo, self.schema, self.profile, self.generate,
                      on_progress=lambda done, total:
                          progress(offset + done, len(messages)),
-                     on_result=on_result)
+                     on_result=on_result, workers=1)
 
     def _run(self, job: Callable[[], None]) -> None:
         def guarded() -> None:

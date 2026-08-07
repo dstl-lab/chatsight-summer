@@ -145,3 +145,85 @@ def test_classifier_hash_golden_regression():
     # literal — that update, and only that update, is the point of the test.
     h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
     assert h == "39dcf036b7d2"
+
+
+import threading
+import time
+
+
+def test_calls_run_concurrently():
+    barrier = threading.Barrier(3, timeout=5)
+
+    def gen(prompt, response_model):
+        barrier.wait()   # only passable with 3 calls truly in flight
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=False, rationale="r")
+        return CoverageVerdict(no_label_fits=False)
+
+    # 3 messages x (1 label + coverage) = 6 calls; barrier trips twice
+    out = draft_labels([_msg_i(i) for i in range(3)], SCHEMA, PROFILE, gen,
+                       workers=3)
+    assert len(out) == 3
+
+
+def test_output_order_despite_scrambled_completion():
+    def gen(prompt, response_model):
+        # later messages finish first
+        for i in range(4):
+            if f"invented question {i}" in prompt:
+                time.sleep(0.05 * (3 - i))
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=True, rationale="r")
+        return CoverageVerdict(no_label_fits=False)
+
+    msgs = [_msg_i(i) for i in range(4)]
+    seen = []
+    ticks = []
+    out = draft_labels(msgs, SCHEMA, PROFILE, gen, workers=4,
+                       on_result=lambda m, r: seen.append(m.message_index),
+                       on_progress=lambda d, t: ticks.append(d))
+    assert [r.message_index for r in out] == [0, 1, 2, 3]
+    assert sorted(seen) == [0, 1, 2, 3]        # any completion order
+    assert ticks == [1, 2, 3, 4]               # strictly increasing
+
+
+def test_failure_aborts_but_keeps_finished_messages():
+    def gen(prompt, response_model):
+        if "invented question 2" in prompt:
+            raise RuntimeError("boom")
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=True, rationale="r")
+        return CoverageVerdict(no_label_fits=False)
+
+    msgs = [_msg_i(i) for i in range(3)]
+    delivered = []
+    try:
+        draft_labels(msgs, SCHEMA, PROFILE, gen, workers=1,
+                     on_result=lambda m, r: delivered.append(m.message_index))
+        raise AssertionError("should have raised")
+    except RuntimeError as e:
+        assert str(e) == "boom"
+    # workers=1 is sequential: messages 0 and 1 completed and were delivered,
+    # message 2 failed, nothing after it ran
+    assert delivered == [0, 1]
+
+
+def test_workers_one_is_strictly_sequential():
+    active = {"now": 0, "max": 0}
+    lock = threading.Lock()
+
+    def gen(prompt, response_model):
+        with lock:
+            active["now"] += 1
+            active["max"] = max(active["max"], active["now"])
+        time.sleep(0.005)
+        with lock:
+            active["now"] -= 1
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=True, rationale="r")
+        return CoverageVerdict(no_label_fits=False)
+
+    out = draft_labels([_msg_i(i) for i in range(3)], SCHEMA, PROFILE, gen,
+                       workers=1)
+    assert active["max"] == 1
+    assert [r.message_index for r in out] == [0, 1, 2]
