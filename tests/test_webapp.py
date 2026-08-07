@@ -9,7 +9,7 @@ from tests.test_cli import make_fake_generate
 from tests.test_sampler import CONVS
 
 
-def make_session(tmp_path: Path) -> LoopSession:
+def make_session(tmp_path: Path, workers: int = 8) -> LoopSession:
     def fake_fetch(url, limit, on_progress=None):
         convs = CONVS[:limit] if limit else CONVS
         if on_progress:
@@ -24,6 +24,7 @@ def make_session(tmp_path: Path) -> LoopSession:
         data_dir=tmp_path,
         repo_sha="testsha",
         runner=lambda job: job(),           # synchronous in tests
+        workers=workers,
     )
 
 
@@ -204,7 +205,9 @@ def test_status_steps_after_accept_and_review_labels_reused(tmp_path):
 
 
 def test_recent_holds_last_three_newest_first(tmp_path):
-    session = make_session(tmp_path)
+    # workers=1: ordering assertions below assume sequential completion,
+    # which real parallel fan-out (workers > 1) does not guarantee.
+    session = make_session(tmp_path, workers=1)
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
     recent = session.state()["status"]["recent"]
     assert len(recent) == 3
@@ -307,8 +310,12 @@ def make_flaky_generate(fail_at: int):
     label_calls = {"n": 0}
 
     def gen(prompt, response_model):
-        from src.labeling.draft import LabelVerdicts
-        if response_model is LabelVerdicts:
+        from src.labeling.draft import SingleLabelVerdict
+        # Count only the single-label call, one per message (this test's
+        # schema always has exactly one label) — so fail_at still means
+        # "the fail_at-th sample message dies," matching the old
+        # one-call-per-message semantics the test's comments describe.
+        if response_model is SingleLabelVerdict:
             label_calls["n"] += 1
             if label_calls["n"] == fail_at:
                 raise RuntimeError("boom")
@@ -317,7 +324,8 @@ def make_flaky_generate(fail_at: int):
 
 
 def test_error_keeps_partial_labels_and_retry_resumes(tmp_path):
-    session = make_session(tmp_path)
+    # workers=1: labeled_count assertion below assumes sequential completion.
+    session = make_session(tmp_path, workers=1)
     session.generate = make_flaky_generate(fail_at=3)  # 3rd sample msg dies
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
     s = session.state()
@@ -506,3 +514,52 @@ def test_peek_endpoint_shape_and_phase_guard(tmp_path):
     assert len(r.json()["messages"]) == 2
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
     assert client.get("/api/peek").status_code == 409
+
+
+# --- abstention feed ---------------------------------------------------------
+
+
+def make_abstaining_generate():
+    """Every coverage check abstains, for exercising the abstention feed.
+    Invented text only (CLAUDE.md rule 4: no student data in fixtures)."""
+    inner = make_fake_generate()
+
+    def gen(prompt, response_model):
+        from src.labeling.draft import CoverageVerdict
+        if response_model is CoverageVerdict:
+            return CoverageVerdict(no_label_fits=True,
+                                   note="asks about grades")
+        return inner(prompt, response_model)
+    return gen
+
+
+def test_state_carries_abstention_feed(tmp_path):
+    # workers=1: ordering assertion below (recent newest-first) assumes
+    # sequential completion.
+    session = make_session(tmp_path, workers=1)
+    session.generate = make_abstaining_generate()
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    state = session.state()
+    ab = state["status"]["abstention"]
+    assert ab["count"] == len(session.labeled)
+    assert ab["recent"][0]["note"] == "asks about grades"
+    assert all(set(r) == {"text", "note"} for r in ab["recent"])
+    assert len(ab["recent"]) <= 3
+
+
+def test_no_abstention_state_is_zeroed(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert session.state()["status"]["abstention"] == {"count": 0,
+                                                        "recent": []}
+
+
+def test_tweak_clears_abstention_feed(tmp_path):
+    session = make_session(tmp_path, workers=1)
+    session.generate = make_abstaining_generate()
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert session.state()["status"]["abstention"]["count"] > 0
+    session.generate = make_fake_generate()  # new schema's checks all fit
+    session.tweak("split it")
+    assert session.state()["status"]["abstention"] == {"count": 0,
+                                                        "recent": []}

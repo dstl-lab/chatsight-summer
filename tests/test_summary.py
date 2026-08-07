@@ -155,12 +155,13 @@ def test_coverage_reports_abstained_pile():
         MessageLabels(chatlog_id=1, message_index=2,
                      labels={"confused": False, "frustrated": False},
                      rationales={"confused": "r", "frustrated": "r"},
-                     no_label_fits=True),
+                     no_label_fits=True, coverage_note="asks about grades"),
     ]
     s = compute_summary(CONVS, labeled, FakeSchema(), seed=0)
     cov = s["coverage"]
     assert cov["abstained"] == 1
-    assert cov["abstained_examples"] == [{"text": "a q1", "conv": 1}]
+    ex = cov["abstained_examples"][0]
+    assert ex == {"text": "a q1", "conv": 1, "note": "asks about grades"}
 
 
 def test_largest_jump():

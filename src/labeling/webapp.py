@@ -48,7 +48,8 @@ class LoopSession:
     def __init__(self, *, fetch=fetch_conversations, count=count_conversations,
                  generate: Generate, ext_db_url: str, data_dir: Path,
                  repo_sha: str, runner: Callable[[Callable[[], None]], None]
-                 = _thread_runner, profile: CourseProfile = DSC10_PROFILE):
+                 = _thread_runner, profile: CourseProfile = DSC10_PROFILE,
+                 workers: int = 8):
         self.fetch = fetch
         self.count = count
         self.generate = generate
@@ -57,6 +58,7 @@ class LoopSession:
         self.repo_sha = repo_sha
         self.runner = runner
         self.profile = profile
+        self.workers = workers
         self._lock = threading.Lock()
         self._reset()
 
@@ -75,6 +77,8 @@ class LoopSession:
         self.steps: list[dict] = []
         self.retry_info: dict | None = None
         self.recent: list[dict] = []
+        self.abstained_count = 0
+        self.abstained_recent: list[dict] = []
         self._retry_job: Callable[[], None] | None = None
         self._retry_phase: str = "idle"
         self.seed = 0
@@ -143,6 +147,8 @@ class LoopSession:
             with self._lock:
                 self.labeled = []
                 self.recent = []
+                self.abstained_count = 0
+                self.abstained_recent = []
             self._labeled_schema = None
 
         done_keys = {(r.chatlog_id, r.message_index) for r in self.labeled}
@@ -156,12 +162,17 @@ class LoopSession:
             with self._lock:
                 self.labeled.append(r)
                 self._labeled_schema = self.schema.version_id
+                if r.no_label_fits:
+                    self.abstained_count += 1
+                    self.abstained_recent = (
+                        [{"text": m.text, "note": r.coverage_note}]
+                        + self.abstained_recent)[:3]
             self._note_recent(m, r)
 
         draft_labels(todo, self.schema, self.profile, self.generate,
                      on_progress=lambda done, total:
                          progress(offset + done, len(messages)),
-                     on_result=on_result)
+                     on_result=on_result, workers=self.workers)
 
     def _run(self, job: Callable[[], None]) -> None:
         def guarded() -> None:
@@ -239,6 +250,8 @@ class LoopSession:
             self.phase = "drafting"
             self.labeled = []      # new schema version: old labels invalid
             self.recent = []
+            self.abstained_count = 0
+            self.abstained_recent = []
         self._init_steps(("schema", "Revising schema"),
                          ("label", "Labeling review sample"))
         revised = {"done": False}  # retry guard: never revise twice
@@ -383,6 +396,9 @@ class LoopSession:
                     "steps": [dict(s) for s in self.steps],
                     "retry": self.retry_info,
                     "recent": [dict(r) for r in self.recent],
+                    "abstention": {"count": self.abstained_count,
+                                   "recent": [dict(a) for a in
+                                              self.abstained_recent]},
                 },
                 "recovery": ({
                     "can_retry": self._retry_job is not None,
@@ -511,7 +527,8 @@ def main() -> None:
     session = LoopSession(generate=generate,
                           ext_db_url=settings.ext_db_url,
                           data_dir=settings.data_dir,
-                          repo_sha=_repo_sha(settings.repo_root))
+                          repo_sha=_repo_sha(settings.repo_root),
+                          workers=settings.labeling_workers)
     # 127.0.0.1 only: student text never leaves the machine (CLAUDE.md rule 4)
     print("label-loop web UI on http://127.0.0.1:8321 (is bin/tunnel running?)")
     uvicorn.run(create_app(session), host="127.0.0.1", port=8321)

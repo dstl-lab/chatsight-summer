@@ -22,3 +22,11 @@ def test_data_dir_is_repo_data(monkeypatch):
     s = Settings.load(dotenv=False)
     assert s.data_dir == s.repo_root / "data"
     assert (s.repo_root / "CLAUDE.md").exists()
+
+
+def test_labeling_workers_default_and_env(monkeypatch):
+    monkeypatch.setenv("EXT_DB_URL", "postgresql://x/y")
+    monkeypatch.delenv("LABELING_WORKERS", raising=False)
+    assert Settings.load(dotenv=False).labeling_workers == 8
+    monkeypatch.setenv("LABELING_WORKERS", "2")
+    assert Settings.load(dotenv=False).labeling_workers == 2

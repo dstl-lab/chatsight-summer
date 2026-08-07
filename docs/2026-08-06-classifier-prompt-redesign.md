@@ -2,7 +2,10 @@
 
 Status: **adopted (A + CourseProfile + abstention channel) — implemented on
 branch `classifier-prompt`, 2026-08-06. B (message-form facet) and C
-(few-shot exemplars) remain open.**
+(few-shot exemplars) remain open. Packaging superseded 2026-08-06: the
+all-labels-in-one-call block is replaced by single-label calls plus a coverage call —
+see `2026-08-06-parallel-labeling-live-schema-growth.md`; CourseProfile, context
+window, judgment rules, and the abstention channel carry over.**
 
 ## Problem
 

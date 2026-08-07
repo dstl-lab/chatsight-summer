@@ -13,6 +13,7 @@ class Settings:
     gemini_api_key: str | None
     repo_root: Path
     data_dir: Path
+    labeling_workers: int
 
     @classmethod
     def load(cls, dotenv: bool = True) -> "Settings":
@@ -30,4 +31,5 @@ class Settings:
             gemini_api_key=os.environ.get("GEMINI_API_KEY"),
             repo_root=_REPO_ROOT,
             data_dir=_REPO_ROOT / "data",
+            labeling_workers=int(os.environ.get("LABELING_WORKERS", "8")),
         )
