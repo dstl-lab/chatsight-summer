@@ -3,6 +3,7 @@ free-text feedback -> revised schema. Drafting is anchored by design; reliabilit
 measurement is blind and lives elsewhere (invariant 8)."""
 from pydantic import BaseModel
 
+from src.labeling.course import CourseProfile
 from src.labeling.llm import Generate
 from src.labeling.schema import LabelDef, LabelSchema
 
@@ -14,6 +15,9 @@ class DraftedLabels(BaseModel):
 ELICIT_PROMPT = """You are helping a course instructor turn the trends they want \
 to see in student–AI tutor chat logs into a precise label schema.
 
+Course context:
+{course_context}
+
 Instructor's stated interest:
 {intent}
 
@@ -22,10 +26,13 @@ kind ("conceptual" for topic/content labels, "behavioral" for help-seeking or \
 affect, "other" otherwise); a one-sentence description; positive_criteria (when \
 it applies); negative_criteria (nearby cases where it must NOT apply). Labels \
 must be checkable from a single student message with surrounding conversation \
-context. Prefer fewer, sharper labels over many vague ones."""
+context. Prefer fewer, sharper labels over many vague ones. Labels must be judgeable on messages as they actually occur in this course's logs (see message shape above), not only on articulate prose."""
 
 REVISE_PROMPT = """You are revising a label schema for student–AI tutor chat \
 logs based on instructor feedback.
+
+Course context:
+{course_context}
 
 Instructor's original interest:
 {intent}
@@ -40,14 +47,18 @@ Return the full revised label set (same format, 3-8 binary message-level \
 labels), applying the feedback. Keep labels the feedback did not touch."""
 
 
-def draft_schema(intent_text: str, generate: Generate) -> LabelSchema:
-    drafted = generate(ELICIT_PROMPT.format(intent=intent_text), DraftedLabels)
+def draft_schema(intent_text: str, profile: CourseProfile, generate: Generate) -> LabelSchema:
+    drafted = generate(
+        ELICIT_PROMPT.format(intent=intent_text, course_context=profile.render_context()),
+        DraftedLabels
+    )
     return LabelSchema(instructor_intent=intent_text, labels=drafted.labels)
 
 
-def revise_schema(current: LabelSchema, feedback: str, generate: Generate) -> LabelSchema:
+def revise_schema(current: LabelSchema, feedback: str, profile: CourseProfile, generate: Generate) -> LabelSchema:
     prompt = REVISE_PROMPT.format(
         intent=current.instructor_intent,
+        course_context=profile.render_context(),
         labels="\n".join(
             f"- {l.name} ({l.kind}): {l.description} | applies: {l.positive_criteria} "
             f"| does not apply: {l.negative_criteria}"

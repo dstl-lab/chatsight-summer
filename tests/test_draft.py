@@ -42,7 +42,7 @@ fake_generate.prompts = []
 
 
 def _schema():
-    return draft_schema("who is confused", te.fake_generate)
+    return draft_schema("who is confused", PROFILE, te.fake_generate)
 
 
 def _msg_i(i: int) -> SampledMessage:
@@ -84,13 +84,13 @@ def test_classifier_hash_pins_schema_and_model():
     h = classifier_hash(s, "gemini-2.5-flash", PROFILE)
     assert len(h) == 12
     assert h != classifier_hash(s, "gemini-3.0", PROFILE)
-    revised = draft_schema("who is angry", te.fake_generate)
+    revised = draft_schema("who is angry", PROFILE, te.fake_generate)
     assert h != classifier_hash(revised, "gemini-2.5-flash", PROFILE)
 
 
 def test_draft_labels_calls_on_result_per_message():
     gen = make_fake_generate()
-    schema = draft_schema("intent", gen)
+    schema = draft_schema("intent", PROFILE, gen)
     sample = stratified_sample(CONVS, n=4, seed=0)
     seen: list[tuple[int, int]] = []
     results = draft_labels(
