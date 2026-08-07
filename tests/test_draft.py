@@ -1,3 +1,6 @@
+import threading
+import time
+
 from src.ingest.rawlog import Turn
 from src.labeling.course import CourseProfile
 from src.labeling.draft import (COVERAGE_PROMPT, SINGLE_LABEL_PROMPT,
@@ -140,15 +143,13 @@ def test_hash_covers_profile_window_schema_model():
 
 
 def test_classifier_hash_golden_regression():
-    # Golden literal pins BOTH templates, the profile rendering, and the
-    # window rendering. Any intentional change to those must update this
-    # literal — that update, and only that update, is the point of the test.
+    # Golden literal pins BOTH templates, the profile rendering, the window
+    # rendering, and the coverage-call labels-block rendering (the
+    # "- {name}: {description}" line format). Any intentional change to
+    # those must update this literal — that update, and only that update,
+    # is the point of the test.
     h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h == "39dcf036b7d2"
-
-
-import threading
-import time
+    assert h == "5fb866447400"
 
 
 def test_calls_run_concurrently():

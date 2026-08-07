@@ -73,7 +73,8 @@ def main() -> None:
     settings = Settings.load()
     if not settings.gemini_api_key:
         sys.exit("GEMINI_API_KEY missing from .env")
-    workers = args.workers or settings.labeling_workers
+    workers = (args.workers if args.workers is not None
+              else settings.labeling_workers)
     generate = make_generate(settings.gemini_api_key)
 
     intent = args.intent or input(

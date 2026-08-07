@@ -54,7 +54,7 @@ reassemble into one record when all its calls land; downstream contracts
 (`on_result` per message, resume keyed by `(chatlog_id, message_index)`) are
 unchanged. First failure after retries stops new submissions, lets in-flight calls
 land, and re-raises — abort, but finished messages survive and the run resumes from
-them.
+them (the webapp's done-set behavior; the CLI mass path has no resume and restarts).
 
 **Live abstention feed (Phase 1).** During `mass_labeling`, the webapp shows a running
 abstention count and the abstained messages (with their coverage notes) as they

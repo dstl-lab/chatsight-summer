@@ -20,7 +20,7 @@ from src.ingest.rawlog import Turn
 from src.labeling.course import CourseProfile
 from src.labeling.llm import Generate
 from src.labeling.sampler import WINDOW_TURNS, SampledMessage
-from src.labeling.schema import LabelSchema
+from src.labeling.schema import LabelDef, LabelSchema
 
 
 # Wire format for Gemini structured output. Must stay free of dict[...] fields:
@@ -219,5 +219,9 @@ def classifier_hash(schema: LabelSchema, model: str,
         _render_window([]),
         _render_window([Turn(index=0, role="student", text="x",
                              student_index=0)]),
+        _coverage_labels_block(LabelSchema(
+            instructor_intent="x", labels=[
+                LabelDef(name="x", kind="other", description="x",
+                        positive_criteria="x", negative_criteria="x")])),
     ])
     return hashlib.sha256(canonical.encode()).hexdigest()[:12]
