@@ -48,7 +48,8 @@ class LoopSession:
     def __init__(self, *, fetch=fetch_conversations, count=count_conversations,
                  generate: Generate, ext_db_url: str, data_dir: Path,
                  repo_sha: str, runner: Callable[[Callable[[], None]], None]
-                 = _thread_runner, profile: CourseProfile = DSC10_PROFILE):
+                 = _thread_runner, profile: CourseProfile = DSC10_PROFILE,
+                 workers: int = 8):
         self.fetch = fetch
         self.count = count
         self.generate = generate
@@ -57,6 +58,7 @@ class LoopSession:
         self.repo_sha = repo_sha
         self.runner = runner
         self.profile = profile
+        self.workers = workers
         self._lock = threading.Lock()
         self._reset()
 
@@ -158,14 +160,10 @@ class LoopSession:
                 self._labeled_schema = self.schema.version_id
             self._note_recent(m, r)
 
-        # workers=1: keep this call site sequential for now. The UI's
-        # "recent" panel and resumable-error accounting assume messages
-        # complete in sample order (fan-out ordering is a follow-up task's
-        # concern, not this one's).
         draft_labels(todo, self.schema, self.profile, self.generate,
                      on_progress=lambda done, total:
                          progress(offset + done, len(messages)),
-                     on_result=on_result, workers=1)
+                     on_result=on_result, workers=self.workers)
 
     def _run(self, job: Callable[[], None]) -> None:
         def guarded() -> None:
@@ -515,7 +513,8 @@ def main() -> None:
     session = LoopSession(generate=generate,
                           ext_db_url=settings.ext_db_url,
                           data_dir=settings.data_dir,
-                          repo_sha=_repo_sha(settings.repo_root))
+                          repo_sha=_repo_sha(settings.repo_root),
+                          workers=settings.labeling_workers)
     # 127.0.0.1 only: student text never leaves the machine (CLAUDE.md rule 4)
     print("label-loop web UI on http://127.0.0.1:8321 (is bin/tunnel running?)")
     uvicorn.run(create_app(session), host="127.0.0.1", port=8321)

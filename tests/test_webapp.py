@@ -9,7 +9,7 @@ from tests.test_cli import make_fake_generate
 from tests.test_sampler import CONVS
 
 
-def make_session(tmp_path: Path) -> LoopSession:
+def make_session(tmp_path: Path, workers: int = 8) -> LoopSession:
     def fake_fetch(url, limit, on_progress=None):
         convs = CONVS[:limit] if limit else CONVS
         if on_progress:
@@ -24,6 +24,7 @@ def make_session(tmp_path: Path) -> LoopSession:
         data_dir=tmp_path,
         repo_sha="testsha",
         runner=lambda job: job(),           # synchronous in tests
+        workers=workers,
     )
 
 
@@ -204,7 +205,9 @@ def test_status_steps_after_accept_and_review_labels_reused(tmp_path):
 
 
 def test_recent_holds_last_three_newest_first(tmp_path):
-    session = make_session(tmp_path)
+    # workers=1: ordering assertions below assume sequential completion,
+    # which real parallel fan-out (workers > 1) does not guarantee.
+    session = make_session(tmp_path, workers=1)
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
     recent = session.state()["status"]["recent"]
     assert len(recent) == 3
@@ -321,7 +324,8 @@ def make_flaky_generate(fail_at: int):
 
 
 def test_error_keeps_partial_labels_and_retry_resumes(tmp_path):
-    session = make_session(tmp_path)
+    # workers=1: labeled_count assertion below assumes sequential completion.
+    session = make_session(tmp_path, workers=1)
     session.generate = make_flaky_generate(fail_at=3)  # 3rd sample msg dies
     session.start("intent", max_conversations=4, sample_size=4, seed=0)
     s = session.state()

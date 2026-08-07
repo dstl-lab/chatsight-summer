@@ -40,11 +40,13 @@ def _render(schema: LabelSchema, sample: list[SampledMessage],
 def run_loop(intent: str, conversations: list[Conversation], generate: Generate,
              *, profile: CourseProfile, sample_size: int, seed: int,
              ask: Callable[[str], str],
-             say: Callable[[str], None]) -> LabelSchema | None:
+             say: Callable[[str], None],
+             workers: int = 8) -> LabelSchema | None:
     schema = draft_schema(intent, profile, generate)
     sample = stratified_sample(conversations, n=sample_size, seed=seed)
     while True:
-        labeled = draft_labels(sample, schema, profile, generate)
+        labeled = draft_labels(sample, schema, profile, generate,
+                               workers=workers)
         _render(schema, sample, labeled, say)
         say(f"\n{ACCEPT_NOTE}")
         choice = ask("accept/tweak/quit> ").strip().lower()
@@ -63,11 +65,15 @@ def main() -> None:
     parser.add_argument("--max-conversations", type=int, default=200)
     parser.add_argument("--sample-size", type=int, default=25)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--workers", type=int, default=None,
+                        help="parallel Gemini calls (default: "
+                             "LABELING_WORKERS or 8)")
     args = parser.parse_args()
 
     settings = Settings.load()
     if not settings.gemini_api_key:
         sys.exit("GEMINI_API_KEY missing from .env")
+    workers = args.workers or settings.labeling_workers
     generate = make_generate(settings.gemini_api_key)
 
     intent = args.intent or input(
@@ -88,7 +94,7 @@ def main() -> None:
     schema = run_loop(intent, conversations, generate,
                       profile=DSC10_PROFILE,
                       sample_size=args.sample_size, seed=args.seed,
-                      ask=input, say=print)
+                      ask=input, say=print, workers=workers)
     if schema is None:
         print("Quit without accepting; nothing written.")
         return
@@ -97,7 +103,13 @@ def main() -> None:
     print(f"Accepted schema {schema.version_id}. Mass-labeling "
           f"{len(conversations)} conversations...")
     all_messages = stratified_sample(conversations, n=10**9, seed=args.seed)
-    labeled = draft_labels(all_messages, schema, DSC10_PROFILE, generate)
+    labeled = draft_labels(all_messages, schema, DSC10_PROFILE, generate,
+                           workers=workers)
+    abstained = sum(1 for r in labeled if r.no_label_fits)
+    if labeled:
+        print(f"Coverage: {abstained} of {len(labeled)} messages "
+              f"({abstained / len(labeled):.0%}) showed acts no label "
+              f"captures.")
     try:
         repo_sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
                                   capture_output=True, text=True,
