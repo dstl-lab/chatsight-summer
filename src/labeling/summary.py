@@ -96,6 +96,11 @@ def _top_pairs(labeled, limit=3):
 
 
 def _coverage(conversations, labeled, seed):
+    """Coverage summary, including the abstention pile: messages where the
+    drafting model set `no_label_fits` (schema has no construct for this
+    message). This pile feeds the instructor, not the schema — it is
+    evidence for a possible future schema tweak, not itself a label
+    (2026-08-06 memo)."""
     labeled_count = Counter()
     for r in labeled:
         if any(r.labels.values()):
@@ -111,8 +116,23 @@ def _coverage(conversations, labeled, seed):
     rng.shuffle(zero_convs)
     zero_examples = [{"text": c.student_turns[0].text, "conv": c.chatlog_id}
                      for c in zero_convs[:5] if c.student_turns]
+
+    lookup = _message_lookup(conversations)
+    abstained = [r for r in labeled if r.no_label_fits]
+    # Separate Random instance so the zero_examples sequence above is
+    # unaffected by this shuffle for a given seed.
+    abstain_rng = random.Random(seed)
+    abstain_rng.shuffle(abstained)
+    abstained_examples = []
+    for r in abstained[:5]:
+        hit = lookup.get((r.chatlog_id, r.message_index))
+        if hit:
+            abstained_examples.append({"text": hit[0], "conv": r.chatlog_id})
+
     return {"bins": bins, "zero_conversations": len(zero_convs),
-            "zero_examples": zero_examples}
+            "zero_examples": zero_examples,
+            "abstained": len(abstained),
+            "abstained_examples": abstained_examples}
 
 
 def _largest_jump(weekly):
