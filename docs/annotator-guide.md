@@ -66,7 +66,7 @@ data/audit/<snapshot_id>/human-labels-YOURNAME.json
 
 **This file is safe to send through normal channels** (email/Slack): it
 contains only message ID numbers and your yes/no answers — no student text.
-Send it to Minchan (namgyu.jkj@gmail.com). Do **not** send the snapshot
+Send it to Minchan. Do **not** send the snapshot
 directory itself anywhere, and delete it when you're done
 (`rm -r data/snapshots/<snapshot_id>` — your answers file is all we need).
 
