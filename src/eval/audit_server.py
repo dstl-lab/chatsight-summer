@@ -19,9 +19,9 @@ from src.labeling.schema import LabelSchema
 PAGE = """<!doctype html><meta charset="utf-8">
 <title>blind audit</title>
 <style>
-body{font:15px -apple-system,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem}
-.ctx{color:#666;font-size:13px;white-space:pre-wrap;border-left:3px solid #ddd;padding-left:8px;margin:4px 0;max-height:150px;overflow-y:auto}
-.msg{background:#f5f2ea;padding:10px;border-radius:6px;white-space:pre-wrap;margin:10px 0;font-weight:600}
+body{font:15px -apple-system,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem 110px}
+.ctx{color:#666;font-size:13px;white-space:pre-wrap;border-left:3px solid #ddd;padding-left:8px;margin:4px 0;max-height:140px;overflow-y:auto}
+.msg{background:#f5f2ea;padding:10px;border-radius:6px;white-space:pre-wrap;margin:10px 0;font-weight:600;max-height:220px;overflow-y:auto}
 .lbl{display:block;margin:6px 0;padding:8px;border:1px solid #ddd;border-radius:6px;cursor:pointer;border-left-width:5px}
 .lbl small{color:#666;display:block}
 .lbl input{margin-right:8px}
@@ -33,7 +33,10 @@ body{font:15px -apple-system,sans-serif;max-width:820px;margin:2rem auto;padding
 .legend span{display:inline-block;padding:2px 8px;border-radius:4px;margin-right:6px;border-left:5px solid}
 
 .sect{font-size:11px;letter-spacing:.08em;color:#999;margin:14px 0 4px;font-weight:700}
-.nav{margin:16px 0;display:flex;gap:8px;align-items:center}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+width:min(852px,100vw);box-sizing:border-box;background:#fff;
+border-top:1px solid #ddd;padding:14px 1rem;margin:0;display:flex;gap:8px;
+align-items:center;z-index:10}
 button{padding:8px 14px}
 #done{display:none;font-weight:600}
 .warn{background:#fff6e0;padding:8px;border-radius:6px;font-size:13px}
