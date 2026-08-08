@@ -52,3 +52,35 @@ def test_elicit_prompt_carries_course_context_and_judgeability():
     draft_schema("intent", PROFILE, fake_generate)
     assert "Test 101" in captured["prompt"]
     assert "judgeable on messages as they actually occur" in captured["prompt"]
+
+
+def test_draft_schema_sees_profile_layers_and_distinctness_rule():
+    from src.labeling.profile2 import ConceptDef, CourseProfileV2
+    captured = {}
+
+    def gen(prompt, response_model):
+        captured["prompt"] = prompt
+        return DraftedLabels(labels=[LabelDef(
+            name="x", kind="other", description="d",
+            positive_criteria="p", negative_criteria="n")])
+
+    v2 = CourseProfileV2(
+        base=PROFILE,
+        concepts=[ConceptDef(name="loops", description="d", promoted=True,
+                             positive_criteria="pc", negative_criteria="nc")],
+        affect_labels=[LabelDef(name="frustration", kind="behavioral",
+                                description="fd", positive_criteria="fp",
+                                negative_criteria="fn")],
+        intent_labels=[], explored_on="2026-08-07",
+        corpus_sample={"conversations": 1, "seed": 0},
+        materials_provided=False, repo_sha="x", accepted=True)
+    draft_schema("intent", PROFILE, gen, profile2=v2)
+    p = captured["prompt"]
+    assert "frustration" in p and "fd" in p     # covered layer shown
+    assert "loops" in p                          # promoted concept shown
+    assert "do NOT draft duplicates" in p
+    assert "mutually distinct" in p
+
+    draft_schema("intent", PROFILE, gen)         # no profile: block absent
+    assert "frustration" not in captured["prompt"]
+    assert "mutually distinct" in captured["prompt"]

@@ -55,7 +55,7 @@ def run_loop(intent: str, conversations: list[Conversation], generate: Generate,
              ask: Callable[[str], str],
              say: Callable[[str], None],
              workers: int = 8, profile2=None) -> LabelSchema | None:
-    schema = draft_schema(intent, profile, generate)
+    schema = draft_schema(intent, profile, generate, profile2=profile2)
     sample = stratified_sample(conversations, n=sample_size, seed=seed)
     while True:
         labeled = draft_labels(sample, schema, profile, generate,
@@ -138,6 +138,8 @@ def main() -> None:
         print(f"Coverage: {abstained} of {len(labeled)} messages "
               f"({abstained / len(labeled):.0%}) showed acts no label "
               f"captures.")
+        from src.labeling.distinctness import distinctness_report
+        print(distinctness_report(labeled))
     try:
         repo_sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
                                   capture_output=True, text=True,
