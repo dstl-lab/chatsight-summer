@@ -16,6 +16,31 @@ from src.ingest.rawlog import Conversation, Turn
 # classifier_hash via draft.classifier_hash. Changing it is a new classifier.
 WINDOW_TURNS = 6
 
+# Latency buckets (2026-08-07 context-timing spec): elapsed time from the
+# nearest preceding tutor turn to the student turn. Mechanical, computed
+# from event timestamps — never an LLM judgment. Thresholds are rendered
+# into the classifier prompt, so they are hash-visible via
+# draft.classifier_hash: changing them is a new classifier.
+RAPID_S = 120
+WORKING_S = 1800
+DELAYED_S = 21600
+LATENCY_BUCKETS = ("conversation-opening", "rapid", "working", "delayed",
+                   "returned", "unknown")
+
+
+def latency_bucket(seconds: float | None, *, opening: bool) -> str:
+    if opening:
+        return "conversation-opening"
+    if seconds is None:
+        return "unknown"
+    if seconds < RAPID_S:
+        return "rapid"
+    if seconds < WORKING_S:
+        return "working"
+    if seconds < DELAYED_S:
+        return "delayed"
+    return "returned"
+
 
 class SampledMessage(BaseModel):
     chatlog_id: int
@@ -25,6 +50,8 @@ class SampledMessage(BaseModel):
     context: list[Turn]
     context_after: str | None
     stratum: str
+    latency_seconds: float | None = None
+    latency_bucket: str = "unknown"
 
 
 def _length_tercile(conversations: list[Conversation]) -> dict[str, str]:
@@ -46,6 +73,21 @@ def _context(conv: Conversation, turn_index: int) -> tuple[list[Turn], str | Non
     return list(window), after
 
 
+def _latency(conv: Conversation, turn_index: int) -> tuple[float | None, str]:
+    """Seconds from the nearest preceding tutor turn to this turn, plus its
+    bucket. No preceding tutor turn ⇒ conversation-opening; missing
+    timestamps ⇒ unknown."""
+    prior_tutor = next((t for t in reversed(conv.turns[:turn_index])
+                        if t.role == "tutor"), None)
+    if prior_tutor is None:
+        return None, latency_bucket(None, opening=True)
+    target = conv.turns[turn_index]
+    if prior_tutor.at is None or target.at is None:
+        return None, latency_bucket(None, opening=False)
+    seconds = (target.at - prior_tutor.at).total_seconds()
+    return seconds, latency_bucket(seconds, opening=False)
+
+
 def stratified_sample(conversations: list[Conversation], n: int,
                       seed: int) -> list[SampledMessage]:
     tercile = _length_tercile(conversations)
@@ -56,10 +98,12 @@ def stratified_sample(conversations: list[Conversation], n: int,
             position = "early" if turn.student_index < n_student / 2 else "late"
             stratum = f"{tercile[conv.conv_id]}/{position}"
             window, after = _context(conv, turn.index)
+            seconds, bucket = _latency(conv, turn.index)
             strata[stratum].append(SampledMessage(
                 chatlog_id=conv.chatlog_id, conv_id=conv.conv_id,
                 message_index=turn.index, text=turn.text,
                 context=window, context_after=after, stratum=stratum,
+                latency_seconds=seconds, latency_bucket=bucket,
             ))
     rng = random.Random(seed)
     for bucket in strata.values():

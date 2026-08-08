@@ -81,3 +81,44 @@ def test_first_turn_has_empty_context():
     target = next(m for m in sample if m.text == "s0")
     assert target.context == []
     assert target.context_after == "t0"
+
+
+def _timed_conv(offsets_s):
+    """One conversation: tutor turn at t=0 precedes each student turn given
+    by its offset in seconds; None offset = missing timestamp."""
+    from datetime import datetime, timedelta, timezone
+    t0 = datetime(2026, 8, 7, 10, 0, tzinfo=timezone.utc)
+    turns = [Turn(index=0, role="student", text="opener", student_index=0,
+                  at=t0)]
+    idx = 1
+    for i, off in enumerate(offsets_s):
+        turns.append(Turn(index=idx, role="tutor", text=f"t{i}", at=t0))
+        at = None if off is None else t0 + timedelta(seconds=off)
+        turns.append(Turn(index=idx + 1, role="student", text=f"s{i}",
+                          student_index=i + 1, at=at))
+        idx += 2
+    return Conversation(conv_id="timed", chatlog_id=1, notebook=None,
+                        started_at=None, turns=turns)
+
+
+def test_latency_buckets_and_boundaries():
+    conv = _timed_conv([0, 119, 121, 29 * 60, 31 * 60, 7 * 3600, None])
+    sample = stratified_sample([conv], n=99, seed=0)
+    by_text = {m.text: m for m in sample}
+    assert by_text["opener"].latency_bucket == "conversation-opening"
+    assert by_text["opener"].latency_seconds is None
+    assert by_text["s0"].latency_bucket == "rapid"
+    assert by_text["s1"].latency_bucket == "rapid"
+    assert by_text["s2"].latency_bucket == "working"
+    assert by_text["s3"].latency_bucket == "working"
+    assert by_text["s4"].latency_bucket == "delayed"
+    assert by_text["s5"].latency_bucket == "returned"
+    assert by_text["s5"].latency_seconds == 7 * 3600
+    assert by_text["s6"].latency_bucket == "unknown"
+    assert by_text["s6"].latency_seconds is None
+
+
+def test_latency_untimestamped_corpus_is_unknown_or_opening():
+    sample = stratified_sample(CONVS, n=8, seed=7)
+    assert all(m.latency_bucket in ("unknown", "conversation-opening")
+               for m in sample)

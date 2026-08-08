@@ -4,9 +4,10 @@ import time
 from src.ingest.rawlog import Turn
 from src.labeling.course import CourseProfile
 from src.labeling.draft import (COVERAGE_PROMPT, FORM_TAXONOMY,
-                                SINGLE_LABEL_PROMPT, CoverageVerdict,
-                                MessageLabels, SingleLabelVerdict,
-                                _render_window, classifier_hash, draft_labels)
+                                MOVE_TAXONOMY, SINGLE_LABEL_PROMPT,
+                                CoverageVerdict, MessageLabels,
+                                SingleLabelVerdict, _render_window,
+                                classifier_hash, draft_labels)
 from src.labeling.sampler import SampledMessage
 from src.labeling.schema import LabelDef, LabelSchema
 
@@ -148,8 +149,10 @@ def test_classifier_hash_golden_regression():
     # "- {name}: {description}" line format). Any intentional change to
     # those must update this literal — that update, and only that update,
     # is the point of the test.
+    # 840c1db2c5ad: context-timing vintage (2026-08-07) — latency line in
+    # _SHARED_CONTEXT + move instruction/taxonomy + bucket thresholds.
     h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h == "d7583927c8b9"
+    assert h == "840c1db2c5ad"
 
 
 def test_calls_run_concurrently():
@@ -325,9 +328,59 @@ def test_coverage_prompt_lists_nonpromoted_concepts_only():
     assert "loops" not in single
 
 
+def test_latency_line_in_both_prompts():
+    gen = make_fake()
+    draft_labels([_msg(latency_seconds=250.0, latency_bucket="working")],
+                 SCHEMA, PROFILE, gen)
+    for _, p in gen.calls:
+        assert "Time since the tutor's last message: 4 minutes (working)" in p
+
+
+def test_latency_line_opening_and_unknown():
+    gen = make_fake()
+    draft_labels([_msg(latency_bucket="conversation-opening"),
+                  _msg(message_index=4)], SCHEMA, PROFILE, gen)
+    prompts = [p for _, p in gen.calls]
+    assert any("message: (conversation opening)" in p for p in prompts)
+    assert any("message: (unknown)" in p for p in prompts)
+
+
+def test_move_lands_filtered_and_defaults():
+    def gen(prompt, response_model):
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=False, rationale="r")
+        return CoverageVerdict(move="responds-to-tutor", no_label_fits=False)
+
+    out = draft_labels([_msg(latency_seconds=10.0, latency_bucket="rapid")],
+                       SCHEMA, PROFILE, gen)
+    assert out[0].move == "responds-to-tutor"
+    assert out[0].latency_seconds == 10.0
+    assert out[0].latency_bucket == "rapid"
+
+    def gen_bad(prompt, response_model):
+        if response_model is SingleLabelVerdict:
+            return SingleLabelVerdict(applies=False, rationale="r")
+        return CoverageVerdict(move="hallucinated-move", no_label_fits=False)
+
+    out = draft_labels([_msg()], SCHEMA, PROFILE, gen_bad)
+    assert out[0].move == ""
+    r = MessageLabels(chatlog_id=1, message_index=0, labels={},
+                      rationales={})
+    assert r.move == "" and r.latency_seconds is None
+    assert r.latency_bucket == ""
+
+
+def test_coverage_prompt_carries_move_taxonomy():
+    gen = make_fake()
+    draft_labels([_msg()], SCHEMA, PROFILE, gen)
+    cov = [p for k, p in gen.calls if k == "CoverageVerdict"][0]
+    for mv in MOVE_TAXONOMY:
+        assert mv in cov
+
+
 def test_v1_golden_hash_unchanged_and_v2_hash_moves():
     h1 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h1 == "d7583927c8b9"          # v1 path: byte-identical to before
+    assert h1 == "840c1db2c5ad"          # v1 path: context-timing vintage
     v2 = _v2_profile()
     h2 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE, profile2=v2)
     assert h2 != h1

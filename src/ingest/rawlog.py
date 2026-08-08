@@ -12,6 +12,7 @@ class Turn(BaseModel):
     role: Literal["student", "tutor"]
     text: str
     student_index: int | None = None
+    at: datetime | None = None    # event created_at; None in old snapshots
 
 
 class Conversation(BaseModel):
@@ -26,18 +27,20 @@ class Conversation(BaseModel):
         return [t for t in self.turns if t.role == "student"]
 
 
-def assemble_turns(rows: list[tuple[str, str | None, str | None]]) -> list[Turn]:
+def assemble_turns(rows: list[tuple[str, str | None, str | None,
+                                    datetime | None]]) -> list[Turn]:
     turns: list[Turn] = []
     student_idx = 0
     seen_query = False
-    for event_type, question, response in rows:
+    for event_type, question, response, created_at in rows:
         if event_type == "tutor_query" and question:
             seen_query = True
             turns.append(Turn(index=len(turns), role="student", text=question,
-                              student_index=student_idx))
+                              student_index=student_idx, at=created_at))
             student_idx += 1
         elif event_type == "tutor_response" and response and seen_query:
-            turns.append(Turn(index=len(turns), role="tutor", text=response))
+            turns.append(Turn(index=len(turns), role="tutor", text=response,
+                              at=created_at))
     return turns
 
 
@@ -53,7 +56,8 @@ ORDER BY chatlog_id
 """
 
 _TURNS_SQL = """
-SELECT event_type, payload->>'question' AS question, payload->>'response' AS response
+SELECT event_type, payload->>'question' AS question,
+       payload->>'response' AS response, created_at
 FROM events
 WHERE event_type IN ('tutor_query', 'tutor_response')
   AND payload->>'conversation_id' = :conv_id

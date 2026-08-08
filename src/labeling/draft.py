@@ -19,7 +19,8 @@ from pydantic import BaseModel
 from src.ingest.rawlog import Turn
 from src.labeling.course import CourseProfile
 from src.labeling.llm import Generate
-from src.labeling.sampler import WINDOW_TURNS, SampledMessage
+from src.labeling.sampler import (DELAYED_S, RAPID_S, WINDOW_TURNS,
+                                  WORKING_S, SampledMessage)
 from src.labeling.schema import LabelDef, LabelSchema
 
 
@@ -36,6 +37,12 @@ class SingleLabelVerdict(BaseModel):
 # instructor-compiled, so it does not violate the top-down principle.
 # List-valued because hybrids (pasted prompt + authored question in one
 # message) are common. Hash-visible: folded into classifier_hash.
+# Discourse position of the student message (2026-08-07 context-timing
+# spec): judged by the coverage call with the turn window and the rendered
+# latency line in view. Single-valued; hash-pinned.
+MOVE_TAXONOMY = ("responds-to-tutor", "initiates-new-topic",
+                 "continues-own-thread")
+
 FORM_TAXONOMY = ("authored-question", "pasted-assignment", "pasted-error",
                  "code-share", "nudge", "answer-reply", "other")
 
@@ -47,6 +54,8 @@ class CoverageVerdict(BaseModel):
     # Course-concept facet (2026-08-07 memo): non-promoted concepts are
     # analytics-grade coverage data, not labels.
     concepts: list[str] = []
+    # Discourse position, one MOVE_TAXONOMY value (context-timing spec).
+    move: str = ""
     # Detection channel, not a labeling one (2026-08-06 memos): the model may
     # flag "no label fits" and describe the act, but never name a label.
     no_label_fits: bool
@@ -62,6 +71,9 @@ class MessageLabels(BaseModel):
     coverage_note: str = ""       # ditto
     forms: list[str] = []         # ditto
     concepts: list[str] = []      # ditto
+    move: str = ""                # ditto
+    latency_seconds: float | None = None   # mechanical, from event times
+    latency_bucket: str = ""      # "" in old snapshots; else LATENCY_BUCKETS
 
 
 _SHARED_RULES = """\
@@ -78,6 +90,8 @@ or deictic messages (a bare "?", a question number, a pasted error)."""
 _SHARED_CONTEXT = """\
 Conversation so far (most recent last; may be empty):
 {context}
+
+Time since the tutor's last message: {latency}
 
 STUDENT MESSAGE TO LABEL:
 {text}
@@ -121,6 +135,12 @@ First declare the message's surface form(s) in forms — every value that \
 applies, from exactly this list: {{form_taxonomy}}. A message can be a \
 hybrid (e.g. a pasted assignment prompt plus an authored question).
 
+In move, give the message's discourse position — exactly one of: \
+responds-to-tutor (engages what the tutor just said), initiates-new-topic \
+(opens a new question or task regardless of how recently the tutor spoke), \
+continues-own-thread (extends the student's own previous message). Use the \
+elapsed-time line to disambiguate.
+
 {{concept_section}}Then set no_label_fits=true only if this message shows a student act that NONE \
 of the labels capture (a message can be partially captured: some act \
 labeled, another not — that still counts). If true, describe the uncaptured \
@@ -153,6 +173,23 @@ def _concepts_block(profile2) -> str:
     lines = [f"- {c.name}: {c.description}"
              for c in profile2.concepts if not c.promoted]
     return "\n".join(lines) or "(none)"
+
+
+def _render_latency(m: SampledMessage) -> str:
+    if m.latency_bucket == "conversation-opening":
+        return "(conversation opening)"
+    if m.latency_seconds is None:
+        return "(unknown)"
+    s = m.latency_seconds
+    if s < 120:
+        human = f"{s:.0f} seconds"
+    elif s < 7200:
+        human = f"{s / 60:.0f} minutes"
+    elif s < 172800:
+        human = f"{s / 3600:.0f} hours"
+    else:
+        human = f"{s / 86400:.0f} days"
+    return f"{human} ({m.latency_bucket})"
 
 
 def _render_window(turns: list[Turn]) -> str:
@@ -193,7 +230,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
         m = messages[idx]
         common = dict(course_context=profile.render_context(),
                       context=_render_window(m.context), text=m.text,
-                      context_after=m.context_after or "")
+                      context_after=m.context_after or "",
+                      latency=_render_latency(m))
         try:
             if label is None:
                 verdict = generate(
@@ -241,7 +279,11 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                         coverage_note=cov.note if cov.no_label_fits else "",
                         forms=[f for f in cov.forms if f in FORM_TAXONOMY],
                         concepts=[c for c in cov.concepts
-                                  if c in concept_names])
+                                  if c in concept_names],
+                        move=(cov.move if cov.move in MOVE_TAXONOMY
+                              else ""),
+                        latency_seconds=m.latency_seconds,
+                        latency_bucket=m.latency_bucket)
                     results[idx] = r
                     state["done"] += 1
                     if on_result:
@@ -276,6 +318,8 @@ def classifier_hash(schema: LabelSchema, model: str,
         profile.canonical(), profile.render_context(),
         f"window={WINDOW_TURNS}",
         "forms=" + ",".join(FORM_TAXONOMY),
+        "move=" + ",".join(MOVE_TAXONOMY),
+        f"latency=rapid<{RAPID_S},working<{WORKING_S},delayed<{DELAYED_S}",
         _render_window([]),
         _render_window([Turn(index=0, role="student", text="x",
                              student_index=0)]),
