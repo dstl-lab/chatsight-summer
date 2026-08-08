@@ -38,9 +38,24 @@ def with_retries(generate: Generate, attempts: int = 4, base_delay: float = 2.0,
     return retrying
 
 
+def gen_config(response_model: type[BaseModel],
+               temperature: float | None = None) -> dict:
+    """Generation config. temperature is only ever set for vote-sampling
+    diagnostics (Phase 0 entropy routing) — labeling runs stay at the API
+    default; a temperature would be a provenance input if it touched
+    snapshot verdicts."""
+    config: dict = {
+        "response_mime_type": "application/json",
+        "response_schema": response_model,
+    }
+    if temperature is not None:
+        config["temperature"] = temperature
+    return config
+
+
 def make_generate(api_key: str, model: str = DEFAULT_MODEL,
-                  on_retry: Callable[[dict | None], None] | None = None
-                  ) -> Generate:
+                  on_retry: Callable[[dict | None], None] | None = None,
+                  temperature: float | None = None) -> Generate:
     from google import genai
 
     client = genai.Client(api_key=api_key)
@@ -49,10 +64,7 @@ def make_generate(api_key: str, model: str = DEFAULT_MODEL,
         response = client.models.generate_content(
             model=model,
             contents=prompt,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": response_model,
-            },
+            config=gen_config(response_model, temperature),
         )
         return response_model.model_validate_json(response.text)
 
