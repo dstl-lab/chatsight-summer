@@ -1,8 +1,14 @@
+import json
 import math
+from pathlib import Path
 
-from src.eval.validation import (AuditRow, confusion, corrected_prevalence,
-                                 kappa, validation_table)
+import pytest
+
+from src.eval.validation import (AuditRow, build_validation_report, confusion,
+                                 corrected_prevalence, kappa,
+                                 validation_report_table, validation_table)
 from src.labeling.draft import MessageLabels
+from src.labeling.schema import LabelDef, LabelSchema
 
 
 def _model(i, **labels):
@@ -67,3 +73,88 @@ def test_validation_table_renders_all_labels_and_flags_chance():
     assert "recall" in table.lower()
     assert "≈ chance" in table          # LACA move: flag guessing labels
     assert "corrected prev" in table.lower()
+
+
+def _snapshot(tmp_path: Path) -> tuple[Path, LabelSchema]:
+    schema = LabelSchema(instructor_intent="i", labels=[
+        LabelDef(name="x", kind="behavioral", description="d",
+                 positive_criteria="p", negative_criteria="n"),
+        LabelDef(name="y", kind="behavioral", description="d",
+                 positive_criteria="p", negative_criteria="n"),
+    ])
+    rows = [
+        _model(0, x=True, y=False),
+        _model(1, x=True, y=False),
+        _model(2, x=False, y=True),
+        _model(3, x=False, y=False),
+    ]
+    snap = tmp_path / "snap1"
+    snap.mkdir()
+    (snap / "schema.json").write_text(schema.model_dump_json())
+    (snap / "labels.jsonl").write_text(
+        "".join(r.model_dump_json() + "\n" for r in rows))
+    (snap / "manifest.json").write_text(json.dumps({
+        "snapshot_id": snap.name,
+        "schema_version": schema.version_id,
+        "classifier_hash": "hash123",
+        "repo_sha": "abc",
+    }))
+    return snap, schema
+
+
+def _audit_file(tmp_path: Path, snap: Path, schema: LabelSchema,
+                **metadata_overrides) -> Path:
+    metadata = {
+        "snapshot_id": snap.name,
+        "schema_version": schema.version_id,
+        "classifier_hash": "hash123",
+        "annotator": "steven",
+    }
+    metadata.update(metadata_overrides)
+    rows = [
+        {"key": [1, 0], "labels": {"x": True, "y": False},
+         "no_label_fits": False},
+        {"key": [1, 1], "labels": {"x": False, "y": False},
+         "no_label_fits": False},
+        {"key": [1, 2], "labels": {"x": True, "y": True},
+         "no_label_fits": False},
+        {"key": [1, 3], "labels": {"x": False, "y": False},
+         "no_label_fits": False},
+    ]
+    path = tmp_path / "human-labels-steven.json"
+    path.write_text(json.dumps({"metadata": metadata, "rows": rows,
+                                "strata": {}}))
+    return path
+
+
+def test_validation_report_carries_provenance_and_metrics(tmp_path):
+    snap, schema = _snapshot(tmp_path)
+    audit = _audit_file(tmp_path, snap, schema)
+    report = build_validation_report(snap, audit)
+    assert report["metadata"]["snapshot_id"] == snap.name
+    assert report["metadata"]["schema_version"] == schema.version_id
+    assert report["metadata"]["classifier_hash"] == "hash123"
+    assert report["metadata"]["audit_metadata_present"] is True
+    assert report["metadata"]["audited_messages"] == 4
+
+    by_label = {r["label"]: r for r in report["labels"]}
+    assert by_label["x"]["tp"] == 1
+    assert by_label["x"]["fp"] == 1
+    assert by_label["x"]["fn"] == 1
+    assert by_label["x"]["tn"] == 1
+    assert by_label["x"]["precision"] == 0.5
+    assert by_label["x"]["recall"] == 0.5
+    assert by_label["y"]["tp"] == 1
+    assert by_label["y"]["support"] == 1
+
+    table = validation_report_table(report)
+    assert f"Snapshot: {snap.name}" in table
+    assert f"Schema version: {schema.version_id}" in table
+    assert "Classifier hash: hash123" in table
+
+
+def test_validation_report_rejects_mismatched_audit_metadata(tmp_path):
+    snap, schema = _snapshot(tmp_path)
+    audit = _audit_file(tmp_path, snap, schema, snapshot_id="other")
+    with pytest.raises(ValueError, match="snapshot_id"):
+        build_validation_report(snap, audit)

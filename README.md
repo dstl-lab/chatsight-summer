@@ -33,6 +33,21 @@ Two entry points (installed via `uv sync` from `pyproject.toml`):
 Both write immutable labeled-corpus snapshots to `data/snapshots/<id>/` with a full
 provenance manifest.
 
+## Running the eval harness
+
+After a blind audit has produced `data/audit/<snapshot_id>/human-labels-*.json`,
+score the classifier against those human labels with:
+
+```bash
+uv run eval-labels \
+  data/snapshots/<snapshot_id> \
+  data/audit/<snapshot_id>/human-labels-<annotator>.json \
+  --out data/eval/<snapshot_id>/validation-<annotator>.json
+```
+
+The terminal table and JSON report both carry the snapshot ID, schema version,
+and classifier hash used for the measurement.
+
 ## Where things live
 
 - Phase plan and invariants: `CLAUDE.md`

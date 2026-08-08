@@ -25,6 +25,7 @@ dev = [
 
 [project.scripts]
 audit-server = "src.eval.audit_server:main"
+eval-labels = "src.eval.validation:main"
 label-loop = "src.labeling.cli:main"
 label-loop-web = "src.labeling.webapp:main"
 
