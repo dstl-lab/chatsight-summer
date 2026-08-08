@@ -48,3 +48,43 @@ def build_audit_sample(rows: list[MessageLabels], n: int, seed: int,
             break
         strata[k] = "random"
     return {"keys": sorted(strata), "strata": strata}
+
+
+def build_label_audit_samples(rows: list[MessageLabels], labels: list[str],
+                              n_per_label: int, seed: int,
+                              exclude: set[Key] = frozenset()) -> dict:
+    """Per-label audit samples (verification-budget design): for each label,
+    up to half the budget goes to model-POSITIVE messages (precision
+    evidence), the rest to model-negatives with abstained messages first
+    (recall probes — abstentions are where missed positives hide), then
+    random negatives. Strata are for SCORING ONLY and must never reach the
+    annotator's page (showing 'model-positive' would anchor, invariant 8);
+    each label's key list is independently shuffled so order leaks nothing.
+    Returns {label: {"keys": [...], "strata": {key: stratum}}}."""
+    pool = {(r.chatlog_id, r.message_index): r for r in rows
+            if (r.chatlog_id, r.message_index) not in exclude}
+    out = {}
+    for label in labels:
+        rng = random.Random(f"{seed}:{label}")
+        strata: dict[Key, str] = {}
+        pos = sorted(k for k, r in pool.items() if r.labels.get(label))
+        rng.shuffle(pos)
+        for k in pos[:max(1, n_per_label // 2) if pos else 0]:
+            strata[k] = "model-positive"
+        neg_abst = sorted(k for k, r in pool.items()
+                          if not r.labels.get(label) and r.no_label_fits
+                          and k not in strata)
+        neg_rest = sorted(k for k, r in pool.items()
+                          if not r.labels.get(label) and not r.no_label_fits
+                          and k not in strata)
+        rng.shuffle(neg_abst)
+        rng.shuffle(neg_rest)
+        for k in neg_abst + neg_rest:
+            if len(strata) >= n_per_label:
+                break
+            strata[k] = ("abstained-negative" if k in neg_abst
+                         else "random-negative")
+        keys = list(strata)
+        rng.shuffle(keys)              # annotator must not infer strata
+        out[label] = {"keys": keys, "strata": strata}
+    return out

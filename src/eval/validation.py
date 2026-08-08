@@ -26,9 +26,11 @@ class AuditRow(BaseModel):
 
 
 def load_audit(path: Path) -> list[AuditRow]:
+    data = json.loads(Path(path).read_text())
+    rows = data["rows"] if isinstance(data, dict) else data
     return [AuditRow(key=tuple(r["key"]), labels=r["labels"],
                      no_label_fits=r.get("no_label_fits", False))
-            for r in json.loads(Path(path).read_text())]
+            for r in rows]
 
 
 @dataclass
@@ -71,6 +73,8 @@ def confusion(audit: list[AuditRow], model: list[MessageLabels],
     by_key = {(r.chatlog_id, r.message_index): r for r in model}
     tp = fp = fn = tn = 0
     for a in audit:
+        if label not in a.labels:
+            continue        # per-label sampled audit: label not audited here
         m = by_key[a.key]
         hv, mv = bool(a.labels.get(label)), bool(m.labels.get(label))
         tp += hv and mv

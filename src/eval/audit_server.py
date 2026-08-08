@@ -62,30 +62,39 @@ auto-advance. ← → to revisit. Model labels are hidden by design.</p>
 </div>
 <script>
 const D = __PAYLOAD__;
-// passes: one per label, then a final "no label fits" pass
-const PASSES = D.labels.map(l => ({kind: "label", l}))
-  .concat([{kind: "nofit", l: {name: "no label fits", category: "instructor",
+// passes: one per label (each with its OWN message-key list), then a final
+// "no label fits" pass over the union of sampled messages
+const PASSES = D.labels.map(l => ({kind: "label", l, keys: l.keys}))
+  .concat([{kind: "nofit", keys: D.nofit_keys,
+    l: {name: "no label fits", category: "instructor",
     description: "the message shows a student act NONE of the labels capture",
     positive: "an act your earlier passes had no label for",
     negative: "anything already covered by a label you said yes to"}}]);
 let p = 0, i = 0;
-const ans = D.messages.map(() => ({labels: {}, no_label_fits: false}));
-for (const a of ans) for (const l of D.labels) a.labels[l.name] = false;
-document.getElementById("total").textContent = D.messages.length;
+const ans = {};   // key -> {labels: {...only audited...}, no_label_fits}
+function ansFor(key){
+  if (!ans[key]) ans[key] = {labels: {}, no_label_fits: false};
+  return ans[key];
+}
+for (const pass of PASSES)
+  for (const k of pass.keys)
+    if (pass.kind === "label") ansFor(k).labels[pass.l.name] = false;
 document.getElementById("ptotal").textContent = PASSES.length;
 function setAnswer(v){
-  const name = PASSES[p].l.name;
-  if (PASSES[p].kind === "nofit") ans[i].no_label_fits = v;
-  else ans[i].labels[name] = v;
+  const key = PASSES[p].keys[i];
+  if (PASSES[p].kind === "nofit") ansFor(key).no_label_fits = v;
+  else ansFor(key).labels[PASSES[p].l.name] = v;
   advance();
 }
 function advance(){
-  if (i < D.messages.length - 1) { i++; }
+  if (i < PASSES[p].keys.length - 1) { i++; }
   else if (p < PASSES.length - 1) { p++; i = 0; }
   render();
 }
 function render(){
-  const m = D.messages[i], pass = PASSES[p];
+  const pass = PASSES[p];
+  const m = D.msgs[pass.keys[i]];
+  document.getElementById("total").textContent = pass.keys.length;
   document.getElementById("pos").textContent = i + 1;
   document.getElementById("ppos").textContent = p + 1;
   const cl = document.getElementById("current-label");
@@ -97,8 +106,9 @@ function render(){
   s.textContent = pass.l.description + " — applies: " + pass.l.positive +
     " | not: " + pass.l.negative;
   const cur = document.createElement("small");
-  const val = pass.kind === "nofit" ? ans[i].no_label_fits
-    : ans[i].labels[pass.l.name];
+  const a = ansFor(pass.keys[i]);
+  const val = pass.kind === "nofit" ? a.no_label_fits
+    : a.labels[pass.l.name];
   cur.textContent = "current answer: " + (val ? "YES" : "no");
   card.append(b, s, cur); cl.append(card);
   const ctx = document.getElementById("ctx"); ctx.replaceChildren();
@@ -111,13 +121,14 @@ function render(){
   document.getElementById("after").textContent = m.after;
   document.getElementById("after-head").style.display = m.after ? "block" : "none";
   document.getElementById("save").style.display =
-    (p === PASSES.length - 1 && i === D.messages.length - 1)
+    (p === PASSES.length - 1 && i === PASSES[p].keys.length - 1)
       ? "inline-block" : "none";
 }
 document.getElementById("yes").onclick = () => setAnswer(true);
 document.getElementById("no").onclick = () => setAnswer(false);
 document.getElementById("prev").onclick = () => {
-  if (i > 0) { i--; } else if (p > 0) { p--; i = D.messages.length - 1; }
+  if (i > 0) { i--; }
+  else if (p > 0) { p--; i = PASSES[p].keys.length - 1; }
   render();
 };
 document.getElementById("next").onclick = () => advance();
@@ -128,7 +139,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowRight") advance();
 });
 document.getElementById("save").onclick = async () => {
-  const body = D.messages.map((m, k) => ({key: m.key, ...ans[k]}));
+  const body = Object.entries(ans).map(([key, a]) =>
+    ({key: key.split(":").map(Number), ...a}));
   const r = await fetch("/save", {method:"POST",
     headers:{"content-type":"application/json"}, body: JSON.stringify(body)});
   if (r.ok) document.getElementById("done").style.display = "inline";
@@ -159,9 +171,19 @@ def _categories(schema: LabelSchema, profile_path: Path | None
     return cats
 
 
+def _ks(k) -> str:
+    return f"{k[0]}:{k[1]}"
+
+
 def build_payload(snapshot_dir: Path, n: int, seed: int,
                   exclude_review_sample_size: int | None = None,
-                  profile_path: Path | None = None) -> dict:
+                  profile_path: Path | None = None,
+                  n_per_label: int | None = None,
+                  only_labels: list[str] | None = None
+                  ) -> tuple[dict, dict]:
+    """Returns (page_payload, strata). Strata stay server-side: they encode
+    model verdicts (model-positive etc.) and must never reach the annotator
+    (invariant 8). page_payload: labels each carry their own key list."""
     conversations = [Conversation.model_validate_json(l)
                      for l in (snapshot_dir / "conversations.jsonl").open()]
     schema = LabelSchema.model_validate_json(
@@ -172,25 +194,49 @@ def build_payload(snapshot_dir: Path, n: int, seed: int,
     if exclude_review_sample_size:
         exclude = {(m.chatlog_id, m.message_index) for m in stratified_sample(
             conversations, n=exclude_review_sample_size, seed=seed)}
-    sample = build_audit_sample(rows, n=n, seed=seed, exclude=exclude)
+    names = [l.name for l in schema.labels
+             if only_labels is None or l.name in only_labels]
+
+    if n_per_label is not None:
+        from src.eval.audit_sample import build_label_audit_samples
+        per = build_label_audit_samples(rows, names, n_per_label, seed,
+                                        exclude=exclude)
+        keys_by_label = {n_: per[n_]["keys"] for n_ in names}
+        strata = {n_: {_ks(k): v for k, v in per[n_]["strata"].items()}
+                  for n_ in names}
+    else:
+        sample = build_audit_sample(rows, n=n, seed=seed, exclude=exclude)
+        keys_by_label = {n_: list(sample["keys"]) for n_ in names}
+        strata = {"_message": {_ks(k): v
+                               for k, v in sample["strata"].items()}}
+
+    union: list = []
+    seen = set()
+    for ks in keys_by_label.values():
+        for k in ks:
+            if k not in seen:
+                seen.add(k)
+                union.append(k)
     by_key = {}
     for m in stratified_sample(conversations, n=10**9, seed=seed):
         by_key[(m.chatlog_id, m.message_index)] = m
-    picked = [by_key[k] for k in sample["keys"]]
     cats = _categories(schema, profile_path)
-    return {
+    payload = {
         "labels": [{"name": l.name, "description": l.description,
                     "positive": l.positive_criteria,
                     "negative": l.negative_criteria,
-                    "category": cats[l.name]}
-                   for l in schema.labels],
-        "messages": [{
-            "key": [m.chatlog_id, m.message_index],
-            "context": [{"role": t.role, "text": t.text} for t in m.context],
-            "text": m.text, "after": m.context_after or "",
-        } for m in picked],
-        "strata": {f"{k[0]}:{k[1]}": v for k, v in sample["strata"].items()},
+                    "category": cats[l.name],
+                    "keys": [_ks(k) for k in keys_by_label[l.name]]}
+                   for l in schema.labels if l.name in keys_by_label],
+        "nofit_keys": [_ks(k) for k in union],
+        "msgs": {_ks(k): {
+            "context": [{"role": t.role, "text": t.text}
+                        for t in by_key[k].context],
+            "text": by_key[k].text,
+            "after": by_key[k].context_after or "",
+        } for k in union},
     }
+    return payload, strata
 
 
 def main() -> None:
@@ -205,12 +251,19 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8399)
     parser.add_argument("--profile", default=None,
                         help="profile artifact for layer color-coding")
+    parser.add_argument("--n-per-label", type=int, default=None,
+                        help="per-label targeted samples (verification-"
+                             "budget mode) instead of one shared sample")
+    parser.add_argument("--labels", default=None,
+                        help="comma-separated label subset to audit")
     args = parser.parse_args()
 
     snap = Path(args.snapshot_dir)
-    payload = build_payload(snap, args.n, args.seed,
-                            args.exclude_review_sample,
-                            Path(args.profile) if args.profile else None)
+    payload, strata = build_payload(
+        snap, args.n, args.seed, args.exclude_review_sample,
+        Path(args.profile) if args.profile else None,
+        n_per_label=args.n_per_label,
+        only_labels=args.labels.split(",") if args.labels else None)
     out = (snap.parent.parent / "audit" / snap.name /
            f"human-labels-{args.annotator}.json")
 
@@ -226,7 +279,10 @@ def main() -> None:
             n_ = int(self.headers["content-length"])
             data = json.loads(self.rfile.read(n_))
             out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_text(json.dumps(data, indent=2))
+            # strata recorded for stratum-aware scoring; they were never
+            # shown to the annotator (invariant 8)
+            out.write_text(json.dumps({"rows": data, "strata": strata},
+                                      indent=2))
             self.send_response(200)
             self.end_headers()
             print("saved", out, flush=True)
@@ -234,11 +290,12 @@ def main() -> None:
         def log_message(self, *a):
             pass
 
-    strata = payload["strata"].values()
+    taps = sum(len(l["keys"]) for l in payload["labels"]) \
+        + len(payload["nofit_keys"])
     print(f"blind audit on http://127.0.0.1:{args.port} — "
-          f"{len(payload['messages'])} messages "
-          f"({sum(1 for s in strata if s == 'abstained')} abstained, "
-          f"{sum(1 for s in strata if s == 'random')} random)", flush=True)
+          f"{len(payload['labels']) + 1} passes, "
+          f"{len(payload['msgs'])} distinct messages, "
+          f"{taps} total judgments", flush=True)
     HTTPServer(("127.0.0.1", args.port), H).serve_forever()
 
 

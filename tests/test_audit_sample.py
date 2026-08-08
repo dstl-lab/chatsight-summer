@@ -28,6 +28,39 @@ def test_excludes_anchored_keys():
     assert all(k[1] >= 10 for k in s["keys"])
 
 
+def test_label_samples_strata_and_shuffle():
+    from src.eval.audit_sample import build_label_audit_samples
+    rows = ([MessageLabels(chatlog_id=1, message_index=i,
+                           labels={"x": i < 6, "y": False},
+                           rationales={}, no_label_fits=(6 <= i < 8))
+             for i in range(20)])
+    s = build_label_audit_samples(rows, ["x", "y"], n_per_label=8, seed=3)
+    xs = s["x"]["strata"]
+    assert sum(1 for v in xs.values() if v == "model-positive") == 4
+    assert "abstained-negative" in xs.values()
+    assert len(s["x"]["keys"]) == 8
+    # y has no positives: all-negative sample still fills the budget
+    assert len(s["y"]["keys"]) == 8
+    assert "model-positive" not in s["y"]["strata"].values()
+    # keys are shuffled, not sorted by stratum
+    x_strata_in_order = [xs[k] for k in s["x"]["keys"]]
+    assert x_strata_in_order != sorted(x_strata_in_order)
+    assert s == build_label_audit_samples(rows, ["x", "y"], 8, seed=3)
+
+
+def test_sparse_audit_scoring_skips_unaudited_labels():
+    from src.eval.validation import AuditRow, confusion
+    model = [MessageLabels(chatlog_id=1, message_index=i,
+                           labels={"x": True}, rationales={})
+             for i in range(4)]
+    audit = [AuditRow(key=(1, 0), labels={"x": True}),
+             AuditRow(key=(1, 1), labels={"x": False}),
+             AuditRow(key=(1, 2), labels={}),          # x not audited here
+             AuditRow(key=(1, 3), labels={"other": True})]
+    c = confusion(audit, model, "x")
+    assert c.n == 2 and (c.tp, c.fp) == (1, 1)
+
+
 def test_entropy_stratum_prioritized():
     ent = {(1, 15): {"max_entropy": 1.0}, (1, 16): {"max_entropy": 0.9},
            (1, 17): {"max_entropy": 0.0}}
