@@ -38,38 +38,66 @@ button{padding:8px 14px}
 #done{display:none;font-weight:600}
 .warn{background:#fff6e0;padding:8px;border-radius:6px;font-size:13px}
 </style>
-<h2>Blind audit — <span id="pos"></span> of <span id="total"></span></h2>
-<p class="warn">Model labels are hidden by design. Judge the student's act in
-THIS message using the context. Check every label that applies; check
-"no label fits" if the message shows an act none of the labels capture.</p>
+<h2>Blind audit — pass <span id="ppos"></span>/<span id="ptotal"></span> ·
+message <span id="pos"></span>/<span id="total"></span></h2>
+<p class="warn">One label at a time: keep just THIS criterion in mind and
+answer <b>y</b> (applies) / <b>n</b> (doesn't) for each message — keys
+auto-advance. ← → to revisit. Model labels are hidden by design.</p>
+<div id="current-label"></div>
 <div class="sect" id="ctx-head">CONVERSATION BEFORE — context only</div>
 <div id="ctx"></div>
-<div class="sect">▼ THE STUDENT MESSAGE YOU ARE LABELING</div>
+<div class="sect">▼ THE STUDENT MESSAGE</div>
 <div class="msg" id="msg"></div>
 <div class="sect" id="after-head">TUTOR REPLY AFTER — context only</div>
 <div class="ctx" id="after"></div>
-<div class="legend">
-<span class="cat-instructor">instructor</span>
-<span class="cat-intent">intent</span>
-<span class="cat-affect">affect</span>
-<span class="cat-concept">concept</span>
-</div>
-<div id="labels"></div>
-<label class="lbl"><input type="checkbox" id="nofit"><b>no label fits</b>
-<small>a student act none of the labels capture</small></label>
 <div class="nav">
-<button id="prev">← Prev</button><button id="next">Next →</button>
-<button id="save" style="display:none">Submit all</button>
+<button id="no">n — doesn't apply</button>
+<button id="yes">y — applies</button>
+<button id="prev">←</button><button id="next">→</button>
+<button id="save" style="display:none">Submit all passes</button>
 <span id="done">Saved. Thanks — you can close this tab.</span>
 </div>
 <script>
 const D = __PAYLOAD__;
-let i = 0;
-const ans = D.messages.map(() => ({labels:{}, no_label_fits:false}));
+// passes: one per label, then a final "no label fits" pass
+const PASSES = D.labels.map(l => ({kind: "label", l}))
+  .concat([{kind: "nofit", l: {name: "no label fits", category: "instructor",
+    description: "the message shows a student act NONE of the labels capture",
+    positive: "an act your earlier passes had no label for",
+    negative: "anything already covered by a label you said yes to"}}]);
+let p = 0, i = 0;
+const ans = D.messages.map(() => ({labels: {}, no_label_fits: false}));
+for (const a of ans) for (const l of D.labels) a.labels[l.name] = false;
 document.getElementById("total").textContent = D.messages.length;
+document.getElementById("ptotal").textContent = PASSES.length;
+function setAnswer(v){
+  const name = PASSES[p].l.name;
+  if (PASSES[p].kind === "nofit") ans[i].no_label_fits = v;
+  else ans[i].labels[name] = v;
+  advance();
+}
+function advance(){
+  if (i < D.messages.length - 1) { i++; }
+  else if (p < PASSES.length - 1) { p++; i = 0; }
+  render();
+}
 function render(){
-  const m = D.messages[i];
-  document.getElementById("pos").textContent = i+1;
+  const m = D.messages[i], pass = PASSES[p];
+  document.getElementById("pos").textContent = i + 1;
+  document.getElementById("ppos").textContent = p + 1;
+  const cl = document.getElementById("current-label");
+  cl.replaceChildren();
+  const card = document.createElement("div");
+  card.className = "lbl cat-" + pass.l.category;
+  const b = document.createElement("b"); b.textContent = pass.l.name;
+  const s = document.createElement("small");
+  s.textContent = pass.l.description + " — applies: " + pass.l.positive +
+    " | not: " + pass.l.negative;
+  const cur = document.createElement("small");
+  const val = pass.kind === "nofit" ? ans[i].no_label_fits
+    : ans[i].labels[pass.l.name];
+  cur.textContent = "current answer: " + (val ? "YES" : "no");
+  card.append(b, s, cur); cl.append(card);
   const ctx = document.getElementById("ctx"); ctx.replaceChildren();
   for (const t of m.context){
     const d = document.createElement("div"); d.className = "ctx";
@@ -79,26 +107,23 @@ function render(){
   document.getElementById("msg").textContent = m.text;
   document.getElementById("after").textContent = m.after;
   document.getElementById("after-head").style.display = m.after ? "block" : "none";
-  const box = document.getElementById("labels"); box.replaceChildren();
-  for (const l of D.labels){
-    const lab = document.createElement("label");
-    lab.className = "lbl cat-" + l.category;
-    const cb = document.createElement("input"); cb.type = "checkbox";
-    cb.checked = !!ans[i].labels[l.name];
-    cb.onchange = () => ans[i].labels[l.name] = cb.checked;
-    const b = document.createElement("b"); b.textContent = l.name;
-    const s = document.createElement("small");
-    s.textContent = l.description + " — applies: " + l.positive + " | not: " + l.negative;
-    lab.append(cb, b, s); box.append(lab);
-  }
-  const nf = document.getElementById("nofit");
-  nf.checked = ans[i].no_label_fits;
-  nf.onchange = () => ans[i].no_label_fits = nf.checked;
   document.getElementById("save").style.display =
-    (i === D.messages.length-1) ? "inline-block" : "none";
+    (p === PASSES.length - 1 && i === D.messages.length - 1)
+      ? "inline-block" : "none";
 }
-document.getElementById("prev").onclick = () => { if (i>0){i--; render();} };
-document.getElementById("next").onclick = () => { if (i<D.messages.length-1){i++; render();} };
+document.getElementById("yes").onclick = () => setAnswer(true);
+document.getElementById("no").onclick = () => setAnswer(false);
+document.getElementById("prev").onclick = () => {
+  if (i > 0) { i--; } else if (p > 0) { p--; i = D.messages.length - 1; }
+  render();
+};
+document.getElementById("next").onclick = () => advance();
+document.addEventListener("keydown", (e) => {
+  if (e.key === "y") setAnswer(true);
+  else if (e.key === "n") setAnswer(false);
+  else if (e.key === "ArrowLeft") document.getElementById("prev").onclick();
+  else if (e.key === "ArrowRight") advance();
+});
 document.getElementById("save").onclick = async () => {
   const body = D.messages.map((m, k) => ({key: m.key, ...ans[k]}));
   const r = await fetch("/save", {method:"POST",
