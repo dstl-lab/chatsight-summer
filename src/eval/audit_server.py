@@ -7,6 +7,7 @@ data/audit/<snapshot_id>/human-labels-<annotator>.json. 127.0.0.1 only
 (rule 4)."""
 import argparse
 import json
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -292,11 +293,21 @@ def main() -> None:
 
     taps = sum(len(l["keys"]) for l in payload["labels"]) \
         + len(payload["nofit_keys"])
+    HTTPServer.allow_reuse_address = True
+    try:
+        server = HTTPServer(("127.0.0.1", args.port), H)
+    except OSError as e:
+        if e.errno == 48:   # EADDRINUSE
+            sys.exit(f"port {args.port} is already in use — another audit "
+                     f"server is probably running. Stop it "
+                     f"(kill $(lsof -ti :{args.port})) or pass a different "
+                     f"--port.")
+        raise
     print(f"blind audit on http://127.0.0.1:{args.port} — "
           f"{len(payload['labels']) + 1} passes, "
           f"{len(payload['msgs'])} distinct messages, "
           f"{taps} total judgments", flush=True)
-    HTTPServer(("127.0.0.1", args.port), H).serve_forever()
+    server.serve_forever()
 
 
 if __name__ == "__main__":
