@@ -20,7 +20,7 @@ minutes.** Thank you!
    audited; a typical one looks like this):
 
 ```bash
-uv run python -m src.eval.audit_server \
+uv run audit-server \
     data/snapshots/20260807-d67ba530d3ee-dda99f \
     --n-per-label 8 --seed 0 \
     --annotator YOURNAME \
@@ -65,10 +65,10 @@ data/audit/<snapshot_id>/human-labels-YOURNAME.json
 ```
 
 **This file is safe to send through normal channels** (email/Slack): it
-contains only message ID numbers and your yes/no answers — no student text.
-Send it to Minchan. Do **not** send the snapshot
-directory itself anywhere, and delete it when you're done
-(`rm -r data/snapshots/<snapshot_id>` — your answers file is all we need).
+contains only run metadata, message ID numbers, sampling strata for scoring,
+and your yes/no answers. It contains no student text. Send it to Minchan. Do
+**not** send the snapshot directory itself anywhere, and delete it when you're
+done (`rm -r data/snapshots/<snapshot_id>`). Your answers file is all we need.
 
 ## What happens with your labels
 

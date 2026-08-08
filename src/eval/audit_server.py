@@ -7,7 +7,7 @@ data/audit/<snapshot_id>/human-labels-<annotator>.json. 127.0.0.1 only
 (rule 4)."""
 import argparse
 import json
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from src.eval.audit_sample import build_audit_sample
@@ -175,6 +175,68 @@ def _ks(k) -> str:
     return f"{k[0]}:{k[1]}"
 
 
+def build_audit_metadata(snapshot_dir: Path, payload: dict, *,
+                         annotator: str, seed: int, n: int,
+                         n_per_label: int | None,
+                         exclude_review_sample_size: int | None,
+                         profile_path: Path | None,
+                         only_labels: list[str] | None) -> dict:
+    """Run metadata safe to ship with human answers. It contains provenance
+    IDs and sampling settings, but no student text or model rationales."""
+    schema = LabelSchema.model_validate_json(
+        (snapshot_dir / "schema.json").read_text())
+    manifest_path = snapshot_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text()) \
+        if manifest_path.exists() else {}
+    return {
+        "snapshot_id": snapshot_dir.name,
+        "schema_version": schema.version_id,
+        "classifier_hash": manifest.get("classifier_hash"),
+        "annotator": annotator,
+        "seed": seed,
+        "n": n,
+        "n_per_label": n_per_label,
+        "exclude_review_sample": exclude_review_sample_size,
+        "profile": str(profile_path) if profile_path is not None else None,
+        "requested_labels": only_labels,
+        "audited_labels": [l["name"] for l in payload["labels"]],
+        "sample_mode": ("per-label" if n_per_label is not None
+                        else "shared-message"),
+    }
+
+
+def write_audit_file(out: Path, rows: list[dict], strata: dict,
+                     metadata: dict) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    # strata recorded for stratum-aware scoring; they were never shown to
+    # the annotator (invariant 8)
+    out.write_text(json.dumps({"metadata": metadata, "rows": rows,
+                               "strata": strata}, indent=2))
+
+
+def make_handler(payload: dict, strata: dict, out: Path, metadata: dict):
+    class H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            html = PAGE.replace("__PAYLOAD__", json.dumps(payload))
+            self.send_response(200)
+            self.send_header("content-type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(html.encode())
+
+        def do_POST(self):
+            n_ = int(self.headers["content-length"])
+            data = json.loads(self.rfile.read(n_))
+            write_audit_file(out, data, strata, metadata)
+            self.send_response(200)
+            self.end_headers()
+            print("saved", out, flush=True)
+
+        def log_message(self, *a):
+            pass
+
+    return H
+
+
 def build_payload(snapshot_dir: Path, n: int, seed: int,
                   exclude_review_sample_size: int | None = None,
                   profile_path: Path | None = None,
@@ -264,31 +326,16 @@ def main() -> None:
         Path(args.profile) if args.profile else None,
         n_per_label=args.n_per_label,
         only_labels=args.labels.split(",") if args.labels else None)
+    profile_path = Path(args.profile) if args.profile else None
+    only_labels = args.labels.split(",") if args.labels else None
+    metadata = build_audit_metadata(
+        snap, payload, annotator=args.annotator, seed=args.seed, n=args.n,
+        n_per_label=args.n_per_label,
+        exclude_review_sample_size=args.exclude_review_sample,
+        profile_path=profile_path,
+        only_labels=only_labels)
     out = (snap.parent.parent / "audit" / snap.name /
            f"human-labels-{args.annotator}.json")
-
-    class H(BaseHTTPRequestHandler):
-        def do_GET(self):
-            html = PAGE.replace("__PAYLOAD__", json.dumps(payload))
-            self.send_response(200)
-            self.send_header("content-type", "text/html; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(html.encode())
-
-        def do_POST(self):
-            n_ = int(self.headers["content-length"])
-            data = json.loads(self.rfile.read(n_))
-            out.parent.mkdir(parents=True, exist_ok=True)
-            # strata recorded for stratum-aware scoring; they were never
-            # shown to the annotator (invariant 8)
-            out.write_text(json.dumps({"rows": data, "strata": strata},
-                                      indent=2))
-            self.send_response(200)
-            self.end_headers()
-            print("saved", out, flush=True)
-
-        def log_message(self, *a):
-            pass
 
     taps = sum(len(l["keys"]) for l in payload["labels"]) \
         + len(payload["nofit_keys"])
@@ -296,7 +343,9 @@ def main() -> None:
           f"{len(payload['labels']) + 1} passes, "
           f"{len(payload['msgs'])} distinct messages, "
           f"{taps} total judgments", flush=True)
-    HTTPServer(("127.0.0.1", args.port), H).serve_forever()
+    ThreadingHTTPServer(
+        ("127.0.0.1", args.port),
+        make_handler(payload, strata, out, metadata)).serve_forever()
 
 
 if __name__ == "__main__":

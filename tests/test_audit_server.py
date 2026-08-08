@@ -1,7 +1,10 @@
 import json
+import threading
+from http.client import HTTPConnection
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-from src.eval.audit_server import build_payload
+from src.eval.audit_server import build_audit_metadata, build_payload, make_handler
 from src.ingest.rawlog import Conversation, Turn
 from src.labeling.draft import MessageLabels
 from src.labeling.schema import LabelDef, LabelSchema
@@ -31,6 +34,11 @@ def _snapshot(tmp_path: Path) -> Path:
     (d / "schema.json").write_text(schema.model_dump_json())
     (d / "labels.jsonl").write_text(
         "".join(r.model_dump_json() + "\n" for r in rows))
+    (d / "manifest.json").write_text(json.dumps({
+        "snapshot_id": d.name,
+        "schema_version": schema.version_id,
+        "classifier_hash": "abc123",
+    }))
     return d
 
 
@@ -57,3 +65,51 @@ def test_label_subset_and_legacy_mode(tmp_path):
     legacy, strata = build_payload(snap, n=10, seed=0)
     assert [len(l["keys"]) for l in legacy["labels"]] == [10, 10]
     assert "_message" in strata
+
+
+def test_http_save_writes_rows_strata_and_metadata(tmp_path):
+    snap = _snapshot(tmp_path)
+    payload, strata = build_payload(snap, n=25, seed=7, n_per_label=8)
+    metadata = build_audit_metadata(
+        snap, payload, annotator="steven", seed=7, n=25,
+        n_per_label=8, exclude_review_sample_size=6,
+        profile_path=Path("profiles/dsc10.json"), only_labels=None)
+    out = tmp_path / "audit" / snap.name / "human-labels-steven.json"
+    server = ThreadingHTTPServer(
+        ("127.0.0.1", 0), make_handler(payload, strata, out, metadata))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+
+    try:
+        conn = HTTPConnection(host, port, timeout=2)
+        conn.request("GET", "/")
+        res = conn.getresponse()
+        html = res.read().decode()
+        assert res.status == 200
+        assert "model-positive" not in html
+        conn.close()
+
+        rows = [{"key": [1, 0], "labels": {"x": True},
+                 "no_label_fits": False}]
+        conn = HTTPConnection(host, port, timeout=2)
+        conn.request("POST", "/save", body=json.dumps(rows),
+                     headers={"content-type": "application/json"})
+        res = conn.getresponse()
+        res.read()
+        assert res.status == 200
+        conn.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+    saved = json.loads(out.read_text())
+    assert saved["rows"] == rows
+    assert saved["strata"] == strata
+    assert saved["metadata"] == metadata
+    assert saved["metadata"]["snapshot_id"] == snap.name
+    assert saved["metadata"]["classifier_hash"] == "abc123"
+    assert saved["metadata"]["annotator"] == "steven"
+    assert saved["metadata"]["audited_labels"] == ["x", "y"]
+    assert saved["metadata"]["sample_mode"] == "per-label"
