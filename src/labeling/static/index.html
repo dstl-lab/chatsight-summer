@@ -149,6 +149,35 @@
     .lbl-bar > div { transition: width 220ms ease-out; }
   }
 
+  /* course-profile setup + review */
+  .profile-setup { border: 1px solid rgba(128,128,128,.35); border-radius: 6px;
+    padding: .8rem 1rem 1rem; margin-bottom: 1.5rem; }
+  .profile-setup h2 { margin: 0 0 .3rem; }
+  .profile-setup p { font-size: .85rem; opacity: .75; margin: 0 0 .5rem; }
+  .profile-setup label { display: block; font-size: .85rem; margin-top: .5rem; }
+  .profile-banner { border: 1px solid rgba(128,128,128,.35); border-radius: 6px;
+    padding: .5rem .8rem; margin-bottom: 1.5rem; font-size: .9rem;
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: .75rem; flex-wrap: wrap; }
+  .profile-layer { border-radius: 0 6px 6px 0; padding: .3rem 1rem .8rem;
+    margin: 1rem 0; border-left: 4px solid; }
+  .profile-layer h2 { font-size: .95rem; margin: .5rem 0 .6rem; }
+  .layer-concept { border-left-color: #16a34a; background: rgba(22,163,74,.08); }
+  .layer-affect { border-left-color: #e11d48; background: rgba(225,29,72,.08); }
+  .layer-intent { border-left-color: #2563eb; background: rgba(37,99,235,.08); }
+  .profile-row { padding: .5rem 0; border-bottom: 1px solid rgba(128,128,128,.18); }
+  .profile-row:last-child { border-bottom: 0; }
+  .profile-row.deleted { opacity: .55; }
+  .profile-row.deleted .profile-row-head { text-decoration: line-through; }
+  .profile-row-head { font-size: .92rem; }
+  .profile-row .desc { font-size: .87rem; opacity: .85; margin: .2rem 0; }
+  .profile-row details { font-size: .8rem; opacity: .75; margin: .3rem 0; }
+  .profile-row .hint { font-size: .76rem; opacity: .65; margin: .15rem 0 .3rem; }
+  .profile-row button { font-size: .8rem; padding: .2rem .6rem; margin-top: .3rem; }
+  .profile-row label { display: inline-block; width: auto; margin: .3rem 0 0; }
+  .profile-row input[type=checkbox] { width: auto; margin: 0 .35rem 0 0;
+    vertical-align: middle; }
+
   /* idle screen */
   .idle-layout .action { flex: 1.6; }
   .peek-rail { flex: 1; min-width: 0; }
@@ -166,6 +195,20 @@
 <h1>label-loop</h1>
 
 <section id="screen-idle" class="hidden">
+  <div id="profile-setup" class="profile-setup hidden">
+    <h2>Ground this course (optional)</h2>
+    <p>Upload course materials (syllabus, notes) so drafted labels can
+      reference this course's concepts. Labeling without a profile stays
+      fully supported — this step is optional.</p>
+    <label>Course slug <input id="profile-slug" type="text" value="dsc10"></label>
+    <label>Course materials
+      <input type="file" id="materials" multiple accept=".txt,.md"></label>
+    <button id="btn-explore">Explore materials →</button>
+  </div>
+  <div id="profile-banner" class="profile-banner hidden">
+    <span id="profile-banner-text"></span>
+    <button id="btn-profile-reexplore">Re-explore</button>
+  </div>
   <div class="plate">
     <div class="plate-stamp">label-loop · new run</div>
     <div class="plate-intent">What do you want to see in your course's tutor chats?</div>
@@ -229,6 +272,17 @@
   <button id="btn-quit">Quit</button>
 </section>
 
+<section id="screen-profile-review" class="hidden">
+  <h2>Course profile draft</h2>
+  <p class="provenance">Skim and accept: delete anything wrong, promote
+    concepts you want as first-class labels, then accept. Nothing here is
+    final — the tweak loop can refine wording later.</p>
+  <div id="profile-review-body"></div>
+  <p class="error hidden" id="profile-accept-error"></p>
+  <button id="btn-profile-accept">Accept profile</button>
+  <button id="btn-profile-review-reexplore">Re-explore</button>
+</section>
+
 <section id="screen-done" class="hidden">
   <div class="plate">
     <div class="plate-stamp" id="done-stamp"></div>
@@ -267,7 +321,7 @@
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id);
-const screens = ["idle", "working", "review", "done", "error"];
+const screens = ["idle", "working", "review", "profile-review", "done", "error"];
 const PALETTE = ["#3d64ad", "#b25a3a", "#7d549b", "#1c8a6f", "#3468a8",
                  "#9c7a12"];  // final hexes from the validator run
 const INK = "#1b2530";
@@ -282,6 +336,12 @@ const textColor = (i, total) => colorFor(i, total) || "currentColor";
 const markColor = (i, total) => colorFor(i, total) || FALLBACK_MARK;
 const pct = (x) => Math.round(x * 100) + "%";
 let doneRendered = null;   // schema version we last rendered (render once)
+let lastState = null;      // most recent /api/state payload, for local re-renders
+let profileSlugInit = false;   // set the slug default once per idle visit
+let profileReviewActive = false;   // render the draft once per profile_review visit
+let profileDeleted = { concepts: new Set(), affect: new Set(), intent: new Set() };
+let profilePromoted = new Set();
+let profileAcceptError = null;
 
 async function post(path, body) {
   const r = await fetch(path, {
@@ -356,10 +416,166 @@ function renderReview(state) {
   }
 }
 
+// --- course-profile setup card / accepted banner (idle screen) -------------
+
+async function startExplore() {
+  const files = [...$("materials").files];
+  const materials = await Promise.all(files.map(async (f) =>
+    ({ name: f.name, text: await f.text() })));
+  const r = await fetch("/api/explore", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: $("profile-slug").value, materials }),
+  });
+  if (!r.ok && r.status !== 409) alert("Request failed: " + r.status);
+  refresh();
+}
+
+function renderProfilePanel(state) {
+  const prof = state.profile || { slug: "dsc10", draft: null, accepted: null };
+  const hasAccepted = !!prof.accepted;
+  $("profile-setup").classList.toggle("hidden", hasAccepted);
+  $("profile-banner").classList.toggle("hidden", !hasAccepted);
+  if (hasAccepted) {
+    const acc = prof.accepted;
+    $("profile-banner-text").textContent =
+      `Course: ${acc.course_name} · profile ${acc.profile_id} · ` +
+      `${acc.concepts} concepts (${acc.promoted} promoted) · ` +
+      `${acc.affect} affect · ${acc.intent} intent`;
+  } else if (!profileSlugInit) {
+    // set the default once per idle visit; never clobber what the
+    // instructor is typing on later poll ticks
+    profileSlugInit = true;
+    $("profile-slug").value = prof.slug || "dsc10";
+  }
+}
+
+// --- course-profile review screen (phase profile_review) -------------------
+
+function profileRow(item, layerKind) {
+  const row = document.createElement("div");
+  row.className = "profile-row";
+  const deleted = profileDeleted[layerKind].has(item.name);
+  const head = document.createElement("div");
+  head.className = "profile-row-head";
+  const nm = document.createElement("strong");
+  nm.textContent = item.name;
+  head.append(nm);
+  if (item.kind) {
+    const k = document.createElement("span");
+    k.className = "kind";
+    k.textContent = ` (${item.kind})`;
+    head.append(k);
+  }
+  row.append(head);
+  if (deleted) {
+    row.classList.add("deleted");
+    const undo = linkButton("Undo", () => {
+      profileDeleted[layerKind].delete(item.name);
+      renderProfileReview(lastState);
+    });
+    row.append(undo);
+    return row;
+  }
+  const desc = document.createElement("div");
+  desc.className = "desc";
+  desc.textContent = item.description;
+  row.append(desc);
+  const details = document.createElement("details");
+  const summary = document.createElement("summary");
+  summary.textContent = "criteria";
+  details.append(summary);
+  if (layerKind === "concepts") {
+    const al = document.createElement("div");
+    al.textContent = (item.aliases && item.aliases.length)
+      ? `aliases: ${item.aliases.join(", ")}` : "no aliases recorded";
+    details.append(al);
+  } else {
+    const pos = document.createElement("div");
+    pos.textContent = `+ ${item.positive_criteria}`;
+    const neg = document.createElement("div");
+    neg.textContent = `− ${item.negative_criteria}`;
+    details.append(pos, neg);
+  }
+  row.append(details);
+  if (layerKind === "concepts") {
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = profilePromoted.has(item.name);
+    cb.addEventListener("change", () => {
+      if (cb.checked) profilePromoted.add(item.name);
+      else profilePromoted.delete(item.name);
+    });
+    label.append(cb, "Promote to label");
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = "criteria auto-drafted; refine later in the tweak loop";
+    row.append(label, hint);
+  }
+  const del = document.createElement("button");
+  del.textContent = "Delete";
+  del.addEventListener("click", () => {
+    profileDeleted[layerKind].add(item.name);
+    renderProfileReview(lastState);
+  });
+  row.append(del);
+  return row;
+}
+
+function profileLayerSection(title, layerKind, items, cls) {
+  const section = document.createElement("div");
+  section.className = "profile-layer " + cls;
+  const h = document.createElement("h2");
+  h.textContent = `${title} (${items.length})`;
+  section.append(h);
+  for (const item of items) section.append(profileRow(item, layerKind));
+  return section;
+}
+
+function renderProfileReview(state) {
+  const draft = state && state.profile && state.profile.draft;
+  const body = $("profile-review-body");
+  body.replaceChildren();
+  if (!draft) return;
+  body.append(profileLayerSection("Concepts", "concepts", draft.concepts,
+                                  "layer-concept"));
+  body.append(profileLayerSection("Affect", "affect", draft.affect,
+                                  "layer-affect"));
+  body.append(profileLayerSection("Intent", "intent", draft.intent,
+                                  "layer-intent"));
+  const err = $("profile-accept-error");
+  err.textContent = profileAcceptError || "";
+  err.classList.toggle("hidden", !profileAcceptError);
+}
+
+async function acceptProfile() {
+  const deleted = {
+    concepts: [...profileDeleted.concepts],
+    affect: [...profileDeleted.affect],
+    intent: [...profileDeleted.intent],
+  };
+  const promoted = [...profilePromoted];
+  const r = await fetch("/api/profile/accept", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deleted, promoted }),
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    profileAcceptError = body.detail || `Request failed: ${r.status}`;
+    renderProfileReview(lastState);
+    return;
+  }
+  profileAcceptError = null;
+  refresh();
+}
+
 const PHASE_TITLES = {
   fetching: "Fetching from the raw-log DB",
   drafting: "Drafting and labeling the review sample",
   mass_labeling: "Labeling the full corpus",
+  exploring: "Reading course materials into a profile draft",
 };
 
 // rolling (time, done) samples for rate/ETA; reset when the active step changes
@@ -930,16 +1146,31 @@ function renderError(state) {
 }
 
 function render(state) {
+  lastState = state;
   const phase = state.phase;
-  const working = ["fetching", "drafting", "mass_labeling"].includes(phase);
+  const working = ["fetching", "drafting", "mass_labeling", "exploring"]
+    .includes(phase);
   document.body.classList.toggle("wide", working || phase === "idle");
-  if (phase !== "idle") peekLoaded = false;
+  if (phase !== "idle") { peekLoaded = false; profileSlugInit = false; }
+  if (phase !== "profile_review") profileReviewActive = false;
   if (phase === "idle") {
     doneRendered = null;
     if (!peekLoaded) { peekLoaded = true; loadPeek(); }
+    renderProfilePanel(state);
     show("idle");
   }
   else if (phase === "review") { renderReview(state); show("review"); }
+  else if (phase === "profile_review") {
+    if (!profileReviewActive) {
+      profileReviewActive = true;
+      profileDeleted = { concepts: new Set(), affect: new Set(),
+                         intent: new Set() };
+      profilePromoted = new Set();
+      profileAcceptError = null;
+      renderProfileReview(state);
+    }
+    show("profile-review");
+  }
   else if (phase === "done") { renderDone(state); show("done"); }
   else if (phase === "error") { renderError(state); show("error"); }
   else { renderWorking(state); show("working"); }
@@ -966,6 +1197,12 @@ $("btn-reset-done").addEventListener("click", () => post("/api/quit"));
 $("btn-reset-error").addEventListener("click", () => post("/api/quit"));
 $("btn-retry").addEventListener("click", () => post("/api/retry"));
 $("btn-back-review").addEventListener("click", () => post("/api/back-to-review"));
+$("btn-explore").addEventListener("click", startExplore);
+$("btn-profile-reexplore").addEventListener("click", () =>
+  post("/api/profile/reexplore"));
+$("btn-profile-review-reexplore").addEventListener("click", () =>
+  post("/api/profile/reexplore"));
+$("btn-profile-accept").addEventListener("click", acceptProfile);
 
 refresh();
 setInterval(refresh, 1500);
