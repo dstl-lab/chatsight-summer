@@ -576,6 +576,61 @@ def test_explore_phase_guards(tmp_path):
         session.explore_course("dsc10", [])   # no double-explore
 
 
+def _explored(tmp_path):
+    session = make_session(tmp_path)
+    session.explore_course("dsc10", [])
+    return session
+
+
+def test_accept_profile_applies_surgery_and_persists(tmp_path):
+    session = _explored(tmp_path)
+    session.accept_profile(deleted={"concepts": ["loops"], "affect": [],
+                                    "intent": []},
+                           promoted=["groupby"])
+    s = session.state()
+    assert s["phase"] == "idle"
+    acc = s["profile"]["accepted"]
+    assert acc["concepts"] == 1 and acc["promoted"] == 1
+    from src.labeling.profile2 import load_profile
+    v2 = load_profile(tmp_path / "profiles" / "dsc10.json")
+    assert v2.accepted
+    assert [c.name for c in v2.concepts] == ["groupby"]
+    assert v2.concepts[0].promoted
+    assert v2.concepts[0].positive_criteria      # template criteria filled
+    assert v2.concepts[0].negative_criteria
+
+
+def test_accept_profile_is_deterministic_no_llm(tmp_path):
+    session = _explored(tmp_path)
+    calls_before = session.generate.schema_calls
+    session.accept_profile(deleted={}, promoted=[])
+    assert session.generate.schema_calls == calls_before
+
+
+def test_accept_profile_rejects_internal_collision(tmp_path):
+    session = _explored(tmp_path)
+    # sabotage: duplicate name across layers
+    dup = session.profile2_draft.affect_labels[0].model_copy(
+        update={"name": "wants-hint"})
+    session.profile2_draft = session.profile2_draft.model_copy(
+        update={"affect_labels": [dup]})
+    with pytest.raises(ValueError, match="wants-hint"):
+        session.accept_profile(deleted={}, promoted=[])
+    assert session.state()["phase"] == "profile_review"
+
+
+def test_discard_returns_to_setup_state(tmp_path):
+    session = _explored(tmp_path)
+    session.discard_profile()
+    s = session.state()
+    assert s["phase"] == "idle"
+    assert s["profile"]["draft"] is None
+    session.explore_course("dsc10", [])
+    session.accept_profile(deleted={}, promoted=[])
+    session.discard_profile()                    # from idle-with-profile
+    assert session.state()["profile"]["accepted"] is None
+
+
 def test_no_abstention_state_is_zeroed(tmp_path):
     session = make_session(tmp_path)
     session.start("intent", max_conversations=4, sample_size=4, seed=0)

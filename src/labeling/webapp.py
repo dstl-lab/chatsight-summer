@@ -18,7 +18,7 @@ from src.labeling.elicit import draft_schema, revise_schema
 from src.labeling.explore import EXCERPTS_PER_CONV  # noqa: F401 (unused ok)
 from src.labeling.explore import explore, write_draft
 from src.labeling.llm import DEFAULT_MODEL, Generate
-from src.labeling.profile2 import CourseProfileV2
+from src.labeling.profile2 import CourseProfileV2, lint_profile, save_profile
 from src.labeling.sampler import SampledMessage, stratified_sample
 from src.labeling.schema import LabelSchema, save_schema
 from src.labeling.snapshot import emit_snapshot
@@ -369,9 +369,67 @@ class LoopSession:
                 self.phase = "profile_review"
         self._launch(job, "exploring")
 
+    def accept_profile(self, deleted: dict[str, list[str]],
+                       promoted: list[str]) -> None:
+        """Skim-and-accept surgery: delete/promote via model_copy — no LLM
+        (spec 2026-08-08). Promotion fills deterministic template criteria;
+        wording refinement belongs to the tweak loop. Raises ValueError with
+        the reason; phase stays profile_review."""
+        with self._lock:
+            self._require("profile_review")
+            draft = self.profile2_draft
+
+        def _promote(c):
+            return c.model_copy(update={
+                "promoted": True,
+                "positive_criteria": c.positive_criteria or
+                    f"The student message substantively engages "
+                    f"{c.name} ({c.description})",
+                "negative_criteria": c.negative_criteria or
+                    f"{c.name} appears only incidentally (e.g. inside "
+                    "pasted code or output) without the student engaging it",
+            })
+        concepts = [_promote(c) if c.name in set(promoted) else c
+                    for c in draft.concepts
+                    if c.name not in set(deleted.get("concepts", []))]
+        affect = [l for l in draft.affect_labels
+                  if l.name not in set(deleted.get("affect", []))]
+        intent = [l for l in draft.intent_labels
+                  if l.name not in set(deleted.get("intent", []))]
+        v2 = draft.model_copy(update={
+            "concepts": concepts, "affect_labels": affect,
+            "intent_labels": intent, "accepted": True})
+        names = ([c.name for c in v2.concepts if c.promoted]
+                 + [l.name for l in v2.affect_labels + v2.intent_labels])
+        dupes = {n for n in names if names.count(n) > 1}
+        if dupes:
+            raise ValueError("label name collision across layers: "
+                             + ", ".join(sorted(dupes)))
+        findings = lint_profile(v2, self._explore_convs)
+        if findings:
+            raise ValueError("profile quotes student text (rule 4):\n"
+                             + "\n".join(findings))
+        save_profile(v2, self.profiles_dir / f"{self.course_slug}.json")
+        with self._lock:
+            self.profile2 = v2
+            self.profile2_draft = None
+            self._explore_convs = []
+            self.phase = "idle"
+
+    def discard_profile(self) -> None:
+        """Drop the draft (and any in-session accepted profile) so the
+        instructor can re-explore. Files on disk are left; the next accept
+        overwrites them."""
+        with self._lock:
+            self._require("profile_review", "idle")
+            self.profile2_draft = None
+            self._explore_convs = []
+            self.profile2 = None
+            self.phase = "idle"
+
     def quit(self) -> None:
         with self._lock:
-            self._require("review", "error", "done")
+            self._require("review", "error", "done", "profile_review")
             self._reset()
 
     def retry_step(self) -> None:
