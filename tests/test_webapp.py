@@ -25,6 +25,7 @@ def make_session(tmp_path: Path, workers: int = 8) -> LoopSession:
         repo_sha="testsha",
         runner=lambda job: job(),           # synchronous in tests
         workers=workers,
+        profiles_dir=tmp_path / "profiles",
     )
 
 
@@ -545,6 +546,34 @@ def test_state_carries_abstention_feed(tmp_path):
     assert ab["recent"][0]["note"] == "asks about grades"
     assert all(set(r) == {"text", "note"} for r in ab["recent"])
     assert len(ab["recent"]) <= 3
+
+
+def test_explore_reaches_profile_review_with_draft(tmp_path):
+    session = make_session(tmp_path)
+    session.explore_course("dsc10", [{"name": "syllabus.md", "text": "babypandas"}])
+    s = session.state()
+    assert s["phase"] == "profile_review"
+    draft = s["profile"]["draft"]
+    assert [c["name"] for c in draft["concepts"]] == ["groupby", "loops"]
+    assert draft["affect"][0]["name"] == "frustrated"
+    assert draft["intent"][0]["name"] == "wants-hint"
+    assert (tmp_path / "profiles" / "dsc10-draft.json").exists()
+    # materials text never appears in any state payload (rule 4)
+    import json as j
+    assert "babypandas" not in j.dumps(s)
+
+
+def test_explore_phase_guards(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    with pytest.raises(PhaseError):
+        session.explore_course("dsc10", [])   # review: no explore
+    session.quit()
+    session.explore_course("dsc10", [])
+    with pytest.raises(PhaseError):
+        session.start("intent")               # profile_review: no labeling run
+    with pytest.raises(PhaseError):
+        session.explore_course("dsc10", [])   # no double-explore
 
 
 def test_no_abstention_state_is_zeroed(tmp_path):

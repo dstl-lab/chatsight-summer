@@ -6,6 +6,7 @@ Single in-process session: this is a one-instructor localhost research tool.
 Binds 127.0.0.1 only — student text never leaves the machine (rule 4)."""
 import threading
 import time
+from datetime import date
 from pathlib import Path
 from typing import Callable
 
@@ -14,7 +15,10 @@ from src.labeling.cli import ACCEPT_NOTE
 from src.labeling.course import DSC10_PROFILE, CourseProfile
 from src.labeling.draft import MessageLabels, classifier_hash, draft_labels
 from src.labeling.elicit import draft_schema, revise_schema
+from src.labeling.explore import EXCERPTS_PER_CONV  # noqa: F401 (unused ok)
+from src.labeling.explore import explore, write_draft
 from src.labeling.llm import DEFAULT_MODEL, Generate
+from src.labeling.profile2 import CourseProfileV2
 from src.labeling.sampler import SampledMessage, stratified_sample
 from src.labeling.schema import LabelSchema, save_schema
 from src.labeling.snapshot import emit_snapshot
@@ -22,6 +26,7 @@ from src.labeling.summary import compute_summary, sample_examples
 
 WORKING_PHASES = ("fetching", "drafting", "mass_labeling")
 PEEK_FETCH_CAP = 40   # conversations; spec: docs/superpowers/specs/2026-08-06
+EXPLORE_SAMPLE = 150   # conversations read by the exploration pass (explore CLI default)
 
 _TERCILE_WORDS = {"short": "short conversation", "mid": "medium conversation",
                   "long": "long conversation"}
@@ -49,7 +54,8 @@ class LoopSession:
                  generate: Generate, ext_db_url: str, data_dir: Path,
                  repo_sha: str, runner: Callable[[Callable[[], None]], None]
                  = _thread_runner, profile: CourseProfile = DSC10_PROFILE,
-                 workers: int = 8):
+                 workers: int = 8, profiles_dir: Path,
+                 course_slug: str = "dsc10"):
         self.fetch = fetch
         self.count = count
         self.generate = generate
@@ -59,7 +65,12 @@ class LoopSession:
         self.runner = runner
         self.profile = profile
         self.workers = workers
+        self.profiles_dir = profiles_dir
+        self.course_slug = course_slug
         self._lock = threading.Lock()
+        # profile2 survives _reset() (quit()): the accepted profile is not
+        # part of a labeling run's working state.
+        self.profile2: CourseProfileV2 | None = None
         self._reset()
 
     def _reset(self) -> None:
@@ -82,6 +93,8 @@ class LoopSession:
         self._retry_job: Callable[[], None] | None = None
         self._retry_phase: str = "idle"
         self.seed = 0
+        self.profile2_draft: CourseProfileV2 | None = None
+        self._explore_convs: list[Conversation] = []
 
     def _init_steps(self, *specs: tuple[str, str]) -> None:
         with self._lock:
@@ -325,6 +338,37 @@ class LoopSession:
                 self.phase = "done"
         self._launch(job, "mass_labeling")
 
+    def explore_course(self, slug: str, materials: list[dict]) -> None:
+        """Exploration pass -> CourseProfile v2 draft for skim-and-accept.
+        Materials text lives only in this call's closure (rule 4)."""
+        with self._lock:
+            self._require("idle")
+            self.course_slug = slug
+            self.phase = "exploring"
+        self._init_steps(("fetch", "Fetching conversations"),
+                         ("explore", "Reading the corpus"))
+        texts = [m["text"] for m in materials]
+
+        def job() -> None:
+            self._begin_step("fetch")
+            convs = self.fetch(self.ext_db_url, EXPLORE_SAMPLE,
+                               on_progress=self._step_progress("fetch"))
+            self._end_step("fetch",
+                           name=f"Fetched {len(convs)} conversations")
+            self._begin_step("explore")
+            v2 = explore(convs, texts, self.generate,
+                         sample_meta={"conversations": len(convs), "seed": 0},
+                         repo_sha=self.repo_sha,
+                         explored_on=date.today().isoformat())
+            write_draft(v2, convs, self.profiles_dir / f"{slug}-draft.json")
+            self._end_step("explore",
+                           name=f"Profile drafted: {len(v2.concepts)} concepts")
+            with self._lock:
+                self.profile2_draft = v2
+                self._explore_convs = convs
+                self.phase = "profile_review"
+        self._launch(job, "exploring")
+
     def quit(self) -> None:
         with self._lock:
             self._require("review", "error", "done")
@@ -387,6 +431,36 @@ class LoopSession:
                                 "description": l.description}
                                for l in self.schema.labels],
                 }
+
+            def _labels(ls):
+                return [{"name": l.name, "kind": l.kind,
+                         "description": l.description,
+                         "positive_criteria": l.positive_criteria,
+                         "negative_criteria": l.negative_criteria}
+                        for l in ls]
+            profile: dict = {"slug": self.course_slug,
+                             "draft": None, "accepted": None}
+            if self.profile2_draft is not None:
+                d = self.profile2_draft
+                profile["draft"] = {
+                    "concepts": [{"name": c.name,
+                                  "description": c.description,
+                                  "aliases": c.aliases,
+                                  "promoted": c.promoted}
+                                 for c in d.concepts],
+                    "affect": _labels(d.affect_labels),
+                    "intent": _labels(d.intent_labels),
+                }
+            if self.profile2 is not None:
+                p = self.profile2
+                profile["accepted"] = {
+                    "profile_id": p.profile_id,
+                    "course_name": p.base.course_name,
+                    "concepts": len(p.concepts),
+                    "promoted": sum(1 for c in p.concepts if c.promoted),
+                    "affect": len(p.affect_labels),
+                    "intent": len(p.intent_labels),
+                }
             return {
                 "phase": self.phase,
                 "error": self.error,
@@ -411,6 +485,7 @@ class LoopSession:
                 "snapshot_path": (str(self.snapshot_path)
                                   if self.snapshot_path else None),
                 "summary": self.summary if self.phase == "done" else None,
+                "profile": profile,
             }
 
 
@@ -528,7 +603,8 @@ def main() -> None:
                           ext_db_url=settings.ext_db_url,
                           data_dir=settings.data_dir,
                           repo_sha=_repo_sha(settings.repo_root),
-                          workers=settings.labeling_workers)
+                          workers=settings.labeling_workers,
+                          profiles_dir=Path(settings.repo_root) / "profiles")
     # 127.0.0.1 only: student text never leaves the machine (CLAUDE.md rule 4)
     print("label-loop web UI on http://127.0.0.1:8321 (is bin/tunnel running?)")
     uvicorn.run(create_app(session), host="127.0.0.1", port=8321)

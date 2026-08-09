@@ -22,6 +22,25 @@ def make_fake_generate():
             return SingleLabelVerdict(applies=True, rationale="r")
         if response_model is CoverageVerdict:
             return CoverageVerdict(no_label_fits=False, note="")
+        from src.labeling.explore import ExplorationDraft
+        if response_model is ExplorationDraft:
+            from src.labeling.course import DSC10_PROFILE
+            from src.labeling.profile2 import ConceptDef
+            from src.labeling.schema import LabelDef
+            base = DSC10_PROFILE.model_dump()
+            return ExplorationDraft(
+                **{k: base[k] for k in ("course_name", "domain_description",
+                                        "tooling", "paste_conventions",
+                                        "reference_conventions",
+                                        "message_shape_notes")},
+                concepts=[ConceptDef(name="groupby", description="d"),
+                          ConceptDef(name="loops", description="d")],
+                affect_labels=[LabelDef(name="frustrated", kind="behavioral",
+                                        description="d", positive_criteria="p",
+                                        negative_criteria="n")],
+                intent_labels=[LabelDef(name="wants-hint", kind="behavioral",
+                                        description="d", positive_criteria="p",
+                                        negative_criteria="n")])
     fake_generate.schema_calls = 0
     return fake_generate
 
