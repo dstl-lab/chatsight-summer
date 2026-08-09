@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from src.ingest.rawlog import Conversation, Turn
 from src.labeling.cli import ACCEPT_NOTE
 from src.labeling.webapp import LoopSession, PhaseError
 from tests.test_cli import make_fake_generate
@@ -618,6 +619,33 @@ def test_accept_profile_rejects_internal_collision(tmp_path):
     with pytest.raises(ValueError, match="wants-hint"):
         session.accept_profile(deleted={}, promoted=[])
     assert session.state()["phase"] == "profile_review"
+
+
+def test_accept_profile_refuses_when_lint_fires(tmp_path):
+    # CONVS' fake student turns ("a q0", "b q1", ...) are far shorter than
+    # LINT_NGRAM (8 words), so lint_profile can never trip on them. Swap in
+    # a conversation with a real 8+-word student turn, then sabotage the
+    # draft so a concept description shares that verbatim run.
+    session = _explored(tmp_path)
+    quote = "the groupby method splits a table into groups by column"
+    student_turn = Turn(index=0, role="student", text=quote,
+                        student_index=0)
+    tutor_turn = Turn(index=1, role="tutor", text="here is a hint")
+    quoting_conv = Conversation(conv_id="quoting", chatlog_id=1,
+                                notebook=None, started_at=None,
+                                turns=[student_turn, tutor_turn])
+    session._explore_convs = [quoting_conv]
+
+    draft = session.profile2_draft
+    sabotaged = draft.concepts[0].model_copy(
+        update={"description": quote})
+    session.profile2_draft = draft.model_copy(
+        update={"concepts": [sabotaged, *draft.concepts[1:]]})
+
+    with pytest.raises(ValueError, match="rule 4"):
+        session.accept_profile(deleted={}, promoted=[])
+    assert session.state()["phase"] == "profile_review"
+    assert not (tmp_path / "profiles" / "dsc10.json").exists()
 
 
 def test_discard_returns_to_setup_state(tmp_path):

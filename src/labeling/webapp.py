@@ -15,7 +15,6 @@ from src.labeling.cli import ACCEPT_NOTE, load_accepted_profile
 from src.labeling.course import DSC10_PROFILE, CourseProfile
 from src.labeling.draft import MessageLabels, classifier_hash, draft_labels
 from src.labeling.elicit import draft_schema, revise_schema
-from src.labeling.explore import EXCERPTS_PER_CONV  # noqa: F401 (unused ok)
 from src.labeling.explore import explore, write_draft
 from src.labeling.llm import DEFAULT_MODEL, Generate
 from src.labeling.profile2 import (CourseProfileV2, compose_schema,
@@ -321,7 +320,12 @@ class LoopSession:
                 "sample", name=f"Sampled {len(all_messages)} messages",
                 detail=f"from {len(self.conversations)} conversations")
             self._begin_step("label")
-            # review-sample labels are same-schema, same-classifier: reused
+            # Without a profile2, this schema is unchanged from the review
+            # pass (same-schema, same-classifier), so review-sample labels
+            # are reused. With a profile2, composition above just bumped
+            # the schema version, so the vintage guard in
+            # _label_incremental clears those review labels and this pass
+            # relabels the full corpus against the composed schema.
             self._label_incremental(all_messages, "label")
             self._end_step(
                 "label", name=f"Labeled {len(all_messages)} messages")

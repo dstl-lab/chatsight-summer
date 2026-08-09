@@ -159,6 +159,12 @@
     padding: .5rem .8rem; margin-bottom: 1.5rem; font-size: .9rem;
     display: flex; justify-content: space-between; align-items: baseline;
     gap: .75rem; flex-wrap: wrap; }
+  /* .hidden (line 88) and .profile-banner both set `display` at equal
+     specificity; source order alone lets whichever rule comes later win,
+     which broke hiding when .profile-banner was declared after .hidden.
+     Scope a `.profile-banner.hidden` rule (higher specificity) so hidden
+     always wins regardless of declaration order. */
+  .profile-banner.hidden { display: none; }
   .profile-layer { border-radius: 0 6px 6px 0; padding: .3rem 1rem .8rem;
     margin: 1rem 0; border-left: 4px solid; }
   .profile-layer h2 { font-size: .95rem; margin: .5rem 0 .6rem; }
