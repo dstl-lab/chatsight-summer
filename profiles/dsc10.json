@@ -137,9 +137,9 @@
     {
       "name": "Confusion",
       "kind": "behavioral",
-      "description": "Student indicates a lack of understanding regarding a concept, error, or expected output, often in a questioning tone.",
-      "positive_criteria": "Includes phrases such as 'why is X not working?', 'I don't understand', 'what is wrong with my code?', 'what does X do?', 'I don't follow'.",
-      "negative_criteria": "Does not involve strong emotional language indicative of frustration or self-blame."
+      "description": "Student explicitly states they do not understand a concept, explanation, or result \u2014 confusion in words, beyond the implicit confusion of asking for help.",
+      "positive_criteria": "The message contains an explicit marker of non-understanding: statements like 'I don't understand', 'I don't follow', 'what does X even mean', 'this makes no sense to me', or asking why an explained result still surprises them after the tutor explained it.",
+      "negative_criteria": "Does NOT apply to ordinary questions or help requests without an explicit non-understanding marker: asking how to do something, asking for a fix, pasting an error, or requesting a solution are not confusion by themselves. Frustration without a non-understanding statement is not confusion."
     },
     {
       "name": "Seeking Validation",

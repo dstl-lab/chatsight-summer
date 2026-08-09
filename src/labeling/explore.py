@@ -62,7 +62,10 @@ generic help-seeking intent labels — each with description, \
 positive_criteria, negative_criteria. Labels must be judgeable on messages \
 as they actually occur in these logs (see the digest: mostly terse, often \
 pasted or deictic), not only on articulate prose. Prefer fewer, sharper \
-labels.
+labels. Labels within and across the affect and intent layers must be \
+mutually distinct: no two labels' criteria may be written so one message \
+satisfies both by design, and no label may amount to "the student asked a \
+question".
 
 Rules: distill, never quote — no phrase copied from a student turn may \
 appear in any output field. Do not invent concepts the data or materials \
