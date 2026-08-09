@@ -55,9 +55,11 @@ the draft stays reviewable.
   field; and a `profile2` field threaded into `draft_labels`,
   `classifier_hash`, and `emit_snapshot` (manifest records `profile2_id`).
 - Endpoints:
-  - `POST /api/explore` — multipart form: `slug`, optional materials files.
-    Materials text goes into the exploration prompt and is then dropped;
-    never written to disk, never echoed in any response.
+  - `POST /api/explore` — JSON body: `slug`, optional `materials` list of
+    `{name, text}` read client-side via FileReader (avoids the
+    python-multipart dependency). Materials text goes into the exploration
+    prompt and is then dropped; never written to disk, never echoed in any
+    response.
   - `GET /api/state` — extended with a `profile` block: phase-appropriate
     draft layers (name/description/criteria/kind/promoted) or the accepted
     summary (slug, profile_id, counts).

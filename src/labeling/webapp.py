@@ -581,6 +581,21 @@ class TweakRequest(BaseModel):
     feedback: str
 
 
+class MaterialFile(BaseModel):
+    name: str
+    text: str
+
+
+class ExploreRequest(BaseModel):
+    slug: str = "dsc10"
+    materials: list[MaterialFile] = []
+
+
+class ProfileAcceptRequest(BaseModel):
+    deleted: dict[str, list[str]] = {}
+    promoted: list[str] = []
+
+
 def create_app(session: LoopSession) -> FastAPI:
     app = FastAPI(title="label-loop")
 
@@ -641,6 +656,26 @@ def create_app(session: LoopSession) -> FastAPI:
     @app.get("/api/peek")
     def peek(n: int = 6, seed: int = 0) -> dict:
         return session.peek(n=n, seed=seed)
+
+    @app.post("/api/explore")
+    def explore_ep(req: ExploreRequest) -> dict:
+        session.explore_course(req.slug,
+                               [m.model_dump() for m in req.materials])
+        return {"ok": True}
+
+    @app.post("/api/profile/accept")
+    def profile_accept(req: ProfileAcceptRequest) -> dict:
+        try:
+            session.accept_profile(deleted=req.deleted,
+                                   promoted=req.promoted)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return {"ok": True}
+
+    @app.post("/api/profile/reexplore")
+    def profile_reexplore() -> dict:
+        session.discard_profile()
+        return {"ok": True}
 
     return app
 

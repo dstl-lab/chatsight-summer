@@ -682,3 +682,37 @@ def test_run_without_profile_unchanged(tmp_path):
     manifest = j.loads((Path(session.state()["snapshot_path"])
                         / "manifest.json").read_text())
     assert manifest["profile2_id"] is None
+
+
+# --- profile setup API endpoints --------------------------------------------
+
+
+def test_api_profile_flow(tmp_path):
+    client = TestClient(create_app(make_session(tmp_path)))
+    r = client.post("/api/explore", json={
+        "slug": "dsc10",
+        "materials": [{"name": "syllabus.md", "text": "babypandas"}]})
+    assert r.status_code == 200
+    s = client.get("/api/state").json()
+    assert s["phase"] == "profile_review"
+    assert "babypandas" not in r.text and "babypandas" not in str(s)
+    r = client.post("/api/profile/accept", json={
+        "deleted": {"concepts": ["loops"], "affect": [], "intent": []},
+        "promoted": []})
+    assert r.status_code == 200
+    assert client.get("/api/state").json()["profile"]["accepted"]["concepts"] == 1
+    assert client.post("/api/profile/reexplore").json() == {"ok": True}
+    assert client.get("/api/state").json()["profile"]["accepted"] is None
+
+
+def test_api_accept_error_returns_400(tmp_path):
+    session = make_session(tmp_path)
+    client = TestClient(create_app(session))
+    client.post("/api/explore", json={"slug": "dsc10", "materials": []})
+    dup = session.profile2_draft.affect_labels[0].model_copy(
+        update={"name": "wants-hint"})
+    session.profile2_draft = session.profile2_draft.model_copy(
+        update={"affect_labels": [dup]})
+    r = client.post("/api/profile/accept",
+                    json={"deleted": {}, "promoted": []})
+    assert r.status_code == 400 and "wants-hint" in r.json()["detail"]
