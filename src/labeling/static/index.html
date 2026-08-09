@@ -550,25 +550,36 @@ function renderProfileReview(state) {
 }
 
 async function acceptProfile() {
-  const deleted = {
-    concepts: [...profileDeleted.concepts],
-    affect: [...profileDeleted.affect],
-    intent: [...profileDeleted.intent],
-  };
-  const promoted = [...profilePromoted];
-  const r = await fetch("/api/profile/accept", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ deleted, promoted }),
-  });
-  if (!r.ok) {
-    const body = await r.json().catch(() => ({}));
-    profileAcceptError = body.detail || `Request failed: ${r.status}`;
-    renderProfileReview(lastState);
-    return;
+  const btn = $("btn-profile-accept");
+  if (btn.disabled) return;   // already in flight (belt) — button is also
+  btn.disabled = true;        // disabled for the duration (suspenders)
+  try {
+    const deleted = {
+      concepts: [...profileDeleted.concepts],
+      affect: [...profileDeleted.affect],
+      intent: [...profileDeleted.intent],
+    };
+    const promoted = [...profilePromoted];
+    const r = await fetch("/api/profile/accept", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deleted, promoted }),
+    });
+    // 409 means a previous request already moved the session out of
+    // profile_review (e.g. a double-click); its detail is a phase-mismatch
+    // message, not a validation error, so — like post() — ignore it rather
+    // than showing it as an accept failure.
+    if (!r.ok && r.status !== 409) {
+      const body = await r.json().catch(() => ({}));
+      profileAcceptError = body.detail || `Request failed: ${r.status}`;
+      renderProfileReview(lastState);
+      return;
+    }
+    profileAcceptError = null;
+    refresh();
+  } finally {
+    btn.disabled = false;
   }
-  profileAcceptError = null;
-  refresh();
 }
 
 const PHASE_TITLES = {
