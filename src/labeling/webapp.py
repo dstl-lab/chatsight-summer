@@ -11,14 +11,15 @@ from pathlib import Path
 from typing import Callable
 
 from src.ingest.rawlog import Conversation, count_conversations, fetch_conversations
-from src.labeling.cli import ACCEPT_NOTE
+from src.labeling.cli import ACCEPT_NOTE, load_accepted_profile
 from src.labeling.course import DSC10_PROFILE, CourseProfile
 from src.labeling.draft import MessageLabels, classifier_hash, draft_labels
 from src.labeling.elicit import draft_schema, revise_schema
 from src.labeling.explore import EXCERPTS_PER_CONV  # noqa: F401 (unused ok)
 from src.labeling.explore import explore, write_draft
 from src.labeling.llm import DEFAULT_MODEL, Generate
-from src.labeling.profile2 import CourseProfileV2, lint_profile, save_profile
+from src.labeling.profile2 import (CourseProfileV2, compose_schema,
+                                   lint_profile, save_profile)
 from src.labeling.sampler import SampledMessage, stratified_sample
 from src.labeling.schema import LabelSchema, save_schema
 from src.labeling.snapshot import emit_snapshot
@@ -185,7 +186,8 @@ class LoopSession:
         draft_labels(todo, self.schema, self.profile, self.generate,
                      on_progress=lambda done, total:
                          progress(offset + done, len(messages)),
-                     on_result=on_result, workers=self.workers)
+                     on_result=on_result, workers=self.workers,
+                     profile2=self.profile2)
 
     def _run(self, job: Callable[[], None]) -> None:
         def guarded() -> None:
@@ -239,7 +241,8 @@ class LoopSession:
                 self.phase = "drafting"
             self._begin_step("schema")
             if self.schema is None:
-                schema = draft_schema(intent, self.profile, self.generate)
+                schema = draft_schema(intent, self.profile, self.generate,
+                                      profile2=self.profile2)
                 with self._lock:
                     self.schema = schema
             if not self.sample:
@@ -297,10 +300,17 @@ class LoopSession:
                          ("sample", "Sampling corpus"),
                          ("label", "Labeling messages"),
                          ("snapshot", "Writing snapshot"))
+        composed = {"done": False}  # retry guard: never compose twice
 
         def job() -> None:
             self._begin_step("save")
             save_schema(self.schema, self.data_dir)
+            if self.profile2 is not None and not composed["done"]:
+                schema = compose_schema(self.profile2, self.schema)
+                save_schema(schema, self.data_dir)
+                composed["done"] = True
+                with self._lock:
+                    self.schema = schema
             self._end_step(
                 "save", name=f"Schema {self.schema.version_id} saved",
                 detail=f"{len(self.schema.labels)} labels")
@@ -321,16 +331,18 @@ class LoopSession:
                 model=DEFAULT_MODEL, repo_sha=self.repo_sha,
                 data_dir=self.data_dir,
                 excluded_conversations=self.provenance["excluded"],
-                profile=self.profile)
+                profile=self.profile, profile2=self.profile2)
             self._end_step("snapshot", name="Snapshot written",
                            detail=str(path))
             summary = compute_summary(self.conversations, self.labeled,
                                       self.schema, seed=self.seed)
             summary["classifier"] = {
                 "hash": classifier_hash(self.schema, DEFAULT_MODEL,
-                                        self.profile),
+                                        self.profile, profile2=self.profile2),
                 "model": DEFAULT_MODEL,
                 "profile_id": self.profile.profile_id,
+                "profile2_id": (self.profile2.profile_id
+                                if self.profile2 else None),
             }
             with self._lock:
                 self.snapshot_path = path
@@ -645,10 +657,18 @@ def _repo_sha(repo_root: Path) -> str:
 
 
 def main() -> None:
+    import argparse
+
     import uvicorn
 
     from src.config import Settings
     from src.labeling.llm import make_generate
+
+    parser = argparse.ArgumentParser(description="label-loop web UI")
+    parser.add_argument("--course", default="dsc10",
+                        help="course slug; loads profiles/<slug>.json when "
+                             "present and accepted (default: dsc10)")
+    args = parser.parse_args()
 
     settings = Settings.load()
     if not settings.gemini_api_key:
@@ -657,12 +677,17 @@ def main() -> None:
     generate = make_generate(
         settings.gemini_api_key,
         on_retry=lambda info: session.note_retry(info) if session else None)
+    profiles_dir = Path(settings.repo_root) / "profiles"
     session = LoopSession(generate=generate,
                           ext_db_url=settings.ext_db_url,
                           data_dir=settings.data_dir,
                           repo_sha=_repo_sha(settings.repo_root),
                           workers=settings.labeling_workers,
-                          profiles_dir=Path(settings.repo_root) / "profiles")
+                          profiles_dir=profiles_dir,
+                          course_slug=args.course)
+    profile_path = profiles_dir / f"{args.course}.json"
+    if profile_path.exists():
+        session.profile2 = load_accepted_profile(str(profile_path))
     # 127.0.0.1 only: student text never leaves the machine (CLAUDE.md rule 4)
     print("label-loop web UI on http://127.0.0.1:8321 (is bin/tunnel running?)")
     uvicorn.run(create_app(session), host="127.0.0.1", port=8321)

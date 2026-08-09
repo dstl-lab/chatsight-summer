@@ -419,11 +419,12 @@ def test_summary_includes_classifier_hash_and_model(tmp_path):
     session.accept()
     s = session.state()
     classifier = s["summary"]["classifier"]
-    assert set(classifier) == {"hash", "model", "profile_id"}
+    assert set(classifier) == {"hash", "model", "profile_id", "profile2_id"}
     assert classifier["model"] == DEFAULT_MODEL
     assert classifier["hash"] == classifier_hash(session.schema, DEFAULT_MODEL,
                                                  session.profile)
     assert classifier["profile_id"] == session.profile.profile_id
+    assert classifier["profile2_id"] is None
 
 
 def test_done_summary_carries_profile_id(tmp_path):
@@ -647,3 +648,37 @@ def test_tweak_clears_abstention_feed(tmp_path):
     session.tweak("split it")
     assert session.state()["status"]["abstention"] == {"count": 0,
                                                         "recent": []}
+
+
+def _accepted_session(tmp_path):
+    session = _explored(tmp_path)
+    session.accept_profile(deleted={}, promoted=["groupby"])
+    return session
+
+
+def test_run_with_profile_composes_at_accept(tmp_path):
+    session = _accepted_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    review_names = [l["name"] for l in session.state()["schema"]["labels"]]
+    assert review_names == ["label-v1"]          # review: instructor-only
+    session.accept()
+    s = session.state()
+    assert s["phase"] == "done"
+    names = [l["name"] for l in s["schema"]["labels"]]
+    assert "groupby" in names and "frustrated" in names \
+        and "wants-hint" in names                 # composed for the mass pass
+    import json as j
+    manifest = j.loads(
+        (Path(s["snapshot_path"]) / "manifest.json").read_text())
+    assert manifest["profile2_id"] == session.profile2.profile_id
+    assert s["summary"]["classifier"]["profile_id"] == session.profile.profile_id
+
+
+def test_run_without_profile_unchanged(tmp_path):
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.accept()
+    import json as j
+    manifest = j.loads((Path(session.state()["snapshot_path"])
+                        / "manifest.json").read_text())
+    assert manifest["profile2_id"] is None
