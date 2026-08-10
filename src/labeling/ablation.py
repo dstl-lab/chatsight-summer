@@ -24,6 +24,15 @@ def strip_context(m: SampledMessage) -> SampledMessage:
         "latency_seconds": None, "latency_bucket": "unknown"})
 
 
+def strip_sequence(m: SampledMessage) -> SampledMessage:
+    """Ablate ONLY the sequence facts so their marginal effect on verdicts
+    is measurable (context-awareness instrument, 2026-08-09 spec)."""
+    return m.model_copy(update={
+        "pre_pattern": "", "last_run_minutes": None, "last_run_grader": "",
+        "last_run_success": None, "snapshot_traceback": False,
+        "mode": "", "seq_granularity": ""})
+
+
 def flip_stats(original: list[MessageLabels], ablated: list[MessageLabels]
                ) -> dict:
     by_key = {(r.chatlog_id, r.message_index): r for r in original}
@@ -45,10 +54,15 @@ def flip_stats(original: list[MessageLabels], ablated: list[MessageLabels]
                           for n in sorted(per_label_total)}}
 
 
-def render_report(stats: dict) -> str:
-    lines = [f"Context-ablation probe: {stats['messages_with_flips']} of "
+def render_report(stats: dict, axis: str = "context") -> str:
+    axis_label = "context" if axis == "context" else "sequence"
+    action = "without context" if axis == "context" else "without sequence facts"
+    inert_label = "CONTEXT-INERT" if axis == "context" else "SEQUENCE-INERT"
+    inert_msg = ("verdicts ignore context" if axis == "context"
+                 else "verdicts ignore sequence facts")
+    lines = [f"{axis_label.capitalize()}-ablation probe: {stats['messages_with_flips']} of "
              f"{stats['messages']} messages changed at least one verdict "
-             "without context."]
+             f"{action}."]
     inert = []
     for name, s in sorted(stats["per_label"].items(),
                           key=lambda kv: -kv[1]["flips"]):
@@ -58,7 +72,7 @@ def render_report(stats: dict) -> str:
         if s["flips"] == 0:
             inert.append(name)
     if inert:
-        lines.append("  CONTEXT-INERT (0 flips — verdicts ignore context "
+        lines.append(f"  {inert_label} (0 flips — {inert_msg} "
                      "on this sample): " + ", ".join(inert))
     return "\n".join(lines)
 
@@ -75,6 +89,7 @@ def main() -> None:
                         help="seed the snapshot's mass pass used")
     parser.add_argument("--profile", default=None)
     parser.add_argument("--workers", type=int, default=None)
+    parser.add_argument("--axis", choices=["context", "sequence"], default="context")
     args = parser.parse_args()
 
     settings = Settings.load()
@@ -99,13 +114,14 @@ def main() -> None:
     generate = make_generate(settings.gemini_api_key)
     workers = (args.workers if args.workers is not None
                else settings.labeling_workers)
-    ablated = draft_labels([strip_context(m) for m in messages], schema,
+    stripper = strip_sequence if args.axis == "sequence" else strip_context
+    ablated = draft_labels([stripper(m) for m in messages], schema,
                            settings_profile(manifest), generate,
                            workers=workers, profile2=profile2)
     print(render_report(flip_stats(
         [r for r in original
          if (r.chatlog_id, r.message_index) in
-         {(m.chatlog_id, m.message_index) for m in messages}], ablated)))
+         {(m.chatlog_id, m.message_index) for m in messages}], ablated), axis=args.axis))
 
 
 def settings_profile(manifest: dict):
