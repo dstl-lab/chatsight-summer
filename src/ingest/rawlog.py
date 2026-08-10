@@ -1,5 +1,6 @@
 """Raw-log access. The SQL edge is fetch_conversations; everything else is pure.
 Read-only: never execute anything but SELECT against the external DB."""
+import random
 from datetime import datetime
 from typing import Callable, Literal
 
@@ -92,21 +93,33 @@ def count_conversations(ext_db_url: str) -> int:
 
 def fetch_conversations(ext_db_url: str, limit: int | None = None,
                         on_progress: Callable[[int, int], None] | None = None,
-                        since: str | None = None, until: str | None = None
+                        since: str | None = None, until: str | None = None,
+                        sample_seed: int | None = None
                         ) -> list[Conversation]:
     """since/until (ISO dates, [since, until)) filter on conversation start;
-    both or neither — a half-open window keeps the fetch reproducible."""
+    both or neither — a half-open window keeps the fetch reproducible.
+    sample_seed draws `limit` conversations uniformly (seeded) from the
+    filtered set instead of taking the chatlog_id-earliest slice."""
     if (since is None) != (until is None):
         raise ValueError("since and until must be given together")
     engine = create_engine(ext_db_url)
     having = _HAVING_WINDOW if since is not None else ""
     sql = _CONV_SQL.format(having=having)
-    if limit is not None:
+    # sample_seed: draw `limit` conversations uniformly from the window
+    # instead of the chatlog_id-earliest slice. ORDER BY chatlog_id LIMIT N
+    # returns the window's opening days only — an unrepresentative cut
+    # (2026-08-10: first-60 of Mar-Jul was 100% early-March finals week).
+    if sample_seed is None and limit is not None:
         sql += f"\nLIMIT {int(limit)}"
     params = ({"since": since, "until": until} if since is not None else {})
     out: list[Conversation] = []
     with engine.connect() as conn:
         heads = conn.execute(text(sql), params).mappings().all()
+        if sample_seed is not None and limit is not None \
+                and len(heads) > limit:
+            rng = random.Random(sample_seed)
+            heads = sorted(rng.sample(list(heads), limit),
+                           key=lambda h: h["chatlog_id"])
         for i, h in enumerate(heads):
             rows = [tuple(r) for r in conn.execute(
                 text(_TURNS_SQL), {"conv_id": h["conv_id"]}

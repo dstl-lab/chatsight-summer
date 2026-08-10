@@ -98,6 +98,9 @@ def main() -> None:
     parser.add_argument("--until", default=None,
                         help="ISO date, exclusive upper bound "
                              "(requires --since)")
+    parser.add_argument("--conv-sample-seed", type=int, default=None,
+                        help="draw --max-conversations uniformly (seeded) "
+                             "from the window instead of the earliest slice")
     args = parser.parse_args()
     sequence = not args.no_sequence
 
@@ -117,7 +120,8 @@ def main() -> None:
           "(is bin/tunnel running?)...")
     conversations = fetch_conversations(settings.ext_db_url,
                                         limit=args.max_conversations,
-                                        since=args.since, until=args.until)
+                                        since=args.since, until=args.until,
+                                        sample_seed=args.conv_sample_seed)
     total_conversations = count_conversations(settings.ext_db_url)
     excluded_conversations = max(0, total_conversations - len(conversations))
     print(f"Fetched {len(conversations)} conversations. DB holds "
