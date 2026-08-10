@@ -67,3 +67,29 @@ works and nothing is flagged.
   they miss chat-then-check-later workflows entirely (that is what
   ask-first means under these windows: no *prior* run — not "never
   checked").
+
+## Blind audit results (minchan, 48 messages, 96 judgments, 2026-08-10)
+
+First reliability measurement of sequence-grounded labels (single
+annotator; per-label support is tiny — treat as direction, not verdict):
+
+- **Strong**: Seeking Validation P=1.00/R=1.00 (κ=1.0), Alternative
+  Method Query 1.00, outcome-focused-query and Debugging Request 0.75.
+- **Zero-support**: Code Implementation Query, concept-misapplication,
+  Conceptual Clarification, step-by-step-prompt — the human confirmed NO
+  model-positive for any of them (κ≈0, "keep human-only" flag).
+- **Human derived no-label-fits: 29/48 (60%)** vs model abstention 6% —
+  a large under/over-labeling gap, direction unresolved.
+- **First mode-split reliability**: tutor-mode agreement 74% (62/84) vs
+  chatgpt-mode 50% (6/12) — chatgpt-mode messages are measurably harder
+  to label reliably; mode-split reporting exists for exactly this.
+- Human-side outcome anchor is weaker than the model's (Debugging 1/3 in
+  fail-then-ask).
+
+Annotator's own diagnosis (recorded verbatim intent): **label criteria
+are too verbose to hold in mind while judging** — the four zero-support
+labels carry the longest criteria (generated intent-layer + drafted
+conceptual labels). Confounded hypothesis: verbose criteria depress human
+yes-rates (comprehension fatigue) AND/OR those labels genuinely
+over-fire (step-by-step-prompt was already distinctness-flagged, J=0.46).
+A criteria-brevity pass + re-audit separates the two.
