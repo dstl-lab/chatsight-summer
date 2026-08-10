@@ -43,9 +43,10 @@ def test_per_label_payload_is_blind_and_sized(tmp_path):
     assert "model-positive" not in json.dumps(payload)
     # ...but are recorded per label for scoring
     assert "model-positive" in json.dumps(strata["x"])
-    # nofit pass covers the union of sampled keys
+    # no nofit pass in the payload: no_label_fits is derived at submit
+    # time (all judged labels "no"), never asked
+    assert "nofit_keys" not in payload
     union = {k for l in payload["labels"] for k in l["keys"]}
-    assert set(payload["nofit_keys"]) == union
     assert set(payload["msgs"]) == union
 
 
@@ -57,3 +58,26 @@ def test_label_subset_and_legacy_mode(tmp_path):
     legacy, strata = build_payload(snap, n=10, seed=0)
     assert [len(l["keys"]) for l in legacy["labels"]] == [10, 10]
     assert "_message" in strata
+
+
+def test_page_autosaves_and_resumes():
+    from src.eval.audit_server import PAGE
+    assert '"/draft"' in PAGE          # every answer POSTs a draft
+    assert "D.draft" in PAGE           # reload restores answers + position
+
+
+def test_reveal_gated_and_payload_still_blind():
+    from src.eval.audit_server import PAGE
+    # reveal fetched only after save; payload itself never carries verdicts
+    assert '"/reveal"' in PAGE
+    assert "showReveal" in PAGE
+
+
+def test_evidence_field_on_message_labels():
+    from src.labeling.draft import MessageLabels
+    r = MessageLabels(chatlog_id=1, message_index=0, labels={"x": True},
+                      rationales={"x": "r"}, evidence={"x": "span"})
+    assert r.evidence["x"] == "span"
+    legacy = MessageLabels(chatlog_id=1, message_index=0,
+                           labels={}, rationales={})
+    assert legacy.evidence == {}

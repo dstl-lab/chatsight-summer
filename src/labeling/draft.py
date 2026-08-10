@@ -32,6 +32,9 @@ from src.labeling.schema import LabelDef, LabelSchema
 class SingleLabelVerdict(BaseModel):
     applies: bool
     rationale: str
+    # verbatim span from the student message or surrounding turns that
+    # drove the verdict; "" when applies=false. UIs highlight it.
+    evidence: str = ""
 
 
 # Surface form of the message (2026-08-06 prompt-redesign memo, Option B):
@@ -69,6 +72,7 @@ class MessageLabels(BaseModel):
     message_index: int
     labels: dict[str, bool]
     rationales: dict[str, str]
+    evidence: dict[str, str] = {}  # applied label -> verbatim driving span
     no_label_fits: bool = False   # default: old snapshots still parse
     coverage_note: str = ""       # ditto
     forms: list[str] = []         # ditto
@@ -127,8 +131,11 @@ Label:
 
 {_SHARED_CONTEXT}
 
-Does the label apply to the student message? Return applies (true/false) \
-and a one-sentence rationale."""
+Does the label apply to the student message? Return applies (true/false), \
+a one-sentence rationale, and — when applies is true — evidence: the \
+shortest VERBATIM span (copied exactly, no paraphrase) from the student \
+message or the surrounding turns that most drove your verdict. Empty \
+evidence when applies is false."""
 
 COVERAGE_PROMPT = f"""You check label coverage for one student message from \
 a student–AI tutor conversation.
@@ -268,7 +275,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
         concept_block=_concepts_block(profile2)))
     results: list[MessageLabels | None] = [None] * n
     calls_per_msg = len(schema.labels) + 1
-    slots = [{"labels": {}, "rationales": {}, "coverage": None,
+    slots = [{"labels": {}, "rationales": {}, "evidence": {},
+              "coverage": None,
               "remaining": calls_per_msg} for _ in messages]
     lock = threading.Lock()
     state = {"done": 0, "failure": None}
@@ -319,6 +327,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                     slot["labels"][label.name] = verdict.applies
                     slot["rationales"][label.name] = (
                         verdict.rationale or "(no rationale returned)")
+                    if verdict.applies and verdict.evidence:
+                        slot["evidence"][label.name] = verdict.evidence
                 slot["remaining"] -= 1
                 if slot["remaining"] == 0:
                     cov = slot["coverage"]
@@ -326,6 +336,7 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                         chatlog_id=m.chatlog_id,
                         message_index=m.message_index,
                         labels=slot["labels"], rationales=slot["rationales"],
+                        evidence=slot["evidence"],
                         no_label_fits=cov.no_label_fits,
                         coverage_note=cov.note if cov.no_label_fits else "",
                         forms=[f for f in cov.forms if f in FORM_TAXONOMY],

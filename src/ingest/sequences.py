@@ -17,6 +17,7 @@ Known granularity limit: the join is notebook-level, not question-level
 "passing q1 while asking about q3". Question-level linkage needs either
 grader_id inference from chat text or new instrumentation.
 """
+import time
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
@@ -162,31 +163,52 @@ ORDER BY c.conv_id, a.created_at
 """
 
 
+def _chunks(seq: list, size: int) -> list[list]:
+    return [seq[i:i + size] for i in range(0, len(seq), size)]
+
+
+# The runs join scans autograder_info on un-indexed payload keys, so wide
+# conv_id lists produce long-running queries that the kubectl port-forward
+# reliably kills mid-stream (two EOFs at this exact query, 2026-08-10).
+# Chunking keeps each query short; per-chunk retry rides out tunnel blips.
+RUNS_CHUNK = 10
+_RETRIES = 3
+_RETRY_WAIT_S = 8
+
+
 def fetch_autograder_runs(ext_db_url: str, conversations,
                           before_min: int = BEFORE_MIN,
                           after_min: int = OUTCOME_MIN
                           ) -> dict[str, list[AutograderRun]]:
     """Autograder runs bracketing each conversation. user_email is used
-    inside the SQL join only and never returned (rule 4)."""
+    inside the SQL join only and never returned (rule 4). Fetches in
+    RUNS_CHUNK-sized conv_id batches with per-chunk retry (tunnel drops)."""
     conv_ids = [c.conv_id for c in conversations]
     if not conv_ids:
         return {}
-    eng = sa.create_engine(ext_db_url)
     out: dict[str, list[AutograderRun]] = {}
-    with eng.connect() as c:
-        for cid, at, gid, success in c.execute(
-                sa.text(_RUNS_SQL), {"conv_ids": conv_ids,
-                                     "before": before_min,
-                                     "after": after_min}):
-            # NULL-success probe (2026-08-09): payload->>'success' IS NULL
-            # count is 0 in the live corpus, so this skip is currently a
-            # no-op — kept so a NULL success is never fabricated into
-            # False (`success == "true"` would silently do that) if the
-            # logging surface ever starts emitting NULLs.
-            if success is None:
-                continue
-            out.setdefault(cid, []).append(AutograderRun(
-                at=at, grader_id=gid or "", success=success == "true"))
+    for chunk in _chunks(conv_ids, RUNS_CHUNK):
+        for attempt in range(_RETRIES):
+            try:
+                eng = sa.create_engine(ext_db_url)
+                with eng.connect() as c:
+                    for cid, at, gid, success in c.execute(
+                            sa.text(_RUNS_SQL), {"conv_ids": chunk,
+                                                 "before": before_min,
+                                                 "after": after_min}):
+                        # NULL-success probe (2026-08-09): count is 0 in
+                        # the live corpus — kept so a NULL success is never
+                        # fabricated into False if logging ever emits NULLs.
+                        if success is None:
+                            continue
+                        out.setdefault(cid, []).append(AutograderRun(
+                            at=at, grader_id=gid or "",
+                            success=success == "true"))
+                break
+            except sa.exc.OperationalError:
+                if attempt == _RETRIES - 1:
+                    raise
+                time.sleep(_RETRY_WAIT_S)
     return out
 
 
@@ -215,14 +237,24 @@ def fetch_traceback_flags(ext_db_url: str, conversations) -> dict[str, bool]:
     """Whether any captured notebook snapshot for the conversation shows a
     traceback (in practice exactly one snapshot is captured, at conversation
     start). The LIKE runs server-side; notebook JSON never crosses the wire
-    (rule 4). Missing snapshot -> False."""
+    (rule 4). Missing snapshot -> False. Chunked with per-chunk retry, same
+    as fetch_autograder_runs (the LIKE scan is also tunnel-fragile)."""
     conv_ids = [c.conv_id for c in conversations]
     if not conv_ids:
         return {}
-    eng = sa.create_engine(ext_db_url)
-    with eng.connect() as c:
-        rows = c.execute(sa.text(_TRACEBACK_SQL),
-                         {"conv_ids": conv_ids}).fetchall()
+    rows: list = []
+    for chunk in _chunks(conv_ids, RUNS_CHUNK):
+        for attempt in range(_RETRIES):
+            try:
+                eng = sa.create_engine(ext_db_url)
+                with eng.connect() as c:
+                    rows.extend(c.execute(sa.text(_TRACEBACK_SQL),
+                                          {"conv_ids": chunk}).fetchall())
+                break
+            except sa.exc.OperationalError:
+                if attempt == _RETRIES - 1:
+                    raise
+                time.sleep(_RETRY_WAIT_S)
     return _merge_flags(conv_ids, rows)
 
 

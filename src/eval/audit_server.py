@@ -63,29 +63,39 @@ auto-advance. ← → to revisit. Model labels are hidden by design.</p>
 </div>
 <script>
 const D = __PAYLOAD__;
-// passes: one per label (each with its OWN message-key list), then a final
-// "no label fits" pass over the union of sampled messages
-const PASSES = D.labels.map(l => ({kind: "label", l, keys: l.keys}))
-  .concat([{kind: "nofit", keys: D.nofit_keys,
-    l: {name: "no label fits", category: "instructor",
-    description: "the message shows a student act NONE of the labels capture",
-    positive: "an act your earlier passes had no label for",
-    negative: "anything already covered by a label you said yes to"}}]);
+// passes: one per label (each with its OWN message-key list). There is NO
+// final "no label fits" pass: asking it would make the annotator recall
+// their own earlier answers. It is DERIVED at submit time — a message
+// whose every judged label got "no" is a no-label-fits message.
+const PASSES = D.labels.map(l => ({kind: "label", l, keys: l.keys}));
 let p = 0, i = 0;
-const ans = {};   // key -> {labels: {...only audited...}, no_label_fits}
+const ans = {};   // key -> {labels: {...only audited...}}
 function ansFor(key){
-  if (!ans[key]) ans[key] = {labels: {}, no_label_fits: false};
+  if (!ans[key]) ans[key] = {labels: {}};
   return ans[key];
 }
 for (const pass of PASSES)
   for (const k of pass.keys)
-    if (pass.kind === "label") ansFor(k).labels[pass.l.name] = false;
+    ansFor(k).labels[pass.l.name] = false;
+if (D.draft){       // resume a previous session's autosaved answers
+  for (const [k, a] of Object.entries(D.draft.ans || {}))
+    Object.assign(ansFor(k).labels, a.labels);
+  p = Math.min(D.draft.p || 0, PASSES.length - 1);
+  i = Math.min(D.draft.i || 0, PASSES[p].keys.length - 1);
+}
 document.getElementById("ptotal").textContent = PASSES.length;
+function draftSave(){
+  // fire-and-forget incremental autosave: every answer immediately lands
+  // in a server-side draft file, so a closed tab or restart loses nothing
+  fetch("/draft", {method:"POST",
+    headers:{"content-type":"application/json"},
+    body: JSON.stringify({ans, p, i})}).catch(() => {});
+}
 function setAnswer(v){
   const key = PASSES[p].keys[i];
-  if (PASSES[p].kind === "nofit") ansFor(key).no_label_fits = v;
-  else ansFor(key).labels[PASSES[p].l.name] = v;
+  ansFor(key).labels[PASSES[p].l.name] = v;
   advance();
+  draftSave();
 }
 function advance(){
   if (i < PASSES[p].keys.length - 1) { i++; }
@@ -107,9 +117,7 @@ function render(){
   s.textContent = pass.l.description + " — applies: " + pass.l.positive +
     " | not: " + pass.l.negative;
   const cur = document.createElement("small");
-  const a = ansFor(pass.keys[i]);
-  const val = pass.kind === "nofit" ? a.no_label_fits
-    : a.labels[pass.l.name];
+  const val = ansFor(pass.keys[i]).labels[pass.l.name];
   cur.textContent = "current answer: " + (val ? "YES" : "no");
   card.append(b, s, cur); cl.append(card);
   const ctx = document.getElementById("ctx"); ctx.replaceChildren();
@@ -140,12 +148,73 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowRight") advance();
 });
 document.getElementById("save").onclick = async () => {
+  // no_label_fits derived: every label judged on this message got "no"
   const body = Object.entries(ans).map(([key, a]) =>
-    ({key: key.split(":").map(Number), ...a}));
+    ({key: key.split(":").map(Number), labels: a.labels,
+      no_label_fits: Object.values(a.labels).length > 0 &&
+        Object.values(a.labels).every(v => !v)}));
   const r = await fetch("/save", {method:"POST",
     headers:{"content-type":"application/json"}, body: JSON.stringify(body)});
-  if (r.ok) document.getElementById("done").style.display = "inline";
+  if (r.ok) { document.getElementById("done").style.display = "inline";
+              showReveal(); }
 };
+// Safe evidence bolding (textContent-based; no HTML injection)
+function boldSpans(el, text, spans){
+  el.replaceChildren();
+  let segs = [{t: text, b: false}];
+  for (const sp of spans){
+    if (!sp) continue;
+    const nxt = [];
+    for (const s of segs){
+      if (s.b || !s.t.includes(sp)) { nxt.push(s); continue; }
+      const parts = s.t.split(sp);
+      parts.forEach((p, ix) => {
+        if (p) nxt.push({t: p, b: false});
+        if (ix < parts.length - 1) nxt.push({t: sp, b: true});
+      });
+    }
+    segs = nxt;
+  }
+  for (const s of segs){
+    if (s.b){ const b = document.createElement("b");
+              b.textContent = s.t; el.append(b); }
+    else el.append(document.createTextNode(s.t));
+  }
+}
+async function showReveal(){
+  // answers are locked on disk — showing model verdicts now cannot anchor
+  const r = await fetch("/reveal");
+  if (!r.ok) return;
+  const rev = await r.json();
+  const root = document.createElement("div");
+  const h = document.createElement("h2");
+  h.textContent = "Reveal: model verdicts vs yours (evidence in bold)";
+  root.append(h);
+  for (const [key, mrev] of Object.entries(rev)){
+    const m = D.msgs[key];
+    if (!m) continue;
+    const box = document.createElement("div"); box.className = "lbl";
+    const txt = document.createElement("div"); txt.className = "msg";
+    boldSpans(txt, m.text, Object.values(mrev.evidence));
+    const yours = Object.entries((ans[key] || {labels:{}}).labels)
+      .filter(([, v]) => v).map(([n]) => n);
+    const cmp = document.createElement("small");
+    cmp.textContent = "model: " +
+      (mrev.labels.join(", ") || (mrev.no_label_fits ?
+        "(no label fits)" : "(none)")) +
+      "  |  you (judged subset): " + (yours.join(", ") || "(none)");
+    box.append(txt, cmp);
+    for (const [n, ev] of Object.entries(mrev.evidence)){
+      if (!ev) continue;
+      const e = document.createElement("small");
+      e.textContent = n + " ← “" + ev + "”";
+      box.append(document.createElement("br"), e);
+    }
+    root.append(box);
+  }
+  document.body.append(root);
+  root.scrollIntoView({behavior: "smooth"});
+}
 render();
 </script>"""
 
@@ -229,7 +298,6 @@ def build_payload(snapshot_dir: Path, n: int, seed: int,
                     "category": cats[l.name],
                     "keys": [_ks(k) for k in keys_by_label[l.name]]}
                    for l in schema.labels if l.name in keys_by_label],
-        "nofit_keys": [_ks(k) for k in union],
         "msgs": {_ks(k): {
             "context": [{"role": t.role, "text": t.text}
                         for t in by_key[k].context],
@@ -268,9 +336,44 @@ def main() -> None:
     out = (snap.parent.parent / "audit" / snap.name /
            f"human-labels-{args.annotator}.json")
 
+    draft = out.with_suffix(".draft.json")
+
+    # Post-submit reveal: model verdicts + evidence per audited message.
+    # Never in the page payload (invariant 8) — served by /reveal ONLY
+    # after the final answers file exists, so it cannot anchor judgments.
+    rows_by_key = {(r.chatlog_id, r.message_index): r
+                   for r in (MessageLabels.model_validate_json(l)
+                             for l in (snap / "labels.jsonl").open())}
+    reveal = {}
+    for ks in payload["msgs"]:
+        k = tuple(int(x) for x in ks.split(":"))
+        r = rows_by_key.get(k)
+        if r is None:
+            continue
+        applied = [n_ for n_, v in r.labels.items() if v]
+        reveal[ks] = {"labels": applied,
+                      "rationales": {n_: r.rationales.get(n_, "")
+                                     for n_ in applied},
+                      "evidence": {n_: r.evidence.get(n_, "")
+                                   for n_ in applied},
+                      "no_label_fits": r.no_label_fits}
+
     class H(BaseHTTPRequestHandler):
         def do_GET(self):
-            html = PAGE.replace("__PAYLOAD__", json.dumps(payload))
+            if self.path == "/reveal":
+                self.send_response(200 if out.exists() else 403)
+                self.send_header("content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(
+                    reveal if out.exists() else
+                    {"error": "submit first"}).encode())
+                return
+            page_payload = dict(payload)
+            # resume: inject the autosaved draft so a reopened tab (or a
+            # restarted server) continues exactly where the annotator left off
+            if draft.exists():
+                page_payload["draft"] = json.loads(draft.read_text())
+            html = PAGE.replace("__PAYLOAD__", json.dumps(page_payload))
             self.send_response(200)
             self.send_header("content-type", "text/html; charset=utf-8")
             self.end_headers()
@@ -280,10 +383,18 @@ def main() -> None:
             n_ = int(self.headers["content-length"])
             data = json.loads(self.rfile.read(n_))
             out.parent.mkdir(parents=True, exist_ok=True)
+            if self.path == "/draft":
+                draft.write_text(json.dumps(data))
+                self.send_response(200)
+                self.end_headers()
+                return
             # strata recorded for stratum-aware scoring; they were never
-            # shown to the annotator (invariant 8)
-            out.write_text(json.dumps({"rows": data, "strata": strata},
+            # shown to the annotator (invariant 8). nofit vintage marker:
+            # derived client-side as all-judged-labels-no, not asked.
+            out.write_text(json.dumps({"rows": data, "strata": strata,
+                                       "nofit": "derived-all-no"},
                                       indent=2))
+            draft.unlink(missing_ok=True)
             self.send_response(200)
             self.end_headers()
             print("saved", out, flush=True)
@@ -291,8 +402,7 @@ def main() -> None:
         def log_message(self, *a):
             pass
 
-    taps = sum(len(l["keys"]) for l in payload["labels"]) \
-        + len(payload["nofit_keys"])
+    taps = sum(len(l["keys"]) for l in payload["labels"])
     HTTPServer.allow_reuse_address = True
     try:
         server = HTTPServer(("127.0.0.1", args.port), H)
@@ -304,9 +414,10 @@ def main() -> None:
                      f"--port.")
         raise
     print(f"blind audit on http://127.0.0.1:{args.port} — "
-          f"{len(payload['labels']) + 1} passes, "
+          f"{len(payload['labels'])} passes, "
           f"{len(payload['msgs'])} distinct messages, "
-          f"{taps} total judgments", flush=True)
+          f"{taps} total judgments (no-label-fits is derived, not asked)",
+          flush=True)
     server.serve_forever()
 
 

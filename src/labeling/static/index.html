@@ -399,7 +399,10 @@ function renderReview(state) {
     stratum.className = "stratum";
     stratum.textContent = m.stratum;
     const text = document.createElement("div");
-    text.textContent = m.text;
+    // bold each label's verbatim evidence span inside the message text so
+    // the instructor sees WHAT drove each verdict, not just the rationale
+    const spans = Object.values(m.evidence || {}).filter(e => e);
+    renderWithEvidence(text, m.text, spans);
     box.append(stratum, text);
     for (const name of m.labels) {
       const chip = document.createElement("span");
@@ -408,7 +411,9 @@ function renderReview(state) {
       box.append(chip);
       const rat = document.createElement("div");
       rat.className = "rationale";
-      rat.textContent = `${name}: ${m.rationales[name] || ""}`;
+      const ev = (m.evidence || {})[name];
+      rat.textContent = `${name}: ${m.rationales[name] || ""}` +
+        (ev ? ` — evidence: “${ev}”` : "");
       box.append(rat);
     }
     sample.append(box);
@@ -419,6 +424,33 @@ function renderReview(state) {
     note.textContent = `${hidden} sampled message(s) with no labels hidden — ` +
       `they are still part of the sample and the snapshot.`;
     sample.append(note);
+  }
+}
+
+// Safe evidence bolding: build text nodes + <b> around each verbatim span
+// occurrence (textContent-based — no HTML injection possible).
+function renderWithEvidence(el, text, spans) {
+  el.replaceChildren();
+  let segments = [{t: text, bold: false}];
+  for (const span of spans) {
+    if (!span) continue;
+    const next = [];
+    for (const seg of segments) {
+      if (seg.bold || !seg.t.includes(span)) { next.push(seg); continue; }
+      const parts = seg.t.split(span);
+      parts.forEach((p, idx) => {
+        if (p) next.push({t: p, bold: false});
+        if (idx < parts.length - 1) next.push({t: span, bold: true});
+      });
+    }
+    segments = next;
+  }
+  for (const seg of segments) {
+    if (seg.bold) {
+      const b = document.createElement("b");
+      b.textContent = seg.t;
+      el.append(b);
+    } else el.append(document.createTextNode(seg.t));
   }
 }
 

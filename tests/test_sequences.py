@@ -34,3 +34,11 @@ def test_render_report_aggregates_only():
     assert "fail-then-ask" in r and "(67%)" in r
     # nothing resembling an email or message text in the report
     assert "@" not in r
+
+
+def test_chunks_partitioning():
+    from src.ingest.sequences import _chunks
+    assert _chunks(list(range(25)), 10) == [list(range(10)),
+                                            list(range(10, 20)),
+                                            list(range(20, 25))]
+    assert _chunks([], 10) == []

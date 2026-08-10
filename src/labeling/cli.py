@@ -92,6 +92,15 @@ def main() -> None:
                         help="skip the autograder-run/traceback sequence-"
                              "context fetch (needed when the events table "
                              "lacks autograder rows)")
+    parser.add_argument("--since", default=None,
+                        help="ISO date: only conversations starting on/after "
+                             "this date (requires --until)")
+    parser.add_argument("--until", default=None,
+                        help="ISO date, exclusive upper bound "
+                             "(requires --since)")
+    parser.add_argument("--conv-sample-seed", type=int, default=None,
+                        help="draw --max-conversations uniformly (seeded) "
+                             "from the window instead of the earliest slice")
     args = parser.parse_args()
     sequence = not args.no_sequence
 
@@ -110,7 +119,9 @@ def main() -> None:
     print(f"Fetching up to {args.max_conversations} conversations "
           "(is bin/tunnel running?)...")
     conversations = fetch_conversations(settings.ext_db_url,
-                                        limit=args.max_conversations)
+                                        limit=args.max_conversations,
+                                        since=args.since, until=args.until,
+                                        sample_seed=args.conv_sample_seed)
     total_conversations = count_conversations(settings.ext_db_url)
     excluded_conversations = max(0, total_conversations - len(conversations))
     print(f"Fetched {len(conversations)} conversations. DB holds "
