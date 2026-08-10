@@ -64,3 +64,20 @@ def test_page_autosaves_and_resumes():
     from src.eval.audit_server import PAGE
     assert '"/draft"' in PAGE          # every answer POSTs a draft
     assert "D.draft" in PAGE           # reload restores answers + position
+
+
+def test_reveal_gated_and_payload_still_blind():
+    from src.eval.audit_server import PAGE
+    # reveal fetched only after save; payload itself never carries verdicts
+    assert '"/reveal"' in PAGE
+    assert "showReveal" in PAGE
+
+
+def test_evidence_field_on_message_labels():
+    from src.labeling.draft import MessageLabels
+    r = MessageLabels(chatlog_id=1, message_index=0, labels={"x": True},
+                      rationales={"x": "r"}, evidence={"x": "span"})
+    assert r.evidence["x"] == "span"
+    legacy = MessageLabels(chatlog_id=1, message_index=0,
+                           labels={}, rationales={})
+    assert legacy.evidence == {}

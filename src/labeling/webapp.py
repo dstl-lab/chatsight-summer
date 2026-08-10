@@ -520,6 +520,8 @@ class LoopSession:
                         "stratum": m.stratum, "text": m.text, "labels": applied,
                         "rationales": {k: r.rationales.get(k, "")
                                        for k in applied} if r else {},
+                        "evidence": {k: r.evidence.get(k, "")
+                                     for k in applied} if r else {},
                     })
             schema = None
             if self.schema is not None:

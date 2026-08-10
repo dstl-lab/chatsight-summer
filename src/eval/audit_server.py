@@ -155,8 +155,66 @@ document.getElementById("save").onclick = async () => {
         Object.values(a.labels).every(v => !v)}));
   const r = await fetch("/save", {method:"POST",
     headers:{"content-type":"application/json"}, body: JSON.stringify(body)});
-  if (r.ok) document.getElementById("done").style.display = "inline";
+  if (r.ok) { document.getElementById("done").style.display = "inline";
+              showReveal(); }
 };
+// Safe evidence bolding (textContent-based; no HTML injection)
+function boldSpans(el, text, spans){
+  el.replaceChildren();
+  let segs = [{t: text, b: false}];
+  for (const sp of spans){
+    if (!sp) continue;
+    const nxt = [];
+    for (const s of segs){
+      if (s.b || !s.t.includes(sp)) { nxt.push(s); continue; }
+      const parts = s.t.split(sp);
+      parts.forEach((p, ix) => {
+        if (p) nxt.push({t: p, b: false});
+        if (ix < parts.length - 1) nxt.push({t: sp, b: true});
+      });
+    }
+    segs = nxt;
+  }
+  for (const s of segs){
+    if (s.b){ const b = document.createElement("b");
+              b.textContent = s.t; el.append(b); }
+    else el.append(document.createTextNode(s.t));
+  }
+}
+async function showReveal(){
+  // answers are locked on disk — showing model verdicts now cannot anchor
+  const r = await fetch("/reveal");
+  if (!r.ok) return;
+  const rev = await r.json();
+  const root = document.createElement("div");
+  const h = document.createElement("h2");
+  h.textContent = "Reveal: model verdicts vs yours (evidence in bold)";
+  root.append(h);
+  for (const [key, mrev] of Object.entries(rev)){
+    const m = D.msgs[key];
+    if (!m) continue;
+    const box = document.createElement("div"); box.className = "lbl";
+    const txt = document.createElement("div"); txt.className = "msg";
+    boldSpans(txt, m.text, Object.values(mrev.evidence));
+    const yours = Object.entries((ans[key] || {labels:{}}).labels)
+      .filter(([, v]) => v).map(([n]) => n);
+    const cmp = document.createElement("small");
+    cmp.textContent = "model: " +
+      (mrev.labels.join(", ") || (mrev.no_label_fits ?
+        "(no label fits)" : "(none)")) +
+      "  |  you (judged subset): " + (yours.join(", ") || "(none)");
+    box.append(txt, cmp);
+    for (const [n, ev] of Object.entries(mrev.evidence)){
+      if (!ev) continue;
+      const e = document.createElement("small");
+      e.textContent = n + " ← “" + ev + "”";
+      box.append(document.createElement("br"), e);
+    }
+    root.append(box);
+  }
+  document.body.append(root);
+  root.scrollIntoView({behavior: "smooth"});
+}
 render();
 </script>"""
 
@@ -280,8 +338,36 @@ def main() -> None:
 
     draft = out.with_suffix(".draft.json")
 
+    # Post-submit reveal: model verdicts + evidence per audited message.
+    # Never in the page payload (invariant 8) — served by /reveal ONLY
+    # after the final answers file exists, so it cannot anchor judgments.
+    rows_by_key = {(r.chatlog_id, r.message_index): r
+                   for r in (MessageLabels.model_validate_json(l)
+                             for l in (snap / "labels.jsonl").open())}
+    reveal = {}
+    for ks in payload["msgs"]:
+        k = tuple(int(x) for x in ks.split(":"))
+        r = rows_by_key.get(k)
+        if r is None:
+            continue
+        applied = [n_ for n_, v in r.labels.items() if v]
+        reveal[ks] = {"labels": applied,
+                      "rationales": {n_: r.rationales.get(n_, "")
+                                     for n_ in applied},
+                      "evidence": {n_: r.evidence.get(n_, "")
+                                   for n_ in applied},
+                      "no_label_fits": r.no_label_fits}
+
     class H(BaseHTTPRequestHandler):
         def do_GET(self):
+            if self.path == "/reveal":
+                self.send_response(200 if out.exists() else 403)
+                self.send_header("content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(
+                    reveal if out.exists() else
+                    {"error": "submit first"}).encode())
+                return
             page_payload = dict(payload)
             # resume: inject the autosaved draft so a reopened tab (or a
             # restarted server) continues exactly where the annotator left off

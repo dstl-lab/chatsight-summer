@@ -154,7 +154,9 @@ def test_classifier_hash_golden_regression():
     # re-vintaged 2026-08-09 (2nd): sequence rendering + qref patterns
     # folded into hash (rule 2)
     h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h == "fc36005bb9ed"
+    # re-vintaged 2026-08-10 (3rd): evidence-span instruction is
+    # prompt-visible (rule 2)
+    assert h == "8b2243f4224a"
 
 
 def test_calls_run_concurrently():
@@ -384,7 +386,7 @@ def test_v1_golden_hash_unchanged_and_v2_hash_moves():
     # re-vintaged 2026-08-09 (2nd): sequence rendering + qref patterns
     # folded into hash (rule 2)
     h1 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h1 == "fc36005bb9ed"          # v1 path: sequence-context vintage
+    assert h1 == "8b2243f4224a"          # v1 path: evidence vintage (3rd)
     v2 = _v2_profile()
     h2 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE, profile2=v2)
     assert h2 != h1
