@@ -1,7 +1,10 @@
 import math
 
-from src.eval.validation import (AuditRow, confusion, corrected_prevalence,
-                                 kappa, validation_table)
+import pytest
+
+from src.eval.validation import (AuditRow, anchor_report, confusion,
+                                 corrected_prevalence, kappa, outcome_anchor,
+                                 validation_table)
 from src.labeling.draft import MessageLabels
 
 
@@ -12,6 +15,12 @@ def _model(i, **labels):
 
 def _audit(i, **labels):
     return AuditRow(key=(1, i), labels=labels, no_label_fits=False)
+
+
+def _ml(labels, pre_pattern="", i=0):
+    return MessageLabels(chatlog_id=1, message_index=i, labels=labels,
+                         rationales={k: "r" for k in labels},
+                         pre_pattern=pre_pattern)
 
 
 # 10 audited messages, one label "x":
@@ -67,3 +76,18 @@ def test_validation_table_renders_all_labels_and_flags_chance():
     assert "recall" in table.lower()
     assert "≈ chance" in table          # LACA move: flag guessing labels
     assert "corrected prev" in table.lower()
+
+
+def test_outcome_anchor_flags_violation():
+    rows = ([_ml({"extract": True}, pre_pattern="fail-then-ask")] * 3
+            + [_ml({"extract": True}, pre_pattern="ask-first")] * 1
+            + [_ml({"extract": False}, pre_pattern="ask-first")] * 6)
+    a = outcome_anchor(rows, "extract")
+    assert a["in_pattern"] == 3 and a["total_positives"] == 4
+    assert a["concentration"] == pytest.approx(0.75)
+    assert a["baseline"] == pytest.approx(0.3)
+    r = anchor_report(rows, {"extract": "fail-then-ask"})
+    assert "FLAG" not in r                   # 0.75 > 0.3: anchor holds
+    bad = [_ml({"extract": True}, pre_pattern="ask-first")] * 4 \
+        + [_ml({"extract": False}, pre_pattern="fail-then-ask")] * 6
+    assert "FLAG" in anchor_report(bad, {"extract": "fail-then-ask"})
