@@ -81,3 +81,25 @@ Pilot only — supports option (b) of the position memo's decision
 sequence machine-classifies the arc, the labels give the arc its meaning.
 Decision still open with Minchan and Sam; nothing downstream consumes
 sequences yet.
+
+## Appendix: cluster inventory (read-only, 2026-08-09)
+
+Namespace `dsc-10-llm` on Nautilus holds the entire data surface:
+
+- **`dsc10-tutor-logs-prod`** (Spilo/Patroni Postgres, primary+replica,
+  20Gi): one database `dsc10_tutor_logs` (470 MB), one table
+  `public.events` (~485k rows). Everything this project can historically
+  analyze lives in that table — there is no second data source to find.
+- **`dsc10-tutor-logs-dev`** (2Gi): dev twin, presumably test data; not
+  probed (separate credentials/tunnel).
+- **`dsc10-tutor-logging-api-prod`** (2 replicas, healthy): the write
+  path. Image `gitlab-registry.nrp-nautilus.io/samlau95/dsc10-tutor-logger/api`
+  — **the logging surface is Sam Lau's `dsc10-tutor-logger` GitLab
+  project**, which substantially answers open decision #5's "who owns the
+  tutor's logging surface" (the *prompt/policy* surface may still differ —
+  confirm with Sam). The dev API pod is crashlooping (866 restarts) —
+  worth mentioning to Sam, prod unaffected.
+
+Implication for the sequence work: any new sequence element (question-id
+on tutor_query, richer cell telemetry) is one event type away — a change
+to Sam's logger API, not new infrastructure.
