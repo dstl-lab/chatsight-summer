@@ -58,3 +58,9 @@ def test_label_subset_and_legacy_mode(tmp_path):
     legacy, strata = build_payload(snap, n=10, seed=0)
     assert [len(l["keys"]) for l in legacy["labels"]] == [10, 10]
     assert "_message" in strata
+
+
+def test_page_autosaves_and_resumes():
+    from src.eval.audit_server import PAGE
+    assert '"/draft"' in PAGE          # every answer POSTs a draft
+    assert "D.draft" in PAGE           # reload restores answers + position

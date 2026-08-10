@@ -77,11 +77,25 @@ function ansFor(key){
 for (const pass of PASSES)
   for (const k of pass.keys)
     ansFor(k).labels[pass.l.name] = false;
+if (D.draft){       // resume a previous session's autosaved answers
+  for (const [k, a] of Object.entries(D.draft.ans || {}))
+    Object.assign(ansFor(k).labels, a.labels);
+  p = Math.min(D.draft.p || 0, PASSES.length - 1);
+  i = Math.min(D.draft.i || 0, PASSES[p].keys.length - 1);
+}
 document.getElementById("ptotal").textContent = PASSES.length;
+function draftSave(){
+  // fire-and-forget incremental autosave: every answer immediately lands
+  // in a server-side draft file, so a closed tab or restart loses nothing
+  fetch("/draft", {method:"POST",
+    headers:{"content-type":"application/json"},
+    body: JSON.stringify({ans, p, i})}).catch(() => {});
+}
 function setAnswer(v){
   const key = PASSES[p].keys[i];
   ansFor(key).labels[PASSES[p].l.name] = v;
   advance();
+  draftSave();
 }
 function advance(){
   if (i < PASSES[p].keys.length - 1) { i++; }
@@ -264,9 +278,16 @@ def main() -> None:
     out = (snap.parent.parent / "audit" / snap.name /
            f"human-labels-{args.annotator}.json")
 
+    draft = out.with_suffix(".draft.json")
+
     class H(BaseHTTPRequestHandler):
         def do_GET(self):
-            html = PAGE.replace("__PAYLOAD__", json.dumps(payload))
+            page_payload = dict(payload)
+            # resume: inject the autosaved draft so a reopened tab (or a
+            # restarted server) continues exactly where the annotator left off
+            if draft.exists():
+                page_payload["draft"] = json.loads(draft.read_text())
+            html = PAGE.replace("__PAYLOAD__", json.dumps(page_payload))
             self.send_response(200)
             self.send_header("content-type", "text/html; charset=utf-8")
             self.end_headers()
@@ -276,12 +297,18 @@ def main() -> None:
             n_ = int(self.headers["content-length"])
             data = json.loads(self.rfile.read(n_))
             out.parent.mkdir(parents=True, exist_ok=True)
+            if self.path == "/draft":
+                draft.write_text(json.dumps(data))
+                self.send_response(200)
+                self.end_headers()
+                return
             # strata recorded for stratum-aware scoring; they were never
             # shown to the annotator (invariant 8). nofit vintage marker:
             # derived client-side as all-judged-labels-no, not asked.
             out.write_text(json.dumps({"rows": data, "strata": strata,
                                        "nofit": "derived-all-no"},
                                       indent=2))
+            draft.unlink(missing_ok=True)
             self.send_response(200)
             self.end_headers()
             print("saved", out, flush=True)
