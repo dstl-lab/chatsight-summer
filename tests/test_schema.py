@@ -38,3 +38,16 @@ def test_tweak_lineage():
     )
     assert child.parent_version == parent.version_id
     assert child.version_id != parent.version_id
+
+
+def test_oversized_fields_flags_over_cap_only():
+    from src.labeling.schema import (CRITERIA_WORD_CAP, LabelDef,
+                                     oversized_fields)
+    ok = LabelDef(name="tight", kind="behavioral", description="short one",
+                  positive_criteria="a few words", negative_criteria="none")
+    fat = LabelDef(name="fat", kind="behavioral", description="short",
+                   positive_criteria=" ".join(["w"] * (CRITERIA_WORD_CAP + 1)),
+                   negative_criteria="fine")
+    findings = oversized_fields([ok, fat])
+    assert findings == [f"fat.positive_criteria "
+                        f"({CRITERIA_WORD_CAP + 1}w > {CRITERIA_WORD_CAP}w)"]

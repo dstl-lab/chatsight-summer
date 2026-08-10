@@ -17,7 +17,8 @@ from src.labeling.course import CourseProfile
 from src.labeling.llm import Generate
 from src.labeling.profile2 import (ConceptDef, CourseProfileV2, lint_profile,
                                    save_profile)
-from src.labeling.schema import LabelDef
+from src.labeling.schema import (CRITERIA_WORD_CAP, DESC_WORD_CAP, LabelDef,
+                                 oversized_fields)
 
 # Excerpt budget per conversation: enough to show register and shape,
 # bounded so a 150-conversation digest stays well under context limits.
@@ -69,7 +70,17 @@ question".
 
 Rules: distill, never quote — no phrase copied from a student turn may \
 appear in any output field. Do not invent concepts the data or materials \
-cannot support."""
+cannot support.
+
+BREVITY IS A HARD REQUIREMENT for every label and concept: a human must \
+hold the criterion in mind while judging in seconds. description <= \
+{desc_cap} words; each criteria field <= {crit_cap} words. Plain words, \
+no nested clauses."""
+
+_RETRY_ADDENDUM = """
+
+Your previous draft broke the brevity caps on: {findings}. Rewrite those \
+fields within the caps, preserving meaning. Return the full profile."""
 
 
 def build_digest(conversations: list[Conversation]) -> str:
@@ -90,13 +101,37 @@ def _materials_block(materials_texts: list[str]) -> str:
     return f"Course materials provided by the instructor:\n{joined}\n\n"
 
 
+def _oversized(draft: "ExplorationDraft") -> list[str]:
+    """Cap findings across every generated layer: affect/intent labels via
+    schema.oversized_fields, concepts by description cap (criteria are
+    empty until promotion)."""
+    findings = oversized_fields(draft.affect_labels + draft.intent_labels)
+    for c in draft.concepts:
+        n = len(c.description.split())
+        if n > DESC_WORD_CAP:
+            findings.append(f"{c.name}.description ({n}w > {DESC_WORD_CAP}w)")
+    return findings
+
+
 def explore(conversations: list[Conversation], materials_texts: list[str],
             generate: Generate, *, sample_meta: dict[str, int],
             repo_sha: str, explored_on: str) -> CourseProfileV2:
     prompt = EXPLORE_PROMPT.format(
         materials_block=_materials_block(materials_texts),
-        digest=build_digest(conversations))
+        digest=build_digest(conversations),
+        desc_cap=DESC_WORD_CAP, crit_cap=CRITERIA_WORD_CAP)
     draft: ExplorationDraft = generate(prompt, ExplorationDraft)
+    findings = _oversized(draft)
+    if findings:
+        # one re-prompt, then hard fail: oversized criteria never ship
+        # (2026-08-10 audit finding)
+        draft = generate(
+            prompt + _RETRY_ADDENDUM.format(findings=", ".join(findings)),
+            ExplorationDraft)
+        findings = _oversized(draft)
+    if findings:
+        raise ValueError("exploration draft exceeds brevity caps after "
+                         "retry: " + ", ".join(findings))
     return CourseProfileV2(
         base=CourseProfile(
             course_name=draft.course_name,

@@ -8,6 +8,28 @@ from typing import Literal
 from pydantic import BaseModel
 
 
+# Brevity caps (2026-08-10 blind-audit finding: verbose criteria corrupt
+# the human side of measurement — all four zero-support labels carried
+# 39-62-word criteria; a <=25-word rewrite recovered every one). Criteria
+# ship at or under these caps or they don't ship.
+DESC_WORD_CAP = 20
+CRITERIA_WORD_CAP = 25
+
+
+def oversized_fields(labels: list["LabelDef"]) -> list[str]:
+    """One finding per field over its cap, '<label>.<field> (<n>w)'.
+    Empty list means every description/criterion is annotator-sized."""
+    out = []
+    for l in labels:
+        for field, cap in (("description", DESC_WORD_CAP),
+                           ("positive_criteria", CRITERIA_WORD_CAP),
+                           ("negative_criteria", CRITERIA_WORD_CAP)):
+            n = len(getattr(l, field).split())
+            if n > cap:
+                out.append(f"{l.name}.{field} ({n}w > {cap}w)")
+    return out
+
+
 class LabelDef(BaseModel):
     name: str
     kind: Literal["conceptual", "behavioral", "other"]
