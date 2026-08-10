@@ -10,6 +10,14 @@ def test_autograder_run_ordering_contract():
     assert r.grader_id == "q1_1" and r.success is False
 
 
+def test_merge_flags_present_true_present_false_absent():
+    from src.ingest.sequences import _merge_flags
+    conv_ids = ["c1", "c2", "c3"]
+    rows = [("c1", True), ("c2", False)]
+    flags = _merge_flags(conv_ids, rows)
+    assert flags == {"c1": True, "c2": False, "c3": False}
+
+
 def test_classify_covers_all_patterns():
     assert classify(None, False, False) == ("ask-first", "no-run-after")
     assert classify("false", True, True) == ("fail-then-ask", "quick-pass")

@@ -178,24 +178,38 @@ def fetch_autograder_runs(ext_db_url: str, conversations,
 
 _TRACEBACK_SQL = """
 SELECT payload->>'conversation_id',
-       payload->>'initial_notebook_json' LIKE '%Traceback%'
+       bool_or(payload->>'initial_notebook_json' LIKE '%Traceback%')
 FROM events
 WHERE event_type = 'tutor_notebook_info'
   AND payload->>'initial_notebook_json' IS NOT NULL
   AND payload->>'conversation_id' = ANY(:conv_ids)
+GROUP BY 1
 """
 
 
+def _merge_flags(conv_ids: list[str],
+                 rows: list[tuple[str, bool]]) -> dict[str, bool]:
+    """Pure merge: every conv_id defaults to False, then rows update it.
+    Missing snapshot -> False (rule: conv_id -> bool, total over conv_ids)."""
+    flags = {cid: False for cid in conv_ids}
+    for cid, flag in rows:
+        flags[cid] = bool(flag)
+    return flags
+
+
 def fetch_traceback_flags(ext_db_url: str, conversations) -> dict[str, bool]:
-    """Whether the at-ask snapshot shows an unresolved traceback. The
-    LIKE runs server-side; notebook JSON never crosses the wire (rule 4)."""
+    """Whether any captured notebook snapshot for the conversation shows a
+    traceback (in practice exactly one snapshot is captured, at conversation
+    start). The LIKE runs server-side; notebook JSON never crosses the wire
+    (rule 4). Missing snapshot -> False."""
     conv_ids = [c.conv_id for c in conversations]
     if not conv_ids:
         return {}
     eng = sa.create_engine(ext_db_url)
     with eng.connect() as c:
-        return {cid: bool(flag) for cid, flag in
-                c.execute(sa.text(_TRACEBACK_SQL), {"conv_ids": conv_ids})}
+        rows = c.execute(sa.text(_TRACEBACK_SQL),
+                         {"conv_ids": conv_ids}).fetchall()
+    return _merge_flags(conv_ids, rows)
 
 
 def main() -> None:
