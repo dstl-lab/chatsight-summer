@@ -116,9 +116,12 @@ def _sequence_fields(conv: Conversation, turn: Turn,
               if ref else conv_runs)
     fields["seq_granularity"] = ("question" if ref and scoped
                                  else "notebook")
+    if turn.at is None:
+        # Timing unknown, not "no prior run" — leave pre_pattern/last_run_*
+        # at their defaults ("" / None) rather than asserting ask-first.
+        return fields
     pool = scoped if ref and scoped else conv_runs
-    prior = [r for r in pool
-             if turn.at is not None and r.at <= turn.at] if turn.at else []
+    prior = [r for r in pool if r.at <= turn.at]
     if not prior:
         fields["pre_pattern"] = "ask-first"
     else:

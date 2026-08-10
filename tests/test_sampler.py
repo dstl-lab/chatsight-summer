@@ -177,6 +177,27 @@ def test_sequence_fields_computed_when_runs_provided():
     assert "/seq-fail" in m.stratum
 
 
+def test_sequence_fields_unknown_timing_leaves_pre_pattern_default():
+    """runs provided but turn.at is None (old snapshot without timestamps):
+    timing is unknown, not "no prior run" -- pre_pattern/last_run_* must
+    stay at their defaults while timestamp-independent fields still fill."""
+    from datetime import datetime, timezone
+    from src.ingest.sequences import AutograderRun
+    conv = _conv("untimed", 1)  # CONVS's builder; turns have no .at
+    runs = {conv.conv_id: [AutograderRun(at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                                         grader_id="q1_1", success=False)]}
+    tb = {conv.conv_id: True}
+    sample = stratified_sample([conv], n=50, seed=0, runs=runs,
+                               traceback_flags=tb)
+    m = next(s for s in sample if s.conv_id == conv.conv_id)
+    assert m.pre_pattern == ""
+    assert m.last_run_success is None
+    assert m.last_run_grader == ""
+    assert m.last_run_minutes is None
+    assert m.snapshot_traceback is True
+    assert m.question_ref != ""  # timestamp-independent field still fills
+
+
 def test_sequence_fields_default_without_runs():
     sample = stratified_sample(CONVS, n=10, seed=0)
     assert all(m.pre_pattern == "" and not m.defected for m in sample)
