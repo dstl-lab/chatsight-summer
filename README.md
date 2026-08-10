@@ -33,6 +33,23 @@ Two entry points (installed via `uv sync` from `pyproject.toml`):
 Both write immutable labeled-corpus snapshots to `data/snapshots/<id>/` with a full
 provenance manifest.
 
+## Extracting trajectories
+
+Convert a labeled snapshot into per-conversation label trajectories with:
+
+```bash
+uv run extract-trajectories data/snapshots/<snapshot_id>
+```
+
+By default this writes:
+
+```text
+data/trajectories/<snapshot_id>/trajectories.json
+```
+
+The trajectory artifact contains IDs, active labels, timing fields, and snapshot
+provenance. It intentionally omits student text and model rationales.
+
 ## Where things live
 
 - Phase plan and invariants: `CLAUDE.md`

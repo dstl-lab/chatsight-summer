@@ -24,6 +24,7 @@ dev = [
 ]
 
 [project.scripts]
+extract-trajectories = "src.trajectories.extract:main"
 label-loop = "src.labeling.cli:main"
 label-loop-web = "src.labeling.webapp:main"
 
