@@ -10,7 +10,10 @@ from tests.test_cli import make_fake_generate
 from tests.test_sampler import CONVS
 
 
-def make_session(tmp_path: Path, workers: int = 8) -> LoopSession:
+def make_session(tmp_path: Path, workers: int = 8,
+                 runs_fetch=lambda url, convs: {},
+                 flags_fetch=lambda url, convs: {},
+                 sequence: bool = True) -> LoopSession:
     def fake_fetch(url, limit, on_progress=None):
         convs = CONVS[:limit] if limit else CONVS
         if on_progress:
@@ -27,6 +30,9 @@ def make_session(tmp_path: Path, workers: int = 8) -> LoopSession:
         runner=lambda job: job(),           # synchronous in tests
         workers=workers,
         profiles_dir=tmp_path / "profiles",
+        runs_fetch=runs_fetch,
+        flags_fetch=flags_fetch,
+        sequence=sequence,
     )
 
 
@@ -49,6 +55,68 @@ def test_start_reaches_review_with_schema_sample_provenance(tmp_path):
     assert all("stratum" in m and "text" in m for m in s["sample"])
     assert s["provenance"] == {"fetched": 4, "total": len(CONVS) + 3,
                                "excluded": len(CONVS) + 3 - 4}
+
+
+def test_session_threads_sequence_data_into_sample(tmp_path):
+    seen = {}
+
+    def fake_runs(url, convs):
+        seen["runs"] = True
+        return {}
+
+    def fake_flags(url, convs):
+        seen["flags"] = True
+        return {}
+
+    session = make_session(tmp_path)
+    session.runs_fetch, session.flags_fetch = fake_runs, fake_flags
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert seen == {"runs": True, "flags": True}
+    assert session.state()["phase"] == "review"
+
+
+def test_no_sequence_skips_both_fetches(tmp_path):
+    seen = {}
+
+    def fake_runs(url, convs):
+        seen["runs"] = True
+        return {}
+
+    def fake_flags(url, convs):
+        seen["flags"] = True
+        return {}
+
+    session = make_session(tmp_path, runs_fetch=fake_runs,
+                           flags_fetch=fake_flags, sequence=False)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    assert seen == {}
+    assert session.state()["phase"] == "review"
+    assert session._runs is None and session._traceback_flags is None
+
+
+def test_accept_records_sequence_context_in_manifest(tmp_path):
+    import json as j
+
+    session = make_session(tmp_path)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.accept()
+    manifest = j.loads((Path(session.state()["snapshot_path"])
+                        / "manifest.json").read_text())
+    from src.ingest.sequences import BEFORE_MIN, OUTCOME_MIN
+    assert manifest["sequence_context"] == {"before_min": BEFORE_MIN,
+                                            "outcome_min": OUTCOME_MIN,
+                                            "enabled": True}
+
+
+def test_accept_records_sequence_context_disabled(tmp_path):
+    import json as j
+
+    session = make_session(tmp_path, sequence=False)
+    session.start("intent", max_conversations=4, sample_size=4, seed=0)
+    session.accept()
+    manifest = j.loads((Path(session.state()["snapshot_path"])
+                        / "manifest.json").read_text())
+    assert manifest["sequence_context"]["enabled"] is False
 
 
 def test_tweak_produces_new_chained_schema_version(tmp_path):

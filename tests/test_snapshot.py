@@ -32,7 +32,9 @@ def test_emit_snapshot_writes_manifest_and_rows(tmp_path: Path):
     convs, schema, labels = _fixtures()
     path = emit_snapshot(convs, labels, schema, model="gemini-2.5-flash",
                          repo_sha="abc1234", data_dir=tmp_path,
-                         excluded_conversations=17, profile=PROFILE)
+                         excluded_conversations=17, profile=PROFILE,
+                         sequence_context={"before_min": 45, "outcome_min": 20,
+                                           "enabled": True})
     manifest = json.loads((path / "manifest.json").read_text())
     assert manifest["schema_version"] == schema.version_id
     assert manifest["classifier_hash"] == classifier_hash(schema, "gemini-2.5-flash", PROFILE)
@@ -42,8 +44,20 @@ def test_emit_snapshot_writes_manifest_and_rows(tmp_path: Path):
     assert manifest["excluded_conversations"] == 17
     assert manifest["profile_id"] == PROFILE.profile_id
     assert manifest["course_profile"]["course_name"] == "Test 101"
+    assert manifest["sequence_context"] == {"before_min": 45,
+                                            "outcome_min": 20,
+                                            "enabled": True}
     assert len((path / "conversations.jsonl").read_text().splitlines()) == 2
     assert len((path / "labels.jsonl").read_text().splitlines()) == 1
+
+
+def test_emit_snapshot_defaults_sequence_context_disabled(tmp_path: Path):
+    convs, schema, labels = _fixtures()
+    path = emit_snapshot(convs, labels, schema, model="m", repo_sha="abc",
+                         data_dir=tmp_path, excluded_conversations=0,
+                         profile=PROFILE)
+    manifest = json.loads((path / "manifest.json").read_text())
+    assert manifest["sequence_context"] == {"enabled": False}
 
 
 def test_snapshot_collision_gets_unique_dir_not_overwrite(tmp_path: Path):

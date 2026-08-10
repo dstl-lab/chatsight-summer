@@ -8,6 +8,8 @@ from typing import Callable
 
 from src.config import Settings
 from src.ingest.rawlog import Conversation, count_conversations, fetch_conversations
+from src.ingest.sequences import (BEFORE_MIN, OUTCOME_MIN,
+                                  fetch_autograder_runs, fetch_traceback_flags)
 from src.labeling.course import DSC10_PROFILE, CourseProfile
 from src.labeling.draft import draft_labels
 from src.labeling.elicit import draft_schema, revise_schema
@@ -54,9 +56,11 @@ def run_loop(intent: str, conversations: list[Conversation], generate: Generate,
              *, profile: CourseProfile, sample_size: int, seed: int,
              ask: Callable[[str], str],
              say: Callable[[str], None],
-             workers: int = 8, profile2=None) -> LabelSchema | None:
+             workers: int = 8, profile2=None, runs=None,
+             traceback_flags=None) -> LabelSchema | None:
     schema = draft_schema(intent, profile, generate, profile2=profile2)
-    sample = stratified_sample(conversations, n=sample_size, seed=seed)
+    sample = stratified_sample(conversations, n=sample_size, seed=seed,
+                               runs=runs, traceback_flags=traceback_flags)
     while True:
         labeled = draft_labels(sample, schema, profile, generate,
                                workers=workers, profile2=profile2)
@@ -84,7 +88,12 @@ def main() -> None:
     parser.add_argument("--profile", default=None,
                         help="accepted CourseProfile v2 artifact "
                              "(profiles/<slug>.json) to ground this run")
+    parser.add_argument("--no-sequence", action="store_true",
+                        help="skip the autograder-run/traceback sequence-"
+                             "context fetch (needed when the events table "
+                             "lacks autograder rows)")
     args = parser.parse_args()
+    sequence = not args.no_sequence
 
     settings = Settings.load()
     if not settings.gemini_api_key:
@@ -109,11 +118,17 @@ def main() -> None:
           f"EXCLUDED from this run and the snapshot "
           f"(--max-conversations={args.max_conversations}).")
 
+    runs = fetch_autograder_runs(settings.ext_db_url, conversations) \
+        if sequence else None
+    traceback_flags = fetch_traceback_flags(settings.ext_db_url, conversations) \
+        if sequence else None
+
     schema = run_loop(intent, conversations, generate,
                       profile=DSC10_PROFILE,
                       sample_size=args.sample_size, seed=args.seed,
                       ask=input, say=print, workers=workers,
-                      profile2=profile2)
+                      profile2=profile2, runs=runs,
+                      traceback_flags=traceback_flags)
     if schema is None:
         print("Quit without accepting; nothing written.")
         return
@@ -130,7 +145,8 @@ def main() -> None:
               f"schema {schema.version_id} ({len(schema.labels)} labels)")
     print(f"Accepted schema {schema.version_id}. Mass-labeling "
           f"{len(conversations)} conversations...")
-    all_messages = stratified_sample(conversations, n=10**9, seed=args.seed)
+    all_messages = stratified_sample(conversations, n=10**9, seed=args.seed,
+                                     runs=runs, traceback_flags=traceback_flags)
     labeled = draft_labels(all_messages, schema, DSC10_PROFILE, generate,
                            workers=workers, profile2=profile2)
     abstained = sum(1 for r in labeled if r.no_label_fits)
@@ -153,7 +169,10 @@ def main() -> None:
     path = emit_snapshot(conversations, labeled, schema, model=DEFAULT_MODEL,
                          repo_sha=repo_sha, data_dir=settings.data_dir,
                          excluded_conversations=excluded_conversations,
-                         profile=DSC10_PROFILE, profile2=profile2)
+                         profile=DSC10_PROFILE, profile2=profile2,
+                         sequence_context={"before_min": BEFORE_MIN,
+                                           "outcome_min": OUTCOME_MIN,
+                                           "enabled": sequence})
     print(f"Snapshot written: {path}")
     print("Add a row to snapshots.md with this manifest's provenance.")
 
