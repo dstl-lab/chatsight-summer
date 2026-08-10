@@ -137,24 +137,24 @@
     {
       "name": "Confusion",
       "kind": "behavioral",
-      "description": "Student explicitly states they do not understand a concept, explanation, or result \u2014 confusion in words, beyond the implicit confusion of asking for help.",
-      "positive_criteria": "The message contains an explicit marker of non-understanding: statements like 'I don't understand', 'I don't follow', 'what does X even mean', 'this makes no sense to me', or asking why an explained result still surprises them after the tutor explained it.",
-      "negative_criteria": "Does NOT apply to ordinary questions or help requests without an explicit non-understanding marker: asking how to do something, asking for a fix, pasting an error, or requesting a solution are not confusion by themselves. Frustration without a non-understanding statement is not confusion."
+      "description": "Student explicitly states they don't understand a concept, explanation, or result. Not just implicitly asking for help.",
+      "positive_criteria": "Message explicitly shows non-understanding: \"I don't understand\", \"I don't follow\", \"what does X mean\", \"makes no sense\", or surprise *after* explanation.",
+      "negative_criteria": "NOT ordinary questions/help requests. No \"confusion\" for asking how, fixing, errors, or solutions. Frustration without explicit non-understanding."
     },
     {
       "name": "Seeking Validation",
       "kind": "behavioral",
-      "description": "Student asks for confirmation or approval of their code, approach, or understanding of a solution.",
-      "positive_criteria": "Contains questions like 'can you check my code?', 'am I right?', 'did I get X right?', 'is this correct?', 'is there a way to do X without altering the dataframe?'.",
-      "negative_criteria": "Does not primarily seek a new solution or debugging help, but rather confirmation of an existing one."
+      "description": "Student seeks confirmation or approval of their code, approach, or understanding.",
+      "positive_criteria": "Look for questions confirming correctness: 'check my code?', 'am I right?', 'is this correct?', 'did I get X right?'.",
+      "negative_criteria": "Not seeking new solutions or debugging. Focus is confirming existing work."
     }
   ],
   "intent_labels": [
     {
       "name": "Debugging Request",
       "kind": "behavioral",
-      "description": "Student seeks assistance in identifying and resolving errors in their code.",
-      "positive_criteria": "Includes error messages (Traceback, AttributeError, TypeError, ValueError), phrases like 'why am I getting this error?', 'it still says the same error', 'help me fix my code', 'why is X wrong'.",
+      "description": "Student asks for help debugging their code.",
+      "positive_criteria": "Includes error messages (e.g., Traceback, TypeError) or direct questions asking how to fix specific code errors.",
       "negative_criteria": "Does not primarily ask for conceptual explanations or alternative methods."
     },
     {
@@ -167,15 +167,15 @@
     {
       "name": "Code Implementation Query",
       "kind": "behavioral",
-      "description": "Student asks for guidance on how to write code to achieve a specific task or complete an assignment question.",
-      "positive_criteria": "Phrases such as 'how to do X', 'how to calculate Y', 'how to make Z correct?', 'how should I go about X', 'what steps are needed to do X'.",
-      "negative_criteria": "Does not include existing code that is failing or explicitly request a full solution."
+      "description": "Student asks how to code a specific task or complete an assignment.",
+      "positive_criteria": "Phrases like 'how to do X', 'how to calculate Y', 'how to make Z correct', 'how should I go about X'.",
+      "negative_criteria": "Does not include existing failing code or explicitly request a full solution."
     },
     {
       "name": "Alternative Method Query",
       "kind": "behavioral",
       "description": "Student asks for different ways to achieve a task, or an alternative to a specific method.",
-      "positive_criteria": "Questions like 'is there a way to do X without Y?', 'what can I use instead of X?', 'what is a different method?', 'what if I can't use lambda X?'.",
+      "positive_criteria": "Asks for alternative ways to do something, or different tools/methods to use.",
       "negative_criteria": "Does not simply ask how to use a specific method they already know."
     },
     {
