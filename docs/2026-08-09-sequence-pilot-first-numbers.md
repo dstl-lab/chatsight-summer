@@ -142,3 +142,32 @@ conversation_id, user_email). Implications:
   (Phase 4) could baseline against.
 - Sequence pilot caveat: the pilot's 7,782 conversations mix both modes;
   the pre/outcome distributions should be re-cut by mode next.
+
+## First sequence-grounded labeling run (2026-08-09, smoke test)
+
+The five-upgrade implementation (spec `docs/superpowers/specs/2026-08-09-
+sequence-grounded-labeling-design.md`) passed its live smoke: 10 recent
+conversations, 89 messages, 4-label instructor schema, throwaway snapshot
+(deleted after; provenance verified then discarded).
+
+- **Plumbing verified end-to-end**: manifest recorded
+  `sequence_context {before_min 45, outcome_min 20, enabled true}` and the
+  new classifier hash; every label row carried mode/pre_pattern/attempted/
+  question_ref/defected facets; review strata showed `seq-askfirst`
+  suffixes; the distinctness report printed its by-mode section
+  (e.g. solution-seeking: tutor=16, chatgpt=6).
+- **Fetcher correctness**: `fetch_autograder_runs` matched a direct SQL
+  join exactly (456 runs over 10 May conversations) — the ANY() binding
+  works; traceback flags fire on real data (2/10).
+- **Coverage caveat**: recent (August) conversations sit past the
+  autograder stream's 2026-07-31 end, so the smoke sample was 100%
+  ask-first. Runs over the covered window (Mar–Jul) are where the
+  fail-then-ask / pass-then-ask context lines will actually vary.
+- **Facet stats on the smoke sample**: mode 79 tutor / 10 chatgpt;
+  question_ref on 24/89 messages (27%); 2 in-tool defection events.
+- **Sequence ablation** (20-message probe): 4/20 messages changed at
+  least one verdict when sequence facts were stripped — conceptual-
+  difficulty 10%, assignment-context 5%, solution-seeking 5%,
+  code-error-debugging sequence-inert. Even "no autograder run" + mode
+  alone moves verdicts; a Mar–Jul sample with real fail/pass context is
+  the next measurement.
