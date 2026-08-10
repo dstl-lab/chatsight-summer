@@ -5,11 +5,28 @@ from pydantic import BaseModel
 
 from src.labeling.course import CourseProfile
 from src.labeling.llm import Generate
-from src.labeling.schema import LabelDef, LabelSchema
+from src.labeling.schema import (CRITERIA_WORD_CAP, DESC_WORD_CAP, LabelDef,
+                                 LabelSchema, oversized_fields)
 
 
 class DraftedLabels(BaseModel):
     labels: list[LabelDef]
+
+
+def _capped_generate(prompt: str, generate: Generate) -> DraftedLabels:
+    """Generate labels, re-prompting once on cap violations, then hard-fail:
+    oversized criteria never enter a schema (2026-08-10 audit finding)."""
+    drafted = generate(prompt, DraftedLabels)
+    findings = oversized_fields(drafted.labels)
+    if findings:
+        drafted = generate(
+            prompt + _RETRY_ADDENDUM.format(findings=", ".join(findings)),
+            DraftedLabels)
+        findings = oversized_fields(drafted.labels)
+    if findings:
+        raise ValueError("label criteria exceed brevity caps after retry: "
+                         + ", ".join(findings))
+    return drafted
 
 
 ELICIT_PROMPT = """You are helping a course instructor turn the trends they want \
@@ -30,7 +47,11 @@ context. Prefer fewer, sharper labels over many vague ones. Labels must be judge
 Labels must be mutually distinct: no two labels' criteria may be written so \
 that one message satisfies both by design — overlap between labels is a \
 defect, not richness. Do not draft a label whose evidence is merely "the \
-student asked a question"."""
+student asked a question".
+
+BREVITY IS A HARD REQUIREMENT: a human annotator must hold the criterion \
+in mind while judging in seconds. description <= {desc_cap} words; each \
+criteria field <= {crit_cap} words. Plain words, no nested clauses."""
 
 _COVERED_TEMPLATE = """Constructs ALREADY COVERED by standing label layers — \
 do NOT draft duplicates or near-duplicates of these; spend the instructor's \
@@ -55,7 +76,15 @@ Instructor's feedback on the drafted labels as seen on a sample:
 {feedback}
 
 Return the full revised label set (same format, 3-8 binary message-level \
-labels), applying the feedback. Keep labels the feedback did not touch."""
+labels), applying the feedback. Keep labels the feedback did not touch.
+
+BREVITY IS A HARD REQUIREMENT: description <= {desc_cap} words; each \
+criteria field <= {crit_cap} words. Plain words, no nested clauses."""
+
+_RETRY_ADDENDUM = """
+
+Your previous draft broke the brevity caps on: {findings}. Rewrite those \
+fields within the caps, preserving meaning. Return the full label set."""
 
 
 def _covered_block(profile2) -> str:
@@ -76,12 +105,13 @@ def _covered_block(profile2) -> str:
 
 def draft_schema(intent_text: str, profile: CourseProfile,
                  generate: Generate, profile2=None) -> LabelSchema:
-    drafted = generate(
+    drafted = _capped_generate(
         ELICIT_PROMPT.format(intent=intent_text,
                              course_context=profile.render_context(),
-                             covered_block=_covered_block(profile2)),
-        DraftedLabels
-    )
+                             covered_block=_covered_block(profile2),
+                             desc_cap=DESC_WORD_CAP,
+                             crit_cap=CRITERIA_WORD_CAP),
+        generate)
     return LabelSchema(instructor_intent=intent_text, labels=drafted.labels)
 
 
@@ -95,8 +125,10 @@ def revise_schema(current: LabelSchema, feedback: str, profile: CourseProfile, g
             for l in current.labels
         ),
         feedback=feedback,
+        desc_cap=DESC_WORD_CAP,
+        crit_cap=CRITERIA_WORD_CAP,
     )
-    drafted = generate(prompt, DraftedLabels)
+    drafted = _capped_generate(prompt, generate)
     return LabelSchema(
         instructor_intent=current.instructor_intent,
         labels=drafted.labels,
