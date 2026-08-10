@@ -203,6 +203,30 @@ def test_sequence_fields_default_without_runs():
     assert all(m.pre_pattern == "" and not m.defected for m in sample)
 
 
+def test_grader_narrowing_does_not_prefix_mislink():
+    """r.grader_id.startswith(ref) mislinked q1_1 -> q1_10 (finding 3): a
+    message referencing "q1_1" must scope to grader_ids that are exactly
+    "q1_1" or "q1_1_"-prefixed, never "q1_10" (a different question that
+    merely shares the "q1_1" prefix)."""
+    from datetime import timedelta
+    from src.ingest.sequences import AutograderRun
+    from src.labeling.sampler import _sequence_fields
+    conv = _timed_conv_for_sequences()
+    turn = conv.turns[0]  # text: "stuck on q1_1" -> question_ref "q1_1"
+    runs = {conv.conv_id: [
+        AutograderRun(at=turn.at - timedelta(minutes=4),
+                      grader_id="q1_10", success=True),
+        AutograderRun(at=turn.at - timedelta(minutes=3),
+                      grader_id="q1_1_2", success=False),
+    ]}
+    fields = _sequence_fields(conv, turn, runs, {})
+    assert fields["question_ref"] == "q1_1"
+    assert fields["seq_granularity"] == "question"
+    # last (most recent, in-order) scoped run must be q1_1_2, not q1_10
+    assert fields["last_run_grader"] == "q1_1_2"
+    assert fields["last_run_success"] is False
+
+
 def test_defection_is_first_chatgpt_after_tutor_mode():
     conv = _conv_with_modes(["tutor", "tutor", "chatgpt", "chatgpt"])
     sample = stratified_sample([conv], n=20, seed=0, runs={}, traceback_flags={})

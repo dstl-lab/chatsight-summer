@@ -17,7 +17,9 @@ from typing import Callable
 from pydantic import BaseModel
 
 from src.ingest.rawlog import Turn
+from src.ingest.sequences import BEFORE_MIN
 from src.labeling.course import CourseProfile
+from src.labeling import qref
 from src.labeling.llm import Generate
 from src.labeling.sampler import (DELAYED_S, RAPID_S, WINDOW_TURNS,
                                   WORKING_S, SampledMessage)
@@ -203,12 +205,19 @@ def _render_latency(m: SampledMessage) -> str:
 
 
 def _render_sequence(m: SampledMessage) -> str:
+    # "No autograder data" (no sequence facts at all for this conversation)
+    # is deliberately distinct from the ask-first windowed claim below (no
+    # sequence facts vs. a checked-and-empty window) — do not merge them.
     if not m.pre_pattern:
         return "No autograder data for this conversation."
     gran = ("question-level" if m.seq_granularity == "question"
             else "notebook-level")
     if m.pre_pattern == "ask-first":
-        s = f"no autograder run before this message ({gran})"
+        # Honest windowed claim, not "no run ever": we only checked the
+        # BEFORE_MIN-minute window (src.ingest.sequences), so this reports
+        # absence within that window, not absence overall.
+        s = (f"No autograder activity in the {BEFORE_MIN} min before this "
+             f"message ({gran})")
     else:
         verdict = "PASSED" if m.last_run_success else "FAILED"
         mins = (f"{m.last_run_minutes:.0f}m"
@@ -216,7 +225,11 @@ def _render_sequence(m: SampledMessage) -> str:
         s = (f"last run {mins} before this message: {verdict} "
              f"({m.last_run_grader or 'unknown check'}, {gran})")
     if m.snapshot_traceback:
-        s += "; notebook shows an unresolved traceback"
+        # snapshot_traceback is a conversation-start flag (one notebook
+        # snapshot per conversation, on turn 1 — see the 2026-08-09 pilot
+        # memo appendix), not a live/current-state signal.
+        s += ("; notebook snapshot at conversation start showed a "
+              "traceback")
     return s
 
 
@@ -358,6 +371,20 @@ def classifier_hash(schema: LabelSchema, model: str,
     # None) hashes exactly as before the 2026-08-07 concepts facet — no
     # retroactive re-vintage; a v2 run appends the artifact canonical and
     # the rendered concept block.
+    # Fixture SampledMessages (fixed values, not schema/data-dependent) so
+    # classifier_hash pins the actual rendered wording of _render_sequence
+    # and _render_mode, not just a static tag naming the fields involved —
+    # a wording-only change (e.g. the 2026-08-09 ask-first/traceback fix)
+    # must move the hash.
+    _base = dict(chatlog_id=0, conv_id="x", message_index=0, text="x",
+                context=[], context_after=None, stratum="x")
+    _fail_msg = SampledMessage(
+        **_base, pre_pattern="fail-then-ask", last_run_minutes=4.0,
+        last_run_grader="q1_1", last_run_success=False,
+        snapshot_traceback=True, seq_granularity="question")
+    _ask_msg = SampledMessage(**_base, pre_pattern="ask-first",
+                              seq_granularity="notebook")
+    _nodata_msg = SampledMessage(**_base)
     canonical = "\x1e".join([
         SINGLE_LABEL_PROMPT,
         COVERAGE_PROMPT.replace("{concept_section}", ""),
@@ -367,7 +394,13 @@ def classifier_hash(schema: LabelSchema, model: str,
         "forms=" + ",".join(FORM_TAXONOMY),
         "move=" + ",".join(MOVE_TAXONOMY),
         f"latency=rapid<{RAPID_S},working<{WORKING_S},delayed<{DELAYED_S}",
-        "sequence=prepattern+lastrun+traceback+mode,granularity=qref",
+        _render_sequence(_fail_msg),
+        _render_sequence(_ask_msg),
+        _render_sequence(_nodata_msg),
+        _render_mode(SampledMessage(**_base, mode="tutor")),
+        _render_mode(SampledMessage(**_base, mode="chatgpt")),
+        _render_mode(SampledMessage(**_base, mode="")),
+        "|".join(p.pattern for p in qref._PATTERNS),
         _render_window([]),
         _render_window([Turn(index=0, role="student", text="x",
                              student_index=0)]),

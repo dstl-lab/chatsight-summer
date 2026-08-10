@@ -112,7 +112,8 @@ def _sequence_fields(conv: Conversation, turn: Turn,
     ref = extract_question_ref(turn.text)
     fields["question_ref"] = ref
     conv_runs = runs.get(conv.conv_id, [])
-    scoped = ([r for r in conv_runs if r.grader_id.startswith(ref)]
+    scoped = ([r for r in conv_runs
+              if r.grader_id == ref or r.grader_id.startswith(ref + "_")]
               if ref else conv_runs)
     fields["seq_granularity"] = ("question" if ref and scoped
                                  else "notebook")

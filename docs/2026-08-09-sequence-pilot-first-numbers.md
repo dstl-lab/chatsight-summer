@@ -73,6 +73,15 @@ Three immediate reads, each with its honest limit:
   currently counted like any run.
 - Survivorship: conversations without user_email (~?) are excluded;
   quantify.
+- Double-count check (2026-08-09): 15 `conversation_id`s group to more
+  than one `(user_email, notebook)` pair in the pilot's `convs` CTE —
+  the pilot's per-conversation counts are not fully duplicate-free;
+  those 15 conversations are double- (or more-) counted across
+  pre-chat/outcome cells and should be excluded or deduplicated before
+  any figure in this memo is cited precisely.
+- Deferred: the validation table is not yet mode-split (spec piece 3
+  half-landed — distinctness is split, per-label reliability by mode
+  waits for a blind audit with mode data).
 
 ## Status
 

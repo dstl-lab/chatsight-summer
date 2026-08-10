@@ -151,9 +151,10 @@ def test_classifier_hash_golden_regression():
     # is the point of the test.
     # 840c1db2c5ad: context-timing vintage (2026-08-07) — latency line in
     # _SHARED_CONTEXT + move instruction/taxonomy + bucket thresholds.
-    # re-vintaged 2026-08-09: sequence context lines are prompt-visible (rule 2)
+    # re-vintaged 2026-08-09 (2nd): sequence rendering + qref patterns
+    # folded into hash (rule 2)
     h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h == "0eaac73a6ed7"
+    assert h == "fc36005bb9ed"
 
 
 def test_calls_run_concurrently():
@@ -380,9 +381,10 @@ def test_coverage_prompt_carries_move_taxonomy():
 
 
 def test_v1_golden_hash_unchanged_and_v2_hash_moves():
-    # re-vintaged 2026-08-09: sequence context lines are prompt-visible (rule 2)
+    # re-vintaged 2026-08-09 (2nd): sequence rendering + qref patterns
+    # folded into hash (rule 2)
     h1 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h1 == "0eaac73a6ed7"          # v1 path: sequence-context vintage
+    assert h1 == "fc36005bb9ed"          # v1 path: sequence-context vintage
     v2 = _v2_profile()
     h2 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE, profile2=v2)
     assert h2 != h1
@@ -399,10 +401,20 @@ def test_sequence_render_lines():
              mode="chatgpt")
     s = _render_sequence(m)
     assert "4m" in s and "FAILED" in s and "q3_2" in s
-    assert "traceback" in s.lower()
+    # traceback is a conversation-start snapshot flag, not live state
+    assert "notebook snapshot at conversation start showed a traceback" in s
     assert "question-level" in s
     empty = _render_sequence(_msg())
     assert "No autograder data" in empty
+    ask_first = _render_sequence(_msg(pre_pattern="ask-first",
+                                      seq_granularity="notebook"))
+    # honest windowed claim (finding 1): 45 comes from BEFORE_MIN, not
+    # hardcoded, and this line is distinct from the no-data line above
+    from src.ingest.sequences import BEFORE_MIN
+    assert BEFORE_MIN == 45
+    assert ("No autograder activity in the 45 min before this message"
+            in ask_first)
+    assert ask_first != empty
     assert "plain-ChatGPT mode" in _render_mode(m)
     assert "tutor" in _render_mode(_msg(mode="tutor")).lower()
     assert "unknown" in _render_mode(_msg()).lower()

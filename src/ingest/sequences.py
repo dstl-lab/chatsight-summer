@@ -86,6 +86,13 @@ class ConversationSequence:
 
 def classify(last_before: str | None, passed_after: bool,
              any_after: bool) -> tuple[str, str]:
+    # NULL-success probe (2026-08-09): `SELECT count(*) FROM events WHERE
+    # event_type='autograder_info' AND payload->>'success' IS NULL` = 0 in
+    # the live corpus, so last_before is None only because the subquery's
+    # window had no matching row (no autograder run before this message),
+    # never because a matched row's success payload was itself NULL. If
+    # that ever changes, this ask-first/pass-then-ask split silently
+    # misreads a NULL-success row as ask-first — re-run the probe first.
     pre = ("ask-first" if last_before is None
            else "fail-then-ask" if last_before == "false"
            else "pass-then-ask")
@@ -171,6 +178,13 @@ def fetch_autograder_runs(ext_db_url: str, conversations,
                 sa.text(_RUNS_SQL), {"conv_ids": conv_ids,
                                      "before": before_min,
                                      "after": after_min}):
+            # NULL-success probe (2026-08-09): payload->>'success' IS NULL
+            # count is 0 in the live corpus, so this skip is currently a
+            # no-op — kept so a NULL success is never fabricated into
+            # False (`success == "true"` would silently do that) if the
+            # logging surface ever starts emitting NULLs.
+            if success is None:
+                continue
             out.setdefault(cid, []).append(AutograderRun(
                 at=at, grader_id=gid or "", success=success == "true"))
     return out
