@@ -18,7 +18,7 @@ column on every row:
 | Attempt (notebook state at ask) | `tutor_notebook_info` | 36,803 | full notebook JSON + the student message it accompanied |
 | Error / test result | `autograder_info` | 281,882 (41,486 failures) | per-question `grader_id` (q1_1…), success bool, output, timestamp |
 | Tutor conversation | `tutor_query`/`tutor_response` | 45,652 / 42,727 | as already ingested |
-| Code change | successive `tutor_notebook_info` snapshots | — | diffable across a conversation; no keystroke telemetry, but before/after state exists |
+| Code change | successive `tutor_notebook_info` snapshots | — | one snapshot per conversation (turn 1 only — see appendix); diffable across *consecutive conversations*, not within one |
 | Session context | `session_start` | 25,841 | cell counts per notebook open |
 
 Coverage: autograder 2026-03-04..07-31; chat 2026-02-09..08-06 — the
@@ -103,3 +103,42 @@ Namespace `dsc-10-llm` on Nautilus holds the entire data surface:
 Implication for the sequence work: any new sequence element (question-id
 on tutor_query, richer cell telemetry) is one event type away — a change
 to Sam's logger API, not new infrastructure.
+
+## Appendix 2: snapshot anatomy and the ChatGPT toggle (2026-08-09)
+
+Two run-downs of the notebook-snapshot surface:
+
+**1. The "unparseable snapshots" were nulls, not corruption.**
+`initial_notebook_json` is captured exactly once per conversation, on
+turn 1 (100% of non-null snapshots are their conversation's first
+`tutor_notebook_info` row; 8,608 of 8,609 conversations have exactly one).
+Rows for later turns carry the field as null. Consequences:
+
+- Valid snapshots are clean: full notebooks (typically 21+ cells), cell
+  outputs captured including tracebacks — a rich at-ask error signal.
+- **Within-conversation code-change diffing is impossible** (the earlier
+  "76% diffable" figure counted rows, not non-null snapshots — wrong).
+- **Across-conversation diffing works**: same student + notebook,
+  consecutive conversations' initial snapshots show code evolution
+  between chats, which brackets "what changed after the tutor's advice"
+  at conversation granularity. Copy-detection (tutor response text vs
+  next snapshot's diff) survives in this coarser form.
+
+**2. `toggle_mode: chatgpt` is an in-tool ChatGPT mode — defection is
+partially observable.** The tutor UI has a toggle: `tutor` mode runs
+`prompt_mode=append` (tutor system prompt), `chatgpt` mode runs
+`prompt_mode=override` (raw assistant, no tutor persona). It is heavily
+used — 9,513 of 45,652 tutor_query turns (~21%) are `mode=chatgpt`,
+present every month Feb–Jul, fully logged (question, response,
+conversation_id, user_email). Implications:
+
+- Invariant 7's "quiet exit to ChatGPT" is not entirely invisible:
+  in-tool mode-switching is a logged, per-turn observable. A
+  tutor→chatgpt toggle mid-conversation is a directly measurable
+  defection event (external ChatGPT use remains invisible).
+- Policy-relevant natural experiment: the same student population, same
+  assignments, two tutor personas, logged side by side — a comparison
+  cohort for "what does the tutor persona change" that the replay agenda
+  (Phase 4) could baseline against.
+- Sequence pilot caveat: the pilot's 7,782 conversations mix both modes;
+  the pre/outcome distributions should be re-cut by mode next.
