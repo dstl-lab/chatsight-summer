@@ -151,8 +151,9 @@ def test_classifier_hash_golden_regression():
     # is the point of the test.
     # 840c1db2c5ad: context-timing vintage (2026-08-07) — latency line in
     # _SHARED_CONTEXT + move instruction/taxonomy + bucket thresholds.
+    # re-vintaged 2026-08-09: sequence context lines are prompt-visible (rule 2)
     h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h == "840c1db2c5ad"
+    assert h == "0eaac73a6ed7"
 
 
 def test_calls_run_concurrently():
@@ -379,11 +380,49 @@ def test_coverage_prompt_carries_move_taxonomy():
 
 
 def test_v1_golden_hash_unchanged_and_v2_hash_moves():
+    # re-vintaged 2026-08-09: sequence context lines are prompt-visible (rule 2)
     h1 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h1 == "840c1db2c5ad"          # v1 path: context-timing vintage
+    assert h1 == "0eaac73a6ed7"          # v1 path: sequence-context vintage
     v2 = _v2_profile()
     h2 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE, profile2=v2)
     assert h2 != h1
     edited = v2.model_copy(update={"concepts": v2.concepts[:1]})
     assert classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE,
                            profile2=edited) != h2
+
+
+def test_sequence_render_lines():
+    from src.labeling.draft import _render_mode, _render_sequence
+    m = _msg(pre_pattern="fail-then-ask", last_run_minutes=4.2,
+             last_run_grader="q3_2", last_run_success=False,
+             snapshot_traceback=True, seq_granularity="question",
+             mode="chatgpt")
+    s = _render_sequence(m)
+    assert "4m" in s and "FAILED" in s and "q3_2" in s
+    assert "traceback" in s.lower()
+    assert "question-level" in s
+    empty = _render_sequence(_msg())
+    assert "No autograder data" in empty
+    assert "plain-ChatGPT mode" in _render_mode(m)
+    assert "tutor" in _render_mode(_msg(mode="tutor")).lower()
+    assert "unknown" in _render_mode(_msg()).lower()
+
+
+def test_mechanical_facets_copied_not_judged():
+    # fake generate returns applies=True for everything; facets must come
+    # from the SampledMessage, untouched by the model
+    gen = make_fake()
+    msgs = [_msg(pre_pattern="ask-first", mode="chatgpt",
+                 snapshot_traceback=False)]
+    out = draft_labels(msgs, SCHEMA, PROFILE, gen)
+    r = out[0]
+    assert r.mode == "chatgpt" and r.attempted is False
+    assert r.error_verified is False and r.pre_pattern == "ask-first"
+    legacy = draft_labels([_msg()], SCHEMA, PROFILE, gen)[0]
+    assert legacy.attempted is None and legacy.error_verified is None
+
+
+def test_hash_covers_sequence_rendering():
+    HASH_BEFORE_SEQUENCE = "840c1db2c5ad"
+    h1 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
+    assert h1 != HASH_BEFORE_SEQUENCE   # vintage moved, deliberately

@@ -74,6 +74,13 @@ class MessageLabels(BaseModel):
     move: str = ""                # ditto
     latency_seconds: float | None = None   # mechanical, from event times
     latency_bucket: str = ""      # "" in old snapshots; else LATENCY_BUCKETS
+    mode: str = ""                 # "" in old snapshots; else chatgpt/tutor
+    defected: bool = False
+    attempted: bool | None = None  # None: no sequence data for this message
+    error_verified: bool | None = None  # None: ditto
+    question_ref: str = ""
+    pre_pattern: str = ""
+    seq_granularity: str = ""
 
 
 _SHARED_RULES = """\
@@ -92,6 +99,9 @@ Conversation so far (most recent last; may be empty):
 {context}
 
 Time since the tutor's last message: {latency}
+
+Autograder state when the student asked: {sequence}
+Assistant mode: {mode}
 
 STUDENT MESSAGE TO LABEL:
 {text}
@@ -192,6 +202,33 @@ def _render_latency(m: SampledMessage) -> str:
     return f"{human} ({m.latency_bucket})"
 
 
+def _render_sequence(m: SampledMessage) -> str:
+    if not m.pre_pattern:
+        return "No autograder data for this conversation."
+    gran = ("question-level" if m.seq_granularity == "question"
+            else "notebook-level")
+    if m.pre_pattern == "ask-first":
+        s = f"no autograder run before this message ({gran})"
+    else:
+        verdict = "PASSED" if m.last_run_success else "FAILED"
+        mins = (f"{m.last_run_minutes:.0f}m"
+                if m.last_run_minutes is not None else "?")
+        s = (f"last run {mins} before this message: {verdict} "
+             f"({m.last_run_grader or 'unknown check'}, {gran})")
+    if m.snapshot_traceback:
+        s += "; notebook shows an unresolved traceback"
+    return s
+
+
+def _render_mode(m: SampledMessage) -> str:
+    if m.mode == "chatgpt":
+        return ("plain-ChatGPT mode — the student toggled the tutor "
+                "persona off for this message")
+    if m.mode == "tutor":
+        return "tutor mode"
+    return "unknown (older log)"
+
+
 def _render_window(turns: list[Turn]) -> str:
     if not turns:
         return "(conversation start)"
@@ -231,7 +268,8 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
         common = dict(course_context=profile.render_context(),
                       context=_render_window(m.context), text=m.text,
                       context_after=m.context_after or "",
-                      latency=_render_latency(m))
+                      latency=_render_latency(m),
+                      sequence=_render_sequence(m), mode=_render_mode(m))
         try:
             if label is None:
                 verdict = generate(
@@ -283,7 +321,16 @@ def draft_labels(messages: list[SampledMessage], schema: LabelSchema,
                         move=(cov.move if cov.move in MOVE_TAXONOMY
                               else ""),
                         latency_seconds=m.latency_seconds,
-                        latency_bucket=m.latency_bucket)
+                        latency_bucket=m.latency_bucket,
+                        mode=m.mode, defected=m.defected,
+                        question_ref=m.question_ref,
+                        pre_pattern=m.pre_pattern,
+                        seq_granularity=m.seq_granularity,
+                        attempted=(None if not m.pre_pattern
+                                   else m.pre_pattern != "ask-first"),
+                        error_verified=(None if not m.pre_pattern
+                                        else m.snapshot_traceback
+                                        or m.last_run_success is False))
                     results[idx] = r
                     state["done"] += 1
                     if on_result:
@@ -320,6 +367,7 @@ def classifier_hash(schema: LabelSchema, model: str,
         "forms=" + ",".join(FORM_TAXONOMY),
         "move=" + ",".join(MOVE_TAXONOMY),
         f"latency=rapid<{RAPID_S},working<{WORKING_S},delayed<{DELAYED_S}",
+        "sequence=prepattern+lastrun+traceback+mode,granularity=qref",
         _render_window([]),
         _render_window([Turn(index=0, role="student", text="x",
                              student_index=0)]),
