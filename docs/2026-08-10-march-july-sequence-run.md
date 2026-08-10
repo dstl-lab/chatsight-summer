@@ -93,3 +93,32 @@ conceptual labels). Confounded hypothesis: verbose criteria depress human
 yes-rates (comprehension fatigue) AND/OR those labels genuinely
 over-fire (step-by-step-prompt was already distinctness-flagged, J=0.46).
 A criteria-brevity pass + re-audit separates the two.
+
+## Brevity-pass re-audit: criteria verbosity WAS the failure (2026-08-10)
+
+Schema 729bdd2725d2 (parent 937c9f6ba4b5) rewrote every description to
+<=20 words and every criterion to <=25 (per-label LLM rewrite, label set
+frozen, caps enforced programmatically). Same corpus relabeled; fresh
+per-label audit sample (n=41 messages, 96 judgments), same annotator.
+
+| | verbose criteria | tightened criteria |
+|---|---|---|
+| Code Implementation Query | P=0.00 | **P=1.00** |
+| concept-misapplication | P=0.00 | **P=1.00** |
+| Conceptual Clarification | P=0.00 | 0.50 |
+| step-by-step-prompt | P=0.00 | 0.75 |
+| human no-label-fits rate | 60% | **24%** |
+| tutor-mode agreement | 74% | **92%** (78/85) |
+| chatgpt-mode agreement | 50% | 82% (9/11) |
+
+All four zero-support labels recovered; overall agreement moved ~20
+points. Reading: verbose criteria were corrupting the HUMAN side of the
+measurement (comprehension fatigue -> default-no), not just confusing the
+model. Honest limits: single annotator; second exposure to the corpus
+(practice effect not controlled); both model and human sides changed
+vintage simultaneously, so per-label deltas mix both effects — but a
+swing of this size on every previously-dead label is not explainable by
+practice alone.
+
+Standing rule adopted (memory + future elicitation prompts): criteria
+ship at <=25 words or they don't ship.
