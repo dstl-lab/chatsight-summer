@@ -237,14 +237,24 @@ def fetch_traceback_flags(ext_db_url: str, conversations) -> dict[str, bool]:
     """Whether any captured notebook snapshot for the conversation shows a
     traceback (in practice exactly one snapshot is captured, at conversation
     start). The LIKE runs server-side; notebook JSON never crosses the wire
-    (rule 4). Missing snapshot -> False."""
+    (rule 4). Missing snapshot -> False. Chunked with per-chunk retry, same
+    as fetch_autograder_runs (the LIKE scan is also tunnel-fragile)."""
     conv_ids = [c.conv_id for c in conversations]
     if not conv_ids:
         return {}
-    eng = sa.create_engine(ext_db_url)
-    with eng.connect() as c:
-        rows = c.execute(sa.text(_TRACEBACK_SQL),
-                         {"conv_ids": conv_ids}).fetchall()
+    rows: list = []
+    for chunk in _chunks(conv_ids, RUNS_CHUNK):
+        for attempt in range(_RETRIES):
+            try:
+                eng = sa.create_engine(ext_db_url)
+                with eng.connect() as c:
+                    rows.extend(c.execute(sa.text(_TRACEBACK_SQL),
+                                          {"conv_ids": chunk}).fetchall())
+                break
+            except sa.exc.OperationalError:
+                if attempt == _RETRIES - 1:
+                    raise
+                time.sleep(_RETRY_WAIT_S)
     return _merge_flags(conv_ids, rows)
 
 
