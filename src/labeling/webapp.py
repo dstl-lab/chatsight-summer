@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Callable
 
 from src.ingest.rawlog import Conversation, count_conversations, fetch_conversations
+from src.ingest.sequences import (BEFORE_MIN, OUTCOME_MIN,
+                                  fetch_autograder_runs, fetch_traceback_flags)
 from src.labeling.cli import ACCEPT_NOTE, load_accepted_profile
 from src.labeling.course import DSC10_PROFILE, CourseProfile
 from src.labeling.draft import MessageLabels, classifier_hash, draft_labels
@@ -55,7 +57,10 @@ class LoopSession:
                  repo_sha: str, runner: Callable[[Callable[[], None]], None]
                  = _thread_runner, profile: CourseProfile = DSC10_PROFILE,
                  workers: int = 8, profiles_dir: Path,
-                 course_slug: str = "dsc10"):
+                 course_slug: str = "dsc10",
+                 runs_fetch=fetch_autograder_runs,
+                 flags_fetch=fetch_traceback_flags,
+                 sequence: bool = True):
         self.fetch = fetch
         self.count = count
         self.generate = generate
@@ -67,6 +72,9 @@ class LoopSession:
         self.workers = workers
         self.profiles_dir = profiles_dir
         self.course_slug = course_slug
+        self.runs_fetch = runs_fetch
+        self.flags_fetch = flags_fetch
+        self.sequence = sequence
         self._lock = threading.Lock()
         # profile2 survives _reset() (quit()): the accepted profile is not
         # part of a labeling run's working state.
@@ -79,6 +87,12 @@ class LoopSession:
         self.conversations: list[Conversation] = []
         self.provenance: dict | None = None
         self._total_conversations: int | None = None
+        # sequence-context fetches (2026-08-09 memo): populated once, right
+        # after conversations, in start()'s job; None means "not fetched" —
+        # either not yet, or self.sequence is False (escape hatch), in which
+        # case both stratified_sample calls fall back to their defaults.
+        self._runs = None
+        self._traceback_flags = None
         self.schema: LabelSchema | None = None
         self.sample: list[SampledMessage] = []
         self.labeled: list[MessageLabels] = []
@@ -232,6 +246,12 @@ class LoopSession:
                     self.conversations = convs
                     self.provenance = {"fetched": len(convs), "total": total,
                                        "excluded": max(0, total - len(convs))}
+            if self.sequence and self._runs is None:
+                runs = self.runs_fetch(self.ext_db_url, self.conversations)
+                flags = self.flags_fetch(self.ext_db_url, self.conversations)
+                with self._lock:
+                    self._runs = runs
+                    self._traceback_flags = flags
             self._end_step(
                 "fetch",
                 name=f"Fetched {len(self.conversations)} conversations",
@@ -247,7 +267,8 @@ class LoopSession:
             if not self.sample:
                 with self._lock:
                     self.sample = stratified_sample(
-                        self.conversations, n=sample_size, seed=seed)
+                        self.conversations, n=sample_size, seed=seed,
+                        runs=self._runs, traceback_flags=self._traceback_flags)
             self._end_step(
                 "schema", name=f"Schema {self.schema.version_id} drafted",
                 detail=f"{len(self.schema.labels)} labels")
@@ -314,8 +335,9 @@ class LoopSession:
                 "save", name=f"Schema {self.schema.version_id} saved",
                 detail=f"{len(self.schema.labels)} labels")
             self._begin_step("sample")
-            all_messages = stratified_sample(self.conversations, n=10**9,
-                                             seed=self.seed)
+            all_messages = stratified_sample(
+                self.conversations, n=10**9, seed=self.seed,
+                runs=self._runs, traceback_flags=self._traceback_flags)
             self._end_step(
                 "sample", name=f"Sampled {len(all_messages)} messages",
                 detail=f"from {len(self.conversations)} conversations")
@@ -335,7 +357,10 @@ class LoopSession:
                 model=DEFAULT_MODEL, repo_sha=self.repo_sha,
                 data_dir=self.data_dir,
                 excluded_conversations=self.provenance["excluded"],
-                profile=self.profile, profile2=self.profile2)
+                profile=self.profile, profile2=self.profile2,
+                sequence_context={"before_min": BEFORE_MIN,
+                                  "outcome_min": OUTCOME_MIN,
+                                  "enabled": self.sequence})
             self._end_step("snapshot", name="Snapshot written",
                            detail=str(path))
             summary = compute_summary(self.conversations, self.labeled,

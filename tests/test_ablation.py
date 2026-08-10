@@ -4,14 +4,19 @@ from src.labeling.draft import MessageLabels
 from src.labeling.sampler import SampledMessage
 
 
-def _msg():
-    return SampledMessage(
+def _msg(**kwargs):
+    defaults = dict(
         chatlog_id=1, conv_id="c", message_index=2, text="1.6",
         context=[Turn(index=0, role="student", text="earlier",
                       student_index=0),
                  Turn(index=1, role="tutor", text="reply")],
         context_after="after", stratum="s",
-        latency_seconds=42.0, latency_bucket="rapid")
+        latency_seconds=42.0, latency_bucket="rapid",
+        pre_pattern="", last_run_minutes=None, last_run_grader="",
+        last_run_success=None, snapshot_traceback=False, mode="",
+        seq_granularity="")
+    defaults.update(kwargs)
+    return SampledMessage(**defaults)
 
 
 def _labels(i, **labels):
@@ -40,3 +45,15 @@ def test_flip_stats_and_report():
     assert "2 of 2 messages" in rep
     assert "deictic" in rep and "100%" in rep
     assert "CONTEXT-INERT" in rep and "surface" in rep
+
+
+def test_strip_sequence_resets_only_sequence_fields():
+    from src.labeling.ablation import strip_sequence
+    m = _msg(pre_pattern="fail-then-ask", last_run_success=False,
+             snapshot_traceback=True, mode="chatgpt",
+             latency_seconds=30.0, latency_bucket="rapid")
+    s = strip_sequence(m)
+    assert s.pre_pattern == "" and s.last_run_success is None
+    assert s.mode == "" and not s.snapshot_traceback
+    assert s.latency_bucket == "rapid"        # latency axis untouched
+    assert s.context == m.context             # structural context untouched

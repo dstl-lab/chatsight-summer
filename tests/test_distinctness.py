@@ -1,12 +1,14 @@
-from src.labeling.distinctness import distinctness_report, overlapping_pairs
+from src.labeling.distinctness import (distinctness_report, mode_split,
+                                       overlapping_pairs)
 from src.labeling.draft import MessageLabels
 
 
-def _row(i, **labels):
+def _row(i, mode="", **labels):
     return MessageLabels(chatlog_id=1, message_index=i,
                          labels=labels,
                          rationales={k: f"reason about thing {k}"
-                                     for k in labels})
+                                     for k in labels},
+                         mode=mode)
 
 
 ROWS = (
@@ -38,3 +40,22 @@ def test_report_clean_schema_says_distinct():
     rows = [_row(0, a=True, b=False), _row(1, a=False, b=True)]
     assert "behaviorally distinct" in distinctness_report(rows)
     assert distinctness_report([]).startswith("Distinctness: no labeled")
+
+
+def test_mode_split_counts_by_mode():
+    rows = [_row(0, mode="tutor", x=True),
+            _row(1, mode="chatgpt", x=True),
+            _row(2, mode="chatgpt", x=False),
+            _row(3, x=True)]           # no mode -> "unknown"
+    split = mode_split(rows)
+    assert split["x"] == {"tutor": 1, "chatgpt": 1, "unknown": 1}
+
+
+def test_report_splits_by_mode():
+    rows = [_row(20, mode="tutor", x=True),
+            _row(21, mode="chatgpt", x=True),
+            _row(22, mode="chatgpt", x=False)]
+    r = distinctness_report(rows)
+    assert "by mode" in r and "chatgpt" in r
+    legacy = distinctness_report([_row(23, x=True)])
+    assert "by mode" not in legacy          # old snapshots: no section

@@ -96,6 +96,10 @@ def test_mass_label_prints_coverage_summary(monkeypatch, capsys):
     monkeypatch.setattr(cli_mod, "fetch_conversations",
                         lambda url, limit=None, **kw: CONVS)
     monkeypatch.setattr(cli_mod, "count_conversations", lambda url: len(CONVS))
+    monkeypatch.setattr(cli_mod, "fetch_autograder_runs",
+                        lambda url, convs: {})
+    monkeypatch.setattr(cli_mod, "fetch_traceback_flags",
+                        lambda url, convs: {})
     monkeypatch.setattr(cli_mod, "make_generate",
                         lambda api_key, **kw: make_no_coverage_fake_generate())
     monkeypatch.setattr(cli_mod, "save_schema", lambda schema, data_dir: None)

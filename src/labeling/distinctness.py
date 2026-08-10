@@ -4,6 +4,7 @@ heavily are one construct wearing two names — the report makes rider labels
 every run, the way the coverage report makes abstention visible. Pure
 computation over MessageLabels rows; no API calls, no snapshot mutation."""
 import itertools
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from src.labeling.draft import MessageLabels
@@ -12,6 +13,10 @@ from src.labeling.draft import MessageLabels
 # case (Confusion x Debugging Request, J=0.71 on the 2026-08-07 smoke
 # snapshot) is loud while ordinary correlated-but-distinct labels stay quiet.
 OVERLAP_JACCARD = 0.4
+
+# Fixed column order for the "by mode" section; any other mode value found
+# in the data is appended after these, alphabetically.
+_MODE_ORDER = ["tutor", "chatgpt", "unknown"]
 
 
 def _rationale_overlap(rows: list[MessageLabels], a: str, b: str) -> float:
@@ -41,6 +46,19 @@ def overlapping_pairs(rows: list[MessageLabels]
     return sorted(out, key=lambda t: -t[2])
 
 
+def mode_split(rows: list[MessageLabels]) -> dict[str, Counter]:
+    """Per-label positive-count breakdown by conversation mode (2026-08-09:
+    a label that fires almost exclusively in one mode may be measuring the
+    interface, not the behavior). Rows with no mode set (pre-mode
+    snapshots) count as "unknown"."""
+    out: dict[str, Counter] = defaultdict(Counter)
+    for r in rows:
+        for label, applied in r.labels.items():
+            if applied:
+                out[label][r.mode or "unknown"] += 1
+    return dict(out)
+
+
 def distinctness_report(rows: list[MessageLabels]) -> str:
     if not rows:
         return "Distinctness: no labeled rows."
@@ -60,6 +78,15 @@ def distinctness_report(rows: list[MessageLabels]) -> str:
     else:
         lines.append("  no overlapping pairs — labels are behaviorally "
                      "distinct on this corpus")
+    if any(r.mode for r in rows):
+        split = mode_split(rows)
+        lines.append("  == by mode ==")
+        for n_ in names:
+            counts = split.get(n_, Counter())
+            parts = [f"{m}={counts.get(m, 0)}" for m in _MODE_ORDER]
+            extra = sorted(m for m in counts if m not in _MODE_ORDER)
+            parts += [f"{m}={counts[m]}" for m in extra]
+            lines.append(f"    {n_}: {' '.join(parts)}")
     return "\n".join(lines)
 
 

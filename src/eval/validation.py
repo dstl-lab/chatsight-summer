@@ -140,6 +140,41 @@ def validation_table(audit: list[AuditRow], model: list[MessageLabels],
     return "\n".join(lines)
 
 
+def outcome_anchor(rows: list[MessageLabels], label: str,
+                   expected_pattern: str = "fail-then-ask") -> dict:
+    """Directional sanity check (2026-08-09 spec): a label like
+    answer-extraction should concentrate in fail->ask conversations more
+    than that pattern's base rate in the corpus. Violations FLAG the label
+    for human audit — never auto-relabeled (invariant 1)."""
+    positives = [r for r in rows if r.labels.get(label)]
+    in_pattern = sum(1 for r in positives
+                     if r.pre_pattern == expected_pattern)
+    baseline = (sum(1 for r in rows if r.pre_pattern == expected_pattern)
+                / len(rows)) if rows else 0.0
+    concentration = in_pattern / len(positives) if positives else 0.0
+    return {"label": label, "expected_pattern": expected_pattern,
+            "in_pattern": in_pattern, "total_positives": len(positives),
+            "concentration": concentration, "baseline": baseline}
+
+
+def anchor_report(rows: list[MessageLabels],
+                  anchors: dict[str, str]) -> str:
+    """One line per (label, expected_pattern) anchor. FLAG marks labels
+    whose positives concentrate below the pattern's corpus baseline — an
+    audit candidate, never an auto-relabel (invariant 1)."""
+    lines = ["== outcome anchors =="]
+    for label, pattern in sorted(anchors.items()):
+        a = outcome_anchor(rows, label, pattern)
+        flag = " FLAG: below baseline — audit candidate" \
+            if a["total_positives"] and a["concentration"] < a["baseline"] \
+            else ""
+        lines.append(
+            f"  {label}: {a['in_pattern']}/{a['total_positives']} positives "
+            f"in {pattern} ({a['concentration']:.0%} vs baseline "
+            f"{a['baseline']:.0%}){flag}")
+    return "\n".join(lines)
+
+
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(

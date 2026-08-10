@@ -16,7 +16,7 @@ from src.labeling.schema import LabelSchema
 def emit_snapshot(conversations: list[Conversation], labels: list[MessageLabels],
                   schema: LabelSchema, model: str, repo_sha: str, data_dir: Path,
                   excluded_conversations: int, profile: CourseProfile,
-                  profile2=None) -> Path:
+                  profile2=None, sequence_context: dict | None = None) -> Path:
     chash = classifier_hash(schema, model, profile, profile2=profile2)
     base_id = f"{date.today():%Y%m%d}-{schema.version_id}-{chash[:6]}"
     snapshots_dir = data_dir / "snapshots"
@@ -52,6 +52,12 @@ def emit_snapshot(conversations: list[Conversation], labels: list[MessageLabels]
             # (2026-08-07 memo); the artifact itself is git-tracked.
             "profile2_id": (profile2.profile_id
                             if profile2 is not None else None),
+            # sequence-context provenance (2026-08-09 memo): the autograder
+            # run / traceback fetch window used to derive sequence fields on
+            # the sampled messages, or {"enabled": False} when the run
+            # skipped that fetch (--no-sequence / sequence=False).
+            "sequence_context": (sequence_context if sequence_context
+                                 is not None else {"enabled": False}),
             "row_counts": {
                 "conversations": len(conversations),
                 "turns": sum(len(c.turns) for c in conversations),
