@@ -1,3 +1,5 @@
+import pytest
+
 from src.ingest.rawlog import Conversation, Turn
 from src.labeling.sampler import stratified_sample, WINDOW_TURNS
 
@@ -122,3 +124,73 @@ def test_latency_untimestamped_corpus_is_unknown_or_opening():
     sample = stratified_sample(CONVS, n=8, seed=7)
     assert all(m.latency_bucket in ("unknown", "conversation-opening")
                for m in sample)
+
+
+def _timed_conv_for_sequences(conv_id="seqconv") -> Conversation:
+    """A single-conversation fixture with real timestamps, used for sequence
+    field tests (CONVS's turns have no .at, per Task 1)."""
+    from datetime import datetime, timedelta, timezone
+    t0 = datetime(2026, 8, 7, 10, 0, tzinfo=timezone.utc)
+    turns = [
+        Turn(index=0, role="student", text="stuck on q1_1", student_index=0,
+             at=t0),
+        Turn(index=1, role="tutor", text="try this hint", at=t0 + timedelta(minutes=1)),
+    ]
+    return Conversation(conv_id=conv_id, chatlog_id=1, notebook=None,
+                        started_at=None, turns=turns)
+
+
+def _conv_with_modes(modes, conv_id="modes1") -> Conversation:
+    """Build a conversation with alternating student/tutor turns where
+    student turn i gets mode=modes[i] and consecutive timestamps."""
+    from datetime import datetime, timedelta, timezone
+    t0 = datetime(2026, 8, 7, 10, 0, tzinfo=timezone.utc)
+    turns = []
+    idx = 0
+    for i, mode in enumerate(modes):
+        turns.append(Turn(index=idx, role="student", text=f"s{i}",
+                          student_index=i, at=t0 + timedelta(minutes=2 * i),
+                          mode=mode))
+        idx += 1
+        turns.append(Turn(index=idx, role="tutor", text=f"t{i}",
+                          at=t0 + timedelta(minutes=2 * i + 1)))
+        idx += 1
+    return Conversation(conv_id=conv_id, chatlog_id=2, notebook=None,
+                        started_at=None, turns=turns)
+
+
+def test_sequence_fields_computed_when_runs_provided():
+    from datetime import timedelta
+    from src.ingest.sequences import AutograderRun
+    conv = _timed_conv_for_sequences()
+    t0 = conv.turns[0].at
+    runs = {conv.conv_id: [AutograderRun(at=t0 - timedelta(minutes=4),
+                                         grader_id="q1_1", success=False)]}
+    tb = {conv.conv_id: True}
+    sample = stratified_sample([conv], n=50, seed=0, runs=runs,
+                               traceback_flags=tb)
+    m = next(s for s in sample if s.conv_id == conv.conv_id)
+    assert m.pre_pattern == "fail-then-ask"
+    assert m.last_run_success is False and m.last_run_grader == "q1_1"
+    assert m.last_run_minutes == pytest.approx(4, abs=1)
+    assert m.snapshot_traceback is True
+    assert "/seq-fail" in m.stratum
+
+
+def test_sequence_fields_default_without_runs():
+    sample = stratified_sample(CONVS, n=10, seed=0)
+    assert all(m.pre_pattern == "" and not m.defected for m in sample)
+
+
+def test_defection_is_first_chatgpt_after_tutor_mode():
+    conv = _conv_with_modes(["tutor", "tutor", "chatgpt", "chatgpt"])
+    sample = stratified_sample([conv], n=20, seed=0, runs={}, traceback_flags={})
+    flags = {m.message_index: m.defected for m in sample}
+    modes = [t for t in conv.student_turns]
+    assert flags[modes[2].index] is True        # the switch turn
+    assert flags[modes[3].index] is False       # staying is not re-defecting
+    assert flags[modes[0].index] is False
+    # chatgpt-first conversations never defect
+    conv2 = _conv_with_modes(["chatgpt", "chatgpt"])
+    s2 = stratified_sample([conv2], n=20, seed=0, runs={}, traceback_flags={})
+    assert not any(m.defected for m in s2)
