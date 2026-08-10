@@ -54,8 +54,16 @@ SELECT payload->>'conversation_id' AS conv_id,
 FROM events
 WHERE event_type IN ('tutor_query', 'tutor_response')
 GROUP BY payload->>'conversation_id'
+{having}
 ORDER BY chatlog_id
 """
+
+# Date-window filter on conversation start (2026-08-10: needed to target the
+# autograder-covered window 2026-03-04..07-31; the earliest conversations
+# predate autograder logging, so an undated fetch under-serves sequence
+# context). HAVING because started_at is the aggregate MIN(created_at).
+_HAVING_WINDOW = ("HAVING MIN(created_at) >= :since"
+                  " AND MIN(created_at) < :until")
 
 _TURNS_SQL = """
 SELECT event_type, payload->>'question' AS question,
@@ -83,13 +91,22 @@ def count_conversations(ext_db_url: str) -> int:
 
 
 def fetch_conversations(ext_db_url: str, limit: int | None = None,
-                        on_progress: Callable[[int, int], None] | None = None
+                        on_progress: Callable[[int, int], None] | None = None,
+                        since: str | None = None, until: str | None = None
                         ) -> list[Conversation]:
+    """since/until (ISO dates, [since, until)) filter on conversation start;
+    both or neither — a half-open window keeps the fetch reproducible."""
+    if (since is None) != (until is None):
+        raise ValueError("since and until must be given together")
     engine = create_engine(ext_db_url)
-    sql = _CONV_SQL + (f"\nLIMIT {int(limit)}" if limit is not None else "")
+    having = _HAVING_WINDOW if since is not None else ""
+    sql = _CONV_SQL.format(having=having)
+    if limit is not None:
+        sql += f"\nLIMIT {int(limit)}"
+    params = ({"since": since, "until": until} if since is not None else {})
     out: list[Conversation] = []
     with engine.connect() as conn:
-        heads = conn.execute(text(sql)).mappings().all()
+        heads = conn.execute(text(sql), params).mappings().all()
         for i, h in enumerate(heads):
             rows = [tuple(r) for r in conn.execute(
                 text(_TURNS_SQL), {"conv_id": h["conv_id"]}

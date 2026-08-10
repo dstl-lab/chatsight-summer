@@ -66,3 +66,21 @@ def test_conversation_student_turns():
         turns=assemble_turns(ROWS),
     )
     assert [t.text for t in conv.student_turns] == ["how do I sort a table?", "it errored"]
+
+
+def test_fetch_conversations_window_args_must_pair():
+    import pytest
+
+    from src.ingest.rawlog import fetch_conversations
+    with pytest.raises(ValueError, match="together"):
+        fetch_conversations("postgresql://unused", since="2026-03-04",
+                            until=None)
+
+
+def test_conv_sql_window_renders_having():
+    from src.ingest.rawlog import _CONV_SQL, _HAVING_WINDOW
+    windowed = _CONV_SQL.format(having=_HAVING_WINDOW)
+    assert "HAVING MIN(created_at) >= :since" in windowed
+    assert windowed.index("HAVING") < windowed.index("ORDER BY")
+    plain = _CONV_SQL.format(having="")
+    assert "HAVING" not in plain
