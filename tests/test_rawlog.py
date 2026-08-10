@@ -9,12 +9,12 @@ def _ts(minute):
 
 
 ROWS = [
-    ("tutor_response", None, "orphan greeting", _ts(0)),  # before first query: dropped
-    ("tutor_query", "how do I sort a table?", None, _ts(1)),
-    ("tutor_response", None, "try .sort()", _ts(2)),
-    ("tutor_query", "it errored", None, _ts(5)),
-    ("tutor_query", "", None, _ts(6)),                    # empty: dropped
-    ("tutor_response", None, None, _ts(7)),               # null: dropped
+    ("tutor_response", None, "orphan greeting", _ts(0), None),  # before first query: dropped
+    ("tutor_query", "how do I sort a table?", None, _ts(1), "tutor"),
+    ("tutor_response", None, "try .sort()", _ts(2), None),
+    ("tutor_query", "it errored", None, _ts(5), "chatgpt"),
+    ("tutor_query", "", None, _ts(6), None),                    # empty: dropped
+    ("tutor_response", None, None, _ts(7), None),               # null: dropped
 ]
 
 
@@ -50,6 +50,14 @@ def test_count_conversations_sql_is_select_only():
     assert normalized.count("SELECT") == 1
     for forbidden in ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", ";"):
         assert forbidden not in normalized
+
+
+def test_student_turns_carry_mode():
+    rows = [("tutor_query", "q text", None, _ts(1), "chatgpt"),
+            ("tutor_response", None, "r text", _ts(2), None)]
+    turns = assemble_turns(rows)
+    assert turns[0].mode == "chatgpt"
+    assert turns[1].mode == ""            # tutor turns: no mode
 
 
 def test_conversation_student_turns():

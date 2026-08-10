@@ -19,6 +19,7 @@ grader_id inference from chat text or new instrumentation.
 """
 from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime
 
 import sqlalchemy as sa
 
@@ -123,6 +124,78 @@ def render_report(seqs: list[ConversationSequence]) -> str:
     for (p, o), v in sorted(pair.items()):
         lines.append(f"  {p:15s} -> {o:12s} {v:6d}  ({v / pre[p]:.0%} of {p})")
     return "\n".join(lines)
+
+
+@dataclass(frozen=True)
+class AutograderRun:
+    at: datetime
+    grader_id: str
+    success: bool
+
+
+_RUNS_SQL = """
+WITH convs AS (
+  SELECT payload->>'conversation_id' AS conv_id, user_email,
+         payload->>'notebook' AS notebook,
+         min(created_at) AS t0, max(created_at) AS t1
+  FROM events
+  WHERE event_type = 'tutor_query'
+    AND payload->>'conversation_id' = ANY(:conv_ids)
+  GROUP BY 1, 2, 3
+)
+SELECT c.conv_id, a.created_at, a.payload->>'grader_id',
+       a.payload->>'success'
+FROM convs c
+JOIN events a ON a.event_type = 'autograder_info'
+  AND a.user_email = c.user_email
+  AND a.payload->>'notebook' = c.notebook
+  AND a.created_at BETWEEN c.t0 - make_interval(mins => :before)
+                       AND c.t1 + make_interval(mins => :after)
+ORDER BY c.conv_id, a.created_at
+"""
+
+
+def fetch_autograder_runs(ext_db_url: str, conversations,
+                          before_min: int = BEFORE_MIN,
+                          after_min: int = OUTCOME_MIN
+                          ) -> dict[str, list[AutograderRun]]:
+    """Autograder runs bracketing each conversation. user_email is used
+    inside the SQL join only and never returned (rule 4)."""
+    conv_ids = [c.conv_id for c in conversations]
+    if not conv_ids:
+        return {}
+    eng = sa.create_engine(ext_db_url)
+    out: dict[str, list[AutograderRun]] = {}
+    with eng.connect() as c:
+        for cid, at, gid, success in c.execute(
+                sa.text(_RUNS_SQL), {"conv_ids": conv_ids,
+                                     "before": before_min,
+                                     "after": after_min}):
+            out.setdefault(cid, []).append(AutograderRun(
+                at=at, grader_id=gid or "", success=success == "true"))
+    return out
+
+
+_TRACEBACK_SQL = """
+SELECT payload->>'conversation_id',
+       payload->>'initial_notebook_json' LIKE '%Traceback%'
+FROM events
+WHERE event_type = 'tutor_notebook_info'
+  AND payload->>'initial_notebook_json' IS NOT NULL
+  AND payload->>'conversation_id' = ANY(:conv_ids)
+"""
+
+
+def fetch_traceback_flags(ext_db_url: str, conversations) -> dict[str, bool]:
+    """Whether the at-ask snapshot shows an unresolved traceback. The
+    LIKE runs server-side; notebook JSON never crosses the wire (rule 4)."""
+    conv_ids = [c.conv_id for c in conversations]
+    if not conv_ids:
+        return {}
+    eng = sa.create_engine(ext_db_url)
+    with eng.connect() as c:
+        return {cid: bool(flag) for cid, flag in
+                c.execute(sa.text(_TRACEBACK_SQL), {"conv_ids": conv_ids})}
 
 
 def main() -> None:

@@ -1,4 +1,13 @@
+from datetime import datetime
+
 from src.ingest.sequences import ConversationSequence, classify, render_report
+
+
+def test_autograder_run_ordering_contract():
+    from src.ingest.sequences import AutograderRun
+    r = AutograderRun(at=datetime(2026, 5, 1, 10, 0), grader_id="q1_1",
+                      success=False)
+    assert r.grader_id == "q1_1" and r.success is False
 
 
 def test_classify_covers_all_patterns():

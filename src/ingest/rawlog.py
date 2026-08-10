@@ -13,6 +13,7 @@ class Turn(BaseModel):
     text: str
     student_index: int | None = None
     at: datetime | None = None    # event created_at; None in old snapshots
+    mode: str = ""                # "tutor" / "chatgpt" for student turns; "" for tutor turns and old snapshots
 
 
 class Conversation(BaseModel):
@@ -28,15 +29,16 @@ class Conversation(BaseModel):
 
 
 def assemble_turns(rows: list[tuple[str, str | None, str | None,
-                                    datetime | None]]) -> list[Turn]:
+                                    datetime | None, str | None]]) -> list[Turn]:
     turns: list[Turn] = []
     student_idx = 0
     seen_query = False
-    for event_type, question, response, created_at in rows:
+    for event_type, question, response, created_at, mode in rows:
         if event_type == "tutor_query" and question:
             seen_query = True
             turns.append(Turn(index=len(turns), role="student", text=question,
-                              student_index=student_idx, at=created_at))
+                              student_index=student_idx, at=created_at,
+                              mode=mode or ""))
             student_idx += 1
         elif event_type == "tutor_response" and response and seen_query:
             turns.append(Turn(index=len(turns), role="tutor", text=response,
@@ -57,7 +59,8 @@ ORDER BY chatlog_id
 
 _TURNS_SQL = """
 SELECT event_type, payload->>'question' AS question,
-       payload->>'response' AS response, created_at
+       payload->>'response' AS response, created_at,
+       payload->>'mode' AS mode
 FROM events
 WHERE event_type IN ('tutor_query', 'tutor_response')
   AND payload->>'conversation_id' = :conv_id
