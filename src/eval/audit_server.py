@@ -63,28 +63,24 @@ auto-advance. ← → to revisit. Model labels are hidden by design.</p>
 </div>
 <script>
 const D = __PAYLOAD__;
-// passes: one per label (each with its OWN message-key list), then a final
-// "no label fits" pass over the union of sampled messages
-const PASSES = D.labels.map(l => ({kind: "label", l, keys: l.keys}))
-  .concat([{kind: "nofit", keys: D.nofit_keys,
-    l: {name: "no label fits", category: "instructor",
-    description: "the message shows a student act NONE of the labels capture",
-    positive: "an act your earlier passes had no label for",
-    negative: "anything already covered by a label you said yes to"}}]);
+// passes: one per label (each with its OWN message-key list). There is NO
+// final "no label fits" pass: asking it would make the annotator recall
+// their own earlier answers. It is DERIVED at submit time — a message
+// whose every judged label got "no" is a no-label-fits message.
+const PASSES = D.labels.map(l => ({kind: "label", l, keys: l.keys}));
 let p = 0, i = 0;
-const ans = {};   // key -> {labels: {...only audited...}, no_label_fits}
+const ans = {};   // key -> {labels: {...only audited...}}
 function ansFor(key){
-  if (!ans[key]) ans[key] = {labels: {}, no_label_fits: false};
+  if (!ans[key]) ans[key] = {labels: {}};
   return ans[key];
 }
 for (const pass of PASSES)
   for (const k of pass.keys)
-    if (pass.kind === "label") ansFor(k).labels[pass.l.name] = false;
+    ansFor(k).labels[pass.l.name] = false;
 document.getElementById("ptotal").textContent = PASSES.length;
 function setAnswer(v){
   const key = PASSES[p].keys[i];
-  if (PASSES[p].kind === "nofit") ansFor(key).no_label_fits = v;
-  else ansFor(key).labels[PASSES[p].l.name] = v;
+  ansFor(key).labels[PASSES[p].l.name] = v;
   advance();
 }
 function advance(){
@@ -107,9 +103,7 @@ function render(){
   s.textContent = pass.l.description + " — applies: " + pass.l.positive +
     " | not: " + pass.l.negative;
   const cur = document.createElement("small");
-  const a = ansFor(pass.keys[i]);
-  const val = pass.kind === "nofit" ? a.no_label_fits
-    : a.labels[pass.l.name];
+  const val = ansFor(pass.keys[i]).labels[pass.l.name];
   cur.textContent = "current answer: " + (val ? "YES" : "no");
   card.append(b, s, cur); cl.append(card);
   const ctx = document.getElementById("ctx"); ctx.replaceChildren();
@@ -140,8 +134,11 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowRight") advance();
 });
 document.getElementById("save").onclick = async () => {
+  // no_label_fits derived: every label judged on this message got "no"
   const body = Object.entries(ans).map(([key, a]) =>
-    ({key: key.split(":").map(Number), ...a}));
+    ({key: key.split(":").map(Number), labels: a.labels,
+      no_label_fits: Object.values(a.labels).length > 0 &&
+        Object.values(a.labels).every(v => !v)}));
   const r = await fetch("/save", {method:"POST",
     headers:{"content-type":"application/json"}, body: JSON.stringify(body)});
   if (r.ok) document.getElementById("done").style.display = "inline";
@@ -229,7 +226,6 @@ def build_payload(snapshot_dir: Path, n: int, seed: int,
                     "category": cats[l.name],
                     "keys": [_ks(k) for k in keys_by_label[l.name]]}
                    for l in schema.labels if l.name in keys_by_label],
-        "nofit_keys": [_ks(k) for k in union],
         "msgs": {_ks(k): {
             "context": [{"role": t.role, "text": t.text}
                         for t in by_key[k].context],
@@ -281,8 +277,10 @@ def main() -> None:
             data = json.loads(self.rfile.read(n_))
             out.parent.mkdir(parents=True, exist_ok=True)
             # strata recorded for stratum-aware scoring; they were never
-            # shown to the annotator (invariant 8)
-            out.write_text(json.dumps({"rows": data, "strata": strata},
+            # shown to the annotator (invariant 8). nofit vintage marker:
+            # derived client-side as all-judged-labels-no, not asked.
+            out.write_text(json.dumps({"rows": data, "strata": strata,
+                                       "nofit": "derived-all-no"},
                                       indent=2))
             self.send_response(200)
             self.end_headers()
@@ -291,8 +289,7 @@ def main() -> None:
         def log_message(self, *a):
             pass
 
-    taps = sum(len(l["keys"]) for l in payload["labels"]) \
-        + len(payload["nofit_keys"])
+    taps = sum(len(l["keys"]) for l in payload["labels"])
     HTTPServer.allow_reuse_address = True
     try:
         server = HTTPServer(("127.0.0.1", args.port), H)
@@ -304,9 +301,10 @@ def main() -> None:
                      f"--port.")
         raise
     print(f"blind audit on http://127.0.0.1:{args.port} — "
-          f"{len(payload['labels']) + 1} passes, "
+          f"{len(payload['labels'])} passes, "
           f"{len(payload['msgs'])} distinct messages, "
-          f"{taps} total judgments", flush=True)
+          f"{taps} total judgments (no-label-fits is derived, not asked)",
+          flush=True)
     server.serve_forever()
 
 

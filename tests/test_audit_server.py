@@ -43,9 +43,10 @@ def test_per_label_payload_is_blind_and_sized(tmp_path):
     assert "model-positive" not in json.dumps(payload)
     # ...but are recorded per label for scoring
     assert "model-positive" in json.dumps(strata["x"])
-    # nofit pass covers the union of sampled keys
+    # no nofit pass in the payload: no_label_fits is derived at submit
+    # time (all judged labels "no"), never asked
+    assert "nofit_keys" not in payload
     union = {k for l in payload["labels"] for k in l["keys"]}
-    assert set(payload["nofit_keys"]) == union
     assert set(payload["msgs"]) == union
 
 

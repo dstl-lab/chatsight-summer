@@ -44,8 +44,8 @@ machine — the server binds localhost only and makes no network calls.
   conversation shown above/below it and the "time since the tutor's last
   message" — the act, not just the surface words. A bare "1.6" can be an
   answer request; a pasted error can be a help request.
-- The final pass is **"no label fits"**: press `y` only if the message
-  shows a student act that none of the labels captured.
+- There is no separate "no label fits" question: if you answer `n` on
+  every label for a message, that is recorded automatically.
 - There are no model answers on this page by design — do not ask what "the
   AI said" for a message, and don't discuss messages with anyone who has
   seen model labels until after you submit. Independent judgment is the
