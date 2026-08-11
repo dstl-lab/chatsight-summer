@@ -49,6 +49,23 @@ behavioral rewrite of Direct Solution Request — so next round's
 per-label deltas are attributable to the cut alone, not to wording
 drift. One change per vintage.
 
+## Relabel result (same March–July draw, snapshot 20260811-1d1e79d39fda-7bc759)
+
+Schema `1d1e79d39fda` (8 labels), classifier `7bc759295852`, 235 rows —
+corpus-controlled against b975 (identical 52-conversation draw):
+
+- **Zero distinctness flags** — first vintage with none. Retiring the
+  catch-all resolved both standing overlaps without a merge.
+- **Abstention 3% → 10%**, as predicted. Label prevalences barely moved
+  (Conceptual Clarification 48→44%, Debugging 45→43%, Seeking Validation
+  37→37%): Code Implementation Query's 56% mass was almost entirely
+  co-fire redundancy, not unique coverage. The 10% no-fit is the honest
+  residual the catch-all had been absorbing.
+- Debugging Request outcome anchor holds (35% of positives in
+  fail-then-ask vs 21% baseline); Direct Solution Request sits at
+  baseline (no flag, but nothing earned either — consistent with its
+  watch status).
+
 ## Honest limits
 
 - The cut is argued from n=8 joint pairs per label; the per-label
