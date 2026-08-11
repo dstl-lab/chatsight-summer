@@ -128,20 +128,6 @@
   ],
   "affect_labels": [
     {
-      "name": "Frustration",
-      "kind": "behavioral",
-      "description": "Student expresses strong negative feelings, self-doubt, or exasperation about their performance or inability to solve a problem.",
-      "positive_criteria": "Self-deprecating statements about their own coding ability; exasperation that repeated attempts still fail; declarations of being stuck or lost that carry personal distress.",
-      "negative_criteria": "Does not contain direct requests for information only; expresses personal distress beyond simple confusion."
-    },
-    {
-      "name": "Confusion",
-      "kind": "behavioral",
-      "description": "Student explicitly states they don't understand a concept, explanation, or result. Not just implicitly asking for help.",
-      "positive_criteria": "Message explicitly shows non-understanding: \"I don't understand\", \"I don't follow\", \"what does X mean\", \"makes no sense\", or surprise *after* explanation.",
-      "negative_criteria": "NOT ordinary questions/help requests. No \"confusion\" for asking how, fixing, errors, or solutions. Frustration without explicit non-understanding."
-    },
-    {
       "name": "Seeking Validation",
       "kind": "behavioral",
       "description": "Student seeks confirmation or approval of their code, approach, or understanding.",
@@ -163,13 +149,6 @@
       "description": "Student asks for an explanation of a concept, method, or the difference between related items.",
       "positive_criteria": "Questions like 'what is X?', 'what does Y mean?', 'what's the difference between A, B, and C?', 'explain what's wrong'.",
       "negative_criteria": "Does not involve pasted code snippets that are clearly attempting a specific task."
-    },
-    {
-      "name": "Code Implementation Query",
-      "kind": "behavioral",
-      "description": "Student asks how to code a specific task or complete an assignment.",
-      "positive_criteria": "Phrases like 'how to do X', 'how to calculate Y', 'how to make Z correct', 'how should I go about X'.",
-      "negative_criteria": "Does not include existing failing code or explicitly request a full solution."
     },
     {
       "name": "Alternative Method Query",
