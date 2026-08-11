@@ -29,6 +29,23 @@ def test_llm_matching_pool_passes():
     assert all(a["advantage_prob"] == 1.0 for a in res["per_annotator"])
 
 
+def test_unjudged_labels_never_scored():
+    # Per-label sampled audit: humans judged only "x" on each key. The model
+    # also asserts "y" (never audited). Model matches every judged "x", so
+    # it must pass with full advantage — before the judged-labels fix, the
+    # unaudited "y" positives were graded as disagreements while the humans'
+    # default-False slots agreed trivially, and the model lost every item.
+    truth = [True, False, True, False]
+    ann1, ann2 = _ann(truth), _ann(truth)
+    model = [MessageLabels(chatlog_id=1, message_index=i,
+                           labels={"x": v, "y": True},
+                           rationales={"x": "r", "y": "r"})
+             for i, v in enumerate(truth)]
+    res = alt_test([ann1, ann2], model)
+    assert res["passes"] is True
+    assert all(a["advantage_prob"] == 1.0 for a in res["per_annotator"])
+
+
 def test_llm_contradicting_pool_fails():
     truth = [True, False, True, False, True, False]
     ann1, ann2 = _ann(truth), _ann(truth)

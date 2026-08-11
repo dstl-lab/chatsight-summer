@@ -30,12 +30,19 @@ def alt_test(annotators: list[list[AuditRow]], model: list[MessageLabels],
             "alt-test needs >= 2 independent annotators; with one there is "
             "no annotator pool to measure alignment against (run the "
             "second blind audit first)")
-    names = sorted({k for rows in annotators for r in rows for k in r.labels})
     model_by_key = {(r.chatlog_id, r.message_index): r.labels for r in model}
     by_ann = [{r.key: r.labels for r in rows} for rows in annotators]
-    keys = set.intersection(*(set(m) for m in by_ann)) & set(model_by_key)
+    # The audit is per-label sampled: each key carries judgments for only the
+    # labels whose passes drew it. Score agreement over the labels every
+    # annotator actually judged on that key — scoring the full schema would
+    # let the humans' unjudged-default-False slots agree trivially while the
+    # model is graded on labels nobody audited.
+    judged = {key: sorted(set.intersection(*(set(m[key]) for m in by_ann)))
+              for key in set.intersection(*(set(m) for m in by_ann))}
+    keys = {k for k, names in judged.items() if names} & set(model_by_key)
     if not keys:
-        raise ValueError("no common audited keys across annotators + model")
+        raise ValueError("no commonly judged audited keys across annotators "
+                         "+ model")
 
     wins = []
     per_annotator = []
@@ -44,9 +51,9 @@ def alt_test(annotators: list[list[AuditRow]], model: list[MessageLabels],
         advantage = 0
         for key in keys:
             pool = [o[key] for o in others]
-            llm_score = sum(_agreement(model_by_key[key], p, names)
+            llm_score = sum(_agreement(model_by_key[key], p, judged[key])
                             for p in pool) / len(pool)
-            human_score = sum(_agreement(ann_j[key], p, names)
+            human_score = sum(_agreement(ann_j[key], p, judged[key])
                               for p in pool) / len(pool)
             advantage += (llm_score >= human_score)
         rho = advantage / len(keys)
