@@ -10,10 +10,13 @@ is everything you need for this round.
 1. Clone/pull this repo on branch `main`; run `uv sync` in the repo root
    (needs [uv](https://docs.astral.sh/uv/) and Python installed).
 2. Get the snapshot folder **`20260810-b975dcfde38c-927c22/`** from
-   Minchan **in person — AirDrop or USB, never email/Slack/cloud**. It
-   contains real student conversations (IRB-covered); you must be on the
-   course's IRB protocol to handle it. Put it at
-   `data/snapshots/20260810-b975dcfde38c-927c22/` inside the repo.
+   Minchan. It contains real student conversations, so it can't go over
+   email/Slack/drive — instead Minchan runs
+   `uvx --from magic-wormhole wormhole send <folder>` and tells you the
+   code; you run `uvx --from magic-wormhole wormhole receive` and enter
+   it (direct encrypted transfer, nothing stored on any server). Put the
+   folder at `data/snapshots/20260810-b975dcfde38c-927c22/` inside the
+   repo, and delete it when you're done.
 
 ## Run it
 
