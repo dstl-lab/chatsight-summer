@@ -48,6 +48,28 @@ def test_label_samples_strata_and_shuffle():
     assert s == build_label_audit_samples(rows, ["x", "y"], 8, seed=3)
 
 
+def test_pos_fraction_tilts_budget_and_caps_at_available():
+    import pytest
+
+    from src.eval.audit_sample import build_label_audit_samples
+    rows = ([MessageLabels(chatlog_id=1, message_index=i,
+                           labels={"x": i < 12, "z": i < 2},
+                           rationales={}, no_label_fits=False)
+             for i in range(30)])
+    s = build_label_audit_samples(rows, ["x", "z"], n_per_label=10, seed=3,
+                                  pos_fraction=0.8)
+    xs = list(s["x"]["strata"].values())
+    assert xs.count("model-positive") == 8
+    assert len(s["x"]["keys"]) == 10
+    # z has only 2 positives: negatives fill the rest of the budget
+    zs = list(s["z"]["strata"].values())
+    assert zs.count("model-positive") == 2
+    assert len(s["z"]["keys"]) == 10
+    for bad in (0.0, 1.0, -0.2):
+        with pytest.raises(ValueError, match="pos_fraction"):
+            build_label_audit_samples(rows, ["x"], 10, 3, pos_fraction=bad)
+
+
 def test_sparse_audit_scoring_skips_unaudited_labels():
     from src.eval.validation import AuditRow, confusion
     model = [MessageLabels(chatlog_id=1, message_index=i,

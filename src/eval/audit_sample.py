@@ -52,15 +52,23 @@ def build_audit_sample(rows: list[MessageLabels], n: int, seed: int,
 
 def build_label_audit_samples(rows: list[MessageLabels], labels: list[str],
                               n_per_label: int, seed: int,
-                              exclude: set[Key] = frozenset()) -> dict:
+                              exclude: set[Key] = frozenset(),
+                              pos_fraction: float = 0.5) -> dict:
     """Per-label audit samples (verification-budget design): for each label,
-    up to half the budget goes to model-POSITIVE messages (precision
-    evidence), the rest to model-negatives with abstained messages first
-    (recall probes — abstentions are where missed positives hide), then
-    random negatives. Strata are for SCORING ONLY and must never reach the
+    pos_fraction of the budget goes to model-POSITIVE messages (precision
+    evidence; 0.5 default — raise it for support-targeted rounds where the
+    admission threshold needs positive support >= 25), the rest to
+    model-negatives with abstained messages first (recall probes —
+    abstentions are where missed positives hide), then random negatives.
+    When a label has fewer positives than its share, negatives fill the
+    remainder. Strata are for SCORING ONLY and must never reach the
     annotator's page (showing 'model-positive' would anchor, invariant 8);
     each label's key list is independently shuffled so order leaks nothing.
     Returns {label: {"keys": [...], "strata": {key: stratum}}}."""
+    if not 0 < pos_fraction < 1:
+        raise ValueError(f"pos_fraction must be in (0, 1), got "
+                         f"{pos_fraction}: an all-positive audit measures "
+                         "no recall and an all-negative one no precision")
     pool = {(r.chatlog_id, r.message_index): r for r in rows
             if (r.chatlog_id, r.message_index) not in exclude}
     out = {}
@@ -69,7 +77,8 @@ def build_label_audit_samples(rows: list[MessageLabels], labels: list[str],
         strata: dict[Key, str] = {}
         pos = sorted(k for k, r in pool.items() if r.labels.get(label))
         rng.shuffle(pos)
-        for k in pos[:max(1, n_per_label // 2) if pos else 0]:
+        for k in pos[:max(1, int(n_per_label * pos_fraction))
+                     if pos else 0]:
             strata[k] = "model-positive"
         neg_abst = sorted(k for k, r in pool.items()
                           if not r.labels.get(label) and r.no_label_fits

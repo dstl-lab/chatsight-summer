@@ -60,6 +60,19 @@ def test_label_subset_and_legacy_mode(tmp_path):
     assert "_message" in strata
 
 
+def test_exclude_audit_drops_prior_round_keys(tmp_path):
+    snap = _snapshot(tmp_path)
+    prior = tmp_path / "human-labels-prior.json"
+    prior.write_text(json.dumps(
+        {"rows": [{"key": [1, 2 * i], "labels": {"x": True}}
+                  for i in range(5)]}))
+    payload, _ = build_payload(snap, n=25, seed=0, n_per_label=8,
+                               exclude_audits=[prior])
+    excluded = {f"1:{2 * i}" for i in range(5)}
+    for label in payload["labels"]:
+        assert not excluded & set(label["keys"])
+
+
 def test_page_autosaves_and_resumes():
     from src.eval.audit_server import PAGE
     assert '"/draft"' in PAGE          # every answer POSTs a draft
