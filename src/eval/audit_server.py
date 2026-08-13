@@ -249,7 +249,9 @@ def build_payload(snapshot_dir: Path, n: int, seed: int,
                   exclude_review_sample_size: int | None = None,
                   profile_path: Path | None = None,
                   n_per_label: int | None = None,
-                  only_labels: list[str] | None = None
+                  only_labels: list[str] | None = None,
+                  pos_fraction: float = 0.5,
+                  exclude_audits: list[Path] | None = None
                   ) -> tuple[dict, dict]:
     """Returns (page_payload, strata). Strata stay server-side: they encode
     model verdicts (model-positive etc.) and must never reach the annotator
@@ -264,13 +266,19 @@ def build_payload(snapshot_dir: Path, n: int, seed: int,
     if exclude_review_sample_size:
         exclude = {(m.chatlog_id, m.message_index) for m in stratified_sample(
             conversations, n=exclude_review_sample_size, seed=seed)}
+    for audit_path in exclude_audits or []:
+        # Prior-round audits are anchored for their annotators: the
+        # post-submit reveal showed model verdicts (invariant 8).
+        prior = json.loads(Path(audit_path).read_text())
+        exclude |= {tuple(r["key"]) for r in prior["rows"]}
     names = [l.name for l in schema.labels
              if only_labels is None or l.name in only_labels]
 
     if n_per_label is not None:
         from src.eval.audit_sample import build_label_audit_samples
         per = build_label_audit_samples(rows, names, n_per_label, seed,
-                                        exclude=exclude)
+                                        exclude=exclude,
+                                        pos_fraction=pos_fraction)
         keys_by_label = {n_: per[n_]["keys"] for n_ in names}
         strata = {n_: {_ks(k): v for k, v in per[n_]["strata"].items()}
                   for n_ in names}
@@ -325,6 +333,14 @@ def main() -> None:
                              "budget mode) instead of one shared sample")
     parser.add_argument("--labels", default=None,
                         help="comma-separated label subset to audit")
+    parser.add_argument("--pos-fraction", type=float, default=0.5,
+                        help="fraction of each label's budget spent on "
+                             "model-positives (support-targeted rounds "
+                             "raise this; requires --n-per-label)")
+    parser.add_argument("--exclude-audit", action="append", default=[],
+                        help="prior-round audit JSON whose messages are "
+                             "anchored (reveal showed model verdicts); "
+                             "repeatable")
     args = parser.parse_args()
 
     snap = Path(args.snapshot_dir)
@@ -332,7 +348,9 @@ def main() -> None:
         snap, args.n, args.seed, args.exclude_review_sample,
         Path(args.profile) if args.profile else None,
         n_per_label=args.n_per_label,
-        only_labels=args.labels.split(",") if args.labels else None)
+        only_labels=args.labels.split(",") if args.labels else None,
+        pos_fraction=args.pos_fraction,
+        exclude_audits=[Path(p) for p in args.exclude_audit])
     out = (snap.parent.parent / "audit" / snap.name /
            f"human-labels-{args.annotator}.json")
 
