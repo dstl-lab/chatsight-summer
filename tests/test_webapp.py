@@ -53,6 +53,7 @@ def test_start_reaches_review_with_schema_sample_provenance(tmp_path):
     assert s["schema"]["intent"] == "what confuses students"
     assert len(s["sample"]) == 4
     assert all("stratum" in m and "text" in m for m in s["sample"])
+    assert all("selected_by" in m for m in s["sample"])
     assert s["provenance"] == {"fetched": 4, "total": len(CONVS) + 3,
                                "excluded": len(CONVS) + 3 - 4}
 

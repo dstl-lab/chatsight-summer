@@ -1,14 +1,15 @@
-"""Stratified sampling for instructor review (CLAUDE.md invariant 9: never a
-plain random pull).
+"""Stratified sampling for instructor review (CLAUDE.md invariant 9).
 
-v0 strata are structural only: conversation-length tercile x student-turn
-position (early/late). Upgrade path: once a first labeled pass exists, replace
-with model-uncertainty and embedding-diversity strata so boundary and rare
-cases surface."""
+The review sample is deliberately composed, never a plain random pull. It
+mixes structural coverage, text-shape boundary cases, rare sequence signals,
+and deterministic diversity proxies. True model-confidence and embedding
+strata can plug in later once those signals exist upstream.
+"""
 import random
+import re
 from collections import defaultdict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.ingest.rawlog import Conversation, Turn
 from src.ingest.sequences import AutograderRun
@@ -63,6 +64,7 @@ class SampledMessage(BaseModel):
     last_run_success: bool | None = None
     snapshot_traceback: bool = False
     seq_granularity: str = ""
+    selected_by: list[str] = Field(default_factory=list)
 
 
 def _length_tercile(conversations: list[Conversation]) -> dict[str, str]:
@@ -146,13 +148,145 @@ def _defection_indexes(conv: Conversation) -> set[int]:
     return out
 
 
+_SHORT_BOUNDARY = {
+    "?", "??", "yes", "no", "idk", "ok", "okay", "nvm", "help", "why",
+}
+_ANSWER_EXTRACTION_RE = re.compile(
+    r"\b(just|give|tell|show|what'?s|what is|answer|solution|solve)\b",
+    re.IGNORECASE)
+_ERROR_RE = re.compile(
+    r"\b(traceback|error|exception|failed|failure|syntaxerror|nameerror|"
+    r"indexerror|keyerror|typeerror|valueerror|assertionerror)\b",
+    re.IGNORECASE)
+_CODE_RE = re.compile(
+    r"(```|\bdef\b|\bclass\b|\bfor\b.+:|\bwhile\b.+:|==|!=|<=|>=|"
+    r"\breturn\b|print\(|\w+\s*=)")
+
+
+def _text_shape_reasons(text: str) -> list[str]:
+    stripped = text.strip()
+    lowered = stripped.lower()
+    reasons = []
+    if lowered in _SHORT_BOUNDARY or re.fullmatch(r"[\d.]+", lowered):
+        reasons.append("boundary-short-ambiguous")
+    if _ANSWER_EXTRACTION_RE.search(stripped):
+        reasons.append("boundary-answer-extraction")
+    if _ERROR_RE.search(stripped):
+        reasons.append("boundary-error")
+    if "\n" in stripped or _CODE_RE.search(stripped):
+        reasons.append("boundary-code-or-paste")
+    if extract_question_ref(stripped):
+        reasons.append("boundary-question-ref")
+    return reasons
+
+
+def _sequence_reasons(message: SampledMessage) -> list[str]:
+    reasons = []
+    if message.defected:
+        reasons.append("rare-defection")
+    if message.snapshot_traceback:
+        reasons.append("rare-traceback")
+    if message.pre_pattern == "fail-then-ask":
+        reasons.append("rare-fail-then-ask")
+    if message.pre_pattern == "ask-first":
+        reasons.append("rare-ask-first")
+    if message.latency_bucket in {"delayed", "returned"}:
+        reasons.append(f"rare-latency-{message.latency_bucket}")
+    return reasons
+
+
+def _length_bucket(text: str) -> str:
+    words = len(text.split())
+    if words <= 3:
+        return "very-short"
+    if words <= 15:
+        return "short"
+    if words <= 60:
+        return "medium"
+    return "long"
+
+
+def _diversity_key(message: SampledMessage) -> str:
+    shape = "question" if "?" in message.text else "statement"
+    if any(r in message.selected_by for r in
+           ("boundary-error", "boundary-code-or-paste")):
+        shape = "technical"
+    ref = message.question_ref or "no-ref"
+    length = _length_bucket(message.text)
+    return f"{message.stratum}|{message.latency_bucket}|{length}|{shape}|{ref}"
+
+
+def _bucket_round_robin(buckets: dict[str, list[SampledMessage]],
+                        rng: random.Random) -> list[SampledMessage]:
+    for bucket in buckets.values():
+        rng.shuffle(bucket)
+    out = []
+    order = sorted(buckets)
+    while any(buckets[s] for s in order):
+        for s in order:
+            if buckets[s]:
+                out.append(buckets[s].pop())
+    return out
+
+
+def _mark_selected(message: SampledMessage, reason: str) -> SampledMessage:
+    if reason not in message.selected_by:
+        message.selected_by.append(reason)
+    return message
+
+
+def _take_unique(candidates: list[SampledMessage], out: list[SampledMessage],
+                 seen: set[tuple[int, int]], n: int, reason: str) -> None:
+    for message in candidates:
+        if len(out) >= n:
+            return
+        key = (message.chatlog_id, message.message_index)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(_mark_selected(message, reason))
+
+
+def _compose_sample(candidates: list[SampledMessage], n: int,
+                    rng: random.Random) -> list[SampledMessage]:
+    boundary: dict[str, list[SampledMessage]] = defaultdict(list)
+    rare: dict[str, list[SampledMessage]] = defaultdict(list)
+    diverse: dict[str, list[SampledMessage]] = defaultdict(list)
+    structural: dict[str, list[SampledMessage]] = defaultdict(list)
+
+    for message in candidates:
+        for reason in message.selected_by:
+            if reason.startswith("boundary-"):
+                boundary[reason].append(message)
+            if reason.startswith("rare-"):
+                rare[reason].append(message)
+        diverse[_diversity_key(message)].append(message)
+        structural[message.stratum].append(message)
+
+    boundary_budget = max(1, n // 4)
+    rare_budget = max(1, n // 4)
+    diverse_budget = max(1, n // 4)
+    out: list[SampledMessage] = []
+    seen: set[tuple[int, int]] = set()
+
+    _take_unique(_bucket_round_robin(boundary, rng), out, seen,
+                 min(n, boundary_budget), "bucket-boundary")
+    _take_unique(_bucket_round_robin(rare, rng), out, seen,
+                 min(n, len(out) + rare_budget), "bucket-rare")
+    _take_unique(_bucket_round_robin(diverse, rng), out, seen,
+                 min(n, len(out) + diverse_budget), "bucket-diverse")
+    _take_unique(_bucket_round_robin(structural, rng), out, seen, n,
+                 "bucket-structural-fill")
+    return out
+
+
 def stratified_sample(conversations: list[Conversation], n: int,
                       seed: int,
                       runs: dict[str, list[AutograderRun]] | None = None,
                       traceback_flags: dict[str, bool] | None = None
                       ) -> list[SampledMessage]:
     tercile = _length_tercile(conversations)
-    strata: dict[str, list[SampledMessage]] = defaultdict(list)
+    candidates: list[SampledMessage] = []
     for conv in conversations:
         n_student = len(conv.student_turns)
         defection_idx = _defection_indexes(conv) if runs is not None else set()
@@ -171,20 +305,17 @@ def stratified_sample(conversations: list[Conversation], n: int,
             elif defected:
                 suffix = "/seq-defect"
             stratum = base_stratum + suffix
-            strata[stratum].append(SampledMessage(
+            message = SampledMessage(
                 chatlog_id=conv.chatlog_id, conv_id=conv.conv_id,
                 message_index=turn.index, text=turn.text,
                 context=window, context_after=after, stratum=stratum,
                 latency_seconds=seconds, latency_bucket=bucket,
                 defected=defected, **seq,
-            ))
+            )
+            message.selected_by = [
+                *_text_shape_reasons(turn.text),
+                *_sequence_reasons(message),
+            ]
+            candidates.append(message)
     rng = random.Random(seed)
-    for bucket in strata.values():
-        rng.shuffle(bucket)
-    out: list[SampledMessage] = []
-    order = sorted(strata)
-    while len(out) < n and any(strata[s] for s in order):
-        for s in order:
-            if strata[s] and len(out) < n:
-                out.append(strata[s].pop())
-    return out
+    return _compose_sample(candidates, n, rng)

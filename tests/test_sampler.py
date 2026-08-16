@@ -45,6 +45,49 @@ def test_no_duplicate_messages():
     assert len(keys) == len(set(keys))
 
 
+def test_composed_sample_prioritizes_boundary_cases_and_records_reasons():
+    conv = _conv_brief([
+        ("student", "normal setup"), ("tutor", "hint"),
+        ("student", "?"), ("tutor", "more"),
+        ("student", "can you just give me the answer"), ("tutor", "no"),
+        ("student", "Traceback: NameError: x is not defined"),
+        ("tutor", "check the variable"),
+        ("student", "for i in range(3):\n    print(i)"),
+        ("tutor", "ok"),
+    ], conv_id="boundary", chatlog_id=101)
+
+    sample = stratified_sample([conv], n=4, seed=0)
+
+    assert any("bucket-boundary" in m.selected_by for m in sample)
+    reasons = {reason for m in sample for reason in m.selected_by}
+    assert "boundary-short-ambiguous" in reasons
+    assert reasons & {
+        "boundary-answer-extraction",
+        "boundary-error",
+        "boundary-code-or-paste",
+    }
+
+
+def test_composed_sample_prioritizes_rare_sequence_cases():
+    conv = _conv_with_modes(["tutor", "chatgpt", "chatgpt"])
+
+    sample = stratified_sample([conv], n=2, seed=0, runs={},
+                               traceback_flags={})
+
+    assert any(m.defected for m in sample)
+    defected = next(m for m in sample if m.defected)
+    assert "rare-defection" in defected.selected_by
+    assert "bucket-rare" in defected.selected_by
+
+
+def test_selected_reasons_are_deterministic():
+    s1 = stratified_sample(CONVS, n=8, seed=7)
+    s2 = stratified_sample(CONVS, n=8, seed=7)
+
+    assert [(m.conv_id, m.message_index, m.selected_by) for m in s1] == \
+           [(m.conv_id, m.message_index, m.selected_by) for m in s2]
+
+
 def _conv_brief(texts_roles, conv_id="c1", chatlog_id=1) -> Conversation:
     turns, si = [], 0
     for i, (role, text) in enumerate(texts_roles):

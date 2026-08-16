@@ -518,6 +518,7 @@ class LoopSession:
                     applied = [k for k, v in r.labels.items() if v] if r else []
                     sample.append({
                         "stratum": m.stratum, "text": m.text, "labels": applied,
+                        "selected_by": list(m.selected_by),
                         "rationales": {k: r.rationales.get(k, "")
                                        for k in applied} if r else {},
                         "evidence": {k: r.evidence.get(k, "")
