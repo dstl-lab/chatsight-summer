@@ -26,6 +26,7 @@ dev = [
 [project.scripts]
 label-loop = "src.labeling.cli:main"
 label-loop-web = "src.labeling.webapp:main"
+profile-corpus = "src.labeling.profile_report:main"
 
 [build-system]
 requires = ["hatchling"]
