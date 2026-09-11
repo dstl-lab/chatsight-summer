@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-11 | `2026-09-11-grader-observation-gate.md` — bind grader evidence to a requested check and code/environment state | Offline gate implemented; 288 tests pass; executor and student action policy remain unimplemented |
 | 2026-09-11 | `2026-09-11-environment-conditioned-continuation.md` — supplied grader result versus student communication | Four valid draws after specific approval; both unknown-state replies assert unsupported outcomes; state tracking remains a blocker |
 | 2026-09-11 | `2026-09-11-autograder-format-grounding.md` — distinguish environment output from student reporting | Logged all-pass versus subtest format verified; deployed notebook HTML remains unverified |
 | 2026-09-11 | `2026-09-11-communication-format-comparison.md` — compare communication choice and student formatting | 19 valid new draws; continuity 7 both plausible; continuity 1 redirected to verified grader format |
