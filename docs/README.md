@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-11 | `2026-09-11-student-action-choice-diagnostic.md` — probe message/no-reply/check selection with and without a supplied check option | Four requests prepared; 358 pins verify; automatic approval review rejected sending pending specific permission; zero calls |
 | 2026-09-11 | `2026-09-11-student-action-flow.md` — select a message, no-reply or a check of supplied current code | Offline routing implemented; 296 tests pass; model action choices and outcome grounding remain unvalidated |
 | 2026-09-11 | `2026-09-11-grader-observation-gate.md` — bind grader evidence to a requested check and code/environment state | Offline gate implemented; action selection added in the subsequent memo; executor remains unimplemented |
 | 2026-09-11 | `2026-09-11-environment-conditioned-continuation.md` — supplied grader result versus student communication | Four valid draws after specific approval; both unknown-state replies assert unsupported outcomes; state tracking remains a blocker |
