@@ -50,8 +50,8 @@ def behavior_review(episode: dict, continuation: Continuation) -> dict: ...
 
 - [x] Make historical run commands portable and mark superseded review checkpoints.
 - [x] Run `uv run python -m pytest -q`, `node tests/episode_review_navigation.cjs`, and `git diff --check`; scan new published files for private dialogue or credentials.
-- [ ] Replay commits onto current `origin/main` (the original base's tree is identical), preserving this separate worktree.
-- [ ] Push `codex/episode-pilot` and create or update a draft PR with scope, evidence limits, validation and commit history. Do not merge main in this step.
+- [x] Replay commits onto current `origin/main` (the original base's tree is identical), preserving this separate worktree.
+- [x] Push `codex/episode-pilot` and create or update a draft PR with scope, evidence limits, validation and commit history. Do not merge main in this step.
 
 ## Review checkpoint
 
@@ -61,3 +61,9 @@ pins remain unchanged. Sixteen blank behavior-comparison packets are prepared.
 The separate three-call continuity batch is prepared but unsent: automatic approval
 review requires specific payload approval despite the logged standing grant. See
 the spec for the exact experiment and saved request; no model outcomes are claimed.
+
+All implementation/PR tasks above are complete. Draft PR: [#25](https://github.com/dstl-lab/chatsight-summer/pull/25).
+The five implementation commits were replayed onto `origin/main` with an identical
+final tree, then pushed from the separate `codex/episode-pilot` worktree. Main was
+not merged. The outstanding action is the exact three-request model approval,
+followed by generation and human continuity review.

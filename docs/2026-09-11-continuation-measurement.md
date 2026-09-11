@@ -124,3 +124,8 @@ authorization evidence are saved there. No model process started, no request was
 sent, and no generated-output review exists for this batch yet. The user's standing
 approval remains logged in `CLAUDE.md`; collect the specific requested response
 before retrying the same send command.
+
+Implementation is published in draft [PR #25](https://github.com/dstl-lab/chatsight-summer/pull/25),
+on the separate `codex/episode-pilot` worktree branch. Commits separate the sequence
+fix, accumulated pilot, documentation cleanup, review-save fix and continuation
+helpers. Main remains unmerged while the PR is reviewed.
