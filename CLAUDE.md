@@ -48,10 +48,16 @@ approval precedes both calls. Preserve the original automatic rejection,
 approval and receipts. No candidate code or course grader ran; Minchan accepted
 the new check/stop sequence as plausible, with that answer recorded separately.
 This is one exposed development trajectory, not calibrated behavior.
-The next engineering probe in docs/2026-09-11-failed-check-continuation.md uses
-wholly authored work/dialogue, one scripted failed check and at most three model
-decisions. The completed production loop stays frozen. This tests response to
-failed feedback, not real-student fidelity. The latest suite passed 316 tests.
+The two authored controls in docs/2026-09-11-failed-check-continuation.md are
+complete. notebook-failure-v1 reached an unsupported method and the action limit;
+its final code is ungraded and no no-reply was generated. student-task-failure-v1
+uses the existing structured worksheet: scripted failure -> generated correction
+-> requested computed pass -> generated answer summary; stopped awaiting tutor.
+All 17/14 pins and exact replays verify. These test mechanics, not learner fidelity.
+Before another notebook behavior run, declare its runtime and checker capabilities;
+do not conflate unsupported checks with student mistakes or patch spellings merely
+to turn a retained run into success. Production code stays frozen; the latest
+suite remains 316 passing tests.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
