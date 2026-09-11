@@ -56,8 +56,19 @@ uses the existing structured worksheet: scripted failure -> generated correction
 All 17/14 pins and exact replays verify. These test mechanics, not learner fidelity.
 Before another notebook behavior run, declare its runtime and checker capabilities;
 do not conflate unsupported checks with student mistakes or patch spellings merely
-to turn a retained run into success. Production code stays frozen; the latest
-suite remains 316 passing tests.
+to turn a retained run into success. The completed modules and traces stay frozen.
+The new standalone src/eval/notebook_runtime.py now evaluates one cell inside an
+explicit local Docker image (docs/2026-09-11-declared-notebook-runtime.md).
+It separates checked answers, runtime errors, execution limits and environment
+errors; only checked answers have Boolean success. Actual runtime, source,
+revision, branch, activity, image, checker and timeout bind the observation.
+Under newly declared environments, both retained authored revisions pass in
+pandas 2.3.3 and raise AttributeError in Babypandas 1.0.0. The original unspecified
+activity remains ungraded. All 13 new pins verify; no model requests were made.
+The full suite passes 319 tests including isolated-container controls. The older
+behavior loops are unchanged; the next new notebook trajectory must declare its
+library before code selection and keep environment faults separate from learner
+errors. The runtime checks cooperative code, not adversarial grading integrity.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
