@@ -1,5 +1,11 @@
 # Frozen-prompt student continuation check
 
+Current status (2026-09-11): both generation batches and all eight cases' human
+feedback are complete; the current prompt is frozen. The sections below preserve
+the preparation, approval, generation, and review chronology. Earlier pending
+steps and approval restrictions are historical; `CLAUDE.md` records the later
+standing model-run approval. Behavioral fidelity and continuity remain unmeasured.
+
 Minchan accepted the displayed revised wording and code attempt. Keep the current
 style-comparison prompt, Gemini 2.5 Pro, response schema and generation settings
 unchanged. Two accepted development examples do not establish a reliable student

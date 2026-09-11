@@ -1,5 +1,12 @@
 # Episode Pilot Implementation Plan
 
+Historical plan through the v7 comparison. Its implementation is complete; the
+original six-case review was superseded by the
+[tutor-move revision](../../2026-09-10-tutor-moves.md). The later
+[student-continuation review](../../2026-09-11-student-continuation-check.md) is
+complete as of 2026-09-11. Checklists, test counts, and disclosure scopes below
+describe their recorded stage, not outstanding work or current authorization.
+
 > Execute in this task using subagent-driven development for independent components.
 
 **Goal:** Deliver a runnable, snapshot-grounded episode pilot with a development sample and an untouched episode holdout.
@@ -23,7 +30,7 @@ Student text stays under ignored data/. No DB needed. No simulated ground truth.
 
 Each code task uses a failing behavioral test before implementation. Final review checks the spec and data boundary, with no extra framework or broad refactor.
 
-Verification of the simplified UI: all 236 Python tests pass, with one pre-existing Starlette deprecation warning. The Node navigation/decision regression and invented-dialogue browser checks pass; accepted, corrected, and unassessable reviews save and restore. The five existing label decisions and notes are preserved, and the real bundle bytes are unchanged. Historical timing from the old UI includes passive viewing and must not support speed comparisons; passive viewing in the new UI creates no writes. The held-out split remains unannotated and outside the current disclosure authorization.
+Verification of the simplified UI: all 236 Python tests pass, with one pre-existing Starlette deprecation warning. The Node navigation/decision regression and invented-dialogue browser checks pass; accepted, corrected, and unassessable reviews save and restore. The five existing label decisions and notes are preserved, and the real bundle bytes are unchanged. Historical timing from the old UI includes passive viewing and must not support speed comparisons; passive viewing in the new UI creates no writes. At this stage, the held-out split remained unannotated and outside the disclosure authorization then in effect.
 
 ## V4 calibration continuation
 
@@ -54,4 +61,4 @@ The calibration pass is complete. The audit identifies remaining hindsight, task
 - [x] Predeclare development checks with human, approved-example, and assistant-audit provenance kept separate. Verify Pro availability, freeze v7 source/prompt hashes, and identify the candidate run separately from its sample/protocol bundle ID.
 - [x] Generate the same 12 authorized episodes with Gemini 2.5 Pro. Verify all 24 actual prompt hashes match Flash and all prior source/artifact hashes remain unchanged. Two flagged tutor categories changed; task-link errors remain.
 - [x] Prepare six metadata-selected reserved cases for a prediction-hidden two-field pilot review, without model calls or source mutation. Split into three-case packets, verify complete source rendering and empty separate answer records, and leave the active v3 UI untouched.
-- [ ] Collect the user's explicit blind-packet answers before comparing new cases with model judgments. No formal reliability or admission inference from the development comparison.
+- Superseded: collect the user's explicit blind-packet answers before comparing new cases with model judgments. Cases 1–3 prompted the tutor-move revision; the original task for cases 4–6 was replaced. No formal reliability or admission inference follows from the development comparison.

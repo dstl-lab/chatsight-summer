@@ -1,5 +1,11 @@
 # Help-seeking episode pilot
 
+Current status (2026-09-11): the later eight-case student-continuation review is
+complete and its current prompt is frozen; the D–E tutor-passage review is deferred.
+See the [continuation-check memo](2026-09-11-student-continuation-check.md).
+The sections below preserve the development chronology: pending steps, approval
+scopes, test counts, and unreviewed outputs describe their recorded stage.
+
 Approved by Minchan on 2026-09-10 after the evidence-grounded brainstorming in this task.
 
 Question: after receiving help, what does the student visibly do next?
@@ -20,11 +26,17 @@ Acceptance: deterministic disjoint samples; validated source/turn/evidence refer
 
 ## Running the pilot
 
-From this worktree, install the existing dependencies with `uv sync`, or use the existing runtime `../main/.venv/bin/python` in place of `uv run python`.
+Run these commands from the project root. Replace `SNAPSHOT_ID` with an existing
+immutable snapshot directory under ignored `data/snapshots/` in this checkout.
+The historical runs used `20260811-1d1e79d39fda-7bc759`, then located at
+`../main/data/snapshots/20260811-1d1e79d39fda-7bc759` in a sibling worktree.
+The recorded counts and bundle IDs below refer to that snapshot.
 
 ```sh
+uv sync
+
 uv run python -m src.labeling.episodes prepare \
-  ../main/data/snapshots/20260811-1d1e79d39fda-7bc759 \
+  data/snapshots/SNAPSHOT_ID \
   --out data/episode-pilot/pilot-v3/bundle.json
 
 uv run python -m src.eval.episode_review data/episode-pilot/pilot-v3/bundle.json \
@@ -35,7 +47,7 @@ Preparation refuses to replace an existing output. The prepared September 10 bun
 
 Version 3 asks Gemini to select numbered source lines; the application copies those lines verbatim into evidence quotes and validates their turn, role and phase. This avoids model rewriting of Markdown or language and preserves the stored annotation format. The source files, episode content and development sample match earlier versions, while the new provenance pin includes the selection schema and line-rendering version. Version 1 (`data/episode-pilot/pilot-v1.json`) and version 2 (`data/episode-pilot/pilot-v2/bundle.json`) remain archived and are incompatible with the current protocol. All 12 version 3 development drafts pass evidence validation and are available in the restarted review page; the 35 reserved episodes remain unannotated. Exact quote provenance does not establish that a label is correct; the drafts still require human review.
 
-To generate machine drafts, provide `GEMINI_API_KEY` through the environment or this worktree's `.env`. This sends the selected split's dialogue to the configured Gemini service. Minchan explicitly authorized disclosure of the 12 development episodes, including student and tutor dialogue; this authorization does not cover the held-out split.
+To generate machine drafts, provide `GEMINI_API_KEY` through the environment or this worktree's `.env`. This sends the selected split's dialogue to the configured Gemini service. At this stage, Minchan's disclosure approval covered the 12 development episodes, including student and tutor dialogue, but not the held-out split. The later standing model-run approval is recorded in `CLAUDE.md`.
 
 ```sh
 uv run python -m src.labeling.episodes annotate data/episode-pilot/pilot-v3/bundle.json --split development
@@ -62,7 +74,7 @@ The [v4 codebook](2026-09-10-episode-codebook-v4.md) separates student action, a
 
 ```sh
 uv run python -m src.labeling.episodes prepare \
-  ../main/data/snapshots/20260811-1d1e79d39fda-7bc759 \
+  data/snapshots/SNAPSHOT_ID \
   --rubric-version v4 --out data/episode-pilot/pilot-v4/bundle.json
 
 uv run python -m src.labeling.episodes annotate \
@@ -81,7 +93,7 @@ The [v5 continuation](2026-09-10-episode-v5-input-isolation.md) implements separ
 
 ```sh
 uv run python -m src.labeling.episodes prepare \
-  ../main/data/snapshots/20260811-1d1e79d39fda-7bc759 \
+  data/snapshots/SNAPSHOT_ID \
   --rubric-version v5 --out data/episode-pilot/pilot-v5/bundle.json
 
 uv run python -m src.labeling.episodes annotate \
@@ -102,7 +114,7 @@ tests pass, including prior-version hashes, evidence rejection, and stage isolat
 
 ```sh
 uv run python -m src.labeling.episodes prepare \
-  ../main/data/snapshots/20260811-1d1e79d39fda-7bc759 \
+  data/snapshots/SNAPSHOT_ID \
   --rubric-version v6 --out data/episode-pilot/pilot-v6/bundle.json
 
 uv run python -m src.labeling.episodes annotate \
@@ -125,7 +137,7 @@ conditional schema, prompt, input rule, and fixed judgments are hash-pinned.
 
 ```sh
 uv run python -m src.labeling.episodes prepare \
-  ../main/data/snapshots/20260811-1d1e79d39fda-7bc759 \
+  data/snapshots/SNAPSHOT_ID \
   --rubric-version v7 --out data/episode-pilot/pilot-v7/bundle.json
 
 uv run python -m src.labeling.episodes annotate \
@@ -350,3 +362,7 @@ first section shows both new draws for the already reviewed case and asks whethe
 they fit the visible student writing better. The original human feedback is
 recorded; these revised outputs remain unreviewed. No additional tutor labeling or
 production simulator code was introduced.
+
+The displayed revised wording was subsequently accepted, as recorded in the
+[student-behavior memo](2026-09-11-student-behavior-diagnostic.md). This updates the
+review status without extending that acceptance to the other generated outputs.

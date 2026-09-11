@@ -1,5 +1,10 @@
 # Student behavior after the style check
 
+Current status (2026-09-11): this local audit and the displayed-code review are
+complete. The sections below preserve the preparation and subsequent response;
+their pending-review statements are historical. The later eight-case review is
+recorded in the [continuation-check memo](2026-09-11-student-continuation-check.md).
+
 Minchan found the two revised continuations for development case 4 much better
 stylistically. The exact answer is appended in
 `data/episode-pilot/student-continuation-v1/style-comparison/human-review-response.json`.
