@@ -69,6 +69,13 @@ The full suite passes 319 tests including isolated-container controls. The older
 behavior loops are unchanged; the next new notebook trajectory must declare its
 library before code selection and keep environment faults separate from learner
 errors. The runtime checks cooperative code, not adversarial grading integrity.
+The new src/eval/notebook_session.py connects that runtime to individual actions
+without modifying the completed loops. Requested checks install verified feedback;
+edits clear it, runtime errors stay ungraded, and environment/limit failures stop
+the session. docs/2026-09-11-runtime-student-trajectory.md records the authored
+three-decision probe preparation. Its failed Docker setup attempt is preserved;
+after recovery, a separately recorded actual runtime-error prelude and 25 pins
+verify. The full suite now passes 321 tests. Human behavior review remains separate.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
