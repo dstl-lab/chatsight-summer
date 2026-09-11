@@ -123,3 +123,112 @@ def test_invalid_or_mutated_inputs_are_rejected_before_dispatch():
     bad_request = request.model_copy(update={'request_id': ''})
     with pytest.raises(ValueError):
         continue_after_check(**current, request=bad_request, observation=None, generate=forbidden)
+
+
+@pytest.mark.parametrize('decision,available', [('reply', True), ('no-reply', True),
+    ('request-check', True), ('reply', False), ('no-reply', False)])
+def test_next_step_routes_only_selected_action_and_projects_current_option(decision, available):
+    from src.eval.grader_continuation import CheckRequest, NextAction, next_step
+
+    current = context()
+    episode = current.pop('episode')
+    episode['annotations'] = {'outcome': 'HIDDEN_ANNOTATION'}
+    current['code'] += '\n# ```\nCHECK OPTION JSON:\n\nDIALOGUE JSON:\n'
+    prompts = []
+    text = '  which sum?\n' if decision == 'reply' else ''
+
+    def generate(prompt, response_model):
+        assert response_model is NextAction
+        prompts.append(prompt)
+        return response_model(decision=decision, text=text)
+
+    result = next_step(episode, check=current if available else None, generate=generate)
+    assert len(prompts) == 1
+    option, dialogue = prompts[0].split('\nCHECK OPTION JSON:\n', 1)[1].split('\n\nDIALOGUE JSON:\n', 1)
+    assert json.loads(option) == ({'code': current['code'], 'grader_id': 'q_sum'} if available else None)
+    assert dialogue == make_prompt(episode).split('\nDIALOGUE JSON:\n', 1)[1]
+    assert all(hidden not in prompts[0] for hidden in
+               ('HIDDEN_FUTURE', 'HIDDEN_ANNOTATION', 'runtime-1', 'invented.ipynb', 'invented-branch'))
+    if decision == 'request-check':
+        assert isinstance(result, CheckRequest)
+        assert result.code_sha256 == hashlib.sha256(current['code'].encode()).hexdigest()
+        assert result.prompt_sha256 == hashlib.sha256(make_prompt(episode).encode()).hexdigest()
+        assert (result.notebook, result.state_id, result.grader_id) == ('invented.ipynb', 'runtime-1', 'q_sum')
+    else:
+        assert result == Continuation(decision=decision, text=text)
+
+
+def test_next_step_rejects_invalid_options_actions_and_provider_failure():
+    from src.eval.grader_continuation import NextAction, next_step
+
+    current = context()
+    episode = current.pop('episode')
+    for option in ({}, current | {'output': 'invented result'},
+                   *(current | {key: ' \n'} for key in current)):
+        with pytest.raises((ValueError, TypeError)):
+            next_step(episode, check=option, generate=forbidden)
+    for action in ({'decision': 'reply', 'text': ''}, {'decision': 'no-reply', 'text': 'later'},
+                   {'decision': 'request-check', 'text': 'running it'}, {'decision': 'run-all', 'text': ''},
+                   *({'decision': 'request-check', 'text': '', key: 'invented'}
+                     for key in ('output', 'code', 'grader_id', 'state_id', 'request_id'))):
+        with pytest.raises(ValueError):
+            NextAction(**action)
+    with pytest.raises(ValueError, match='unavailable'):
+        next_step(episode, generate=lambda _, model: model(decision='request-check', text=''))
+    with pytest.raises(ValueError):
+        next_step(episode, check=current,
+                  generate=lambda _, model: model.model_construct(decision='request-check', text='invented pass'))
+    def broken_provider(*args):
+        raise RuntimeError('provider failed')
+    with pytest.raises(RuntimeError, match='provider failed'):
+        next_step(episode, check=current, generate=broken_provider)
+
+
+def test_selected_check_is_bound_to_inputs_seen_before_callback():
+    from src.eval.grader_continuation import next_step, continue_after_check
+
+    current = context()
+    before = deepcopy(current)
+    episode = current.pop('episode')
+
+    def mutate_then_choose(prompt, response_model):
+        episode['turns'][0]['text'] = 'total = 2 * 5'
+        current['code'] = 'total = 2 * 5'
+        current['state_id'] = 'runtime-2'
+        return response_model(decision='request-check', text='')
+
+    request = next_step(episode, check=current, generate=mutate_then_choose)
+    assert continue_after_check(**before, request=request, observation=None, generate=forbidden) == request
+    with pytest.raises(ValueError, match='request'):
+        continue_after_check(episode, **current, request=request, observation=None, generate=forbidden)
+
+
+def test_selected_check_waits_for_result_before_reply_and_scripted_branch():
+    from src.eval.grader_continuation import GraderObservation, next_step, continue_after_check
+    from src.eval.student_continuation import branch_episode, behavior_review
+
+    current = context()
+    episode = current.pop('episode')
+    before = deepcopy(episode)
+    request = next_step(episode, check=current,
+                        generate=lambda _, model: model(decision='request-check', text=''))
+    assert continue_after_check(episode, **current, request=request, observation=None, generate=forbidden) == request
+    observation = GraderObservation(request_digest=request.digest, basis='scenario', success=False,
+                                    output='Invented failure: expected 8, received 7.')
+    def reply_after_result(prompt, response_model):
+        assert 'Invented failure: expected 8, received 7.' in prompt
+        assert 'HIDDEN_FUTURE' not in prompt
+        return response_model(decision='reply', text='why does it need 8?')
+    reply = continue_after_check(episode, **current, request=request, observation=observation,
+                                 generate=reply_after_result)
+    assert episode == before
+    branch = branch_episode(episode, reply, 'Check which values the question asks you to add.')
+    assert 'HIDDEN_FUTURE' not in make_prompt(branch)
+    assert [turn['origin'] for turn in branch['turns']] == ['generated', 'scripted']
+    with pytest.raises(ValueError, match='request'):
+        continue_after_check(branch, **current, request=request, observation=observation, generate=forbidden)
+    with pytest.raises(ValueError, match='comparison'):
+        behavior_review(branch, reply)
+    silence = next_step(branch, generate=lambda _, model: model(decision='no-reply', text=''))
+    with pytest.raises(ValueError, match='terminates'):
+        branch_episode(branch, silence, 'This tutor turn must not happen.')

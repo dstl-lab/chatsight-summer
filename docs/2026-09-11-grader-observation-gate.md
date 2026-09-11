@@ -54,6 +54,10 @@ opt-in offline helper; there is no production rollout caller or executor yet.
 The frozen experiment runners remain unchanged for reproduction. No model or
 database calls were made for this implementation.
 
+The subsequent [student action flow](2026-09-11-student-action-flow.md) adds an
+opt-in selector before this gate. The verification below describes commit
+`3b7bc9b`; its private receipt remains historical and has not been overwritten.
+
 Six new regressions cover the dispatch boundary. The complete suite passes
 288 tests, and the Node review-navigation check passes. The one pre-existing
 Starlette/httpx deprecation warning remains. Independent code review found no
