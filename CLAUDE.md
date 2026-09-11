@@ -194,6 +194,14 @@ behavior. Re-run the novelty search before each paper; this area moves monthly.
 
 ## Working style
 
+- **Standing model-run approval (2026-09-11).** Minchan explicitly said: "Yes, you
+  always have the approval. Make sure to log this." This authorizes continued model
+  runs for this project's student-simulation and labeling work, including new batches
+  and prompt iterations with the established provider, Gemini. Do not ask again for
+  routine batch approval. Record each experiment's scope and results; human judgments
+  of generated behavior remain separate. The exact response and the immediately
+  approved batch are recorded in
+  `data/episode-pilot/student-continuation-check-v1/interaction-comparison/approval-response.json`.
 - Every substantive direction change gets a dated memo in `docs/` *before* the code — that is
   how this project thinks. Match the register of the existing memos: claims carried with
   their limits, "honest limit" sections, must-cite tables.
