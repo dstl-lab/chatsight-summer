@@ -5,7 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-11 | `2026-09-11-learning-expedition.md` — Generative Agents inspiration and original educational game concepts | Educator/researcher audience confirmed; adventure, sports coaching and support placement remain alternatives; not implemented |
+| 2026-09-11 | `2026-09-11-coaching-session-prototype.md` — original cozy village and a small coaching session | Scripted exploration preserved and tested; interface work paused in favor of functioning simulated students |
+| 2026-09-11 | `2026-09-11-learning-expedition.md` — Generative Agents inspiration and original educational game concepts | Coaching selected; adventure/support placement deferred; student simulator takes priority over presentation |
 | 2026-09-11 | `2026-09-11-portable-student-behavior.md` — separate behavioral simulation from course execution | Exact bundle recovery is optional; conditional feedback probes can continue; course transfer and outcome prediction remain unvalidated |
 | 2026-09-11 | `2026-09-11-reference-grader-fixture.md` — compute an observation using explicit reference assignment assets | Candidate raises a runtime error before grading; no grader result invented; deployed course state remains unverified |
 | 2026-09-11 | `2026-09-11-student-action-choice-diagnostic.md` — probe message/no-reply/check selection with and without a supplied check option | Corrected retry: two pending checks, one unsupported success report, one unavailable check rejected; 370 pins verify; 297 tests pass |

@@ -1,5 +1,14 @@
 # An interactive learning expedition for educators
 
+Current decision: Minchan selected coaching, deferred the other two directions,
+and requested Animal Crossing as a stylistic reference. The
+[coaching-session prototype](2026-09-11-coaching-session-prototype.md) implements
+an original cozy visual direction. The alternatives below preserve the discussion.
+
+Latest priority: Minchan asked to make the simulated students work before designing
+the end product. Interface exploration is paused; the selected direction remains
+recorded for later. The storyboard is an authored example, not simulator progress.
+
 ## Confirmed motivation and audience
 
 Minchan identified Park, Bernstein and colleagues' Generative Agents as the

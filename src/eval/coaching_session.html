@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Willowbrook · Coaching studio</title>
+  <style>
+    :root{--forest:#294e43;--grass:#66815a;--mint:#cee1d4;--paper:#fffbef;--honey:#e8ce8f;--ink:#303d35;--muted:#59685c;--line:#dce2d3}
+    *{box-sizing:border-box}body{margin:0;background:#edf2e7;color:var(--ink);font:15px/1.55 "Avenir Next","Trebuchet MS",sans-serif}
+    button{font:inherit;color:inherit;cursor:pointer}button:disabled{cursor:default}button,dialog{border:0}
+    button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #9c5a22;outline-offset:4px}
+    [hidden]{display:none!important}h1,h2,h3,p{margin:0}h1,h2,h3,.brand{font-family:"Arial Rounded MT Bold","Trebuchet MS",sans-serif}
+    h1{font-size:clamp(28px,3vw,42px);line-height:1.2;letter-spacing:-1.1px}h2{font-size:23px;line-height:1.3}
+    h3{font-size:17px}svg{flex-shrink:0}.symbols{position:absolute;width:0;height:0;overflow:hidden}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;max-width:1480px;margin:auto;padding:22px 38px}
+    .brand{display:flex;gap:10px;align-items:center;font-size:24px;letter-spacing:-.6px;color:var(--forest)}
+    .brand-icon{width:40px;height:40px;background:var(--forest);border-radius:15px;display:grid;place-items:center;color:var(--paper)}
+    .brand small{display:block;font:12px/1.2 "Avenir Next",sans-serif;letter-spacing:.3px;color:var(--muted);margin-top:3px}
+    .nav{display:flex;gap:8px;background:#e0e8d9;border-radius:30px;padding:5px}
+    .nav button{padding:9px 21px;border-radius:25px;background:transparent;font-weight:600}
+    .nav .current{background:var(--paper);box-shadow:0 2px 3px #294e4310}
+    .count{display:inline-grid;place-items:center;min-width:21px;height:21px;border-radius:50%;background:var(--forest);color:white;font-size:11px;margin-left:5px}
+    .sample-button{display:flex;gap:8px;align-items:center;background:transparent;font-size:13px;color:var(--muted);padding:10px 0}
+    .sample-dot{width:7px;height:7px;border-radius:50%;background:var(--grass)}
+    main{max-width:1480px;padding:16px 38px 40px;margin:auto}
+    .intro{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:8px 0 26px}
+    .intro p{margin-top:9px;color:var(--muted);font-size:15px}
+    .afternoon{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--forest);white-space:nowrap;padding-bottom:5px}
+    .workspace{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);gap:28px;align-items:start}
+    .scene{position:relative;border-radius:28px;overflow:hidden;background:var(--mint);box-shadow:0 6px 0 #c9d8be;isolation:isolate}
+    .scene img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover}
+    .location{position:absolute;top:20px;left:20px;background:var(--paper);color:var(--forest);padding:8px 15px;border-radius:20px;font-size:13px;font-weight:600;box-shadow:0 3px 0 #294e4320}
+    .pin{position:absolute;border:2px solid var(--paper);background:var(--paper);box-shadow:0 3px 0 #294e4330;padding:5px 15px;border-radius:18px;font-size:13px;font-weight:700}
+    .pin::before{content:"";width:6px;height:6px;background:currentColor;display:inline-block;border-radius:50%;margin-right:6px}
+    .pin[aria-pressed=true]{background:var(--forest);color:var(--paper)}.pin-tavi{left:36%;top:62%}.pin-nori{left:61%;top:57%}
+    .task{margin-top:26px;background:var(--paper);border-radius:9px 22px 22px 22px;padding:24px 27px;box-shadow:0 4px 0 #d9ddcb;position:relative}
+    .task-heading{display:flex;align-items:center;gap:11px;color:var(--forest);margin-bottom:10px}
+    .tomato{width:33px;height:33px;background:#f6ded0;border-radius:10px;display:grid;place-items:center}
+    .task p{max-width:57ch;font-size:15px}.task table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px}
+    th,td{text-align:left;padding:9px 0;border-bottom:1px solid #e7e6d7}th{font-weight:500;color:var(--muted);font-size:12px}
+    td:first-child{font-weight:600}th:not(:first-child),td:not(:first-child){text-align:right}tbody tr:last-child td{border-bottom:0}
+    .world-note{display:flex;align-items:center;gap:9px;margin:20px 5px 0;font-size:12px;color:var(--muted)}
+    .notebook{background:var(--paper);border:1px solid #e1e3d4;border-radius:25px;box-shadow:0 5px 0 #d9dfd0;overflow:hidden}
+    .learner-tabs{display:flex;padding:12px;background:#e4ebdd;gap:8px}
+    .learner-tab{display:flex;flex:1;align-items:center;gap:10px;padding:9px 13px;border:1px solid transparent;border-radius:17px;background:transparent;text-align:left}
+    .learner-tab[aria-pressed=true]{background:var(--paper);border-color:#d4deca;box-shadow:0 2px 0 #cbd4c5}
+    .avatar{width:43px;height:43px;display:inline-block;flex-shrink:0}
+    .learner-tab strong{font-size:16px;display:block;line-height:1.3}.learner-tab small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+    .sheet{padding:24px 26px 25px}.sheet-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .sheet-heading p{font-size:12px;color:var(--muted);margin-top:4px}.bookmark{color:#a67c33;align-self:start}
+    .work{margin-top:20px;padding:15px 17px;background:#f0efdf;border-radius:12px}
+    .work-label{font-size:12px;color:var(--muted);margin-bottom:6px}.work pre{font:16px/1.7 "Avenir Next","Trebuchet MS",sans-serif;white-space:pre-wrap;margin:0}
+    .student-message{margin-top:15px;padding:13px 16px;background:#e8f0e2;border-radius:4px 16px 16px 16px;font-size:17px;color:var(--forest)}
+    .history{margin-top:13px;font-size:13px}.history summary{cursor:pointer;color:var(--muted);padding:3px 0}
+    .history p{margin:10px 0 0;padding-left:13px;border-left:2px solid #ced9c3}.history b{color:var(--forest);font-weight:600}
+    .section-divider{border:0;border-top:1px dashed #d4d8c8;margin:21px 0}
+    .approach-heading{font-size:16px}.approach-note{color:var(--muted);font-size:12px;margin-top:4px}
+    .choices{display:grid;gap:9px;margin-top:14px}
+    .choice{display:flex;gap:12px;align-items:center;text-align:left;background:#fffdf5;border:1px solid #d7ddcc;border-radius:13px;padding:12px 13px;box-shadow:0 2px 0 #e0e2d3;transition:background-color .15s,border-color .15s}
+    .choice:hover{background:#edf3e7;border-color:#7c9570}.choice-symbol{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#edf0e3;color:var(--forest);font-size:19px}
+    .choice strong{font-size:14px;display:block}.choice small{display:block;font-size:12px;color:var(--muted);line-height:1.45;margin-top:2px}
+    .choice-arrow{margin-left:auto;color:var(--grass);font-size:22px}.sample-note{margin-top:17px;color:var(--muted);font-size:11px;line-height:1.55}
+    .result-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.attempt{font-size:11px;background:#e8eedf;border-radius:12px;padding:4px 9px;white-space:nowrap}
+    .coach-message{border-left:3px solid #d7bf82;margin-top:15px;padding:3px 0 3px 12px;font-size:14px}.speaker{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+    .response-message{margin-top:15px;background:#e8f0e2;border-radius:4px 16px 16px 16px;padding:14px 16px;font-size:17px;color:var(--forest)}
+    .no-reply{background:#edece1;font-size:14px;color:var(--muted)}.observation{font-size:12px;color:var(--muted);margin-top:13px;line-height:1.55}
+    .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:19px}.primary,.secondary{border-radius:22px;padding:10px 17px;font-size:13px;font-weight:600}
+    .primary{background:var(--forest);color:var(--paper);box-shadow:0 3px 0 #1a362e}.primary:hover{background:#3d6657}
+    .secondary{background:#e9eddf;border:1px solid #d6decd}.secondary:hover{background:#dce7d3}
+    .after-note{margin-top:14px;font-size:11px;color:var(--muted)}
+    dialog{width:min(760px,calc(100vw - 32px));max-height:85vh;background:var(--paper);color:var(--ink);padding:28px;border-radius:24px;box-shadow:0 20px 80px #193a3550}
+    dialog::backdrop{background:#1a3a3266;backdrop-filter:blur(3px)}.dialog-heading{display:flex;justify-content:space-between;align-items:start;gap:20px;margin-bottom:8px}
+    .close{background:#e9eddf;border-radius:50%;width:35px;height:35px;flex-shrink:0;font-size:20px;line-height:1}
+    .dialog-note{font-size:13px;color:var(--muted);margin:6px 0 20px;max-width:65ch}
+    .branch-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}.branch-button{background:#f4f2e4;border:1px solid var(--line);border-radius:15px;text-align:left;padding:17px}
+    .branch-button:hover{border-color:var(--grass)}.branch-button strong{display:block;color:var(--forest);margin:5px 0}
+    .branch-button small{font-size:11px;color:var(--muted)}.branch-button p{font-size:13px;margin-top:9px}
+    .empty-playbook{padding:27px;background:#eef1e5;border-radius:15px;text-align:center}.empty-playbook p{color:var(--muted);font-size:13px;margin-top:6px}
+    .about-copy p{margin-top:14px;font-size:14px}.about-copy strong{font-weight:600;color:var(--forest)}
+    footer{max-width:1480px;margin:auto;padding:0 38px 22px;display:flex;justify-content:space-between;gap:15px;color:var(--muted);font-size:11px}
+    @media(min-width:1500px){.scene img{aspect-ratio:1.5}}
+    @media(max-width:1050px){.topbar{padding:20px 24px}main{padding:10px 24px 30px}.workspace{gap:20px;grid-template-columns:minmax(0,1fr) minmax(340px,1fr)}.sheet{padding:22px 20px}.task{padding:22px}.brand{font-size:21px}.nav button{padding:9px 16px}}
+    @media(max-width:780px){.topbar{padding:17px 20px;gap:12px;flex-wrap:wrap}.brand{font-size:21px}.brand-icon{width:36px;height:36px}.nav{order:3;width:100%;justify-content:center}.nav button{flex:1}.sample-button{font-size:11px}.workspace{grid-template-columns:1fr}.intro{margin-top:8px;margin-bottom:21px}.afternoon{display:none}main{padding:8px 20px 30px}.intro p{font-size:14px}.scene img{aspect-ratio:3/2}.task{padding:20px;margin-top:20px}.world-note{margin:16px 3px 3px}.notebook{margin-top:4px}.sheet{padding:23px}.branch-list{grid-template-columns:1fr}dialog{padding:22px}footer{padding:0 22px 20px;flex-direction:column;gap:4px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+  <svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="leaf" viewBox="0 0 24 24"><path d="M19 4C10 3 4 7 5 13c1 6 10 8 13 1 1-3 1-7 1-10Z" fill="currentColor"/><path d="m4 21 11-12" stroke="#cee1d4" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="fox" viewBox="0 0 52 52"><circle cx="26" cy="26" r="26" fill="#ebcfab"/><path d="m10 25 1-17 13 10h4L41 8l1 17-6 18H17Z" fill="#be693e"/><path d="m13 16 1 9 7-4m18-5-1 9-7-4" fill="#ebad86"/><path d="m10 25 16 6 16-6-7 17H18Z" fill="#fff4db"/><ellipse cx="19" cy="27" rx="2" ry="2.5" fill="#3c352d"/><ellipse cx="33" cy="27" rx="2" ry="2.5" fill="#3c352d"/><path d="m22 34 4 4 4-4Z" fill="#3c352d"/></symbol>
+    <symbol id="rabbit" viewBox="0 0 52 52"><circle cx="26" cy="26" r="26" fill="#d6dfc5"/><path d="M15 27C5-3 23-4 23 23h6c0-27 18-26 9 4 10 19-30 23-23 0Z" fill="#fff1d9"/><path d="M17 20c-4-15 2-18 3 0m12 0c1-18 7-15 3 0" stroke="#d99d82" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="31" r="2" fill="#453d31"/><circle cx="33" cy="31" r="2" fill="#453d31"/><path d="m24 36 3 2 2-2" stroke="#9a6555" fill="none" stroke-width="2" stroke-linecap="round"/></symbol>
+  </svg>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon"><svg width="25" height="25" aria-hidden="true"><use href="#leaf"/></svg></span><span>Willowbrook<small>A little room to learn</small></span></div>
+    <nav class="nav" aria-label="Session"><button class="current" id="studio-nav" aria-current="page">Coaching studio</button><button id="playbook-nav" aria-haspopup="dialog">Your playbook <span class="count" id="branch-count">0</span></button></nav>
+    <button class="sample-button" id="about-button" aria-haspopup="dialog"><span class="sample-dot"></span>Scripted sample <span aria-hidden="true">ⓘ</span></button>
+  </header>
+  <main>
+    <div class="intro"><div><h1>Good afternoon, coach.</h1><p>A garden problem, two learners, and a little room to try things.</p></div><div class="afternoon"><span aria-hidden="true">☀</span> An afternoon at the studio</div></div>
+    <div class="workspace">
+      <section aria-label="Learning studio and shared task">
+        <div class="scene">
+          <img src="coaching-village.png" alt="An original fox and rabbit working at a wooden garden studio beside a river." width="1536" height="1024">
+          <div class="location">Riverside studio</div>
+          <button class="pin pin-tavi" data-learner="tavi" aria-pressed="true" aria-label="Coach Tavi">Tavi</button>
+          <button class="pin pin-nori" data-learner="nori" aria-pressed="false" aria-label="Coach Nori">Nori</button>
+        </div>
+        <article class="task">
+          <div class="task-heading"><span class="tomato" aria-hidden="true">🍅</span><h2>The garden comparison</h2></div>
+          <p>Two garden beds had different harvests. Which grew more tomatoes <strong>per plant</strong>?</p>
+          <table><thead><tr><th scope="col">Garden bed</th><th scope="col">Tomatoes</th><th scope="col">Plants</th></tr></thead><tbody><tr><td>North bed</td><td>96</td><td>12</td></tr><tr><td>South bed</td><td>60</td><td>6</td></tr></tbody></table>
+        </article>
+        <p class="world-note"><svg width="16" height="16" aria-hidden="true"><use href="#leaf"/></svg> Start by noticing. Every approach begins with the same learner situation.</p>
+      </section>
+      <section class="notebook" aria-label="Coaching notebook">
+        <div class="learner-tabs" aria-label="Choose a learner">
+          <button class="learner-tab" data-learner="tavi" aria-pressed="true"><svg class="avatar" aria-hidden="true"><use href="#fox"/></svg><span><strong>Tavi</strong><small>A comparison to check</small></span></button>
+          <button class="learner-tab" data-learner="nori" aria-pressed="false"><svg class="avatar" aria-hidden="true"><use href="#rabbit"/></svg><span><strong>Nori</strong><small>Making sense of the units</small></span></button>
+        </div>
+        <div class="sheet">
+          <div class="sheet-heading"><div><h2 id="learner-title" tabindex="-1">Coach Tavi</h2><p>Look at the work before choosing your support.</p></div><svg class="bookmark" width="22" height="30" viewBox="0 0 22 30" aria-hidden="true"><path d="M3 0h16v28l-8-6-8 6Z" fill="#e8ce8f"/></svg></div>
+          <div class="work"><p class="work-label" id="work-label">Tavi’s work</p><pre id="work-text"></pre></div>
+          <p class="student-message" id="student-message"></p>
+          <details class="history" id="history"><summary>Earlier in this sample</summary><p><b id="history-name"></b><br><span id="history-text"></span></p></details>
+          <hr class="section-divider">
+          <div id="choose-view"><h3 class="approach-heading" id="approach-heading" tabindex="-1">How would you support Tavi?</h3><p class="approach-note">Choose an approach to preview a sample exchange.</p><div class="choices" id="choices"></div><p class="sample-note">These situations and responses are authored examples. They illustrate the coaching flow, not measured teaching effects.</p></div>
+          <div id="result-view" hidden>
+            <div class="result-heading"><h3 id="result-title" tabindex="-1">One possible next move</h3><span class="attempt" id="attempt-label"></span></div>
+            <p class="coach-message"><span class="speaker" id="coach-label"></span><span id="coach-text"></span></p>
+            <div class="response-message" id="response-message"><span class="speaker" id="reply-name"></span><p id="reply-text"></p></div>
+            <p class="observation" id="observation"></p>
+            <div class="actions"><button class="primary" id="retry-button">Try another approach</button><button class="secondary" id="compare-button" aria-haspopup="dialog">Open playbook</button></div>
+            <p class="after-note">This is a scripted possibility. Trying again keeps this branch in your playbook and returns to the original situation.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer><span>Made for noticing, experimenting, and talking about teaching.</span><span>Original world · Scripted learners · No live model</span></footer>
+  <dialog id="playbook" aria-labelledby="playbook-title">
+    <div class="dialog-heading"><h2 id="playbook-title">Your coaching playbook</h2><form method="dialog"><button class="close" aria-label="Close playbook">×</button></form></div>
+    <p class="dialog-note">Revisit an approach or compare the responses. These are authored possibilities from each learner’s original situation. Your playbook lasts for this open page.</p>
+    <div id="branch-list"></div>
+  </dialog>
+  <dialog id="about" aria-labelledby="about-title">
+    <div class="dialog-heading"><h2 id="about-title">A small coaching preview</h2><form method="dialog"><button class="close" aria-label="Close sample information">×</button></form></div>
+    <div class="about-copy"><p><strong>Tavi, Nori, their work, and every follow-up are invented.</strong> This interactive storyboard lets you try the coaching flow before connecting a student model.</p><p>Choose a learner, inspect their work, and try different forms of support. The playbook retains the alternatives from the same starting situation.</p><p>The examples do not show which approach works best. A reply does not prove understanding, and no further message leaves later work unknown.</p><p>No student records or live model calls are used. The illustration and character artwork were created for this original world.</p></div>
+  </dialog>
+  <script>
+const CASES = {
+  tavi: {name:'Tavi', work:'North: 96 tomatoes\nSouth: 60 tomatoes\nI picked North.', message:'north?', history:'do i compare the totals',
+    choices:[
+      {title:'Ask a guiding question', short:'Bring the focus back to one plant.', symbol:'?', coach:'What would the amount for one plant tell us?', reply:'divide by the plants?', observation:'Tavi asks for clarification. No revised calculation is shown.'},
+      {title:'Show one step', short:'Work through North, then leave South open.', symbol:'↗', coach:'North gives 96 ÷ 12 = 8 tomatoes per plant. What do you get for South?', reply:'south 10, so south?', observation:'Tavi supplies a result and asks for a check. This does not establish how the calculation was done.'},
+      {title:'Explain the comparison', short:'Make the total and per-plant quantities explicit.', symbol:'≋', coach:'North grew more tomatoes in total, but South grew more per plant: 10 compared with 8. The question asks about each plant.', reply:'what unit do i put?', observation:'Tavi asks a practical follow-up. A response to the explanation is not evidence of mastery.'}
+    ]},
+  nori: {name:'Nori', work:'North: 96 ÷ 12 = 8\nSouth: 60 ÷ 6 = 10', message:'but north grew more?', history:'i got 8 and 10',
+    choices:[
+      {title:'Ask a guiding question', short:'Check which quantity the question calls for.', symbol:'?', coach:'Which quantity does “per plant” ask us to compare?', reply:'so south even though the total is lower?', observation:'Nori asks another comparison question. The displayed calculations stay unchanged.'},
+      {title:'Show one step', short:'Compare the harvest of one plant in each bed.', symbol:'↗', coach:'One North plant produced 8 tomatoes on average. One South plant produced 10. That is 2 more for each South plant.', reply:'ok south. tomatoes per plant?', observation:'Nori checks the unit. Whether the explanation changed understanding is unknown.'},
+      {title:'Explain the comparison', short:'Separate the total harvest from the rate.', symbol:'≋', coach:'Both statements can be true: North grew more in total, while South grew more per plant. For this question, compare the rates.', reply:null, observation:'No further message is shown in this sample branch. Later work and understanding remain unknown.'}
+    ]}
+};
+let state = {learner:'tavi', branches:[], active:null};
+const $ = id => document.getElementById(id);
+function chooseApproach(index) {
+  if (!Number.isInteger(index) || !CASES[state.learner].choices[index]) throw new Error('Unknown approach');
+  const branch = {id:state.branches.length+1, learner:state.learner, approach:index};
+  state.branches.push(branch); state.active=branch.id; render();
+}
+function selectLearner(id) {
+  if (!Object.hasOwn(CASES,id)) throw new Error('Unknown learner');
+  state.learner=id;
+  state.active=state.branches.filter(branch=>branch.learner===id).at(-1)?.id ?? null;
+  render();
+}
+function tryAgain() { state.active=null; render(); }
+function openBranch(id) {
+  const branch=state.branches.find(item=>item.id===id);
+  if (!branch) throw new Error('Unknown branch');
+  state.learner=branch.learner; state.active=id; render();
+}
+function element(tag, className, text) {
+  const node=document.createElement(tag); node.className=className;
+  if (text!==undefined) node.textContent=text;
+  return node;
+}
+function render() {
+  const learner=CASES[state.learner];
+  document.querySelectorAll('[data-learner]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.learner===state.learner)));
+  $('learner-title').textContent='Coach '+learner.name;
+  $('work-label').textContent=learner.name+'’s original work';
+  $('work-text').textContent=learner.work; $('student-message').textContent=learner.message;
+  $('history-name').textContent=learner.name; $('history-text').textContent=learner.history;
+  $('history').open=false; $('approach-heading').textContent='How would you support '+learner.name+'?';
+  $('branch-count').textContent=state.branches.length;
+  $('choose-view').hidden=state.active!==null; $('result-view').hidden=state.active===null;
+  $('choices').replaceChildren();
+  learner.choices.forEach((choice,index)=>{
+    const button=element('button','choice'), symbol=element('span','choice-symbol',choice.symbol);
+    symbol.setAttribute('aria-hidden','true'); button.append(symbol);
+    const words=element('span',''); words.append(element('strong','',choice.title),element('small','',choice.short));
+    const arrow=element('span','choice-arrow','›'); arrow.setAttribute('aria-hidden','true');
+    button.append(words,arrow); button.addEventListener('click',()=>{chooseApproach(index);$('result-title').focus();});
+    $('choices').append(button);
+  });
+  if (state.active!==null) {
+    const branch=state.branches.find(item=>item.id===state.active), choice=learner.choices[branch.approach];
+    $('attempt-label').textContent='Branch '+branch.id; $('coach-label').textContent='You · '+choice.title;
+    $('coach-text').textContent=choice.coach; $('reply-name').textContent=choice.reply===null?'No further message':learner.name;
+    $('reply-text').textContent=choice.reply===null?'Later work is unknown.':choice.reply;
+    $('response-message').classList.toggle('no-reply',choice.reply===null);
+    $('observation').textContent=choice.observation;
+  }
+}
+function showPlaybook() {
+  const list=$('branch-list'); list.replaceChildren(); list.className=state.branches.length?'branch-list':'';
+  if (!state.branches.length) {
+    const empty=element('div','empty-playbook');
+    empty.append(element('h3','','Your first approach starts here.'),element('p','','Choose support for a learner to add an exchange to your playbook.'));
+    list.append(empty);
+  }
+  state.branches.forEach(branch=>{
+    const learner=CASES[branch.learner], choice=learner.choices[branch.approach], button=element('button','branch-button');
+    button.append(element('small','','Branch '+branch.id+' · '+learner.name),element('strong','',choice.title),element('p','','You: '+choice.coach),element('p','',choice.reply===null?'No further message; later work unknown.':learner.name+': '+choice.reply));
+    button.addEventListener('click',()=>{openBranch(branch.id);$('playbook').close();$('result-title').focus();});
+    list.append(button);
+  });
+  $('playbook').showModal();
+}
+// Connect the page.
+document.querySelectorAll('[data-learner]').forEach(button=>button.addEventListener('click',()=>{selectLearner(button.dataset.learner);$('learner-title').focus();}));
+$('retry-button').addEventListener('click',()=>{tryAgain();$('approach-heading').focus();});
+$('playbook-nav').addEventListener('click',showPlaybook);
+$('compare-button').addEventListener('click',showPlaybook);
+$('about-button').addEventListener('click',()=>$('about').showModal());
+$('studio-nav').addEventListener('click',()=>$('learner-title').focus());
+render();
+  </script>
+</body>
+</html>

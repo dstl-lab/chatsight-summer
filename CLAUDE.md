@@ -5,11 +5,14 @@
 Minchan's primary inspiration is Generative Agents: an interactive world of
 simulated students, engaging to explore as part of the broader goal of improving
 learning amid technological and societal change. The first audience is
-educators/researchers experimenting with student support. Pokemon, NBA2K, FIFA
-and Bloons Tower Defense are tentative game references; no structure is selected,
-and the design should be original. The proposed first encounter and research
-questions are in `docs/2026-09-11-learning-expedition.md`; a detailed game design
-has not yet been approved or implemented. Labeling and continuation diagnostics
+educators/researchers experimenting with student support. Minchan selected the
+coaching direction (NBA2K/FIFA inspiration), deferred adventure and support placement,
+and requested Animal Crossing stylistically, using original characters and assets.
+Minchan then explicitly prioritized making the simulated students work before
+designing the end product. Pause interface development; the exploratory storyboard
+is preserved, not a current deliverable or a functioning student model.
+The research context is in docs/2026-09-11-learning-expedition.md.
+Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
 
@@ -163,9 +166,8 @@ experiments/               ← one dir per experiment: config (pins), results, n
 ```
 
 Python-first; match ChatSight's backend conventions where sensible so context transfers.
-The earlier plan deferred frontend work until Phase 4. The interactive-world
-direction now calls for exploring one small playable encounter alongside behavior
-validation; see the current North Star and dated concept memo before expanding UI.
+Frontend work is paused by Minchan's latest instruction. Build and evaluate the
+student behavior loop before returning to the selected coaching presentation.
 
 ## Decisions already made (don't relitigate without new information)
 
