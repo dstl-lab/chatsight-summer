@@ -108,3 +108,29 @@ This is a developmental check of generated communication against one observed
 continuation per case, not evidence of task execution, correctness, response
 probability, student-model fidelity or learning. Further tuning/branching waits
 for those judgments; no additional batch is part of this completed experiment.
+
+## Human review complete; recover the missing work channel
+
+Minchan supplied qualitative judgments for all four cases. Case 1's candidates
+were both very plausible, with the persistent complaint conditional on a failed
+check. Case 2 favored A as a likely class-specific copy/paste, while describing
+both solutions as valid. Case 3 supplied no preference between two plausible
+actions. Case 4 questioned an unchanged repeated request and the alternative's
+fit to the student's terse communication, explicitly noting that notebook changes
+can accompany the same short message. Preserve these conditions; do not force
+rankings, response probabilities, verified correctness or formal rubric labels.
+
+The private `human-review-response.json` and `human-review-summary.json` retain
+the reply, interpretation and original presentation hashes. Original blank keys
+and packets remain unchanged so the completed experiment still reproduces.
+Now that review is complete, the source assignments can be disclosed: recorded
+candidates were B, B, A and A respectively. This is no discrimination/fidelity score.
+
+The follow-up [notebook audit](2026-09-11-notebook-context-recovery.md) confirms a
+relevant failed check before case 1's recorded complaint and four failed checks
+before case 3's repeated request. The recovered initial assignment contradicts
+case 2 A's fixed-discount rule and supports B's percentage rule on valid inputs.
+That corrects our task interpretation, not Minchan's plausibility judgment:
+students can submit incorrect work, including copied work. Case 4's work change
+remains unknown. These retrospective findings were not supplied to the generator;
+the post-response checks belong only to the observed reference branch.

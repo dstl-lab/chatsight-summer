@@ -19,8 +19,13 @@ fidelity remains a separate, incomplete requirement.
 Four new-to-continuation development comparisons are complete in
 data/episode-pilot/real-student-comparison-v1/ (docs/2026-09-11-real-student-comparison.md).
 Specific send approval is recorded; all four generated replies and A/B review
-pairs are preserved. Human comparison judgments are pending in review.md; do not
-reveal the separate origin key or tune to these targets before that review.
+pairs are preserved. Human review is complete; qualitative judgments and their
+conditions are recorded separately without changing the original blank packets.
+The bounded notebook audit in docs/2026-09-11-notebook-context-recovery.md found
+omitted initial assignment context and first queries, plus reference-only grader
+events. Later work changes remain unknown. Recover work context before tuning
+communication; preserve the completed prompts and keep future observations out
+of generator inputs. No additional model batch was run for that audit.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

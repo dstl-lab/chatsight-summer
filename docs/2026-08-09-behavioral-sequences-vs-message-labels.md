@@ -116,6 +116,13 @@ patterns move through a complete session with the tutor.
 
 ## Tensions with current project positions (recorded, not adjudicated)
 
+2026-09-11 correction: the historical logging-absence claims below were too broad.
+The [same-day sequence probe](2026-08-09-sequence-pilot-first-numbers.md) established
+existing notebook and grader events. The later
+[four-case recovery audit](2026-09-11-notebook-context-recovery.md) distinguishes
+initial captures, omitted chat and observed checks from unrecovered work diffs.
+Keep the original discussion as history, not the current inventory of the data.
+
 The memo's two empirical complaints are partly what this repo's last two
 weeks of instruments were built to measure, so the discussion should
 happen against those numbers rather than in the abstract:
