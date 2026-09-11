@@ -143,7 +143,7 @@ failed draws. All 327 experiment pins still match, including the 319 parent pins
 Request, case/draw, output and approval hashes were verified, and reopening the
 saved cache offline changed no outputs. `completion-verification.json` records
 these checks. All human plausibility, continuity and reply-occurrence judgments
-remain blank. Structural validity does not establish behavioral plausibility.
+were blank at generation completion. Structural validity does not establish behavioral plausibility.
 
 Independent review found that the original Markdown presentation could collapse
 code formatting. The frozen runner, outputs and original review are preserved.
@@ -153,8 +153,46 @@ blocks are preserved verbatim. Earlier dialogue is expandable, while each retain
 student reply, scripted tutor bridge and new generated reply is explicitly named.
 The new presentation is hash-linked to the original and its renderer.
 
-The next human task is reviewing cases 1, 5 and 7 for plausibility and any
+The prepared human task was reviewing cases 1, 5 and 7 for plausibility and any
 contradiction with their visible branch. Reply occurrence may remain unknown.
 Generated reports about successful tests or resolved errors are simulated dialogue,
 not observations of notebook execution or grading. No further tuning or model
 requests are part of this completed batch.
+
+## Human feedback and next constraints
+
+The three-case review is complete. Case 5 received an unqualified plausible
+judgment. Cases 1 and 7 received qualified plausible judgments: Minchan doubts
+that the student would relay a report that all tests passed in case 1, and questions
+the backtick formatting in case 7. Preserve these as two different reservations,
+not three unqualified acceptances. No explicit continuity or overall reply-occurrence
+judgments were supplied; those fields remain null.
+
+`human-review-response.json` preserves the exact response and binds the before/after
+hashes of `reviews-verbatim.json`. The prior blank record and earlier verification
+snapshots remain intact. `human-review-summary.json` is the current review summary;
+the original `reviews.json` belongs to the earlier presentation and is unchanged.
+`human-review-verification.json` confirms the mapping, reservations and unchanged
+327 experiment pins. Original outputs and both presentations are preserved.
+
+A bounded audit of only the shown historical prefixes supports the formatting
+concern. Case 7 has zero backticks across four student turns, while all four tutor
+turns use them. Across these three prefixes, all nine historical student turns
+contain zero backticks. All three retained generated seeds also contain none.
+This local contrast does not establish a cohort habit or the cause of the model's
+formatting. The counts and scope are saved in `visible-history-audit.json`.
+
+Case 1's visible student history includes a pasted failed-test report and no
+success-only report. This distinguishes reporting a problem from announcing
+completion; it does not establish that the student would send no further message.
+Case 7's reservation concerns formatting, so it does not reject the acknowledgment
+and subsequent request in that candidate. Do not turn the feedback into a blanket
+ban on outcome reports or a forced no-reply decision.
+
+The next generator comparison must assess communication choice separately from
+surface wording: a plausible outcome need not be something a student would tell
+the tutor. Formatting should be grounded in visible student contributions. Keep
+the current prompt and reviewed outputs frozen; removing delimiters alone would
+not address case 1. Treat these as development constraints to check across contexts,
+not admitted labels, a calibrated reply policy, or a fidelity result. This review
+needs no further answer from Minchan.

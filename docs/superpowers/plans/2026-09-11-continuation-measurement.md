@@ -72,6 +72,15 @@ Minchan explicitly approved the exact three-request batch. All three draws are
 structurally valid with no failed draws; all 327 pins, approval bindings and
 case/draw/output mappings verify. A separate fenced presentation preserves all
 27 dialogue/output blocks without changing the frozen runner or original review.
-Human review is now the outstanding task; see `review-verbatim.md` under the
-ignored continuity experiment directory. No plausibility or fidelity result is
+Human review was then the outstanding task; see `review-verbatim.md` under the
+ignored continuity experiment directory. No plausibility or fidelity result was
 inferred from successful generation.
+
+The subsequent human review is complete: case 5 is unqualified plausible; cases 1
+and 7 are qualified plausible, respectively questioning success-only reporting and
+backtick formatting. Exact responses, reservations and before/after hashes are
+saved separately; unspecified continuity and reply-occurrence fields remain null.
+The visible-prefix audit supports a local formatting mismatch and distinguishes
+failure-output pasting from success-only reporting without establishing broader
+habits. All 327 experiment pins are unchanged. The spec records the resulting
+development constraints; no further response or model run belongs to this packet.
