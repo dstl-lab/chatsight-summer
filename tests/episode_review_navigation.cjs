@@ -7,7 +7,7 @@ const vm = require('node:vm');
 
 const html = fs.readFileSync(path.join(__dirname, '../src/eval/episode_review.html'), 'utf8');
 const script = html.split('<script>')[1].split('</script>')[0];
-const controls = new Map(), pending = [], visited = [];
+const controls = new Map(), pending = [], visited = [], requests = [];
 const control = id => {
   if (!controls.has(id)) controls.set(id, {
     disabled: false, classList: {toggle() {}}, focus() {},
@@ -17,9 +17,14 @@ const control = id => {
 const context = vm.createContext({
   document: {getElementById: control}, window: {scrollTo() {}},
   performance: {now: () => 0}, clearTimeout, setTimeout: () => 0, visited,
-  fetch: (_, options) => new Promise(resolve => pending.push(() => resolve({
-    ok: true, json: async () => ({review: JSON.parse(options.body)}),
-  }))),
+  fetch: (_, options) => {
+    const body = JSON.parse(options.body); requests.push(body);
+    return new Promise(resolve => pending.push((status = 200) => resolve({
+      ok: status === 200, json: async () => status === 200
+        ? {review: {...body, revision: (body.revision || 0) + 1}}
+        : {detail: `Save failed (${status})`},
+    })));
+  },
 });
 // Load the real state declarations and functions, stopping before event wiring/start().
 vm.runInContext(script.slice(0, script.indexOf('\n$("previous").addEventListener')), context);
@@ -30,7 +35,7 @@ vm.runInContext(`
   render = () => {
     visited.push(index);
     answer = {episode_id: session.episodes[index].id, complete: false};
-    dirty = false; version++; updateProgress();
+    dirty = false; hasInteraction = false; version++; updateProgress();
   };
 `, context);
 const tick = () => new Promise(resolve => setImmediate(resolve));
@@ -39,6 +44,11 @@ async function main() {
   await vm.runInContext('save()', context);
   assert.equal(pending.length, 0, 'Untouched episodes must not create saved reviews');
   vm.runInContext('hasInteraction = true', context);
+  const cleanSave = vm.runInContext('save()', context);
+  await tick();
+  assert.equal(pending.length, 0, 'Clean reviews must not be autosaved after earlier interaction');
+  await cleanSave;
+  vm.runInContext('dirty = true', context);
   const autosave = vm.runInContext('save()', context);
   await tick();
   const firstNext = vm.runInContext('navigate(1)', context);
@@ -51,9 +61,34 @@ async function main() {
   await tick();
   assert.equal(pending.length, 0, 'Overlapping Next must not queue another navigation save');
   await Promise.all([autosave, firstNext, secondNext]);
+  assert.deepEqual(requests.map(body => body.revision), [0, 1], 'Queued saves use the revision returned by the previous save');
   assert.deepEqual(visited, [1], 'Overlapping Next must advance exactly one episode');
   assert.equal(control('next').disabled, false, 'Navigation unlocks after the save finishes');
   assert.equal(control('previous').disabled, false);
+
+  for (const [navigationTiming, status] of [['after-success', 409], ['before-duplicate', 503]]) {
+    vm.runInContext(`
+      session = {episodes: [{id: 'a'}, {id: 'b'}], reviews: {}};
+      index = 0; dirty = true; hasInteraction = true; version++;
+      answer = {episode_id: 'a', complete: false, instructor_action: {text: 'A human note'}};
+    `, context);
+    const first = vm.runInContext(navigationTiming === 'after-success' ? 'save()' : 'navigate(1)', context);
+    const duplicate = vm.runInContext('save()', context);
+    await tick(); pending.shift()(); await tick();
+    const next = navigationTiming === 'after-success' ? vm.runInContext('navigate(1)', context) : first;
+    await tick();
+    assert.equal(vm.runInContext('index', context), 0, 'Navigation must await every queued save even when the first clears dirty');
+    assert.equal(control('next').disabled, true);
+    pending.shift()(status);
+    await Promise.all([first, duplicate, next]);
+    assert.equal(vm.runInContext('answer.episode_id', context), 'a');
+    assert.equal(vm.runInContext('answer.instructor_action.text', context), 'A human note');
+    assert.equal(vm.runInContext('dirty && hasInteraction', context), true, 'Failed saves remain retryable on their original episode');
+    const retry = vm.runInContext('navigate(1)', context);
+    await tick(); pending.shift()(); await retry;
+    assert.equal(vm.runInContext('index', context), 1);
+    assert.equal(vm.runInContext('dirty || hasInteraction', context), false);
+  }
 
   // Development review decisions must be explicit, and must never mutate drafts.
   vm.runInContext(`

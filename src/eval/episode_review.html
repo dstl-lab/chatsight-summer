@@ -81,12 +81,13 @@ function setStatus(message, error = false) { $("save-status").textContent = mess
 function edited() { hasInteraction = true; answer.complete = false; dirty = true; version++; updateReviewButton(); setStatus("Unsaved changes…"); clearTimeout(timer); timer = setTimeout(() => save(), 450); }
 function save() {
   clearTimeout(timer);
-  if (!answer || !hasInteraction) return Promise.resolve(true);
+  if (!answer || !hasInteraction || !dirty) return saves;
   const episodeId = answer.episode_id, capturedVersion = version;
   const body = JSON.parse(JSON.stringify({...answer, elapsed_ms: timeNow()}));
   saves = saves.then(async () => {
     setStatus("Saving…");
     try {
+      body.revision = session.reviews[episodeId]?.revision ?? 0;
       const response = await fetch("/api/review", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
       const data = await response.json();
       if (!response.ok) { const detail = Array.isArray(data.detail) ? data.detail.map(d => d.msg).join("; ") : data.detail; throw new Error(detail || "Save failed"); }
@@ -370,8 +371,13 @@ async function navigate(delta) {
   if (navigating || targetIndex < 0 || targetIndex >= session.episodes.length) return;
   navigating = true; updateProgress();
   try {
-    if (await save() && !dirty && index === fromIndex && answer.episode_id === episodeId) {
-      pauseClock(); index = targetIndex; render(); $("episode-title").focus(); window.scrollTo({top: 0});
+    let pending = save();
+    while (await pending) {
+      if (pending !== saves) { pending = saves; continue; }
+      if (!dirty && index === fromIndex && answer.episode_id === episodeId) {
+        pauseClock(); index = targetIndex; render(); $("episode-title").focus(); window.scrollTo({top: 0});
+      }
+      break;
     }
   } finally { navigating = false; updateProgress(); }
 }

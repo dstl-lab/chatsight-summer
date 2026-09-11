@@ -46,6 +46,7 @@ class InstructorAction(BaseModel):
 class Review(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     episode_id: str
+    revision: int = Field(default=0, ge=0)
     judgments: dict[str, Judgment] = Field(default_factory=dict)
     instructor_action: InstructorAction = Field(default_factory=InstructorAction)
     elapsed_ms: int = Field(default=0, ge=0)
@@ -223,6 +224,9 @@ def create_app(bundle_path: Path, reviewer: str, task: str = "development",
             with out.with_suffix(".lock").open("a") as guard:
                 fcntl.flock(guard, fcntl.LOCK_EX)
                 saved = read_saved()
+                previous = saved["reviews"].get(review.episode_id, {})
+                if review.revision != previous.get("revision", 0):
+                    raise HTTPException(409, "This review changed in another page. Copy your unsaved changes, then reload before editing again.")
                 answer = review.model_dump()
                 if answer["workflow"] == "manual":
                     del answer["workflow"]
@@ -230,8 +234,8 @@ def create_app(bundle_path: Path, reviewer: str, task: str = "development",
                     if judgment["assessment"] is None:
                         del judgment["assessment"]
                 answer["elapsed_ms"] = max(answer["elapsed_ms"],
-                    saved["reviews"].get(review.episode_id, {}).get("elapsed_ms", 0))
-                answer.update(condition=conditions[review.episode_id],
+                    previous.get("elapsed_ms", 0))
+                answer.update(revision=review.revision + 1, condition=conditions[review.episode_id],
                               saved_at=datetime.now(timezone.utc).isoformat())
                 saved["reviews"][review.episode_id] = answer
                 with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=out.parent,

@@ -116,8 +116,10 @@ def test_partial_review_resumes_with_provenance_and_cumulative_time(tmp_path):
     path = _bundle(tmp_path)
     original = path.read_bytes()
     client = _client(path, task="coding")
-    assert client.post("/api/review", json=_review()).status_code == 200
+    first = client.post("/api/review", json=_review())
+    assert first.status_code == 200
     review = _review()
+    review["revision"] = first.json()["review"]["revision"]
     review["elapsed_ms"] = 600
     assert client.post("/api/review", json=review).status_code == 200
     resumed = _client(path, task="coding").get("/api/session").json()
@@ -132,6 +134,43 @@ def test_partial_review_resumes_with_provenance_and_cumulative_time(tmp_path):
     assert disk["rubric"] == resumed["rubric"]
     assert disk["reviewer"] == "invented-reviewer"
     assert not list((tmp_path / "reviews").glob("*.tmp"))
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_stale_clients_cannot_replace_newer_human_reviews(tmp_path, legacy):
+    path = _bundle(tmp_path)
+    saved_path = tmp_path / "reviews/coding-holdout-invented-reviewer.json"
+    if legacy:
+        assert _client(path, task="coding").post("/api/review", json=_review()).status_code == 200
+        stored = json.loads(saved_path.read_text())
+        stored["reviews"]["ep-1"].pop("revision", None)
+        saved_path.write_text(json.dumps(stored))
+        original = saved_path.read_bytes()
+    older, newer = (_client(path, task="coding") for _ in range(2))
+    for client in (older, newer):
+        assert client.get("/api/session").status_code == 200
+    if legacy:
+        assert saved_path.read_bytes() == original
+    stale, correction = _review(), _review()
+    correction["judgments"]["request"]["rationale"] = "New human correction"
+    correction["instructor_action"]["text"] = "New human note"
+    first = newer.post("/api/review", json=correction)
+    assert first.status_code == 200
+    preserved = saved_path.read_bytes()
+    assert older.post("/api/review", json=stale).status_code == 409
+    assert saved_path.read_bytes() == preserved
+    saved = newer.get("/api/session").json()["reviews"]["ep-1"]
+    assert saved["judgments"] == correction["judgments"]
+    assert saved["instructor_action"] == correction["instructor_action"]
+    assert saved["revision"] == 1
+    correction["revision"] = saved["revision"]
+    correction["instructor_action"]["text"] = "A deliberate later edit"
+    second = newer.post("/api/review", json=correction)
+    assert second.status_code == 200
+    assert second.json()["review"]["revision"] == 2
+    preserved = saved_path.read_bytes()
+    assert older.post("/api/review", json=correction).status_code == 409
+    assert saved_path.read_bytes() == preserved
 
 
 @pytest.mark.parametrize("bad", [
@@ -155,7 +194,9 @@ def test_completion_requires_evidence_except_explicit_unknown(tmp_path):
     client = _client(_bundle(tmp_path), task="coding")
     review = _review()
     review["judgments"]["request"]["evidence"] = []
-    assert client.post("/api/review", json=review).status_code == 200  # recoverable incomplete draft
+    first = client.post("/api/review", json=review)
+    assert first.status_code == 200  # recoverable incomplete draft
+    review["revision"] = first.json()["review"]["revision"]
     review["complete"] = True
     assert client.post("/api/review", json=review).status_code == 422
     review["judgments"] = {dim: {"value": "unclear", "evidence": [], "rationale": "Cannot tell"}
@@ -184,13 +225,15 @@ def test_failed_atomic_replace_preserves_last_saved_review(tmp_path, monkeypatch
     import src.eval.episode_review as server
     path = _bundle(tmp_path)
     client = _client(path, task="coding")
-    assert client.post("/api/review", json=_review()).status_code == 200
+    first = client.post("/api/review", json=_review())
+    assert first.status_code == 200
     saved_path = tmp_path / "reviews/coding-holdout-invented-reviewer.json"
     prior = saved_path.read_bytes()
     def disk_failure(*args):
         raise OSError("invented disk failure")
     monkeypatch.setattr(server.os, "replace", disk_failure)
     changed = _review()
+    changed["revision"] = first.json()["review"]["revision"]
     changed["judgments"]["request"]["rationale"] = "An unsaved change"
     response = client.post("/api/review", json=changed)
     assert response.status_code == 503
@@ -240,7 +283,9 @@ def test_draft_review_requires_a_deliberate_decision_before_completion(tmp_path)
     review = {"episode_id": "ep-0", "workflow": "draft-review", "judgments": {
         dim: {"value": "unclear", "evidence": []}
         for dim in ("request", "tutor_response", "followup")}}
-    assert client.post("/api/review", json=review).status_code == 200
+    first = client.post("/api/review", json=review)
+    assert first.status_code == 200
+    review["revision"] = first.json()["review"]["revision"]
     review["complete"] = True
     assert client.post("/api/review", json=review).status_code == 422
     for judgment in review["judgments"].values():
@@ -296,11 +341,15 @@ def test_legacy_reviews_keep_their_shape_and_bytes_when_reopened(tmp_path):
         "request": {"value": "unclear", "evidence": [], "rationale": "My earlier review"}}}
     assert client.post("/api/review", json=review).status_code == 200
     saved_path = tmp_path / "reviews/development-development-invented-reviewer.json"
+    stored = json.loads(saved_path.read_text())
+    stored["reviews"]["ep-0"].pop("revision", None)
+    saved_path.write_text(json.dumps(stored))
     original = saved_path.read_bytes()
     saved = _client(path).get("/api/session").json()["reviews"]["ep-0"]
     assert saved_path.read_bytes() == original
     assert "workflow" not in saved
     assert "assessment" not in saved["judgments"]["request"]
+    assert "revision" not in saved
 
 
 @pytest.mark.parametrize("task", ["coding", "comparison"])
