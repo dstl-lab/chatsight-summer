@@ -12,6 +12,10 @@ Minchan then explicitly prioritized making the simulated students work before
 designing the end product. Pause interface development; the exploratory storyboard
 is preserved, not a current deliverable or a functioning student model.
 The research context is in docs/2026-09-11-learning-expedition.md.
+One invented worksheet/action loop with computed feedback is implemented in
+src/eval/student_task.py; two live traces and their limits are recorded in
+docs/2026-09-11-student-task-loop.md. It tests mechanics; human-audited real-data
+fidelity remains a separate, incomplete requirement.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

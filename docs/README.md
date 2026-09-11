@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-11 | `2026-09-11-student-task-loop.md` — model actions, worksheet revisions and computed feedback | Two live authored traces reproduce offline; 301 tests pass; immediate correct solutions do not establish novice fidelity |
 | 2026-09-11 | `2026-09-11-coaching-session-prototype.md` — original cozy village and a small coaching session | Scripted exploration preserved and tested; interface work paused in favor of functioning simulated students |
 | 2026-09-11 | `2026-09-11-learning-expedition.md` — Generative Agents inspiration and original educational game concepts | Coaching selected; adventure/support placement deferred; student simulator takes priority over presentation |
 | 2026-09-11 | `2026-09-11-portable-student-behavior.md` — separate behavioral simulation from course execution | Exact bundle recovery is optional; conditional feedback probes can continue; course transfer and outcome prediction remain unvalidated |
