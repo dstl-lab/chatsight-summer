@@ -1,5 +1,17 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Current North Star (2026-09-11 clarification)
+
+Minchan's primary inspiration is Generative Agents: an interactive world of
+simulated students, engaging to explore as part of the broader goal of improving
+learning amid technological and societal change. The first audience is
+educators/researchers experimenting with student support. Pokemon is a tentative
+game reference; use an original design. The proposed first encounter and research
+questions are in `docs/2026-09-11-learning-expedition.md`; a detailed game design
+has not yet been approved or implemented. Labeling and continuation diagnostics
+support this goal. Behavioral fidelity, educator usefulness and real learning
+outcomes remain separate questions; the invariants below still apply.
+
 ## What this project is
 
 Research codebase with two subsystems (decision memo:
@@ -150,8 +162,9 @@ experiments/               ← one dir per experiment: config (pins), results, n
 ```
 
 Python-first; match ChatSight's backend conventions where sensible so context transfers.
-No frontend until Phase 4 needs the instructor-facing views; results live in notebooks and
-memos until then.
+The earlier plan deferred frontend work until Phase 4. The interactive-world
+direction now calls for exploring one small playable encounter alongside behavior
+validation; see the current North Star and dated concept memo before expanding UI.
 
 ## Decisions already made (don't relitigate without new information)
 
