@@ -109,3 +109,13 @@ presentation files, verifies temporal approval and records the pending human
 judgment. The four context supplements and previous experiments are preserved.
 This checkpoint changes documentation and ignored evidence only; the latest
 production-code test run remains 311 passing tests with the existing warning.
+
+## Human review received
+
+Minchan answered “Yes” to whether changing the cell without replying was plausible.
+The separate `human-review-response.json` binds that answer to both identical
+draws, the displayed question and the original result/review hashes. Original
+blank review fields and completed inputs remain unchanged. This accepts one
+action's plausibility; it says nothing about execution, correctness, action
+frequency or cohort fidelity. The next step is the limited, requested-feedback
+loop in `2026-09-11-notebook-check-loop.md`.

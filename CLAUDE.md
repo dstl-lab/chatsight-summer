@@ -33,8 +33,20 @@ Two initial-encounter draws are complete in data/episode-pilot/notebook-action-v
 Minchan specifically approved the exact disclosed payload after automatic review
 initially rejected it; both approval and rejection are preserved. Both draws made
 the same source revision without chat. Neither executed code or obtained feedback.
-The private review.md presents that action once; human plausibility review is
-pending. All 16 pins verify; the latest production-code suite passed 311 tests.
+The private review.md presents that action once; Minchan accepted it as plausible.
+The separate human-review-response.json preserves that judgment without implying
+correctness or execution. All 16 pins still verify.
+The new src/eval/notebook_check.py connects edits, requested computed fixture
+feedback and optional chat (docs/2026-09-11-notebook-check-loop.md). It recognizes
+two count-expression forms on authored data without executing candidate source;
+unsupported code stays ungraded. An edit clears current feedback. The accepted
+revision passes this limited offline fixture; this is a scripted engineering check,
+not a model-selected check or course result. One bounded trajectory is prepared
+in data/episode-pilot/notebook-check-v1/ with 31 verified file pins. Automatic
+approval review rejected its send before launch, requiring specific permission
+for this new private payload despite the standing grant. No new requests were
+sent; preserve the rejection and pending approval-request.json and do not retry
+without the specific reply. The latest suite passed 316 tests.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

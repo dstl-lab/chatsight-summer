@@ -5,7 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-11 | `2026-09-11-work-context-snapshot.md` — recover context and separate cell edits from optional chat | Specifically approved draws complete: both made the same silent edit; 16 pins verify; one deduplicated action awaits human review |
+| 2026-09-11 | `2026-09-11-notebook-check-loop.md` — connect quiet edits to requested computed feedback | Offline controls and 316 tests pass; 31 pins; automatic review requires specific send approval; no new requests sent |
+| 2026-09-11 | `2026-09-11-work-context-snapshot.md` — recover context and separate cell edits from optional chat | Both draws made the same silent edit; Minchan accepted its plausibility; 16 pins verify; no course execution |
 | 2026-09-11 | `2026-09-11-notebook-context-recovery.md` — audit omitted work context in four reviewed cases | Initial assignments and omitted first queries recovered; reference failures verified; later work diffs remain unknown; no new model calls |
 | 2026-09-11 | `2026-09-11-real-student-comparison.md` — four recorded/generated behavior pairs | Human review complete with conditions preserved separately; 18 pins and older experiments preserved |
 | 2026-09-11 | `2026-09-11-student-task-loop.md` — model actions, worksheet revisions and computed feedback | Two live authored traces reproduce offline; 301 tests pass; immediate correct solutions do not establish novice fidelity |
