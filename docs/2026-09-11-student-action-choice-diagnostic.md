@@ -165,3 +165,8 @@ The next useful investigation is whether the saved assignment assets can support
 an actual bounded check against a known state. Locate the notebook, input data
 and grader definitions before adding more continuation prompts or an executor.
 Historical grader events alone cannot supply results for the pending checks.
+
+The subsequent [reference fixture](2026-09-11-reference-grader-fixture.md) found a
+runtime error before grading. That new authored state does not retroactively
+turn the earlier unsupported success report into a proven false claim about the
+unobserved original state, and its error was not backfilled into these draws.
