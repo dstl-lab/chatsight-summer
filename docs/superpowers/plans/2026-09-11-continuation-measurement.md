@@ -58,12 +58,20 @@ def behavior_review(episode: dict, continuation: Continuation) -> dict: ...
 The helper and UI fixes passed independent review, 282 Python tests and the Node
 navigation check. Exact prompt/schema and eight-prefix parity passed; 319 parent
 pins remain unchanged. Sixteen blank behavior-comparison packets are prepared.
-The separate three-call continuity batch is prepared but unsent: automatic approval
-review requires specific payload approval despite the logged standing grant. See
-the spec for the exact experiment and saved request; no model outcomes are claimed.
+At the initial PR checkpoint, the separate three-call continuity batch was prepared
+but unsent because automatic approval review required exact-payload approval. The
+subsequent explicit approval and completed run are recorded below and in the spec.
 
 All implementation/PR tasks above are complete. Draft PR: [#25](https://github.com/dstl-lab/chatsight-summer/pull/25).
 The five implementation commits were replayed onto `origin/main` with an identical
 final tree, then pushed from the separate `codex/episode-pilot` worktree. Main was
-not merged. The outstanding action is the exact three-request model approval,
-followed by generation and human continuity review.
+not merged. At that checkpoint, exact three-request approval, generation and human
+continuity review remained outstanding.
+
+Minchan explicitly approved the exact three-request batch. All three draws are
+structurally valid with no failed draws; all 327 pins, approval bindings and
+case/draw/output mappings verify. A separate fenced presentation preserves all
+27 dialogue/output blocks without changing the frozen runner or original review.
+Human review is now the outstanding task; see `review-verbatim.md` under the
+ignored continuity experiment directory. No plausibility or fidelity result is
+inferred from successful generation.

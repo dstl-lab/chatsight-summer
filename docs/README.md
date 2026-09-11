@@ -5,7 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-11 | `2026-09-11-continuation-measurement.md` — reusable student continuation, behavior comparison, and branch continuity | Implemented; blank comparison packets prepared; three continuity requests blocked by automatic approval review |
+| 2026-09-11 | `2026-09-11-continuation-measurement.md` — reusable student continuation, behavior comparison, and branch continuity | Implemented; three continuity draws complete; human review pending in the verbatim packet |
 | 2026-09-11 | `2026-09-11-student-continuation-check.md` — fixed prompt across other conversations | Eight-case review complete; qualifications preserved, behavior measurement and continuity remain |
 | 2026-09-11 | `2026-09-11-student-behavior-diagnostic.md` — inspect real code revisions and subsequent requests | Style and displayed code attempt accepted; local evidence limits preserved |
 | 2026-09-10 | `2026-09-10-tutor-moves.md` — ordered component labels and tutor-to-request scope | Results preserved; D–E review deferred while focus returns to student continuations |

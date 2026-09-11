@@ -110,22 +110,51 @@ is calculated from the earlier plausibility feedback.
 
 The three continuity requests are prepared as experiment
 `3a08fcd427177f3818ae5413eda397d4596f9ecf1089a6c579110a4085521e6b`,
-pinning 327 files. They remain **unsent**. Automatic approval review rejected the
+pinning 327 files. At the initial checkpoint they remained **unsent**. Automatic approval review rejected the
 initial call and a retry supported by an exact payload audit. The audit confirms
 that every historical turn comes from the already approved eight prefixes, with
 zero new raw source dialogue; additions are retained generated replies and scripted
-tutor bridges. The reviewer nevertheless requires explicit approval of this exact
+tutor bridges. The reviewer nevertheless required explicit approval of this exact
 new branch payload because it contains sensitive derived student content.
 
 `prepared-branches.md` presents the three branches, `disclosure.md` preserves every
 exact model prompt, and `approval-request.json` binds the requested three calls to
 their hashes in `data/episode-pilot/student-continuity-v1/`. Both denials and the
-authorization evidence are saved there. No model process started, no request was
-sent, and no generated-output review exists for this batch yet. The user's standing
-approval remains logged in `CLAUDE.md`; collect the specific requested response
-before retrying the same send command.
+authorization evidence are saved there. At that checkpoint no model process had
+started, no request had been sent, and no generated-output review existed. The
+user's standing approval remains logged in `CLAUDE.md`.
 
 Implementation is published in draft [PR #25](https://github.com/dstl-lab/chatsight-summer/pull/25),
 on the separate `codex/episode-pilot` worktree branch. Commits separate the sequence
 fix, accumulated pilot, documentation cleanup, review-save fix and continuation
 helpers. Main remains unmerged while the PR is reviewed.
+
+## Specific batch approval and completed run
+
+Minchan subsequently answered "Yes" to sending these three prepared branch prompts
+to Gemini 2.5 Pro. The exact response is saved in `approval-response.json`, bound
+to the unchanged request, input hashes and experiment ID. The original denials
+and blocked execution status are preserved. The unchanged runner is now authorized
+for these three requests; this response makes no human plausibility or continuity
+judgment about their outputs.
+
+All three logical requests completed with structurally valid replies and zero
+failed draws. All 327 experiment pins still match, including the 319 parent pins.
+Request, case/draw, output and approval hashes were verified, and reopening the
+saved cache offline changed no outputs. `completion-verification.json` records
+these checks. All human plausibility, continuity and reply-occurrence judgments
+remain blank. Structural validity does not establish behavioral plausibility.
+
+Independent review found that the original Markdown presentation could collapse
+code formatting. The frozen runner, outputs and original review are preserved.
+A separate `build_verbatim_review.py` reuses the existing fence helper to produce
+`review-verbatim.md` and `reviews-verbatim.json`; all 27 source/generated text
+blocks are preserved verbatim. Earlier dialogue is expandable, while each retained
+student reply, scripted tutor bridge and new generated reply is explicitly named.
+The new presentation is hash-linked to the original and its renderer.
+
+The next human task is reviewing cases 1, 5 and 7 for plausibility and any
+contradiction with their visible branch. Reply occurrence may remain unknown.
+Generated reports about successful tests or resolved errors are simulated dialogue,
+not observations of notebook execution or grading. No further tuning or model
+requests are part of this completed batch.
