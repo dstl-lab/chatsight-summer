@@ -196,3 +196,10 @@ the current prompt and reviewed outputs frozen; removing delimiters alone would
 not address case 1. Treat these as development constraints to check across contexts,
 not admitted labels, a calibrated reply policy, or a fidelity result. This review
 needs no further answer from Minchan.
+
+The subsequent [student-reporting audit](2026-09-11-student-reporting-audit.md)
+checks these communication constraints against all 75 opportunities in the same
+12 development conversations. It found no clear success-only update in 64
+recorded follow-ups and preserves ambiguous problem reports. All 11 absent
+follow-ups occur at exported conversation endings, which cannot calibrate a
+no-reply policy. The audit adds no model calls or prompt changes.
