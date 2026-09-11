@@ -82,3 +82,58 @@ Independent preparation and authorization-scope audits pass. All 350 frozen pins
 remain intact; zero requests were sent and no model outputs or human output
 judgments exist. The prepared diagnostic and exact approval request are complete;
 execution is awaiting the permission required by automatic approval review.
+
+## Specific approval and execution
+
+Minchan subsequently answered “Yes” to sending these exact four prepared prompts,
+including the previously reviewed student dialogue, to Gemini 2.5 Pro. The saved
+`approval-response.json` binds that response to the unchanged experiment, input,
+job and disclosure hashes. Both earlier rejections and the unsent checkpoint
+remain preserved. No plausibility or reply-occurrence judgment is inferred from
+permission to run the batch.
+
+## Completed diagnostic and evidence-grounding failure
+
+All four logical requests completed with structurally valid replies and zero
+failed draws. The explicit approval, request/output mappings and all 350 frozen
+pins verify. Offline cache reopening and rerendering preserve every protected
+file byte-for-byte. Independent presentation verification checked all four
+allocations and 15 exact fenced blocks. No human output judgments were supplied.
+Adapter attempts are not individually logged; these are logical-request counts.
+
+| Condition | Observed outputs | Assistant evidence check |
+|---|---|---|
+| Current outcome unknown | Two replies reporting outcomes | Both assert a current result unsupported by a supplied post-revision observation |
+| Successful check stipulated | Two success replies | One copies the supplied output; one paraphrases success; both are consistent with the assigned result |
+
+The first unknown-condition reply reuses a historical failure fragment and a row
+count mentioned in an earlier student question. The number is not invented from
+nothing: the error is promoting old or uncertain evidence into a current claim
+after the generated code revision. The second unknown-condition reply presents
+a new all-pass result. These are unsupported under the frozen scenario contract,
+not proven false claims about an actually executed notebook. The hypothetical
+success condition establishes neither the generated code's correctness nor the
+real student's future.
+
+`assistant-outcome-audit-independent.json` records exact historical and generated
+evidence references separately from the blank human review. The other receipts
+are `completion-verification.json`, `presentation-verification.json`, and
+`independent-approval-verification.json`. All raw excerpts remain private.
+
+This variant fails the intended handling of unknown current outcomes. Do not
+promote it to longer rollouts, relabel the assistant checks as human ground truth,
+or ask Minchan to review those unsupported current-result claims as plausibility
+questions. The two consistent
+success replies still have no human plausibility or reply-occurrence judgments;
+consistency is not a demonstrated communication improvement. All four draws
+reply, which does not estimate a response probability.
+
+The next boundary to implement is the link between an action, its environment
+observation and the code state it concerns. After a code revision, earlier grader
+results remain evidence about earlier code; they do not establish the current
+result. A requested check must remain pending until the environment supplies a
+result. A student can still ask questions without running code; missing execution
+evidence must not be converted into either a report or a predicted no-reply.
+This diagnostic does not implement that action/execution loop. Preserve its
+negative result before extending the simulation, rather than adding another
+case-specific wording instruction or requesting the same plausibility review.
