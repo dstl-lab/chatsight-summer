@@ -56,3 +56,29 @@ standing authorization against all four exact requests before loading credential
 Offline checks pass for scenario/dialogue separation, changed authorization job
 bindings, cache reopening, review text preservation, duplicate draws, no-reply,
 failed calls and saved human answers. No production generator or API was changed.
+
+## Approval review checkpoint
+
+Automatic approval review rejected the initial send before process launch. Its
+stated reason was transmission of private student dialogue and derived context
+to an external model destination; it did not accept general model-run approval
+as specific authorization for this payload and destination. Zero requests were
+sent and no results file exists at this checkpoint. The exact rejection and a
+hash-bound four-request disclosure are saved privately. The standing permission
+remains recorded; an audit of prior specific payload approvals is separate from
+any claim that this new batch has received exact-payload approval.
+
+The subsequent scope audit verifies that every current dialogue byte already
+appeared in continuity case 1's specifically approved Gemini payload, including
+the generated seed and scripted bridge. The only new prompt content is generic
+instruction and the authored scenario packet. That prior user “Yes” was bound
+to three earlier exact requests; it is not relabeled as approval of these four.
+An evidence-supported review of the same unchanged send command was also rejected
+because the scenario data makes this a different payload. Both decisions remain
+saved. No further send is attempted without specific approval of the prepared
+four-request disclosure.
+
+Independent preparation and authorization-scope audits pass. All 350 frozen pins
+remain intact; zero requests were sent and no model outputs or human output
+judgments exist. The prepared diagnostic and exact approval request are complete;
+execution is awaiting the permission required by automatic approval review.

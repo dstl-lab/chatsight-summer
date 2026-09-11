@@ -5,7 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-11 | `2026-09-11-environment-conditioned-continuation.md` — supplied grader result versus student communication | Four-request diagnostic frozen: unknown outcome versus stipulated success on one exposed branch |
+| 2026-09-11 | `2026-09-11-environment-conditioned-continuation.md` — supplied grader result versus student communication | Four-request diagnostic frozen and verified; zero sent, automatic approval review requires exact-payload permission |
 | 2026-09-11 | `2026-09-11-autograder-format-grounding.md` — distinguish environment output from student reporting | Logged all-pass versus subtest format verified; deployed notebook HTML remains unverified |
 | 2026-09-11 | `2026-09-11-communication-format-comparison.md` — compare communication choice and student formatting | 19 valid new draws; continuity 7 both plausible; continuity 1 redirected to verified grader format |
 | 2026-09-11 | `2026-09-11-student-reporting-audit.md` — what students report after help, and what conversation endings reveal | Offline audit complete: no clear success-only updates in 64 observed follow-ups; uncertainty and terminal observation limits retained |
