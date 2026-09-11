@@ -45,9 +45,13 @@ the bounded live trajectory in data/episode-pilot/notebook-check-v1/ completed:
 request-check -> computed fixture pass -> no-reply, across two logical requests.
 No new edit or message occurred. Exact offline replay and all 31 pins verify;
 approval precedes both calls. Preserve the original automatic rejection,
-approval and receipts. No candidate code or course grader ran; the new check/stop
-sequence awaits human plausibility review in review.md. This is one exposed
-development trajectory, not calibrated behavior. The latest suite passed 316 tests.
+approval and receipts. No candidate code or course grader ran; Minchan accepted
+the new check/stop sequence as plausible, with that answer recorded separately.
+This is one exposed development trajectory, not calibrated behavior.
+The next engineering probe in docs/2026-09-11-failed-check-continuation.md uses
+wholly authored work/dialogue, one scripted failed check and at most three model
+decisions. The completed production loop stays frozen. This tests response to
+failed feedback, not real-student fidelity. The latest suite passed 316 tests.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

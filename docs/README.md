@@ -5,7 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-11 | `2026-09-11-notebook-check-loop.md` — connect quiet edits to requested computed feedback | Specifically approved run: requested check -> computed fixture pass -> no-reply; exact replay/31 pins verify; human sequence review pending |
+| 2026-09-11 | `2026-09-11-failed-check-continuation.md` — model actions after an authored failed check | Preparing one invented engineering probe; first check scripted, subsequent actions generated |
+| 2026-09-11 | `2026-09-11-notebook-check-loop.md` — connect quiet edits to requested computed feedback | Requested check -> computed fixture pass -> no-reply accepted as plausible; exact replay/31 pins verify |
 | 2026-09-11 | `2026-09-11-work-context-snapshot.md` — recover context and separate cell edits from optional chat | Both draws made the same silent edit; Minchan accepted its plausibility; 16 pins verify; no course execution |
 | 2026-09-11 | `2026-09-11-notebook-context-recovery.md` — audit omitted work context in four reviewed cases | Initial assignments and omitted first queries recovered; reference failures verified; later work diffs remain unknown; no new model calls |
 | 2026-09-11 | `2026-09-11-real-student-comparison.md` — four recorded/generated behavior pairs | Human review complete with conditions preserved separately; 18 pins and older experiments preserved |
