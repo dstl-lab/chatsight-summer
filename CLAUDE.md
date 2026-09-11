@@ -40,13 +40,14 @@ The new src/eval/notebook_check.py connects edits, requested computed fixture
 feedback and optional chat (docs/2026-09-11-notebook-check-loop.md). It recognizes
 two count-expression forms on authored data without executing candidate source;
 unsupported code stays ungraded. An edit clears current feedback. The accepted
-revision passes this limited offline fixture; this is a scripted engineering check,
-not a model-selected check or course result. One bounded trajectory is prepared
-in data/episode-pilot/notebook-check-v1/ with 31 verified file pins. Automatic
-approval review rejected its send before launch, requiring specific permission
-for this new private payload despite the standing grant. No new requests were
-sent; preserve the rejection and pending approval-request.json and do not retry
-without the specific reply. The latest suite passed 316 tests.
+revision passed the limited scripted control. After Minchan's specific approval,
+the bounded live trajectory in data/episode-pilot/notebook-check-v1/ completed:
+request-check -> computed fixture pass -> no-reply, across two logical requests.
+No new edit or message occurred. Exact offline replay and all 31 pins verify;
+approval precedes both calls. Preserve the original automatic rejection,
+approval and receipts. No candidate code or course grader ran; the new check/stop
+sequence awaits human plausibility review in review.md. This is one exposed
+development trajectory, not calibrated behavior. The latest suite passed 316 tests.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

@@ -81,3 +81,34 @@ approval question are preserved separately. Do not bypass or resubmit before the
 specific response. This is an automatic-review requirement, not a withdrawal of
 Minchan's standing permission. All unaffected implementation and offline work is
 complete; live check selection and subsequent behavior remain unobserved.
+
+## Specifically approved run and review
+
+Minchan answered “Yes” to sending the disclosed private excerpt and generated
+work to Gemini 2.5 Pro for one run of at most four decisions. The separate
+`approval-response.json` binds that answer to the unchanged question, scope,
+experiment and payload hashes. It predates both model requests; the original
+rejection and preparation files remain intact.
+
+The unchanged runner completed two logical requests without failure. The model
+first requested a check of the previously reviewed revision. The authored
+fixture computed its expected distinct count and returned passing feedback. The
+model then selected no-reply. It made no further edit, sent no chat message and
+claimed no outcome. The four-action cap did not force the stop. This connects the
+accepted quiet edit to a model-selected check and subsequent silence, although
+the edit came from the earlier probe rather than one uninterrupted model run.
+
+Exact offline replay reproduces both actions and feedback with no dispatch. All
+31 preparation pins verify. Independent review confirms approval timing, the
+current observation's branch/revision/source/fixture/checker bindings and input
+isolation: the second prompt adds only this run's generated request and computed
+result to the initial context. Private review and completion artifacts preserve
+the sequence with blank human judgment; the earlier approval of a quiet edit is
+not silently extended to this new check-and-stop behavior. Production code is
+unchanged in this checkpoint; the latest suite remains 316 passing tests.
+
+This is one exposed development trajectory. A fixture pass is neither code
+execution nor a course result. No-reply does not establish that the student moved
+on, understood, or abandoned the task. This run contains no failed feedback and
+does not establish failure recovery, a response probability, course transfer or
+cohort fidelity. The review asks only whether the displayed sequence is plausible.
