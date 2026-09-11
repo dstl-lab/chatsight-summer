@@ -91,3 +91,35 @@ variant calls, without writing review results or calling a model.
 The exact disclosure and truthful authorization basis are saved privately.
 Automatic approval review allowed this batch under the recorded authorization,
 and generation has started. No human judgments of these outputs exist yet.
+
+## Generation complete; human comparison pending
+
+All 19 new logical requests completed with structurally valid continuations and
+zero failed draws. All 339 pins remain unchanged. Independent preparation review
+verified the baseline copies, identical dialogue payloads, settings, schedule and
+authorization. Reopening the completed cache offline changed no result or review
+files. Adapter attempts are not individually logged; these counts describe
+logical requests, not transport attempts.
+
+`review.md` presents all 11 contexts, with the three continuity cases first.
+There are 30 distinct displays representing all 38 baseline/variant allocations.
+Identical decision/text pairs share a display without losing their conditions or
+draws; the allocation mapping is saved separately. Candidate headings do not name
+the prompt condition. Every new content, formatting and reply-occurrence judgment
+is blank, including displays that reproduce previously judged baseline text.
+`completion-verification.json` records the checks and exact artifact hashes.
+Independent presentation verification checked all 38 allocations and 100 exact
+fenced source/candidate blocks. Rerendering preserved the saved inputs, results,
+presentation, mapping and blank judgments byte-for-byte; the receipt is in
+`review-verification.json`.
+
+The variant and baseline are exactly identical in continuity case 5. Preserve its
+earlier unqualified plausible judgment in the original record; do not require a
+repeat judgment solely for an identical message in the same visible context or
+copy it into the new blank fields. Minchan's next task is therefore continuity
+cases 1 and 7. A preference, acceptance of both candidates, uncertainty, or a short
+note is sufficient; content conditional on a reply and likelihood of sending it
+must remain distinguishable.
+The eight original-context comparisons are available afterward for regression
+review. No semantic improvement is claimed before that feedback, and no further
+prompt change or model batch is part of this experiment.
