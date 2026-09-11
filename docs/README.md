@@ -5,7 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-11 | `2026-09-11-communication-format-comparison.md` — compare communication choice and student formatting | 19 valid new draws; exact comparison prepared against 19 baseline draws; human review pending |
+| 2026-09-11 | `2026-09-11-autograder-format-grounding.md` — distinguish environment output from student reporting | Logged all-pass versus subtest format verified; deployed notebook HTML remains unverified |
+| 2026-09-11 | `2026-09-11-communication-format-comparison.md` — compare communication choice and student formatting | 19 valid new draws; continuity 7 both plausible; continuity 1 redirected to verified grader format |
 | 2026-09-11 | `2026-09-11-student-reporting-audit.md` — what students report after help, and what conversation endings reveal | Offline audit complete: no clear success-only updates in 64 observed follow-ups; uncertainty and terminal observation limits retained |
 | 2026-09-11 | `2026-09-11-continuation-measurement.md` — reusable student continuation, behavior comparison, and branch continuity | Three-case review complete: one unqualified and two qualified plausible judgments; communication choice and formatting concerns preserved |
 | 2026-09-11 | `2026-09-11-student-continuation-check.md` — fixed prompt across other conversations | Eight-case review complete; qualifications preserved, behavior measurement and continuity remain |

@@ -92,7 +92,7 @@ The exact disclosure and truthful authorization basis are saved privately.
 Automatic approval review allowed this batch under the recorded authorization,
 and generation has started. No human judgments of these outputs exist yet.
 
-## Generation complete; human comparison pending
+## Generation complete; initial review checkpoint
 
 All 19 new logical requests completed with structurally valid continuations and
 zero failed draws. All 339 pins remain unchanged. Independent preparation review
@@ -105,8 +105,8 @@ logical requests, not transport attempts.
 There are 30 distinct displays representing all 38 baseline/variant allocations.
 Identical decision/text pairs share a display without losing their conditions or
 draws; the allocation mapping is saved separately. Candidate headings do not name
-the prompt condition. Every new content, formatting and reply-occurrence judgment
-is blank, including displays that reproduce previously judged baseline text.
+the prompt condition. At this checkpoint, every new content, formatting and reply-occurrence judgment
+was blank, including displays that reproduce previously judged baseline text.
 `completion-verification.json` records the checks and exact artifact hashes.
 Independent presentation verification checked all 38 allocations and 100 exact
 fenced source/candidate blocks. Rerendering preserved the saved inputs, results,
@@ -123,3 +123,21 @@ must remain distinguishable.
 The eight original-context comparisons are available afterward for regression
 review. No semantic improvement is claimed before that feedback, and no further
 prompt change or model batch is part of this experiment.
+
+## Human feedback and environment correction
+
+Minchan accepted both continuity case 7 candidates as plausible and redirected
+case 1 to the actual autograder setup and broader dataset. The private review
+stores the exact response, a before-edit backup and only the supported updates:
+case 7 content conditional on replying is plausible for both; case 1 has a note
+and no categorical verdict. No preference, formatting score or reply-occurrence
+judgment is inferred. Case 5 and the eight original-context checks are unchanged.
+The earlier verification receipts describe the blank checkpoint and remain intact;
+`human-review-verification.json` verifies the updated answers and rerender.
+
+The [autograder grounding memo](2026-09-11-autograder-format-grounding.md) resolves
+the logged output format from the broader source data. Case 1 exposed an
+aggregate-versus-subtest formatting mismatch; a student-style preference question
+was insufficient to settle it. Keep environment output separate from the choice
+to report it. The frozen prompts, outputs and comparison remain unchanged, with
+no further model calls or demonstrated behavioral improvement.
