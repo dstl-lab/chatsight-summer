@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-11 | `2026-09-11-work-context-snapshot.md` — recover context and separate cell edits from optional chat | Four context supplements verified; 311 tests pass; two prepared draws await exact-payload approval required by automatic review |
 | 2026-09-11 | `2026-09-11-notebook-context-recovery.md` — audit omitted work context in four reviewed cases | Initial assignments and omitted first queries recovered; reference failures verified; later work diffs remain unknown; no new model calls |
 | 2026-09-11 | `2026-09-11-real-student-comparison.md` — four recorded/generated behavior pairs | Human review complete with conditions preserved separately; 18 pins and older experiments preserved |
 | 2026-09-11 | `2026-09-11-student-task-loop.md` — model actions, worksheet revisions and computed feedback | Two live authored traces reproduce offline; 301 tests pass; immediate correct solutions do not establish novice fidelity |

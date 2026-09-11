@@ -26,6 +26,13 @@ omitted initial assignment context and first queries, plus reference-only grader
 events. Later work changes remain unknown. Recover work context before tuning
 communication; preserve the completed prompts and keep future observations out
 of generator inputs. No additional model batch was run for that audit.
+Recovery now has a supplemental snapshot and a one-cell edit/optional-chat path
+(docs/2026-09-11-work-context-snapshot.md). Four initial exchanges are restored
+without renumbering old turns; current work at the later cutoffs remains unknown.
+Two initial-encounter draws are frozen in data/episode-pilot/notebook-action-v1/.
+Automatic review rejected this new private-data transfer before dispatch; the
+exact disclosure and approval request are preserved. Standing approval remains
+recorded; wait for the specific payload reply before retrying. 311 tests pass.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
