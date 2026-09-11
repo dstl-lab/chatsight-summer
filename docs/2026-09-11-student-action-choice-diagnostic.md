@@ -64,8 +64,52 @@ authorize this newly prepared payload and destination. The user has already
 granted standing permission; the additional specific permission is required by
 the automatic review, not by a new project approval policy.
 
-No requests were sent and no results cache exists. All 358 pins still verify.
+At this checkpoint no requests were sent and no results cache existed. All 358 pins verified.
 The exact rejection and hash-linked permission request are saved privately as
 `automatic-approval-rejection.json` and `approval-request.json` beside the exact
 `disclosure.md`. The frozen preparation remains unchanged. Do not retry this send
 or use an indirect route without resolving the automatic review's requirement.
+
+## Specific approval and execution
+
+Minchan answered “Yes” to sending these four prepared prompts, including the
+previously reviewed student dialogue, to Gemini 2.5 Pro. The private
+`approval-response.json` binds that reply to the displayed question, disclosure,
+inputs, jobs, model and experiment. All 358 pins verified before execution.
+The unchanged runner was launched only after recording this specific approval;
+the earlier rejection and preparation remain preserved.
+
+## Schema transport failure and corrective retry
+
+All four logical requests failed before returning a selection: Gemini returned
+HTTP 400 because its response schema rejects `additional_properties`. The adapter
+retries this permanent error; individual attempts are not retained. This is a
+schema compatibility failure, not evidence about student action choice.
+
+`NextAction` inherited the local check-record configuration, which exposes
+`additionalProperties` in JSON schema. Existing student/tutor selection models
+already remove that unsupported wire keyword while retaining local extra-field
+rejection. Reuse the existing Continuation configuration for NextAction alongside
+its strict, frozen check-record settings. Add a regression covering the actual
+schema sent by the adapter and retained local validation; change no prompt or
+action semantics.
+
+Preserve the four failures and their receipts. The original 358 pins include the
+gate module and tests, so archive their exact `e39d1aa` bytes before editing and
+verify those archived bytes against the original manifest. All 350 earlier pins
+remain live and unchanged. Later reproduction of this failed run must use its
+original sources, not assert that edited current files still match its manifest.
+
+Prepare a separately versioned corrective retry in private
+`student-action-choice-v2/`, reusing the original cache helpers and exact four
+approved prompts, model, default settings and local action validation. Its schema
+diff must consist only of removing the unsupported keyword. Link the specific
+approval and the failed experiment, distinguish retry calls from the original four
+failures, and preserve every old result. This is a corrective retry under the same
+approved prompt scope, not a newly received human approval or a new scenario.
+
+The schema regression fails against the original configuration and passes with
+the one-line reuse. The full suite passes 297 tests, the Node review-navigation
+check passes, and all 350 live base pins verify. One pre-existing Starlette/httpx
+deprecation warning remains. These checks establish local compatibility handling;
+successful remote acceptance still requires the corrected retry.

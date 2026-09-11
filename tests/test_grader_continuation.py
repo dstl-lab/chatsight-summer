@@ -184,6 +184,16 @@ def test_next_step_rejects_invalid_options_actions_and_provider_failure():
         next_step(episode, check=current, generate=broken_provider)
 
 
+def test_action_wire_schema_omits_unsupported_keyword_but_rejects_extra_fields_locally():
+    from src.eval.grader_continuation import NextAction
+    from src.labeling.llm import gen_config
+
+    schema = gen_config(NextAction)['response_schema'].model_json_schema()
+    assert 'additionalProperties' not in json.dumps(schema)
+    with pytest.raises(ValueError):
+        NextAction.model_validate({'decision': 'request-check', 'text': '', 'output': 'invented pass'})
+
+
 def test_selected_check_is_bound_to_inputs_seen_before_callback():
     from src.eval.grader_continuation import next_step, continue_after_check
 

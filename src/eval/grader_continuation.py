@@ -37,7 +37,7 @@ class GraderObservation(BaseModel):
 
 
 class NextAction(BaseModel):
-    model_config = CheckRequest.model_config
+    model_config = CheckRequest.model_config | sc.Continuation.model_config
     decision: Literal['reply', 'no-reply', 'request-check']
     text: str
 
