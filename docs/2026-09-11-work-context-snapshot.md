@@ -78,3 +78,34 @@ input/disclosure hashes. This additional requirement comes from automatic review
 not a withdrawal of Minchan's standing approval. Do not retry until the specific
 reply is recorded. All unaffected recovery, implementation and verification work
 is complete; human behavioral review follows only after actual draws exist.
+
+## Specific approval and completed action probe
+
+Minchan answered “Yes” to sending the exact disclosed excerpt to Gemini 2.5 Pro
+for two draws. `approval-response.json` binds that response to the question,
+model/count, experiment and input/disclosure hashes. It predates both calls;
+the original rejection and preparation remain intact. The unchanged runner sent
+the two approved requests after checking those bindings and all 16 file pins.
+
+Both draws returned valid source revisions with empty chat text. They replaced
+the same array-method call with a length-function expression and preserved the
+display line. The source actually changed; these are not no-op revisions. Their
+action objects and applied states are identical, so the private `review.md`
+presents the action once, explicitly noting that both draws produced it. Both
+individual call receipts remain available. No further student message or tutor
+turn was appended to either branch.
+
+This establishes that the model used the separate work channel without sending
+a chat message in this one prepared situation. It does not establish correctness,
+successful execution, grader success, realistic response probability or behavioral
+fidelity. No source was executed, observations stay null and no outcome claim was
+generated. The actual later notebook change remains unobserved. Human plausibility
+fields are blank; the review asks whether the proposed quiet edit fits the initial
+encounter, not which of two identical candidates to prefer.
+
+Offline cache reopening reproduces both applied states without dispatch. Review
+rerendering is identical; the completion receipt binds approval, results and
+presentation files, verifies temporal approval and records the pending human
+judgment. The four context supplements and previous experiments are preserved.
+This checkpoint changes documentation and ignored evidence only; the latest
+production-code test run remains 311 passing tests with the existing warning.

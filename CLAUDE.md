@@ -29,10 +29,12 @@ of generator inputs. No additional model batch was run for that audit.
 Recovery now has a supplemental snapshot and a one-cell edit/optional-chat path
 (docs/2026-09-11-work-context-snapshot.md). Four initial exchanges are restored
 without renumbering old turns; current work at the later cutoffs remains unknown.
-Two initial-encounter draws are frozen in data/episode-pilot/notebook-action-v1/.
-Automatic review rejected this new private-data transfer before dispatch; the
-exact disclosure and approval request are preserved. Standing approval remains
-recorded; wait for the specific payload reply before retrying. 311 tests pass.
+Two initial-encounter draws are complete in data/episode-pilot/notebook-action-v1/.
+Minchan specifically approved the exact disclosed payload after automatic review
+initially rejected it; both approval and rejection are preserved. Both draws made
+the same source revision without chat. Neither executed code or obtained feedback.
+The private review.md presents that action once; human plausibility review is
+pending. All 16 pins verify; the latest production-code suite passed 311 tests.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
