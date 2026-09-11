@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-11 | `2026-09-11-portable-student-behavior.md` — separate behavioral simulation from course execution | Exact bundle recovery is optional; conditional feedback probes can continue; course transfer and outcome prediction remain unvalidated |
 | 2026-09-11 | `2026-09-11-reference-grader-fixture.md` — compute an observation using explicit reference assignment assets | Candidate raises a runtime error before grading; no grader result invented; deployed course state remains unverified |
 | 2026-09-11 | `2026-09-11-student-action-choice-diagnostic.md` — probe message/no-reply/check selection with and without a supplied check option | Corrected retry: two pending checks, one unsupported success report, one unavailable check rejected; 370 pins verify; 297 tests pass |
 | 2026-09-11 | `2026-09-11-student-action-flow.md` — select a message, no-reply or a check of supplied current code | Offline routing implemented; 296 tests pass; model action choices and outcome grounding remain unvalidated |

@@ -64,4 +64,9 @@ before claiming reconstruction of that environment.
 The known spring-course directory candidates and the current winter checkout's
 expected midterm-notebook location do not contain that bundle. Minchan was asked
 to identify the assignment version or local bundle path used for the logged
-course. Keep the older fixture explicitly separate while this remains unresolved.
+course. Minchan then challenged making this a dependency for other versions and
+courses. The [portability correction](2026-09-11-portable-student-behavior.md)
+removes exact bundle recovery as a prerequisite for behavioral diagnostics.
+Matching assets remain necessary for reconstructing this logged environment;
+the older fixture stays explicitly separate. Its unresolved identity does not
+block continuations under explicitly authored task-feedback conditions.
