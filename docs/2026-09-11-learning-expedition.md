@@ -7,7 +7,9 @@ primary inspiration: an interactive world inhabited by simulated students should
 be engaging to explore and use. The broader research ambition is to improve
 learning as technology and society change. Minchan selected educators/researchers
 experimenting with student support as the first audience, and tentatively named
-Pokemon as a game reference while raising intellectual-property concerns.
+Pokemon as a game reference while raising intellectual-property concerns. Minchan
+subsequently added NBA2K, FIFA and Bloons Tower Defense as other possibilities;
+no game structure has been selected.
 
 The proposed North Star is an explorable world where educators investigate how
 learners respond to different forms of support, with behavior grounded in real
@@ -34,6 +36,24 @@ offering guidance and a question. Broader changes to AI access, assessment or pe
 support require additional evidence or clearly authored scenarios.
 
 ## Proposed game loop
+
+The expanded references suggest three possible educator roles. These are design
+interpretations, not evidence that their educational versions will work:
+
+| Reference | Proposed educator role | Additional assumptions needed |
+|---|---|---|
+| NBA2K / FIFA coaching and management | Support a persistent group, adjust the approach, inspect and replay encounters | Team effects, skill ratings and development rates are not established by these logs |
+| Bloons Tower Defense | Arrange support resources and observe how learners use them | Resource choice, capacity, movement and timing need authored scenarios or new evidence |
+| Pokemon / adventure | Explore task encounters and accumulate experiences with fictional learners | Locations organize scenarios; they do not establish social relationships or mastery |
+
+The coach's practice session is the closest initial fit to the available tutoring
+episodes. It can reuse the small encounter below without committing to a season
+simulator or resource-placement system. The playbook records support offered and
+observed responses; learners retain control over their contributions. Official
+references for the management and support-placement inspirations are
+[NBA 2K MyNBA](https://nba.2k.com/2k24/en-GB/modes/mynba/),
+[EA Manager Career](https://help.ea.com/en/articles/ea-sports-fc/career-mode/) and
+[Ninja Kiwi's Bloons TD 6 description](https://store.steampowered.com/app/960090/Bloons_TD_6/).
 
 Explore → encounter a learning problem → offer support → observe learner choices
 → inspect and replay a decision → discover another situation.

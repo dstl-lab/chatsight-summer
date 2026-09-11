@@ -5,8 +5,9 @@
 Minchan's primary inspiration is Generative Agents: an interactive world of
 simulated students, engaging to explore as part of the broader goal of improving
 learning amid technological and societal change. The first audience is
-educators/researchers experimenting with student support. Pokemon is a tentative
-game reference; use an original design. The proposed first encounter and research
+educators/researchers experimenting with student support. Pokemon, NBA2K, FIFA
+and Bloons Tower Defense are tentative game references; no structure is selected,
+and the design should be original. The proposed first encounter and research
 questions are in `docs/2026-09-11-learning-expedition.md`; a detailed game design
 has not yet been approved or implemented. Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
