@@ -73,9 +73,14 @@ The new src/eval/notebook_session.py connects that runtime to individual actions
 without modifying the completed loops. Requested checks install verified feedback;
 edits clear it, runtime errors stay ungraded, and environment/limit failures stop
 the session. docs/2026-09-11-runtime-student-trajectory.md records the authored
-three-decision probe preparation. Its failed Docker setup attempt is preserved;
-after recovery, a separately recorded actual runtime-error prelude and 25 pins
-verify. The full suite now passes 321 tests. Human behavior review remains separate.
+three-decision probe, completed 2026-09-12. Its failed Docker setup attempt is
+preserved; after recovery, a separately recorded actual runtime error preceded
+three model choices: quiet revision -> requested actual pass -> no-reply. The
+error was scripted, the correction/check/stop were generated. All 25 preparation
+pins and six execution-file hashes verify; exact replay makes no Gemini or Docker
+calls. The full suite passes 321 tests. This establishes one execution-backed
+action/state example, not real-student recovery rates or learning. Human behavior
+review remains separate; realistic work-context fidelity is the next bottleneck.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

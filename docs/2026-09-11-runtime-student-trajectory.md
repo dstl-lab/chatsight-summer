@@ -59,3 +59,34 @@ environment stop and changed/incomplete/extra evidence refusal pass. The frozen
 provider adapter permits up to four attempts per logical decision, including
 schema-validation failures; retry notifications are retained in its pending
 receipt. The full suite passes 321 tests with the existing Starlette/httpx warning.
+
+## Live result (2026-09-12)
+
+The fixed probe completed under standing approval with three logical Gemini
+2.5 Pro decisions and no retry notifications. After the scripted runtime error,
+the model silently replaced the incompatible expression with a supported distinct
+count, requested its check, received an actual container result of 3 and passing
+feedback, then chose no-reply. The initial error/check was scripted; the edit,
+subsequent check request and no-reply were model choices. No tutor bridge or chat
+message occurred. No-reply was explicitly selected, not inferred from a cap.
+
+The requested check executed revision 1 inside the same declared Babypandas
+1.0.0 image. Its completed observation binds that exact source/revision, branch,
+activity, checker and timeout, with recorded Python/library versions. Revision
+cleared the previous error before the new request. The next prompt received the
+passing observation; no unobserved course result was supplied or asserted.
+
+All 25 preparation pins and six execution-file hashes verify. The complete state
+and requests reproduce exactly offline with zero Gemini or Docker dispatch.
+Earlier notebook-runtime, notebook-check, notebook-failure and worksheet-failure
+artifacts still verify/replay with 13, 31, 17 and 14 pins. The failed preparation
+remains separate from this completed trace. Generated text and exact receipts
+remain under ignored `data/episode-pilot/runtime-student-v1/`.
+
+This completes one execution-backed action/state example: runtime error -> quiet
+revision -> requested pass -> chosen quiet stop. It does not show that real
+students would select this error, correct it immediately, or stop at this rate.
+The task and dialogue are invented, and the first error was imposed. No new human
+plausibility judgment, cohort fidelity, course transfer or learning claim follows.
+The next research bottleneck is behavior under realistic task/work context, not
+another code-execution mechanism or broader label taxonomy.
