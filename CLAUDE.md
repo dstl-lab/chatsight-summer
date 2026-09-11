@@ -16,10 +16,11 @@ One invented worksheet/action loop with computed feedback is implemented in
 src/eval/student_task.py; two live traces and their limits are recorded in
 docs/2026-09-11-student-task-loop.md. It tests mechanics; human-audited real-data
 fidelity remains a separate, incomplete requirement.
-Four new-to-continuation development comparisons are prepared in
+Four new-to-continuation development comparisons are complete in
 data/episode-pilot/real-student-comparison-v1/ (docs/2026-09-11-real-student-comparison.md).
-Automatic review rejected the send pending exact-payload/destination approval;
-do not retry before that requirement is resolved. No requests were sent.
+Specific send approval is recorded; all four generated replies and A/B review
+pairs are preserved. Human comparison judgments are pending in review.md; do not
+reveal the separate origin key or tune to these targets before that review.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

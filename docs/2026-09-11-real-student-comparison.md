@@ -77,3 +77,34 @@ binds the question, model, request count, experiment and input/disclosure hashes
 The rejection and preparation verification are preserved separately; the frozen
 inputs remain unchanged. Both prior worksheet traces still replay, and all 370
 earlier experiment pins verify. No human behavioral judgments have been added.
+
+## Specific approval, completed batch and human review
+
+Minchan answered “Yes” to sending the four disclosed excerpts to Gemini 2.5 Pro.
+`approval-response.json` binds that exact reply to the question, experiment,
+model/count, and input/disclosure hashes. The original rejection remains intact.
+After verifying all 18 pins, the unchanged runner sent the four prepared requests.
+All four returned structurally valid replies; none failed or selected no-reply.
+The adapter's individual transport/parse attempts are not separately recorded.
+
+The four A/B pairs are in the private `review.md`, with full model-visible history
+available under expandable sections. `packets.json` retains the recorded/generated
+origins and provisional rubric; `origin-key-and-reviews.json` preserves the A/B
+mapping and blank human fields. The current all-text pairs do not need the
+no-reply masking exception. Hiding source labels does not establish effective
+blinding or change the sample's prior audit exposure.
+
+Offline cache reopening makes no dispatch and leaves the outputs unchanged.
+Rerendering produces identical review/packet/key files. The completion receipt
+binds approval and presentation hashes, verifies all 18 pins, and confirms that
+all human judgments remain blank. All 370 earlier experiment pins still verify,
+and both authored worksheet traces reproduce offline. No frozen prompt, generator
+or previously reviewed result was changed.
+
+The next required action is Minchan's four-case comparison: describe what A and B
+visibly do and any meaningful behavioral difference, implausibility or uncertainty.
+Do not reveal source assignments or prefill suggested verdicts before that review.
+This is a developmental check of generated communication against one observed
+continuation per case, not evidence of task execution, correctness, response
+probability, student-model fidelity or learning. Further tuning/branching waits
+for those judgments; no additional batch is part of this completed experiment.

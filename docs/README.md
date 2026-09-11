@@ -5,7 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-11 | `2026-09-11-real-student-comparison.md` — four recorded/generated behavior pairs | Exact prompts and review workflow prepared; automatic review requires specific send approval; zero requests sent |
+| 2026-09-11 | `2026-09-11-real-student-comparison.md` — four recorded/generated behavior pairs | Specifically approved batch complete: four valid replies and A/B pairs; human review pending; 18 pins and older experiments preserved |
 | 2026-09-11 | `2026-09-11-student-task-loop.md` — model actions, worksheet revisions and computed feedback | Two live authored traces reproduce offline; 301 tests pass; immediate correct solutions do not establish novice fidelity |
 | 2026-09-11 | `2026-09-11-coaching-session-prototype.md` — original cozy village and a small coaching session | Scripted exploration preserved and tested; interface work paused in favor of functioning simulated students |
 | 2026-09-11 | `2026-09-11-learning-expedition.md` — Generative Agents inspiration and original educational game concepts | Coaching selected; adventure/support placement deferred; student simulator takes priority over presentation |
