@@ -16,6 +16,10 @@ One invented worksheet/action loop with computed feedback is implemented in
 src/eval/student_task.py; two live traces and their limits are recorded in
 docs/2026-09-11-student-task-loop.md. It tests mechanics; human-audited real-data
 fidelity remains a separate, incomplete requirement.
+Four new-to-continuation development comparisons are prepared in
+data/episode-pilot/real-student-comparison-v1/ (docs/2026-09-11-real-student-comparison.md).
+Automatic review rejected the send pending exact-payload/destination approval;
+do not retry before that requirement is resolved. No requests were sent.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
