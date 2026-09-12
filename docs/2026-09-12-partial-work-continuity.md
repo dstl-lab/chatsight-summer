@@ -62,6 +62,30 @@ Automatic approval review rejected the send before process launch. It requires
 explicit approval of this exact private context plus generated-work history going
 to Gemini, despite the standing grant and approved continuation. The private
 `send-blocked.json` preserves that rejection with experiment/disclosure hashes.
-Zero model calls were made, and no new result exists. The exact disclosed request
-is ready for the required approval; no further generation or behavior judgment
-has occurred.
+That attempt made zero model calls and created no result.
+
+Minchan subsequently approved sending the exact continuation request. The separate
+private `approval-response.json` records the reply and links the unchanged
+experiment, disclosure, input, authorization and rejection hashes. Approval
+precedes the single request; the original preparation and rejection are preserved.
+
+## Completed continuation
+
+The request completed without retry notifications. The model silently filled
+the remaining function body, preserving the earlier function and all calling
+code exactly. Current work advanced from revision 1 to revision 2. There was no
+new tutor reply, message to the tutor, execution or observation.
+
+The result replays exactly against all 50 preparation pins. The review renders
+identically on repeat, with nine completion-file hashes and blank human fields.
+No production code changed; the already-passing private runner/reviewer checks
+cover this run without another full-suite test run.
+An independent audit verified the five approval links, approval before the call,
+all 50 preparation pins, nine completion hashes, exact source change and review.
+
+The private `review.md` shows generated revision 1, the preceding exchange and
+proposed revision 2. The next human question is whether finishing the remaining
+function without further help seems plausible. This preserves work across two
+model decisions; it does not show two real attempts, measured time, realistic
+difficulty or learning. The earlier concern about completing both functions after
+one tutor response is not automatically resolved by splitting the work into calls.

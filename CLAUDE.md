@@ -135,13 +135,15 @@ the single model history event retains revision0, with no new tutor/feedback/run
 Original prompt/schema/settings remain fixed, and human acceptance stays outside
 the input. Keep captured_at explicitly tied to the original capture, not generated
 work or inferred time. All previous experiments and human reviews remain frozen.
-Preparation is frozen with 50 verified pins and passing runner/reviewer checks;
-the independent payload audit found no issue. Automatic approval review rejected
-dispatch before process launch because it requires explicit approval of the exact
-private context plus generated history going to Gemini. Preserve send-blocked.json
-and the standing grant; zero new calls were made and no result exists. Show the
-new disclosure for this required approval, record any response separately without
-changing preparation, then run the single request and leave behavior review blank.
+That request completed after Minchan's separate exact-payload approval. Preserve
+approval-response.json, the prior rejection and the standing grant. One quiet
+edit fills the remaining function while preserving the earlier function and all
+calling code; work advances 1→2. No tutor turn, chat, execution or outcome occurs.
+Exact replay/50 preparation pins and nine completion hashes verify. The private
+review.md is ready with human fields blank; ask whether finishing the remaining
+function without further help seems plausible. Two model calls do not establish
+two real attempts or elapsed time, and do not automatically resolve the earlier
+concern about completing both functions after one tutor response.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
