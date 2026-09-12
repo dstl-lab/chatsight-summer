@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-12 | `2026-09-12-initial-action-review.md` — three remaining recovered starting states | Prepared and independently audited; 20 pins and offline checks pass; zero calls, automatic review requires exact-payload approval |
 | 2026-09-11 | `2026-09-11-runtime-student-trajectory.md` — connect choices to actual declared-runtime feedback | Completed 09-12: scripted runtime error -> generated quiet revision -> requested actual pass -> no-reply; exact replay/25 pins; 321 tests pass |
 | 2026-09-11 | `2026-09-11-declared-notebook-runtime.md` — execute one cell in an explicit isolated table-library environment | Implemented; retained authored revisions pass in pandas and raise in Babypandas under new environments; 13 pins verify; 319 tests pass; older runs unchanged |
 | 2026-09-11 | `2026-09-11-failed-check-continuation.md` — model actions after an authored failed check | Notebook hits checker boundary; worksheet control produces revision -> requested pass -> reply; both replay; no fidelity claim |

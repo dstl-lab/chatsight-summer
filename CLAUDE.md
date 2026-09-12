@@ -81,6 +81,20 @@ pins and six execution-file hashes verify; exact replay makes no Gemini or Docke
 calls. The full suite passes 321 tests. This establishes one execution-backed
 action/state example, not real-student recovery rates or learning. Human behavior
 review remains separate; realistic work-context fidelity is the next bottleneck.
+Minchan approved the three-case developmental review in
+docs/2026-09-12-initial-action-review.md. It uses the remaining recovered initial
+encounters (1/2/3), the frozen notebook_action prompt/schema, and one proposal per
+case. Relevant captured supporting code is read-only; no code execution or later
+state reconstruction is part of this pass. Keep all human fields blank until
+review and all private payloads/results outside Git. Existing experiments stay frozen.
+Preparation is complete in data/episode-pilot/initial-action-review-v1/: 20 pins,
+two offline checks and an independent initial-only payload audit pass. Automatic
+approval review rejected the send before process launch because it requires
+explicit approval of this exact private payload to Gemini. Preserve send-blocked.json
+and the existing standing grant; zero model calls were made and no results exist.
+The exact disclosure is ready for approval; do not resubmit until that requirement
+is satisfied. After approval, record it separately without changing the frozen
+preparation, then generate the three proposals and keep behavior judgments blank.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
