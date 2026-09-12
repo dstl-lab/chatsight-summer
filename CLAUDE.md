@@ -140,10 +140,32 @@ approval-response.json, the prior rejection and the standing grant. One quiet
 edit fills the remaining function while preserving the earlier function and all
 calling code; work advances 1→2. No tutor turn, chat, execution or outcome occurs.
 Exact replay/50 preparation pins and nine completion hashes verify. The private
-review.md is ready with human fields blank; ask whether finishing the remaining
-function without further help seems plausible. Two model calls do not establish
-two real attempts or elapsed time, and do not automatically resolve the earlier
-concern about completing both functions after one tutor response.
+review.md retains its original blank human fields. Minchan accepted quietly
+finishing the remaining function as plausible after an inline clarification of
+the available guidance, earlier formula and exact change. The separate private
+human-review-response.json records that answer and six evidence hashes. Close
+this example; retain the earlier qualified judgment of the one-proposal solution.
+Two model calls do not establish two real attempts, elapsed time or frequencies.
+The next step in docs/2026-09-12-student-evaluation-readiness.md is an offline
+inventory of existing snapshots and a fixed four-conversation context-recovery
+candidate list. Reuse the extractor and existing exposure ledgers; do not send
+models, query the DB, assign semantic labels or alter generators for this check.
+Prior label audits and source searches preclude a pristine-holdout claim. An
+observed next message cannot measure silent edits; historical initial code is
+not current work at a later cutoff. Keep private metadata outside Git.
+That inventory is complete in data/episode-pilot/evaluation-readiness-v1/.
+Eight snapshots contain 252 distinct conversations; the primary source has 55
+eligible windows across 24 conversations after known exposure and prefix filters.
+Four distinct candidates are fixed using the existing raw-string digest; an
+earlier JSON-ranking preparation is preserved as superseded, without target
+review or model dispatch. All four have complete timestamps but no recovered
+initial work. Exact regeneration, future-text isolation and 32 hashes verify;
+an independent check matches the saved candidate metadata. No model/DB calls.
+Next recover context for those fixed candidates via the existing read-only
+ingestion path; preserve missing cases and distinguish initial captures from
+unknown later work before constructing any generator payload. No user review is
+needed for this inventory. Do not extend the count-only runtime to grade the
+accepted two-function exercise merely to continue a closed development example.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
