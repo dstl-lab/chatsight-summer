@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-12 | `2026-09-12-partial-work-continuity.md` — next action after accepted partial work | Prepared and audited: 50 pins/offline checks pass; zero calls, automatic review requires exact continuation-payload approval |
 | 2026-09-12 | `2026-09-12-progress-wording.md` — original versus explicit partial-work wording | Both case-3 partial edits accepted; no condition preference or demonstrated wording benefit; diagnostic closed, original generator retained |
 | 2026-09-12 | `2026-09-12-initial-action-review.md` — three remaining recovered starting states | Human review complete: cases 1/2 plausible, case 3 qualified with a completion concern; partial edits already supported; original records preserved |
 | 2026-09-11 | `2026-09-11-runtime-student-trajectory.md` — connect choices to actual declared-runtime feedback | Completed 09-12: scripted runtime error -> generated quiet revision -> requested actual pass -> no-reply; exact replay/25 pins; 321 tests pass |

@@ -128,6 +128,20 @@ further wording batch is needed. The next useful check is continuity from accept
 partial work using existing actions and explicit generated-state provenance, with
 no invented intervening tutor reply, execution or outcome. This is not evidence
 of calibrated action frequency, learning or a need for a new memory framework.
+Minchan approved that continuation. docs/2026-09-12-partial-work-continuity.md
+defines one next action in data/episode-pilot/partial-continuity-v1/, seeded from
+progress-wording-v1 case3 original/call4. Current work is exact generated revision1;
+the single model history event retains revision0, with no new tutor/feedback/run.
+Original prompt/schema/settings remain fixed, and human acceptance stays outside
+the input. Keep captured_at explicitly tied to the original capture, not generated
+work or inferred time. All previous experiments and human reviews remain frozen.
+Preparation is frozen with 50 verified pins and passing runner/reviewer checks;
+the independent payload audit found no issue. Automatic approval review rejected
+dispatch before process launch because it requires explicit approval of the exact
+private context plus generated history going to Gemini. Preserve send-blocked.json
+and the standing grant; zero new calls were made and no result exists. Show the
+new disclosure for this required approval, record any response separately without
+changing preparation, then run the single request and leave behavior review blank.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
