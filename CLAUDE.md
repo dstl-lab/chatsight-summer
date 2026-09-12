@@ -166,6 +166,29 @@ ingestion path; preserve missing cases and distinguish initial captures from
 unknown later work before constructing any generator payload. No user review is
 needed for this inventory. Do not extend the count-only runtime to grade the
 accepted two-function exercise merely to continue a closed development example.
+Context recovery is complete in data/episode-pilot/evaluation-context-v1/;
+docs/2026-09-12-evaluation-context-recovery.md records the bounded read-only queries.
+Cases1/3/4 align; case2 has two matching unlinked initial queries and remains
+ambiguous. Preserve it rather than selecting the nearer query or substituting a
+case. Nineteen sources/three outputs verify; failed tunnel/query attempts remain
+separate. All later work is still unknown and reference checks stay excluded.
+Continue with docs/2026-09-12-context-grounded-communication.md: one fresh
+communication proposal for each recovered case, original continuation prompt and
+schema, explicit historical selected cells, null current work/observation, no
+invented intermediate execution. This is conditional development comparison,
+not reply-rate calibration or simulated notebook actions. User explicitly
+reiterated continuing until a concrete human review is needed; do not stop after
+routine preparation/verification milestones or request routine run permission.
+The three requests are fully prepared in data/episode-pilot/evaluation-communication-v1/.
+All 35 pins and both private checks pass; independent payload audit found no
+material issue. Automatic approval review rejected the actual send before
+process launch, requiring this exact private dialogue/code disclosure to Gemini
+to be approved separately. send-blocked.json preserves the rejection/question
+and five hashes; no results or model calls exist. Finish unaffected work and
+request that specific approval only because of this actual tool rejection.
+Preserve it and the standing grant; append any later explicit reply separately,
+then run the unchanged prepared batch and continue through results verification
+until concrete human plausibility review. Do not stop again merely after approval.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
