@@ -120,9 +120,14 @@ an added benefit from clarification; do not adopt a prompt change on this eviden
 Exact replay/31 preparation pins and 12 completion hashes verify. No code executed.
 Case 1 repeats the previously accepted action with identical context; case 2 only
 adds a final display expression to its earlier proposal. Keep new judgment fields
-blank and earlier reviews separate. Bring case 3 forward first to reduce duplicate
-review, with case-1.md and case-2.md available for reference. The pending human
-question is whether the two partial-work candidates seem plausible in context.
+blank and earlier reviews separate. Minchan accepted both case-3 partial edits as
+plausible and noted only variable-name differences; human-review-response.json
+records the exact reply and both judgments. No condition preference or new case1/2
+judgment is inferred. Close this diagnostic and retain the original prompt; no
+further wording batch is needed. The next useful check is continuity from accepted
+partial work using existing actions and explicit generated-state provenance, with
+no invented intervening tutor reply, execution or outcome. This is not evidence
+of calibrated action frequency, learning or a need for a new memory framework.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

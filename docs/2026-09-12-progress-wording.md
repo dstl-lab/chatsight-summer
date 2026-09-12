@@ -97,6 +97,28 @@ Case 2 differs from the earlier proposal only by retaining a final display
 expression; its two new candidates are identical to each other. Preserve that
 distinction without transferring earlier verdicts into new review fields. To
 reduce repeated review, bring case 3 forward first and retain the other two case
-files for reference. Ask whether the displayed partial-work candidates are
-plausible, implausible or uncertain; this remains a human question, not a conclusion
-from the amount of code changed.
+files for reference. Plausibility remains a human question, not a conclusion from
+the amount of code changed.
+
+## Human review and decision
+
+Minchan judged both case-3 candidates plausible and noted that their only
+difference is variable naming. The separate private `human-review-response.json`
+records both judgments, the exact reply and six artifact hashes. No preference
+between conditions was given. Cases 1/2 receive no new judgments, and the original
+blank review pages and earlier qualified judgment of complete case-3 work remain
+unchanged.
+
+Close this wording diagnostic and retain the original generator. The reviewed
+examples support copying a supplied answer, making a small hinted correction and
+making a partial edit as possible actions; they do not establish how often any
+should occur. Both prompt conditions produced accepted partial work, so this
+feedback provides no reason to adopt the clarification or force smaller edits.
+
+The next useful check is continuity from an accepted partial state: carry the
+generated work forward and inspect the next proposed action with no invented
+intervening tutor reply, execution or outcome. Reuse the existing action schema;
+do not add a memory system or new grader merely for this check. This will test
+whether subsequent choices stay grounded in the current notebook state, while
+the amount and plausibility of further progress remain separate judgments. No
+additional model calls were made to record or verify this feedback.
