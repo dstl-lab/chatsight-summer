@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-12 | `2026-09-12-progress-wording.md` — original versus explicit partial-work wording | Prepared and audited: 31 pins/offline checks pass; zero calls, automatic review requires exact changed-prompt approval |
 | 2026-09-12 | `2026-09-12-initial-action-review.md` — three remaining recovered starting states | Human review complete: cases 1/2 plausible, case 3 qualified with a completion concern; partial edits already supported; original records preserved |
 | 2026-09-11 | `2026-09-11-runtime-student-trajectory.md` — connect choices to actual declared-runtime feedback | Completed 09-12: scripted runtime error -> generated quiet revision -> requested actual pass -> no-reply; exact replay/25 pins; 321 tests pass |
 | 2026-09-11 | `2026-09-11-declared-notebook-runtime.md` — execute one cell in an explicit isolated table-library environment | Implemented; retained authored revisions pass in pandas and raise in Babypandas under new environments; 13 pins verify; 319 tests pass; older runs unchanged |

@@ -104,6 +104,20 @@ as controls, without forcing mistakes or inventing ability. This is a wording
 diagnostic, not pacing calibration. The Markdown review is cumbersome but usable;
 show future cases individually and defer a new review UI. No new calls were made
 while recording feedback or checking the action contract.
+Minchan approved that comparison; docs/2026-09-12-progress-wording.md defines six
+fresh requests, original/clarified per case, in data/episode-pilot/progress-wording-v1/.
+Tasks and state JSON stay identical; the sole prompt addition neutrally permits
+unfinished work. Do not feed earlier generated actions or human verdicts into it.
+No execution, pacing calibration or fidelity claim is part of this probe. Present
+one case per Markdown file, retain both candidate receipts even when identical,
+and preserve all completed sources and earlier reviews.
+Preparation is frozen and independently audited with 31 pins and two passing
+private checks. Automatic approval review rejected dispatch before process launch,
+requiring explicit approval of the exact changed prompts to Gemini despite the
+standing grant and earlier exact-excerpt approval. Preserve send-blocked.json;
+zero new calls were made and no results exist. Show the new disclosure for that
+required approval. Record any approval separately, preserve frozen preparation,
+then run the fixed six calls and present case 1 first with human fields blank.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
