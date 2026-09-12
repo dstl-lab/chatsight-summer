@@ -96,8 +96,42 @@ found no actionable issue. No production source changed, and no new full-suite r
 for this private batch and documentation; the prior 321-test result is unchanged.
 
 The private `review.md` presents each assignment, original cell, first exchange
-and proposed edit, with expandable supporting code. Minchan's next action is to
-judge each proposal plausible, implausible or uncertain, with any short reason.
-Preserve that feedback separately from the original blank packet. Three exposed
+and proposed edit, with expandable supporting code. Feedback is preserved
+separately from the original blank packet. Three exposed
 initial encounters cannot establish action frequencies, realistic trajectories
 or student learning; later work is still unknown.
+
+## Human review and amount of progress
+
+Minchan accepted case 1 as plausible because it uses the tutor's supplied answer,
+and case 2 because it acts on the tutor's hint. Case 3 was described as plausible
+but leaning toward implausible: completing both functions after one tutor response
+seemed doubtful. Preserve that qualification; neither three unqualified acceptances
+nor a binary rejection represents the feedback. The exact response and review
+hashes are stored privately in `human-review-response.json`. The original review,
+generated proposals and completion record remain unchanged.
+
+The single Markdown packet is cumbersome but usable for now. Keep the current
+packet intact; present future review cases individually without building a new UI.
+
+An offline contract audit with two invented examples confirmed that the frozen
+schema accepts either partial work or a completed cell. Full replacement source
+is a serialization requirement, not a requirement to solve the entire question.
+The action has no duration, keystroke count or record of silent attempts. Case 3
+therefore raises a hypothesis about excessive progress from the available help,
+not a measured claim that the student worked too quickly. Earlier captured formulas
+and helper functions were also visible to the generator. Do not turn this concern
+into an inferred student ability, mandatory mistakes or a fixed edit-size cap.
+
+The smallest next generation probe is a separately versioned prompt comparison on
+these same three development cases. Keep the model, schema, context and source
+scope fixed; compare the original wording with an explicit clarification that the
+returned cell may retain unfinished parts, and that either partial or complete
+progress may fit before any new tutor reply or execution feedback. Fresh baseline
+and clarified draws should each be retained; the old reviewed draws are not a
+replacement for that comparison. Cases 1 and 2 check that the change does not
+gratuitously break direct copying or a small hinted correction. Do not supply the
+reviewer's case-specific verdicts or an authored partial answer to the generator.
+This would test sensitivity to wording, not establish correct pacing or action
+probabilities. No additional model calls were made during feedback recording or
+the contract audit.

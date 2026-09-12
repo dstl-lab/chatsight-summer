@@ -92,10 +92,18 @@ Automatic review first blocked dispatch; Minchan then approved the exact disclos
 recorded separately in approval-response.json before all three calls. Preserve the
 original rejection and standing grant. All proposals revise the selected cell
 without chat; no code ran and no grader outcome exists. Exact replay, 20 preparation
-pins and nine completion-file hashes verify. The private review.md is ready; human
-plausibility fields remain blank until Minchan reviews cases 1/2/3. Record feedback
-separately without rewriting the packet or treating three exposed cases as fidelity
-or action-frequency evidence. No further generation is needed before this review.
+pins and nine completion-file hashes verify. Human review is complete in the separate
+human-review-response.json: cases 1/2 plausible, case 3 plausible but leaning toward
+implausible because finishing both functions after one tutor response seems doubtful.
+Do not count the third judgment as an unqualified acceptance or binary rejection.
+The original packet and its blank fields remain unchanged. An invented offline
+check confirms partial edits already fit the schema; a source revision has no
+defined duration or silent-attempt count. The next bounded probe should compare
+original versus neutral partial-work wording with fresh draws, keeping cases 1/2
+as controls, without forcing mistakes or inventing ability. This is a wording
+diagnostic, not pacing calibration. The Markdown review is cumbersome but usable;
+show future cases individually and defer a new review UI. No new calls were made
+while recording feedback or checking the action contract.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
