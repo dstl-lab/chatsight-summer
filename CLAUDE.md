@@ -184,11 +184,18 @@ All 35 pins and both private checks pass; independent payload audit found no
 material issue. Automatic approval review rejected the actual send before
 process launch, requiring this exact private dialogue/code disclosure to Gemini
 to be approved separately. send-blocked.json preserves the rejection/question
-and five hashes; no results or model calls exist. Finish unaffected work and
-request that specific approval only because of this actual tool rejection.
-Preserve it and the standing grant; append any later explicit reply separately,
-then run the unchanged prepared batch and continue through results verification
-until concrete human plausibility review. Do not stop again merely after approval.
+and five hashes. Minchan then approved the exact requests; the separate
+approval-response.json binds that reply to the unchanged preparation and prior
+rejection. All three calls completed in order without retry notifications and
+selected reply. No student code ran and no current observation was supplied.
+Exact replay, 35 preparation pins and 14 completion hashes verify; all three
+review pages reproduce identically. An independent audit checked source text,
+hidden origin mappings and five approval links; approval precedes every call.
+Human review is pending in case-1.md/case-3.md/case-4.md, with original judgment
+fields blank. Show one case directly in chat when useful, beginning with case1;
+both candidates are messages to the tutor, not notebook state transitions.
+Do not reveal origin-key.json before recording the judgment or infer any verdict
+from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

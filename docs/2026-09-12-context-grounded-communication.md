@@ -65,8 +65,33 @@ Automatic approval review then rejected dispatch before process creation. It
 requires approval of these exact private student dialogue/code payloads going to
 Gemini, despite the standing authorization and latest instruction to continue.
 The private `send-blocked.json` preserves the actual rejection, exact approval
-question and five preparation-file hashes. No model calls occurred and no
-results or execution receipt was created. All preparation and checks are complete;
-the next required user action is this specific send approval. Keep the rejection
-and original authorization unchanged, record any later explicit reply separately,
-and do not reroute or retry the blocked send without it.
+question and five preparation-file hashes. That rejected attempt made no model
+calls and created no results or execution receipt.
+
+## Approved run and review
+
+Minchan subsequently approved sending these exact three requests. The separate
+private `approval-response.json` records the reply and binds the unchanged
+experiment, input, disclosure, original authorization and rejection. Approval
+precedes all three calls; the original preparation and rejected attempt remain
+unchanged.
+
+All three requests completed without retry notifications and selected a reply.
+No student code was executed and no current notebook observation was supplied.
+The generated messages contain no explicit claim of a new run, pass or runtime
+error. Their behavioral plausibility remains for human review; these receipts
+do not establish correctness, reply probabilities or learning.
+
+Exact offline replay passes against all 35 preparation pins. The three review
+pages render identically on repeat; fourteen completion-file hashes bind the
+results, approval, original rejection and presentation. An independent audit
+verified all hashes, five approval links, call timing, source text and candidate
+origin mappings. Human judgment fields remain blank. The previous private checks
+cover this unchanged runner/reviewer; no additional full-suite run is warranted.
+
+Review cases individually, beginning with case 1. Both A and B are messages sent
+to the tutor, and both may be plausible. Present the current exchange and exact
+candidate text directly in chat when useful, with the full historical context
+available in the private case page. Keep the origin key separate until the
+judgment is recorded. Case 2 remains excluded because its initial query link is
+ambiguous; do not replace it or infer a judgment for it.
