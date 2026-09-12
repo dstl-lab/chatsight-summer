@@ -191,8 +191,11 @@ selected reply. No student code ran and no current observation was supplied.
 Exact replay, 35 preparation pins and 14 completion hashes verify; all three
 review pages reproduce identically. An independent audit checked source text,
 hidden origin mappings and five approval links; approval precedes every call.
-Human review is pending in case-1.md/case-3.md/case-4.md, with original judgment
-fields blank. Show one case directly in chat when useful, beginning with case1;
+Minchan tentatively prefers case1 A over B because the tutor already supplied
+the complete function, making sending it back unnecessary. The separate private
+human-review-case-1.json preserves the exact reply and six evidence hashes;
+neither candidate receives an absolute verdict. Cases3/4 remain pending, with
+original judgment fields blank. Show case3 next using chat-review-case-3.md;
 both candidates are messages to the tutor, not notebook state transitions.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.

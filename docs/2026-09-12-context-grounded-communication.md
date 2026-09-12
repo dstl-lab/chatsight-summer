@@ -95,3 +95,12 @@ candidate text directly in chat when useful, with the full historical context
 available in the private case page. Keep the origin key separate until the
 judgment is recorded. Case 2 remains excluded because its initial query link is
 ambiguous; do not replace it or infer a judgment for it.
+
+Minchan tentatively preferred case 1 A over B: the tutor had already supplied the
+complete function, making sending it back unnecessary. This is a relative
+preference, not an explicit implausibility verdict for B or an absolute verdict
+for either candidate. The separate private `human-review-case-1.json` preserves
+the exact reply, qualification and six evidence hashes. Original blank review
+fields and completed results remain unchanged. Cases 3 and 4 still need review;
+case 3 is prepared for the same inline presentation. No model call or prompt
+change was made while recording this feedback.
