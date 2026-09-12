@@ -70,6 +70,34 @@ attempt was rejected by automatic approval review before process launch: it
 requires explicit approval of these exact private student/course excerpts going
 to Gemini, despite the recorded standing grant and approved three-case plan.
 The rejection is preserved separately in private `send-blocked.json`; the frozen
-preparation and standing authorization remain unchanged. Zero model calls were
-made, no results file exists, and no behavior review packet is available yet.
-The complete local `disclosure.md` is ready for the required exact-payload approval.
+preparation and standing authorization remain unchanged. That attempt made zero
+model calls and created no results file.
+
+Minchan subsequently answered yes to sending the exact disclosed excerpts to
+Gemini. The separate private `approval-response.json` binds that approval to the
+unchanged experiment, disclosure, inputs, standing grant and rejection hashes.
+Approval was recorded before dispatch; the original preparation was not rewritten.
+
+## Completed proposals
+
+All three logical requests completed without retry notifications. Each proposed
+a source revision with no accompanying tutor message. The first follows the
+supplied grouping example, the second turns the filtered table into a row count,
+and the third fills in the two functions using captured earlier formulas and
+helpers. These are generated edits, not observed student actions or executed
+solutions; the unchanged supporting partition discrepancy remains outside scope.
+
+Exact offline replay verifies all 20 preparation pins and the retained requests,
+responses and applied states. The review renders identically on a second run;
+nine completion-file hashes bind its inputs and outputs. Human judgment fields
+remain blank. An independent completion audit also verified five approval-linked
+hashes, approval before each call and 121 pins across six older experiments; it
+found no actionable issue. No production source changed, and no new full-suite run was needed
+for this private batch and documentation; the prior 321-test result is unchanged.
+
+The private `review.md` presents each assignment, original cell, first exchange
+and proposed edit, with expandable supporting code. Minchan's next action is to
+judge each proposal plausible, implausible or uncertain, with any short reason.
+Preserve that feedback separately from the original blank packet. Three exposed
+initial encounters cannot establish action frequencies, realistic trajectories
+or student learning; later work is still unknown.

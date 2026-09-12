@@ -87,14 +87,15 @@ encounters (1/2/3), the frozen notebook_action prompt/schema, and one proposal p
 case. Relevant captured supporting code is read-only; no code execution or later
 state reconstruction is part of this pass. Keep all human fields blank until
 review and all private payloads/results outside Git. Existing experiments stay frozen.
-Preparation is complete in data/episode-pilot/initial-action-review-v1/: 20 pins,
-two offline checks and an independent initial-only payload audit pass. Automatic
-approval review rejected the send before process launch because it requires
-explicit approval of this exact private payload to Gemini. Preserve send-blocked.json
-and the existing standing grant; zero model calls were made and no results exist.
-The exact disclosure is ready for approval; do not resubmit until that requirement
-is satisfied. After approval, record it separately without changing the frozen
-preparation, then generate the three proposals and keep behavior judgments blank.
+The three-case batch is complete in data/episode-pilot/initial-action-review-v1/.
+Automatic review first blocked dispatch; Minchan then approved the exact disclosure,
+recorded separately in approval-response.json before all three calls. Preserve the
+original rejection and standing grant. All proposals revise the selected cell
+without chat; no code ran and no grader outcome exists. Exact replay, 20 preparation
+pins and nine completion-file hashes verify. The private review.md is ready; human
+plausibility fields remain blank until Minchan reviews cases 1/2/3. Record feedback
+separately without rewriting the packet or treating three exposed cases as fidelity
+or action-frequency evidence. No further generation is needed before this review.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
