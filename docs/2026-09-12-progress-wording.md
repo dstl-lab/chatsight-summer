@@ -65,6 +65,38 @@ The send attempt was rejected by automatic approval review before process launch
 It requires explicit approval of the exact changed prompts going to Gemini,
 despite the standing grant, prior exact-excerpt approval and approval of the
 comparison. The private `send-blocked.json` preserves that rejection and binds the
-unchanged experiment/disclosure. Zero model calls were made and no results file
-exists. The prepared disclosure is the next required approval; no behavior review
-packet can be shown until generation completes.
+unchanged experiment/disclosure. That attempt made zero model calls and created
+no results file.
+
+Minchan subsequently approved sending the six exact disclosed prompts to Gemini.
+The separate private `approval-response.json` links that answer to the unchanged
+experiment, disclosure, inputs, authorization and rejection. It was recorded before
+dispatch; the completed preparation and original rejection remain unchanged.
+
+## Results
+
+All six requests completed without retry notifications. Every proposal revised
+the selected cell without a tutor message. The two conditions produced identical
+actions in cases 1 and 2. Both case-3 draws filled the first unfinished function
+and left the second unfinished; their new local variable names differ. The
+original wording therefore also produced partial work in this fresh batch.
+This comparison supplies no evidence that the clarification improved realism,
+and no prompt change is adopted from it. No code was executed or graded.
+
+Offline replay verifies the six requests, responses and applied states against
+all 31 preparation pins. The three case pages and index render identically on
+repeat; 12 completion-file hashes bind the inputs and outputs. Human judgments
+remain blank, and the original approval/rejection records remain intact. No
+production module changed; the existing private runner and reviewer checks
+cover this batch without a new full-suite test run.
+An independent audit confirmed the five approval-linked hashes, approval before
+all six calls, the 31 preparation pins, 12 completion hashes and verbatim pairing.
+
+Case 1 exactly repeats the previously accepted action with identical context.
+Case 2 differs from the earlier proposal only by retaining a final display
+expression; its two new candidates are identical to each other. Preserve that
+distinction without transferring earlier verdicts into new review fields. To
+reduce repeated review, bring case 3 forward first and retain the other two case
+files for reference. Ask whether the displayed partial-work candidates are
+plausible, implausible or uncertain; this remains a human question, not a conclusion
+from the amount of code changed.

@@ -111,13 +111,18 @@ unfinished work. Do not feed earlier generated actions or human verdicts into it
 No execution, pacing calibration or fidelity claim is part of this probe. Present
 one case per Markdown file, retain both candidate receipts even when identical,
 and preserve all completed sources and earlier reviews.
-Preparation is frozen and independently audited with 31 pins and two passing
-private checks. Automatic approval review rejected dispatch before process launch,
-requiring explicit approval of the exact changed prompts to Gemini despite the
-standing grant and earlier exact-excerpt approval. Preserve send-blocked.json;
-zero new calls were made and no results exist. Show the new disclosure for that
-required approval. Record any approval separately, preserve frozen preparation,
-then run the fixed six calls and present case 1 first with human fields blank.
+That comparison completed after Minchan's separate exact-prompt approval, which
+precedes all six calls. Preserve approval-response.json and the earlier rejection.
+Six silent revisions completed without retries; cases 1/2 are identical pairs,
+and both case-3 draws fill one function while leaving the other unfinished. Since
+the original wording also produced partial work, this batch does not establish
+an added benefit from clarification; do not adopt a prompt change on this evidence.
+Exact replay/31 preparation pins and 12 completion hashes verify. No code executed.
+Case 1 repeats the previously accepted action with identical context; case 2 only
+adds a final display expression to its earlier proposal. Keep new judgment fields
+blank and earlier reviews separate. Bring case 3 forward first to reduce duplicate
+review, with case-1.md and case-2.md available for reference. The pending human
+question is whether the two partial-work candidates seem plausible in context.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
