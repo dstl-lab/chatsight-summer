@@ -223,10 +223,12 @@ formatting; case4's messages both ask about choice2. No code ran or work changed
 Minchan accepted the shown case1A acknowledgment as plausible because the student
 asked in Chinese. human-review-case-1.json records only that verdict and six
 evidence hashes; B remains unjudged and no prompt benefit is inferred. Original
-blank fields stay intact and no prompt change is adopted. Next show
-chat-review-case-3.md: one exact function represents both proposals, explicitly
-noting spacing differences and asking about chat behavior. Preserve earlier
-qualified preferences without transferring them into fresh candidate judgments.
+blank fields stay intact and no prompt change is adopted. Minchan accepted
+case3's shared function-sending behavior as plausible in one grouped judgment;
+human-review-case-3.json preserves the raw reply and six hashes. No spacing or
+condition preference is inferred, and the preceding conditional short-check
+preference remains intact. Next show chat-review-case-4.md's two answer-check
+messages. Case1B stays unjudged; no previous verdict is transferred.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics

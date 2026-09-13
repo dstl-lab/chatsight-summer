@@ -106,3 +106,10 @@ B receives no comparative verdict, and no causal prompt benefit or acknowledgmen
 frequency is inferred. Original blank fields and completed artifacts stay intact.
 Next show case 3's function once, explicitly noting the spacing differences
 between its two candidates, and ask about sending it as a chat message.
+
+Minchan accepted that shared function-sending behavior as plausible. The separate
+`human-review-case-3.json` preserves the raw reply and six evidence hashes as one
+grouped judgment, without a spacing or prompt-condition preference. This does not
+revise the earlier conditional preference for a short check in the preceding
+experiment. Case 4 is the last pending comparison; case 1 B remains unjudged.
+No new model call or prompt change was made while recording this feedback.
