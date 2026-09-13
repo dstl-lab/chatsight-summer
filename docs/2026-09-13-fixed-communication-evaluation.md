@@ -39,8 +39,8 @@ identity metadata, previous generated replies and review feedback out of prompts
 Generate two independent draws per case: cases 1–8 for draw one, then cases 1–8
 for draw two. Both receive identical inputs. Sixteen logical requests maximum,
 each with the existing four-attempt adapter ceiling. Persist pending/error/retry
-receipts and refuse whole-batch resends or partial resumes. No code, DB or grader
-runs. All exact payloads, source hashes and results stay in ignored
+receipts and refuse whole-batch resends or partial resumes. No student code, DB
+query or grader runs. All exact payloads, source hashes and results stay in ignored
 `data/episode-pilot/fixed-communication-eval-v1/`.
 
 ## One review batch
@@ -101,3 +101,31 @@ separate judgments. Small invented checks cover these boundaries. Production
 modules and completed experiments remain unchanged. Record standing authorization
 and any actual approval-review rejection separately; update draft PR 25 without
 merging it.
+
+## Prepared batch
+
+All eight slots are filled without changing the frozen quotas. The exact prompts
+contain 3,957, 8,216, 8,562, 8,323, 8,105, 7,716, 5,149 and 4,499 characters;
+each is reused unchanged for its second draw. All 50 preparation hashes verify.
+Replacing every selected future and adding human-feedback canaries leaves all
+inputs unchanged. One source episode has eleven consecutive follow-up messages;
+its reference remains only the first, as specified before extraction. The other
+seven have one follow-up message each, and all selected first messages are nonempty.
+
+The three invented checks pass, covering selection, exact preparation/runner
+integration, retained retry/error receipts and review/summary behavior. The runner
+check uses 19 fake provider attempts and no real calls. Summary checks preserve
+reference as well as generated context-fit ratings, including uncertainty without
+notes. A partial review prints pending counts and cannot write a final summary.
+An independent source audit confirms the selection, local-ID projection, identical
+draw inputs, exclusions and runner settings without inspecting reference wording.
+Production code and completed experiments remain unchanged.
+
+Automatic approval review rejected the actual send before process launch. It
+requires authorization naming these private prefixes and the Gemini destination,
+despite the recorded standing grant and approval to proceed with the evaluation.
+The private `send-blocked.json` preserves the rejection and seven evidence hashes.
+No model request was sent; neither results nor an execution receipt exists.
+The exact eight-prefix disclosure describes all sixteen scheduled requests and
+their retry ceiling. Preparation is complete and remains frozen while that
+specific external-send approval is pending; this is not yet an evaluation result.

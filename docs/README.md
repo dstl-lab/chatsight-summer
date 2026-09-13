@@ -5,7 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-13 | `2026-09-13-fixed-communication-evaluation.md` — fixed cases and one communication review batch | Eight distinct cases selected before target inspection; two draws each; existing v7 criteria and descriptive reporting frozen |
+| 2026-09-13 | `2026-09-13-fixed-communication-evaluation.md` — fixed cases and one communication review batch | Eight cases/16 requests prepared; 50 pins and offline checks pass; actual send blocked pending payload approval |
 | 2026-09-13 | `2026-09-13-initial-work-sequence.md` — short action sequence from recovered initial work | Three quiet edits accepted as plausible; imposed cap remains distinct from a student stop; review complete |
 | 2026-09-13 | `2026-09-13-communication-channel.md` — distinguish chat messages from notebook edits | Focused review complete; both final messages plausible with optional brevity suggestion; original prompt retained |
 | 2026-09-12 | `2026-09-12-context-grounded-communication.md` — next-message comparison with historical notebook context | Review complete: case 1 tentatively prefers A, case 3 conditionally prefers B, case 4 equivalent; no absolute verdicts inferred |

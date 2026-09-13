@@ -282,6 +282,15 @@ No tuning, case replacement, notebook reconstruction or acceptance threshold.
 Private preparation/runner/reviewer live in fixed-communication-eval-v1; production
 and completed experiments remain frozen. The next human review is the whole
 batch, after any actual external-send approval requirement has been resolved.
+The fixed batch is fully prepared: 50 pins and three invented checks pass,
+including pending-summary refusal, reference/generated fit counts and first-only
+reference selection. All selected future replacements preserve the 16 inputs.
+An independent source audit found no material issues. Automatic approval review
+rejected the actual send before launch, requiring specific approval of the eight
+private prefixes sent twice to Gemini. send-blocked.json preserves the rejection
+and seven hashes; no model requests, results or execution receipt exist. Keep
+the exact disclosure, protocol and inputs frozen. After approval, run all16 once
+and present one batch review; do not resume the old per-example tuning loop.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics
