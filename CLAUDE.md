@@ -257,6 +257,18 @@ no model-selected no-reply or subsequent action is known. Exact replay/38 pins
 and 13 completion hashes verify; the review renders identically with blank human
 fields. Present the progression once with initial context for plausibility review.
 Do not infer pacing, attempt counts, correctness or an added prompt benefit.
+Minchan accepted this quiet progression as plausible. The separate
+human-review-response.json records the actual chat question, exact reply and
+eight evidence hashes; no reason or broader behavior claim is inferred.
+Close this example. Minchan then questioned the purpose of the repeated checks:
+consolidate mechanics versus behavior evidence before another experiment, and
+avoid more one-off wording/plausibility loops without a defined research question.
+The evidence checkpoint at the end of docs/2026-09-13-initial-work-sequence.md
+distinguishes plausible examples from representative student behavior. Next freeze
+a varied evaluation set, generator and observable behavior criteria before any
+batch; review failures/uncertainty together without tuning between cases. Existing
+data is exposed and does not establish silent-work truth or reply frequencies.
+Do not create an acceptance rate from the qualified and relative reviews so far.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics

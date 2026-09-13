@@ -114,3 +114,40 @@ An independent audit confirms the 38 preparation pins, 13 completion links, six
 approval links and six rejection links, approval before every call, exact carried
 prompts/history and unchanged review output. The compact chat presentation keeps
 the imposed cap explicit and links the full context; human judgment stays blank.
+
+Minchan accepted the displayed quiet progression as plausible. The separate
+`human-review-response.json` preserves the exact reply, the question actually
+asked in chat and eight evidence hashes. No reason or additional conclusion is
+inferred; original review fields remain blank. Close this example without
+extending its cap or generating another similar sequence for reassurance.
+
+## Purpose and stopping point of these checks
+
+The mechanical checks establish that supplied context, edits and observations
+are handled consistently. Human reviews identify behavior that looks plausible
+or exposes a concrete failure, such as narrated reasoning or treating an unsent
+edit as chat. Neither establishes that a simulated cohort represents real
+students. The current generator can produce plausible examples; its fidelity
+across cases and over longer interactions remains unmeasured.
+
+Minchan questioned the repeated checks after accepting this sequence. Treat that
+as a reason to end this development loop. Retain automated regression checks for
+the mechanics, and reopen a focused example only for a specific new failure or
+research question. Do not collect further approvals merely to accumulate them.
+
+The next evaluation should freeze the generator and a varied case set before
+generation, define the behavior being judged, and review results together without
+tuning between cases. Include observed real behavior as a reference possibility,
+not the only valid next response. Report disagreements, uncertainty and failures;
+do not convert the existing qualified/relative reviews into an acceptance rate.
+Observable help-seeking and task continuity are better initial targets than
+wording identity. Any automated label measurement still requires human validation.
+
+The existing [readiness inventory](2026-09-12-student-evaluation-readiness.md)
+and [context recovery](2026-09-12-evaluation-context-recovery.md) constrain this
+evaluation: available cases have prior exposure; recorded next messages condition
+communication comparisons on a reply; later notebook changes and observation
+boundaries remain unknown. Such a development comparison cannot validate reply
+frequency, silent-work trajectories or learning. Those claims need suitable real
+observations, including linked work changes and explicit observation boundaries.
+This consolidation adds no model batch, new rubric, classifier, UI or runtime.
