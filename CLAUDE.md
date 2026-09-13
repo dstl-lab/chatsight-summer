@@ -210,13 +210,20 @@ knowledge of tutor notebook visibility. All six exact requests are now prepared
 in data/episode-pilot/communication-channel-v1/. The only insertion is 220
 characters; paired JSON is byte-identical. All43 pins and both invented checks
 pass, including the runner/reviewer seam, with independent audit confirmation.
-Automatic approval review rejected actual dispatch before process launch,
-requiring separate exact-payload approval despite the standing grant. No calls,
-results or execution receipts exist. send-blocked.json preserves the actual
-rejection/question and six hashes. Append a subsequent approval separately;
-preserve all prepared files and prior authorization, then run the unchanged
-batch and continue until human plausibility review. Do not ask for routine
-permission again once that specific approval is received.
+Automatic approval review initially rejected dispatch before process launch;
+send-blocked.json preserves the actual rejection/question and six hashes.
+Minchan then approved all six exact requests; approval-response.json binds that
+reply to the unchanged preparation and prior rejection before every call.
+All six calls completed with no retries and selected reply. Exact replay/43 pins
+and14 completion hashes verify; the three review pages reproduce identically.
+Independent audit confirms five approval/six rejection links, approval timing,
+all candidate mappings and blank human fields.
+Case1 pairs an acknowledgment with a function; case3's functions differ only in
+formatting; case4's messages both ask about choice2. No code ran or work changed.
+All new human fields remain blank and no prompt change is adopted. Begin with
+chat-review-case-1.md's single new acknowledgment, keeping its condition hidden;
+this asks only about candidateA, with B and cases3/4 unjudged. Preserve earlier
+qualified preferences without transferring them into fresh candidate judgments.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics

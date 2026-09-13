@@ -67,8 +67,34 @@ Automatic approval review rejected the actual send before process launch. It
 requires separate approval for these six newly prepared private dialogue and
 notebook payloads despite the preserved standing grant and instruction to
 continue. The private `send-blocked.json` records the actual rejection, exact
-approval question and six evidence hashes. No model request occurred, and neither
-results nor an execution receipt exists. Preparation is complete; the remaining
-user action is approval of this exact disclosure. Preserve the rejection and
-original authorization, record any subsequent reply separately, and continue
-through the unchanged batch and verification until concrete human review.
+approval question and six evidence hashes. That rejected attempt made no model
+request and created neither results nor an execution receipt.
+
+## Approved run and review
+
+Minchan subsequently approved these six exact requests. The separate private
+`approval-response.json` binds the reply to the unchanged preparation, disclosure,
+original authorization and rejection. Approval precedes all six calls.
+
+All six requests completed without retry notifications and selected reply.
+Case 1 pairs a short acknowledgment with a complete function. Case 3 pairs the
+same function with formatting differences; both omit the column-update expression
+that appeared in the preceding batch. Case 4 pairs two requests to check answer
+choice 2, one expressed with an assignment fragment. These remain chat messages:
+no notebook state was changed, no code executed and no correctness established.
+
+Exact offline replay passes against all 43 preparation pins, and the three review
+pages render identically on repeat. Fourteen completion-file hashes bind the
+results, approval, prior rejection and presentation. All new human fields remain
+blank; the original prompt is retained. Formatting or a shorter response does not
+establish better behavior, and this batch cannot establish a causal wording effect.
+An independent audit confirmed all preparation/completion hashes, five approval
+links, six rejection links, approval before every call, exact candidate mappings
+and unchanged rendered outputs. No human judgment was inferred by these checks.
+
+Begin with the new acknowledgment in case 1, shown directly in chat with the
+student's language and current exchange for context. The other draw repeats the
+previous function structurally, but it receives no transferred human verdict.
+Keep both receipts and full context available while focusing the first question
+on the new acknowledgment. Cases 3 and 4 remain available for subsequent review;
+condition names stay hidden until judgment is recorded.
