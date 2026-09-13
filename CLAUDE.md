@@ -194,8 +194,12 @@ hidden origin mappings and five approval links; approval precedes every call.
 Minchan tentatively prefers case1 A over B because the tutor already supplied
 the complete function, making sending it back unnecessary. The separate private
 human-review-case-1.json preserves the exact reply and six evidence hashes;
-neither candidate receives an absolute verdict. Cases3/4 remain pending, with
-original judgment fields blank. Show case3 next using chat-review-case-3.md;
+neither candidate receives an absolute verdict. Case3 B is preferred conditional
+on prior evidence of student awareness that the tutor sees the notebook; the
+separate human-review-case-3.json preserves this qualification and seven hashes.
+The visible short notebook references are consistent with shared context, but
+explicit awareness and a broader trend remain unknown. Case4 alone remains
+pending, with original judgment fields blank. Show chat-review-case-4.md next;
 both candidates are messages to the tutor, not notebook state transitions.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.

@@ -104,3 +104,14 @@ the exact reply, qualification and six evidence hashes. Original blank review
 fields and completed results remain unchanged. Cases 3 and 4 still need review;
 case 3 is prepared for the same inline presentation. No model call or prompt
 change was made while recording this feedback.
+
+On September 13, Minchan preferred case 3 B conditionally: its likelihood depends
+on an earlier pattern showing that the student knows the tutor can see the
+notebook. The separate private `human-review-case-3.json` records the exact
+qualification and seven evidence hashes, without assigning an absolute verdict
+to either candidate. In the already-supplied prefix, the student refers to the
+exercise without pasting code and the tutor responds about specific code. This
+is consistent with shared notebook context; explicit student awareness and a
+broader historical trend remain unknown. This check uses no future messages,
+new source queries or model calls. Case 4 is the only remaining review, prepared
+inline; all original artifacts and generator behavior remain unchanged.
