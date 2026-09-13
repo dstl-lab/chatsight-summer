@@ -98,3 +98,11 @@ previous function structurally, but it receives no transferred human verdict.
 Keep both receipts and full context available while focusing the first question
 on the new acknowledgment. Cases 3 and 4 remain available for subsequent review;
 condition names stay hidden until judgment is recorded.
+
+Minchan accepted the shown case-1 acknowledgment as plausible because the student
+had asked in Chinese. The separate private `human-review-case-1.json` records
+that judgment and six evidence hashes. It applies only to candidate A; candidate
+B receives no comparative verdict, and no causal prompt benefit or acknowledgment
+frequency is inferred. Original blank fields and completed artifacts stay intact.
+Next show case 3's function once, explicitly noting the spacing differences
+between its two candidates, and ask about sending it as a chat message.

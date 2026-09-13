@@ -220,9 +220,12 @@ Independent audit confirms five approval/six rejection links, approval timing,
 all candidate mappings and blank human fields.
 Case1 pairs an acknowledgment with a function; case3's functions differ only in
 formatting; case4's messages both ask about choice2. No code ran or work changed.
-All new human fields remain blank and no prompt change is adopted. Begin with
-chat-review-case-1.md's single new acknowledgment, keeping its condition hidden;
-this asks only about candidateA, with B and cases3/4 unjudged. Preserve earlier
+Minchan accepted the shown case1A acknowledgment as plausible because the student
+asked in Chinese. human-review-case-1.json records only that verdict and six
+evidence hashes; B remains unjudged and no prompt benefit is inferred. Original
+blank fields stay intact and no prompt change is adopted. Next show
+chat-review-case-3.md: one exact function represents both proposals, explicitly
+noting spacing differences and asking about chat behavior. Preserve earlier
 qualified preferences without transferring them into fresh candidate judgments.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
