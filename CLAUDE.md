@@ -198,9 +198,16 @@ neither candidate receives an absolute verdict. Case3 B is preferred conditional
 on prior evidence of student awareness that the tutor sees the notebook; the
 separate human-review-case-3.json preserves this qualification and seven hashes.
 The visible short notebook references are consistent with shared context, but
-explicit awareness and a broader trend remain unknown. Case4 alone remains
-pending, with original judgment fields blank. Show chat-review-case-4.md next;
-both candidates are messages to the tutor, not notebook state transitions.
+explicit awareness and a broader trend remain unknown. Minchan judged case4's
+messages equivalent, without a preference or absolute plausibility verdict.
+human-review-case-4.json and human-review-summary.json close this review while
+preserving the original blank fields. Recorded messages were preferred with
+qualifications in cases1/3; case4 was equivalent. No accuracy score follows.
+Next, docs/2026-09-13-communication-channel.md defines six fresh paired requests
+with the same three inputs and one neutral chat-channel clarification. Preserve
+the original prompt; neither force terse/no-code replies nor assert the student's
+knowledge of tutor notebook visibility. Continue preparation and checks under
+standing authorization until actual review or an actual tool rejection is needed.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics

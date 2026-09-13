@@ -115,3 +115,19 @@ is consistent with shared notebook context; explicit student awareness and a
 broader historical trend remain unknown. This check uses no future messages,
 new source queries or model calls. Case 4 is the only remaining review, prepared
 inline; all original artifacts and generator behavior remain unchanged.
+
+Minchan judged case 4's two messages equivalent. Record no preference and no
+absolute plausibility verdict; equivalence does not itself mean acceptance. The
+separate `human-review-case-4.json` binds six evidence files, and
+`human-review-summary.json` closes all three comparisons. With origins revealed
+for analysis, the recorded message was preferred tentatively in case 1 and
+conditionally in case 3; case 4's recorded and generated messages were equivalent.
+No binary accuracy or acceptance count is warranted.
+
+The generated candidates in cases 1 and 3 sent supplied solution code back as
+chat. This motivates testing whether the prompt's broad word "contribution"
+leaves the communication channel unclear. It does not prove that mechanism or
+justify banning code, inventing notebook access or inferring student knowledge.
+The [next bounded comparison](2026-09-13-communication-channel.md) keeps these
+exposed inputs fixed and tests an explicit chat-only interpretation against fresh
+original-prompt controls. Original review artifacts and prompts stay unchanged.

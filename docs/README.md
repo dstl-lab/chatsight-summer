@@ -5,7 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-12 | `2026-09-12-context-grounded-communication.md` — next-message comparison with historical notebook context | Three replies completed; case 1 tentatively prefers A, case 3 conditionally prefers B; case 4 pending, ambiguous case 2 excluded |
+| 2026-09-13 | `2026-09-13-communication-channel.md` — distinguish chat messages from notebook edits | Six fresh original/clarified requests planned on the same three contexts; generator unchanged |
+| 2026-09-12 | `2026-09-12-context-grounded-communication.md` — next-message comparison with historical notebook context | Review complete: case 1 tentatively prefers A, case 3 conditionally prefers B, case 4 equivalent; no absolute verdicts inferred |
 | 2026-09-12 | `2026-09-12-evaluation-context-recovery.md` — recover the four fixed comparison contexts | Three aligned captures, one ambiguous initial query; 19 sources/three outputs verify; no later work reconstructed |
 | 2026-09-12 | `2026-09-12-student-evaluation-readiness.md` — available evidence and fixed context-recovery candidates | Eight snapshots/252 distinct conversations; 55 eligible windows yield four fixed candidates, all needing context recovery; 32 hashes verify, no model calls |
 | 2026-09-12 | `2026-09-12-partial-work-continuity.md` — next action after accepted partial work | Quiet completion accepted as plausible after inline clarification; original records preserved; developmental example closed |
