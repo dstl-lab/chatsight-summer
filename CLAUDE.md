@@ -269,6 +269,19 @@ a varied evaluation set, generator and observable behavior criteria before any
 batch; review failures/uncertainty together without tuning between cases. Existing
 data is exposed and does not establish silent-work truth or reply frequencies.
 Do not create an acceptance rate from the qualified and relative reviews so far.
+Minchan approved that fixed evaluation. Follow
+docs/2026-09-13-fixed-communication-evaluation.md: eight distinct conversations,
+two independent original-prompt draws each, one concealed-origin review batch.
+The updated 39-key exclusion leaves 43 windows/20 conversations; select 2 code/error,
+3 earlier-context and 3 concise cases using the saved rank. Selection/protocol
+are frozen before reference text is extracted. Use the first later student
+message as reference, existing v7 followup/task_relation and human context fit.
+All 16 dispositions stay in the report; preserve missing/uncertain judgments,
+and report per-case outcomes rather than treating draws as independent students.
+No tuning, case replacement, notebook reconstruction or acceptance threshold.
+Private preparation/runner/reviewer live in fixed-communication-eval-v1; production
+and completed experiments remain frozen. The next human review is the whole
+batch, after any actual external-send approval requirement has been resolved.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics
