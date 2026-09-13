@@ -238,6 +238,16 @@ work60, at most three existing notebook actions. Carry generated work/history
 forward, stop on chat/no-reply/error/cap, keep observation null and run no code.
 Do not inject its later Chinese request or communication reviews into this
 initial branch. Production modules and completed experiments remain frozen.
+That sequence is fully prepared in data/episode-pilot/initial-work-sequence-v1/.
+All 38 preparation pins and both invented checks pass; the independent audit
+confirms exact initial context and the bounded generated-state procedure.
+Automatic approval review rejected dispatch before launch because the private
+payload and Gemini destination need specific approval. send-blocked.json records
+the actual rejection and six hashes; no model request, results or execution
+receipt exists. The disclosure contains the exact first prompt and explains up
+to two dependent followups from generated work/history. Preserve the standing
+grant, frozen preparation and rejection; do not describe all three prompts as
+already known or infer behavior review from eventual send approval.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics

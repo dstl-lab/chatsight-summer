@@ -53,3 +53,34 @@ trajectory in a compact step sequence: what changed in the notebook, what was
 sent to the tutor and what remains unknown. Human review judges plausibility;
 mechanical replay alone cannot establish it. Preserve all completed experiments
 and leave production modules unchanged for this bounded probe.
+
+## Prepared sequence
+
+The exact first request contains 4,632 characters. All 38 preparation hashes
+verify, including the recovered sources, selected initial task, unchanged action
+prompt/schema, provider adapter, atomic writer and direct runner/reviewer helpers.
+The disclosure distinguishes this known first request from later requests formed
+only from the same context and this branch's generated work and history.
+
+Both invented checks pass. The runner check uses nine fake provider calls to
+exercise quiet revisions, chat/no-reply stops, caps, factory/provider failures,
+retry records, source drift and resend refusal. The reviewer check uses the
+actual transition helper and verifies exact source, dialogue, revision history,
+stop reasons and preservation of blank human fields. No real model or student
+code ran during these checks. Production files and completed experiments remain
+unchanged.
+
+An independent audit confirms the exact source selection, first-exchange-only
+input, original prompt/schema, disclosure and dispatch/replay boundaries. Direct
+execution and rendering helpers are pinned; import-only transitive codebook,
+question-reference and package initialization modules are not separately pinned.
+Their rubric and question-extraction helpers are not invoked by this probe.
+
+Automatic approval review rejected dispatch before process launch, requiring
+approval naming this private student/tutor dialogue, notebook excerpt and Gemini
+destination despite the recorded standing grant. The private `send-blocked.json`
+preserves the actual rejection, approval question and six evidence hashes.
+No model request was sent, and neither results nor an execution receipt exists.
+The reviewable disclosure covers one sequence with at most three dependent
+requests, not three already-known prompts. Preparation is complete; the external
+send awaits the required approval. Keep the branch in draft PR 25, unmerged.
