@@ -206,8 +206,17 @@ qualifications in cases1/3; case4 was equivalent. No accuracy score follows.
 Next, docs/2026-09-13-communication-channel.md defines six fresh paired requests
 with the same three inputs and one neutral chat-channel clarification. Preserve
 the original prompt; neither force terse/no-code replies nor assert the student's
-knowledge of tutor notebook visibility. Continue preparation and checks under
-standing authorization until actual review or an actual tool rejection is needed.
+knowledge of tutor notebook visibility. All six exact requests are now prepared
+in data/episode-pilot/communication-channel-v1/. The only insertion is 220
+characters; paired JSON is byte-identical. All43 pins and both invented checks
+pass, including the runner/reviewer seam, with independent audit confirmation.
+Automatic approval review rejected actual dispatch before process launch,
+requiring separate exact-payload approval despite the standing grant. No calls,
+results or execution receipts exist. send-blocked.json preserves the actual
+rejection/question and six hashes. Append a subsequent approval separately;
+preserve all prepared files and prior authorization, then run the unchanged
+batch and continue until human plausibility review. Do not ask for routine
+permission again once that specific approval is received.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics

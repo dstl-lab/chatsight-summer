@@ -40,3 +40,35 @@ receipts. Human review determines plausibility; reduced code length or agreement
 with a recorded message is not an automatic improvement. One draw per condition
 on three exposed cases cannot estimate distributions or establish a causal effect.
 Keep the original production prompt unless stronger evidence warrants a change.
+
+## Prepared comparison
+
+All six exact requests are prepared, containing 10,242, 10,462, 8,901, 8,681,
+13,301 and 13,521 characters in the declared order. The sole insertion is 220
+characters including its leading newline. Baseline prompts match the previous
+inputs exactly, and each pair has byte-identical JSON. All 43 preparation file
+hashes verify; no current work or observation has been filled in.
+
+The invented runner check passes with five fake provider calls and zero real
+calls. It checks pairing, pending records before credentials/factories, retained
+errors/retries, source drift, resend refusal and strict offline replay. The
+reviewer check includes the actual runner's prompt construction, exact shared
+context, hidden condition mappings, no-reply/errors, identical-candidate display
+and preservation of human edits. An insertion-newline mismatch found during
+review was corrected before preparation and is covered by that integration check.
+Production modules and all completed experiment artifacts remain unchanged.
+
+An independent audit confirms all 43 hashes, six exact prompts and their declared
+order, the 220-character insertion, identical paired JSON, fixed schema/settings,
+full disclosure and accurately scoped authorization. No prior generated answer
+or human feedback entered the requests.
+
+Automatic approval review rejected the actual send before process launch. It
+requires separate approval for these six newly prepared private dialogue and
+notebook payloads despite the preserved standing grant and instruction to
+continue. The private `send-blocked.json` records the actual rejection, exact
+approval question and six evidence hashes. No model request occurred, and neither
+results nor an execution receipt exists. Preparation is complete; the remaining
+user action is approval of this exact disclosure. Preserve the rejection and
+original authorization, record any subsequent reply separately, and continue
+through the unchanged batch and verification until concrete human review.
