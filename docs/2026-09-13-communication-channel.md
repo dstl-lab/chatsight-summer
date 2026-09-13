@@ -113,3 +113,20 @@ grouped judgment, without a spacing or prompt-condition preference. This does no
 revise the earlier conditional preference for a short check in the preceding
 experiment. Case 4 is the last pending comparison; case 1 B remains unjudged.
 No new model call or prompt change was made while recording this feedback.
+
+Minchan judged both case-4 messages plausible, while suggesting a shorter answer
+check might be more plausible and describing the current wording as a minor
+issue. `human-review-case-4.json` preserves that tentative alternative and six
+evidence hashes. It does not establish an A/B preference or require shorter text.
+
+The focused review is complete in `human-review-summary.json`: the case-1
+acknowledgment is plausible, case 3 has one accepted grouped judgment, and both
+case-4 messages are plausible with the minor suggestion. Case 1 B remains
+unjudged. Accepted behavior exists under both conditions; no head-to-head
+superiority or reliable prompt benefit was demonstrated. Close this diagnostic,
+retain the original prompt and avoid another wording iteration on these cases.
+
+Return to [a bounded sequence of student actions](2026-09-13-initial-work-sequence.md)
+from a recovered initial encounter, where current work is actually available.
+These later communication cutoffs still have unknown work and cannot initialize
+a reconstructed notebook trajectory.

@@ -227,8 +227,17 @@ blank fields stay intact and no prompt change is adopted. Minchan accepted
 case3's shared function-sending behavior as plausible in one grouped judgment;
 human-review-case-3.json preserves the raw reply and six hashes. No spacing or
 condition preference is inferred, and the preceding conditional short-check
-preference remains intact. Next show chat-review-case-4.md's two answer-check
-messages. Case1B stays unjudged; no previous verdict is transferred.
+preference remains intact. Both case4 messages are now judged plausible, with a
+tentative terser alternative described as a minor issue. human-review-case-4.json
+and human-review-summary.json close this focused review; case1B stays unjudged.
+No condition preference or mandatory brevity rule follows. Retain the original
+communication prompt; another wording iteration is not justified by this batch.
+Next follow docs/2026-09-13-initial-work-sequence.md: one fresh branch from
+evaluation-context-v1 case1's initial capture/first exchange, instruction59 and
+work60, at most three existing notebook actions. Carry generated work/history
+forward, stop on chat/no-reply/error/cap, keep observation null and run no code.
+Do not inject its later Chinese request or communication reviews into this
+initial branch. Production modules and completed experiments remain frozen.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics
