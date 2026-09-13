@@ -243,11 +243,20 @@ All 38 preparation pins and both invented checks pass; the independent audit
 confirms exact initial context and the bounded generated-state procedure.
 Automatic approval review rejected dispatch before launch because the private
 payload and Gemini destination need specific approval. send-blocked.json records
-the actual rejection and six hashes; no model request, results or execution
-receipt exists. The disclosure contains the exact first prompt and explains up
-to two dependent followups from generated work/history. Preserve the standing
+the actual rejection and six hashes; that rejected attempt made no model request
+and created no results or execution receipt. The disclosure contains the exact
+first prompt and explains up to two dependent followups from generated work/history. Preserve the standing
 grant, frozen preparation and rejection; do not describe all three prompts as
 already known or infer behavior review from eventual send approval.
+Minchan then explicitly continued in response to that disclosure question;
+approval-response.json preserves the reply and six hashes before every call.
+All three requests completed without retries: quiet fraction edit, quiet discount
+conditions, then quiet principal calculation/return. Work advances 0→3 with no
+chat, execution, new tutor or observation. The runner stops at action-limit;
+no model-selected no-reply or subsequent action is known. Exact replay/38 pins
+and 13 completion hashes verify; the review renders identically with blank human
+fields. Present the progression once with initial context for plausibility review.
+Do not infer pacing, attempt counts, correctness or an added prompt benefit.
 Do not reveal origin-key.json before recording the judgment or infer any verdict
 from request-send approval. Preserve case2's ambiguity and all completed evidence.
 Labeling and continuation diagnostics
