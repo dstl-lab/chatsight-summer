@@ -288,11 +288,23 @@ reference selection. All selected future replacements preserve the 16 inputs.
 An independent source audit found no material issues. Automatic approval review
 rejected the actual send before launch, requiring specific approval of the eight
 private prefixes sent twice to Gemini. send-blocked.json preserves the rejection
-and seven hashes; no model requests, results or execution receipt exist. Keep
-the exact disclosure, protocol and inputs frozen. After approval, run all16 once
-and present one batch review; do not resume the old per-example tuning loop.
-Do not reveal origin-key.json before recording the judgment or infer any verdict
-from request-send approval. Preserve case2's ambiguity and all completed evidence.
+and seven hashes; that rejected attempt made no model request or execution receipt.
+Minchan subsequently approved the exact disclosure. approval-response.json binds
+the reply and seven evidence links before all16 calls; keep the standing grant
+and original rejection unchanged. All16 requests completed and selected reply
+with no errors or retry notifications. No student code ran. Exact offline replay,
+50 preparation pins and twice-identical review rendering verify. An independent
+completion audit passes; completion-verification.json binds 18 artifact hashes.
+The audit's judgments.json hash describes only its initial blank snapshot, not
+an immutability requirement on the separate human judgment file.
+The original review.json remains blank; judgments.json is its separate editable
+copy. All24 messages/72 ratings await human review, and the pending summary writes
+no final report. Present REVIEW_START.md and the whole review.md packet; accept
+plain-English chat judgments in parts without tuning or replacing cases. Do not
+resume the old per-example tuning loop. Keep origin-key.json concealed until all
+judgments are recorded; request-send approval is not a behavior verdict. Preserve
+the earlier recovery case2's ambiguity and all completed evidence. Generation is
+finished; the next milestone is the report after the complete human review.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

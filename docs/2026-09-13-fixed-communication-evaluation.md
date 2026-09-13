@@ -121,11 +121,35 @@ An independent source audit confirms the selection, local-ID projection, identic
 draw inputs, exclusions and runner settings without inspecting reference wording.
 Production code and completed experiments remain unchanged.
 
-Automatic approval review rejected the actual send before process launch. It
-requires authorization naming these private prefixes and the Gemini destination,
-despite the recorded standing grant and approval to proceed with the evaluation.
-The private `send-blocked.json` preserves the rejection and seven evidence hashes.
-No model request was sent; neither results nor an execution receipt exists.
-The exact eight-prefix disclosure describes all sixteen scheduled requests and
-their retry ceiling. Preparation is complete and remains frozen while that
-specific external-send approval is pending; this is not yet an evaluation result.
+Automatic approval review initially rejected the send before process launch,
+requiring authorization naming these private prefixes and the Gemini destination
+despite the recorded standing grant. That rejected attempt made no model request
+and created no results or execution receipt. The private `send-blocked.json`
+preserves the rejection and seven evidence hashes. Minchan subsequently approved
+the exact eight-prefix, sixteen-request disclosure; `approval-response.json`
+records the reply and seven evidence links before every call. Preserve both
+records and the original standing grant.
+
+## Generation complete; human review pending
+
+All sixteen requests completed and selected reply, with no errors or retry
+notifications. The original prompt, paired inputs and request order stayed fixed.
+No student code ran and no notebook observation was supplied. Exact offline replay
+and all 50 preparation hashes verify; the eight-case review renders identically
+twice. The original 24-row `review.json` remains blank, with a separate editable
+`judgments.json` copy. Its pending summary reports 24 messages awaiting review and
+72 missing ratings; it creates no final summary files. An independent audit confirms
+the receipts, approval timing, all candidate mappings and first-message references.
+The completion record binds 18 artifact hashes; its audit's judgment-file hash is
+explicitly an initial blank snapshot, since later human edits are expected.
+
+The private `REVIEW_START.md` explains the three judgments and links to the whole
+`review.md` packet and a blank reply template. Plain-English feedback in chat is
+accepted and recorded separately. Candidates retain their preassigned A/B/C order;
+origins stay concealed until the whole batch is reviewed. Review may arrive in
+parts, but no prompt tuning or case substitution occurs between judgments.
+
+Successful generation supplies candidates for evaluation, not evidence that their
+behavior fits students. The next milestone is the frozen descriptive report after
+all eight cases have human judgments; uncertainty is a valid judgment, and missing
+ratings remain missing.
