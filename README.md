@@ -24,8 +24,12 @@ blind measurement, no student data in git) that every claim in this project depe
 
 The [saved-student workflow](docs/2026-09-14-continuing-student.md) initializes a task
 and resumes bounded student actions across process reloads. The current executor
-supports one selected cell in a declared distinct-count activity, with requested
-checks in an isolated local Docker image. It is not a general notebook kernel.
+supports one selected cell, a supplied string column and a scalar result, with
+requested checks in an isolated local Docker image. A separate
+[task evaluation](docs/2026-09-14-task-portability.md) supplies the expected scalar
+without adding it to either agent's prompt. Counting and category proportion use
+the same action engine. This is limited task portability, not a general notebook
+kernel or evidence that student behavior transfers across courses.
 
 Use [tutor context](docs/2026-09-14-tutor-context.md) to inspect work and supply your
 own reply, or [the notebook tutor](docs/2026-09-14-notebook-tutor.md) to generate one

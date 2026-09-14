@@ -215,20 +215,23 @@ def test_bound_reply_checks_state_inside_lock_before_any_write(tmp_path):
         student.step(folder, tutor_reply='An outdated hint.', generate=None, check=None, **expected)
 
 
-def test_original_wrapper_can_replay_and_record_current_engine_without_rewriting_old_receipts(tmp_path, monkeypatch):
+@pytest.mark.parametrize('version', [1, 2])
+def test_original_wrapper_can_replay_and_record_current_engine_without_rewriting_old_receipts(tmp_path, monkeypatch, version):
     student = api()
     folder = tmp_path/'v1'
     current = student._engine()
-    old = deepcopy(current)
-    old['sources']['notebook_student.py'] = 'b8d4f639d7640b838b423e7df02cb3b096606b2fb8e645fa7ed557f740a61232'
+    old = student._legacy_engine(version)
     with monkeypatch.context() as patch:
         patch.setattr(student, '_engine', lambda:deepcopy(old))
         student.create(folder, task=TASK, activity=ACTIVITY, branch_id='synthetic/v1', max_decisions=2)
         student.step(folder, generate=lambda *_: Action(decision='reply', text='check this', source=None), check=None)
     first = folder/'step-0001.json'
     receipt = json.loads(first.read_text())
-    receipt.pop('engine', None)  # The original v1 receipt did not have this field.
-    receipt.pop('version', None)
+    if version == 1:
+        receipt.pop('engine', None)  # The original v1 receipt did not have this field.
+        receipt.pop('version', None)
+    else:
+        receipt['version'] = 2
     first.write_text(json.dumps(receipt))
     frozen = {p.name:p.read_bytes() for p in (folder/'session.json', first)}
     assert student.load(folder)['message'] == 'check this'

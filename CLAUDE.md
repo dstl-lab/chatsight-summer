@@ -2,6 +2,25 @@
 
 ## Current implementation focus (2026-09-14)
 
+Minchan asked how the tool generalizes. The current increment separates a private
+scalar evaluation from the visible task, using the existing notebook action loop
+for distinct counting and category proportion. See
+docs/2026-09-14-task-portability.md. `create --evaluation-file` accepts an expected
+scalar; neither model prompt nor worker input receives it. Feedback binds its
+hash, and edits clear current feedback. Omission retains legacy distinct counting.
+This deliberately revises runtime/session/wrapper source pins: exact original V1
+and V2 sessions replay unchanged; new operations use V3 receipts with current
+source hashes. Other source/schema changes remain unsupported. Completed older
+experiments retain their recorded commits and must not be regraded.
+The final related suite passes 44 tests with two optional integrations skipped;
+the new two-task container integration separately passes. Authored action controls
+in data/episode-pilot/task-portability-v1 show failed and passing checks for both
+operations. The original proportion formula returned 0.0 because Python iteration
+over the Babypandas Series yielded no values; the Series.sum correction returns
+0.5. Preserve all five session checks and two diagnostics. No model requests or
+human review occurred in this increment. This establishes narrow software task
+portability, not behavior fidelity, persona validity or transfer across courses.
+
 Minchan set presentation work aside and directed continuation of simulated-student
 implementation. A saved notebook student can receive a supplied tutor reply and
 continue with the same work and history; see docs/2026-09-14-continuing-student.md
@@ -29,8 +48,9 @@ test adapter connection and its correction are documented in the memo. Reference
 delivery is verified; model compliance and tutor correctness remain unmeasured.
 Original b2a417b sessions remain replayable without rewriting saved receipts;
 new operations record their actual engine. Other source/schema changes still fail.
-Existing prompts, action/runtime modules and completed experiments remain
-unchanged. The new session wrapper has a per-step cap and cumulative model budget;
+Existing prompts and completed experiments remain unchanged; the task-evaluation
+increment above explicitly revises the runtime/session boundary. The saved session
+wrapper has a per-step cap and cumulative model budget;
 chosen no-reply remains terminal, while a budget pause is not student silence.
 The earlier history ablation and repeated plausibility-review loop remain paused.
 The reassessment below remains research context, not a block on this implementation.

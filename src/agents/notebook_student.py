@@ -16,6 +16,7 @@ from src.labeling import llm
 Action = notebook_session.Action
 digest = student_continuation._digest
 V1_SOURCE = 'b8d4f639d7640b838b423e7df02cb3b096606b2fb8e645fa7ed557f740a61232'  # b2a417b
+V2_SOURCE = '53e344d98d79ff0a1be916aa9244d0bc31cb847b718a32001704310655fa0a1d'  # a4f6e48
 
 
 def _engine():
@@ -24,11 +25,17 @@ def _engine():
         Path(p).name: digest(Path(p).read_text()) for p in [__file__, *(m.__file__ for m in modules)]}}
 
 
+def _legacy_engine(version):
+    legacy = _engine()
+    legacy['sources'].update({
+        'notebook_student.py': {1: V1_SOURCE, 2: V2_SOURCE}[version],
+        'notebook_session.py': 'c1adfc2dd1de01e16aee6a97eb2ebaec3eef36dfa5d50f9fbe3c20b546b0d705',
+        'notebook_runtime.py': notebook_runtime.DISTINCT_COUNT_SOURCE})
+    return legacy
+
+
 def _compatible_engine(saved):
-    current = _engine()
-    legacy = deepcopy(current)
-    legacy['sources']['notebook_student.py'] = V1_SOURCE
-    return saved == current or saved == legacy
+    return saved in (_engine(), _legacy_engine(1), _legacy_engine(2))
 
 
 def _read(path):
@@ -72,12 +79,14 @@ def _locked(folder):
         yield
 
 
-def create(folder, *, task, activity, branch_id, model='gemini-2.5-pro', max_decisions=12, timeout=10):
+def create(folder, *, task, activity, branch_id, model='gemini-2.5-pro', max_decisions=12, timeout=10,
+           evaluation=None):
     if type(max_decisions) is not int or not 1 <= max_decisions <= 100:
         raise ValueError('Set a session budget between 1 and 100 model decisions.')
     if not isinstance(model, str) or not model.strip():
         raise ValueError('Supply a model name.')
-    initial = notebook_session.initial_state(task, activity=activity, branch_id=branch_id, timeout=timeout)
+    initial = notebook_session.initial_state(task, activity=activity, branch_id=branch_id,
+                                             timeout=timeout, evaluation=evaluation)
     dialogue = initial['dialogue']
     if (not isinstance(dialogue, list) or not dialogue or dialogue[-1].get('role') != 'tutor'
             or any(t.get('role') not in ('student', 'tutor') or not isinstance(t.get('text'), str)
@@ -134,15 +143,20 @@ def _load(folder):
     if manifest.get('version') != 1 or not _compatible_engine(manifest.get('engine')):
         raise ValueError('Session implementation/schema changed; preserve its original environment.')
     state, decisions = manifest['initial'], 0
+    if 'evaluation' in state and manifest['engine'] != _engine():
+        raise ValueError('Legacy session engines did not support explicit evaluation.')
     paths = sorted(folder.glob('step-*.json'))
     for index, path in enumerate(paths, 1):
         if path.name != f'step-{index:04}.json':
             raise ValueError('Session operation sequence is incomplete.')
         receipt = _read(path)
         if 'version' not in receipt:
-            if 'engine' in receipt or manifest['engine']['sources']['notebook_student.py'] != V1_SOURCE:
+            if 'engine' in receipt or manifest['engine'] != _legacy_engine(1) or 'evaluation' in state:
                 raise ValueError('Missing operation version/engine outside the legacy receipt format.')
-        elif receipt['version'] != 2 or receipt.get('engine') != _engine():
+        elif receipt['version'] == 2:
+            if receipt.get('engine') != _legacy_engine(2) or 'evaluation' in state:
+                raise ValueError('Saved operation engine changed or is unsupported.')
+        elif receipt['version'] != 3 or receipt.get('engine') != _engine():
             raise ValueError('Saved operation engine changed or is unsupported.')
         request = receipt['request']
         if receipt['status'] != 'complete':
@@ -201,7 +215,7 @@ def step(folder, *, generate, check, tutor_reply=None, max_actions=3,
         if remaining <= 0:
             raise ValueError('Session model-decision budget exhausted; this is not student silence.')
         max_actions = min(max_actions, remaining)
-        receipt = {'version': 2, 'engine': _engine(), 'status': 'pending',
+        receipt = {'version': 3, 'engine': _engine(), 'status': 'pending',
                    'started_at': datetime.now(timezone.utc).isoformat(), 'calls': [],
                    'request': {'state_sha256': digest(state), 'session_sha256': digest(manifest),
                                'tutor_reply': tutor_reply, 'max_actions': max_actions}}
@@ -243,19 +257,24 @@ def main():
     parser.add_argument('folder', type=Path)
     parser.add_argument('--task', type=Path)
     parser.add_argument('--activity', type=Path)
+    parser.add_argument('--evaluation-file', type=Path, help='Private expected scalar JSON; create only. Omit for legacy distinct counting.')
     parser.add_argument('--max-decisions', type=int, default=12)
     parser.add_argument('--max-actions', type=int, default=3)
     parser.add_argument('--tutor-file', type=Path, help='Exact supplied tutor reply, read as UTF-8.')
     parser.add_argument('--context-file', type=Path, help='Bind the reply to an exported tutor context.')
     parser.add_argument('--send', action='store_true', help='Allow this step to call Gemini and requested local checks.')
     args = parser.parse_args()
+    if args.evaluation_file and args.command != 'create':
+        parser.error('--evaluation-file is only supported by create.')
     if args.context_file and (args.command != 'step' or not args.tutor_file):
         parser.error('--context-file requires step with --tutor-file.')
     if args.command == 'create':
         if not args.task or not args.activity or args.send or args.tutor_file:
             parser.error('create requires --task and --activity, without --send or --tutor-file.')
         state = create(args.folder, task=_read(args.task), activity=_read(args.activity),
-                       branch_id='synthetic/' + args.folder.name, max_decisions=args.max_decisions)
+                       branch_id='synthetic/' + args.folder.name, max_decisions=args.max_decisions,
+                       evaluation=notebook_runtime.Evaluation.model_validate(_read(args.evaluation_file)).model_dump()
+                       if args.evaluation_file else None)
         result = {'state': state, 'stop_reason': 'initialized'}
     elif args.command == 'show':
         if args.send or args.tutor_file:

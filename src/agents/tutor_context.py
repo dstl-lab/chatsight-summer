@@ -20,7 +20,7 @@ def snapshot(folder):
             before = receipt['result']['state']
         if state['observation'] is not None:
             student.notebook_runtime.require_current(state['observation'], state['work'],
-                branch_id=state['branch_id'], activity=state['activity'], timeout=state['timeout'])
+                **student.notebook_session._check_args(state))
         lines = difflib.unified_diff(baseline['source'].splitlines(keepends=True),
             state['work']['source'].splitlines(keepends=True), fromfile='previous work', tofile='current work')
         diff = ''.join(line if line.endswith('\n') else line + '\n\\ No newline at end of file\n'

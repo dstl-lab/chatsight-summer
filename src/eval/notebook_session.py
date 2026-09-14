@@ -33,20 +33,27 @@ STATE JSON:
 '''
 
 
-def initial_state(task: dict, *, activity: dict, branch_id: str, timeout: float = 10) -> dict:
+def initial_state(task: dict, *, activity: dict, branch_id: str, timeout: float = 10, evaluation=None) -> dict:
     activity = nr.Activity.model_validate(activity)
-    nr._binding(task['work'], branch_id, activity, timeout)
-    return deepcopy({key:task[key] for key in ('initialization','task','work','dialogue')}) | {
+    nr._binding(task['work'], branch_id, activity, timeout, evaluation)
+    state = deepcopy({key:task[key] for key in ('initialization','task','work','dialogue')}) | {
         'activity':activity.model_dump(), 'branch_id':branch_id, 'timeout':timeout,
         'observation':None, 'history':[], 'status':'active', 'message':None}
+    if evaluation is not None:
+        state['evaluation'] = nr.Evaluation.model_validate(evaluation).model_dump()
+    return state
+
+
+def _check_args(state):
+    # Omit evaluation for legacy states so their recorded requests replay exactly.
+    return deepcopy({key:state[key] for key in ('branch_id', 'activity', 'timeout', 'evaluation') if key in state})
 
 
 def _active(state):
     if state['status'] != 'active':
         raise ValueError('A terminal session cannot produce another action.')
     if state['observation'] is not None:
-        nr.require_current(state['observation'], state['work'], branch_id=state['branch_id'],
-                           activity=state['activity'], timeout=state['timeout'])
+        nr.require_current(state['observation'], state['work'], **_check_args(state))
 
 
 def _feedback(observation):
@@ -74,10 +81,8 @@ def advance(state: dict, action: Action, *, check, origin: str) -> dict:
     event = {'origin':origin, 'action':action.model_dump(), 'revision_before':state['work']['revision'],
              'observation':None}
     if action.decision == 'request-check':
-        observation = check(deepcopy(state['work']), branch_id=state['branch_id'],
-                            activity=deepcopy(state['activity']), timeout=state['timeout'])
-        nr.require_current(observation, state['work'], branch_id=state['branch_id'],
-                           activity=state['activity'], timeout=state['timeout'])
+        observation = check(deepcopy(state['work']), **_check_args(state))
+        nr.require_current(observation, state['work'], **_check_args(state))
         status = observation['status']
         if (status not in ('checked','runtime-error','environment-error','execution-limit')
                 or (type(observation['success']) is not bool if status == 'checked' else observation['success'] is not None)):
@@ -98,7 +103,8 @@ def advance(state: dict, action: Action, *, check, origin: str) -> dict:
         applied = na.apply_action(state, na.Action.model_validate(action.model_dump()))
         state['work'] = applied['work']
         if action.decision == 'revise-work':
-            nr._binding(state['work'], state['branch_id'], nr.Activity.model_validate(state['activity']), state['timeout'])
+            nr._binding(state['work'], state['branch_id'], nr.Activity.model_validate(state['activity']),
+                        state['timeout'], state.get('evaluation'))
             state['observation'] = None
         if action.text:
             state.update(message=action.text, status='awaiting-tutor')

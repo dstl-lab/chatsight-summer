@@ -1,4 +1,4 @@
-"""One authored distinct-count activity in an explicitly selected local container."""
+"""Evaluate one table cell in an explicitly selected local container."""
 import json
 import keyword
 import os
@@ -10,9 +10,16 @@ import time
 from uuid import uuid4
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
 
 from src.eval.student_continuation import _digest
+
+DISTINCT_COUNT_SOURCE = '28551ed1cb82d471ca4af9b0c5235f3a8598d10ab64077d45bef29415b919abf'
+
+
+class Evaluation(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    expected: str | int | FiniteFloat | bool
 
 
 class Activity(BaseModel):
@@ -32,7 +39,7 @@ class Activity(BaseModel):
         return self
 
 
-def _binding(work, branch_id, activity, timeout):
+def _binding(work, branch_id, activity, timeout, evaluation=None):
     if not isinstance(branch_id, str) or not branch_id.strip():
         raise ValueError('A branch identity is required.')
     if (not isinstance(work, dict) or not isinstance(work.get('source'), str) or len(work['source']) > 20000
@@ -40,9 +47,12 @@ def _binding(work, branch_id, activity, timeout):
         raise ValueError('Supply source (at most 20000 characters) and a nonnegative revision.')
     if type(timeout) not in (int, float) or not 0 < timeout <= 30:
         raise ValueError('Use a positive timeout of at most 30 seconds.')
-    return {'branch_id':branch_id, 'revision':work['revision'], 'source_sha256':_digest(work['source']),
+    binding = {'branch_id':branch_id, 'revision':work['revision'], 'source_sha256':_digest(work['source']),
             'activity_sha256':_digest(activity.model_dump()), 'image_id':activity.image_id,
             'checker_sha256':_digest(Path(__file__).read_text()), 'timeout_seconds':float(timeout)}
+    if evaluation is not None:
+        binding['evaluation_sha256'] = _digest(Evaluation.model_validate(evaluation).model_dump())
+    return binding
 
 
 def _local_docker(image_id):
@@ -107,14 +117,15 @@ def _execute(command, image_id, request, timeout):
     return code, bytes(output), problem
 
 
-def check_work(work: dict, *, branch_id: str, activity: dict, timeout: float = 10) -> dict:
-    """Evaluate one cell, then grade its returned integer outside the candidate process.
+def check_work(work: dict, *, branch_id: str, activity: dict, timeout: float = 10, evaluation=None) -> dict:
+    """Evaluate one cell, then grade its returned scalar outside the candidate process.
 
     No host execution or implicit image pull. This checks supplied data, not a
     recovered notebook kernel, general correctness or resistance to grader gaming.
     """
     activity = Activity.model_validate(activity)
-    binding = _binding(work, branch_id, activity, timeout)
+    binding = _binding(work, branch_id, activity, timeout, evaluation)
+    expected = len(set(activity.values)) if evaluation is None else Evaluation.model_validate(evaluation).expected
     result = {'binding':binding, 'basis':'container', 'execution':'not-started',
               'status':'environment-error', 'success':None, 'value':None, 'runtime':None,
               'runtime_sha256':None, 'error':None, 'output':''}
@@ -164,9 +175,9 @@ def check_work(work: dict, *, branch_id: str, activity: dict, timeout: float = 1
             result.update(status='runtime-error', execution='completed', error=response['error'])
         elif kind == 'value':
             value = response['value']
-            # ponytail: one scalar distinct-count assertion; a new task needs its own explicit checker.
+            # ponytail: exact scalar equality; richer outputs need a separately declared evaluator.
             result.update(status='checked', execution='completed', value=value,
-                          success=type(value) is int and value == len(set(activity.values)))
+                          success=type(value) is type(expected) and value == expected)
         else:
             raise ValueError('Unknown worker response; no grade established.')
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
@@ -175,10 +186,13 @@ def check_work(work: dict, *, branch_id: str, activity: dict, timeout: float = 1
     return result
 
 
-def require_current(observation: dict, work: dict, *, branch_id: str, activity: dict, timeout: float = 10) -> None:
+def require_current(observation: dict, work: dict, *, branch_id: str, activity: dict, timeout: float = 10,
+                    evaluation=None) -> None:
     activity = Activity.model_validate(activity)
-    if observation['binding'] != _binding(work, branch_id, activity, timeout):
-        raise ValueError('Observation is stale or belongs to another source, activity, image or checker.')
+    binding = _binding(work, branch_id, activity, timeout, evaluation)
+    legacy = binding | {'checker_sha256': DISTINCT_COUNT_SOURCE}
+    if observation['binding'] != binding and not (evaluation is None and observation['binding'] == legacy):
+        raise ValueError('Observation is stale or belongs to another source, activity, evaluation, image or checker.')
     runtime = observation['runtime']
     if observation['runtime_sha256'] != (_digest(runtime) if runtime is not None else None):
         raise ValueError('Runtime fingerprint changed.')
