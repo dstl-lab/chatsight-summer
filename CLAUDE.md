@@ -327,6 +327,21 @@ ambiguities. Original fit comments/preferences remain intact; six case1/3 fits
 remain null pending the separate explicit question. The pending summary has six
 incomplete rows/six missing ratings and creates no final report. No further label
 approval is needed; do not infer the remaining fits or reveal origins yet.
+Minchan then explicitly answered “yes, plausible” to the case1/3 fit question.
+human-review-response-3.json preserves that grouped confirmation and eight hashes;
+only six fits changed. All72 fields are filled, and summary.json/md plus REPORT.md
+close this fixed batch. All16 generated/eight references are plausible, with
+preferences/qualifications retained. Primary help labels are4/8 references versus
+0/16 generated; the two documented alternative readings would leave2/8 versus0/16.
+Action equality is6/16, not accuracy. Task relationships are uncertain for3/8
+references and12/16 generated; only2/16 pairs are known on both sides. Origins may
+now be revealed. Independent audit verifies preservation,50prep/18completion/eight
+new receipt links and exact summary rendering after the final fit receipt.
+Keep this batch closed and preserve assisted-label/grouped-fit provenance; no
+new generation, prompt change, fidelity score or classifier admission follows.
+The next proposed diagnostic tests available history with/without earlier dialogue
+while holding the current exchange fixed; no-history cases cannot supply a history
+treatment. Do not infer that another style instruction or new planner is a fix.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

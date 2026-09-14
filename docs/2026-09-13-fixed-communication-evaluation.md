@@ -206,3 +206,57 @@ clearly answer the separate six-fit question, so those fields remain blank.
 The pending summary now has six incomplete rows and six missing fit ratings;
 it still writes no final report. Only the explicit fit clarification remains—
 do not ask for another confirmation of the labels or reveal origins prematurely.
+
+## Completed review and decision (2026-09-14)
+
+Minchan explicitly answered “yes, plausible” to the grouped case-1/3 fit question.
+`human-review-response-3.json` preserves that answer and eight evidence hashes;
+only those six fit fields changed. Earlier preferences, qualifications and approved
+assistant-assisted labels remain intact. All 72 rating fields are now filled.
+The frozen `summary.json`/`summary.md` render identically, and the private
+`REPORT.md` explains the results with links to all notes and revealed origins.
+
+All 16 generated messages and eight references were judged plausible. Every case
+has two plausible generated replies and a plausible reference; no request errored,
+retried or selected no-reply. This is broad plausibility, not equal probability or
+a validated fidelity score. The primary action labels show a different pattern:
+
+| Primary action | References (8) | Generated replies (16) |
+|---|---:|---:|
+| asked-for-help | 4 | 0 |
+| submitted-code | 2 | 6 |
+| revised-code | 1 | 2 |
+| submitted-work | 1 | 5 |
+| acknowledgment | 0 | 3 |
+
+All action labels are known and none is missing. Code/work precedence means zero
+primary help labels does not mean zero generated questions. Six of 16 generated
+replies share their reference's action category; this is descriptive equality,
+not accuracy. Both draws share an action category in six cases and differ in
+cases 6/7. A post-review sensitivity check using the documented alternatives for
+3 C and 7 B would reduce reference help labels from four to two, with generated
+help labels still zero; accepted labels and the official report remain unchanged.
+
+Task relationships remain uncertain for 3/8 references and 12/16 generated replies.
+Only 2/16 comparison pairs have known relationships on both sides; both match, and
+14 pairs include uncertainty. This does not establish task drift. The preferred
+1 A and 3 C are references, with their original qualifications preserved. They
+are not independent reference-discrimination trials.
+
+An independent audit confirms the six-fit-only change, exact preservation of
+earlier notes/labels, 50 preparation pins, 18 completion links, eight new receipt
+links, exact replay and deterministic review/summary rendering. Summary files
+were created after the final fit receipt; the prior state still reconstructs as
+pending. No new provider call, notebook execution or generator change occurred.
+
+Close this fixed batch at its report. The useful next hypothesis concerns action
+choice and use of visible history, alongside style. The existing prompt already
+instructs the model to respect student communication patterns without obliging
+answers to tutor questions. A separate matched history-ablation diagnostic could
+hold the current exchange fixed and compare with/without available earlier
+dialogue; cases with no earlier dialogue cannot supply that treatment. This would
+test history use rather than impose a help quota or assume a new architecture is
+better. No such comparison is run here. These exposed, reply-conditioned cases,
+one reviewer, assisted category labels and grouped fit confirmation do not
+establish population behavior, reply rates, silent work, learning or classifier
+admission.
