@@ -195,3 +195,14 @@ Unconfirmed suggestions remain outside the report. Explicitly surface ambiguous
 short messages and task relationships that rely only on the tutor's interpretation.
 Human confirmation/correction of the draft and the six missing fit ratings remain
 necessary; a request to continue is not a label or plausibility verdict.
+
+Minchan subsequently replied “looks good.” The separate
+`human-review-response-2.json` records this assent, eight evidence hashes and all
+48 approved action/task values as assistant-suggested, human-approved labels.
+The primary asked-for-help suggestions for 3 C and 7 B are retained alongside
+their documented alternative readings; no general rubric revision follows.
+Earlier fit comments and preferences remain unchanged. This assent does not
+clearly answer the separate six-fit question, so those fields remain blank.
+The pending summary now has six incomplete rows and six missing fit ratings;
+it still writes no final report. Only the explicit fit clarification remains—
+do not ask for another confirmation of the labels or reveal origins prematurely.
