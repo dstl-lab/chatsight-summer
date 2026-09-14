@@ -10,6 +10,15 @@ cell, pending message, net changes since the previous supplied tutor exchange,
 and revision-bound feedback with src/agents/tutor_context.py. Exported context can
 bind the next reply to the saved session/state; stale replies fail before dispatch.
 See docs/2026-09-14-tutor-context.md for commands and completed offline validation.
+The new src/agents/notebook_tutor.py generates one reply under a supplied teaching
+policy and continues the bound student through the existing transaction. The
+authored live integration in data/episode-pilot/notebook-tutor-v1 completed six
+student decisions and one tutor hint. Two requested checks raised actual library
+errors; the final third revision is unchecked and the student remains active at
+its fixed budget. The tutor suggested an unavailable Babypandas method, so this
+is evidence of connected interaction and a tutor limitation, not successful teaching.
+See docs/2026-09-14-notebook-tutor.md. Exact replay and 36 related offline tests pass
+(one container integration test skipped); no human plausibility review is pending.
 Original b2a417b sessions remain replayable without rewriting saved receipts;
 new operations record their actual engine. Other source/schema changes still fail.
 Existing prompts, action/runtime modules and completed experiments remain

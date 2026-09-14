@@ -1,17 +1,16 @@
 # Learner-Agent Simulation for Screening AI Tutor Policies (temporary name)
 
-A **screening instrument for AI tutor design**: simulated student cohorts, grounded in a
-full quarter of real DSC 10 tutoring logs, that let an instructor test candidate tutor
-policies ("never give direct answers," "answer-then-probe") before any real student is
-exposed. The aim is to narrow twenty candidate policies to the three worth a real quarter —
-never to claim a policy "improves learning."
+A research prototype for **simulating student interactions with tutors**, informed by
+DSC 10 tutoring logs. The intended audience is educators and researchers exploring
+student support. Screening tutor policies is a research goal; realistic cohorts,
+calibrated behavior probabilities and learning effects have not been established.
 
-The machinery underneath is an instructor-facing **top-down labeling tool**: the instructor
-describes the trends they want to see, the tool drafts labels on a stratified sample for
-review and tweak-by-prompt, then mass-labels the corpus into an immutable snapshot. Those
-labels are the state space the simulation moves through; agents are grounded in real
-students' labeled trajectories, and policy effects are shifts in the distribution of
-trajectories. (Framing memo: `docs/2026-08-05-simulation-first-framing.md`.)
+The repository includes an instructor-facing **top-down labeling tool**, help-episode
+review and a saved notebook student. The current student uses visible dialogue, work
+and feedback to propose edits, request checks, communicate or stop. Labels support
+description and evaluation; they are not the current generator's state space.
+See the [research reassessment](docs/2026-09-14-research-reassessment.md) for the evidence,
+data limitations and proposed finite evaluation.
 
 Raw data: DSC 10 tutor chat logs in an external Postgres (`dsc10_tutor_logs`), read-only
 via `kubectl port-forward`. The database is shared with ChatSight, a distant-cousin project
@@ -20,6 +19,18 @@ are never compared or mixed.
 
 **Read `CLAUDE.md` first** — it carries the rules (classifier parity, snapshot immutability,
 blind measurement, no student data in git) that every claim in this project depends on.
+
+## Running a saved student
+
+The [saved-student workflow](docs/2026-09-14-continuing-student.md) initializes a task
+and resumes bounded student actions across process reloads. The current executor
+supports one selected cell in a declared distinct-count activity, with requested
+checks in an isolated local Docker image. It is not a general notebook kernel.
+
+Use [tutor context](docs/2026-09-14-tutor-context.md) to inspect work and supply your
+own reply, or [the notebook tutor](docs/2026-09-14-notebook-tutor.md) to generate one
+reply under a supplied teaching policy and continue the same student. Both paths
+bind the reply to the inspected state. Saved student replay makes no external calls.
 
 ## Running the labeling loop
 
