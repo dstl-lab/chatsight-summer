@@ -2,6 +2,22 @@
 
 ## Current implementation focus (2026-09-14)
 
+The approved work while reviewers code is complete: `src/eval/behavior_scoring.py`
+scores supplied probabilities against training frequencies, checks declared
+conversation/student separation (even excluded records), and reports paired
+encounter/group means with coverage, failures and exclusions. Its committed
+`tests/fixtures/behavior_scoring_toy.json` is invented: paired Brier .3 vs 11/24;
+group means .35 vs .375. No real benchmark or output labeling was run.
+`src/eval/notebook_replay.py` exports a static read-only view of the existing
+two-task simulation after ancestry checks. The completed toy report and replay
+are in `data/episode-pilot/offline-evaluation-tools-v1/`; original sessions and
+reviewer artifacts remain unchanged. Related suite: 27 passed. Scoring review
+and browser replay inspection completed. See
+`docs/2026-09-14-offline-scoring-and-replay.md` for commands and limits.
+Stop at these artifacts: no new model batch, no scoring the exposed eight-case
+readiness set, no automatic history-ablation restart. The two independent human
+reviews remain the next research input; real benchmark protocol/budget is pending.
+
 Minchan requested a UI instead of the eight-case packet. The portable builder
 `src/eval/coding_review.py` and HTML template produce one self-contained page per
 reviewer, plus a local handoff index. Generated pages are in

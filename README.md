@@ -44,6 +44,9 @@ agents; it is not a private memory model or evidence of learning.
 The [portable coding review UI](docs/2026-09-14-next-task-history.md#portable-review-ui)
 lets two independent reviewers code the fixed eight recorded messages one at a time
 and return their answers without installing the project.
+The [offline scoring command and saved replay](docs/2026-09-14-offline-scoring-and-replay.md)
+provide a hand-checked toy comparison against training frequencies and a read-only
+view of the existing linked encounters. These tools do not establish student fidelity.
 
 ## Running the labeling loop
 
