@@ -3,9 +3,15 @@
 ## Current implementation focus (2026-09-14)
 
 Minchan set presentation work aside and directed continuation of simulated-student
-implementation. The bounded next milestone is one saved notebook student that
-can receive a supplied tutor reply and continue with the same work and history;
-see docs/2026-09-14-continuing-student.md and src/agents/notebook_student.py.
+implementation. A saved notebook student can receive a supplied tutor reply and
+continue with the same work and history; see docs/2026-09-14-continuing-student.md
+and src/agents/notebook_student.py. The tutor can now inspect its current selected
+cell, pending message, net changes since the previous supplied tutor exchange,
+and revision-bound feedback with src/agents/tutor_context.py. Exported context can
+bind the next reply to the saved session/state; stale replies fail before dispatch.
+See docs/2026-09-14-tutor-context.md for commands and completed offline validation.
+Original b2a417b sessions remain replayable without rewriting saved receipts;
+new operations record their actual engine. Other source/schema changes still fail.
 Existing prompts, action/runtime modules and completed experiments remain
 unchanged. The new session wrapper has a per-step cap and cumulative model budget;
 chosen no-reply remains terminal, while a budget pause is not student silence.

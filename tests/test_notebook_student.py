@@ -193,3 +193,61 @@ def test_cli_reports_runtime_infrastructure_stops_as_failure(tmp_path, monkeypat
     with pytest.raises(SystemExit) as stopped:
         student.main()
     assert stopped.value.code == 1 and student.load(folder)['status'] == status
+
+
+def test_bound_reply_checks_state_inside_lock_before_any_write(tmp_path):
+    student = api()
+    folder = tmp_path / 'bound'
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id='synthetic/bound')
+    student.step(folder, generate=lambda *_: Action(decision='reply', text='this?', source=None), check=None)
+    state = student.load(folder)
+    manifest = json.loads((folder/'session.json').read_text())
+    expected = {'expected_state_sha256':student.digest(state), 'expected_session_sha256':student.digest(manifest)}
+    original = {p.name:p.read_bytes() for p in folder.iterdir()}
+    for mismatch in ({'expected_state_sha256':'wrong'}, {'expected_session_sha256':'wrong'}):
+        with pytest.raises(ValueError, match='[Ss]tale'):
+            student.step(folder, tutor_reply='An outdated hint.', generate=None, check=None, **(expected | mismatch))
+    assert {p.name:p.read_bytes() for p in folder.iterdir()} == original
+    result = student.step(folder, tutor_reply='Try distinct values.',
+                          generate=lambda *_: Action(decision='reply', text='where?', source=None), check=None, **expected)
+    assert result['state']['dialogue'][-1]['text'] == 'Try distinct values.'
+    with pytest.raises(ValueError, match='[Ss]tale'):
+        student.step(folder, tutor_reply='An outdated hint.', generate=None, check=None, **expected)
+
+
+def test_original_wrapper_can_replay_and_record_current_engine_without_rewriting_old_receipts(tmp_path, monkeypatch):
+    student = api()
+    folder = tmp_path/'v1'
+    current = student._engine()
+    old = deepcopy(current)
+    old['sources']['notebook_student.py'] = 'b8d4f639d7640b838b423e7df02cb3b096606b2fb8e645fa7ed557f740a61232'
+    with monkeypatch.context() as patch:
+        patch.setattr(student, '_engine', lambda:deepcopy(old))
+        student.create(folder, task=TASK, activity=ACTIVITY, branch_id='synthetic/v1', max_decisions=2)
+        student.step(folder, generate=lambda *_: Action(decision='reply', text='check this', source=None), check=None)
+    first = folder/'step-0001.json'
+    receipt = json.loads(first.read_text())
+    receipt.pop('engine', None)  # The original v1 receipt did not have this field.
+    receipt.pop('version', None)
+    first.write_text(json.dumps(receipt))
+    frozen = {p.name:p.read_bytes() for p in (folder/'session.json', first)}
+    assert student.load(folder)['message'] == 'check this'
+    result = student.step(folder, tutor_reply='Use distinct values.',
+                          generate=lambda *_: Action(decision='revise-work', text='', source='n_shades = 2'), check=None)
+    assert student.load(folder) == result['state']
+    assert result['state']['status'] == 'active' and result['stop_reason'] == 'action-limit'
+    with pytest.raises(ValueError, match='budget exhausted'):
+        student.step(folder, generate=None, check=None)
+    assert json.loads((folder/'step-0002.json').read_text())['engine'] == current
+    assert {p.name:p.read_bytes() for p in (folder/'session.json', first)} == frozen
+    second = folder/'step-0002.json'
+    accepted = json.loads(second.read_text())
+    for corrupt in ({'engine':{}}, {'engine':None}, {'engine':old}, {'version':999}):
+        second.write_text(json.dumps(accepted | corrupt))
+        with pytest.raises(ValueError, match='engine'):
+            student.load(folder)
+    second.write_text(json.dumps(accepted))
+    for altered in ('notebook_session.py', 'notebook_student.py'):
+        changed = deepcopy(old)
+        changed['sources'][altered] = 'unknown'
+        assert not student._compatible_engine(changed)

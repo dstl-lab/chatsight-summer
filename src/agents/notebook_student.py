@@ -15,12 +15,20 @@ from src.labeling import llm
 
 Action = notebook_session.Action
 digest = student_continuation._digest
+V1_SOURCE = 'b8d4f639d7640b838b423e7df02cb3b096606b2fb8e645fa7ed557f740a61232'  # b2a417b
 
 
 def _engine():
     modules = [notebook_session, notebook_action, notebook_check, notebook_runtime, student_continuation, llm]
     return {'schema': Action.model_json_schema(), 'sources': {
         Path(p).name: digest(Path(p).read_text()) for p in [__file__, *(m.__file__ for m in modules)]}}
+
+
+def _compatible_engine(saved):
+    current = _engine()
+    legacy = deepcopy(current)
+    legacy['sources']['notebook_student.py'] = V1_SOURCE
+    return saved == current or saved == legacy
 
 
 def _read(path):
@@ -123,7 +131,7 @@ def _run(state, generate, check, max_actions):
 
 def _load(folder):
     manifest = _read(folder / 'session.json')
-    if manifest.get('version') != 1 or manifest.get('engine') != _engine():
+    if manifest.get('version') != 1 or not _compatible_engine(manifest.get('engine')):
         raise ValueError('Session implementation/schema changed; preserve its original environment.')
     state, decisions = manifest['initial'], 0
     paths = sorted(folder.glob('step-*.json'))
@@ -131,6 +139,11 @@ def _load(folder):
         if path.name != f'step-{index:04}.json':
             raise ValueError('Session operation sequence is incomplete.')
         receipt = _read(path)
+        if 'version' not in receipt:
+            if 'engine' in receipt or manifest['engine']['sources']['notebook_student.py'] != V1_SOURCE:
+                raise ValueError('Missing operation version/engine outside the legacy receipt format.')
+        elif receipt['version'] != 2 or receipt.get('engine') != _engine():
+            raise ValueError('Saved operation engine changed or is unsupported.')
         request = receipt['request']
         if receipt['status'] != 'complete':
             raise ValueError('An incomplete operation cannot automatically resend; inspect its receipt.')
@@ -172,17 +185,24 @@ def load(folder):
         return _load(Path(folder))[1]
 
 
-def step(folder, *, generate, check, tutor_reply=None, max_actions=3):
+def step(folder, *, generate, check, tutor_reply=None, max_actions=3,
+         expected_state_sha256=None, expected_session_sha256=None):
     """Persist one bounded operation. Interrupted dispatch blocks automatic resending."""
     folder = Path(folder)
     with _locked(folder):
         manifest, state, paths, decisions = _load(folder)
+        if (expected_state_sha256 is None) != (expected_session_sha256 is None):
+            raise ValueError('Supply both expected session and state hashes.')
+        if expected_state_sha256 is not None and (
+                expected_state_sha256 != digest(state) or expected_session_sha256 != digest(manifest)):
+            raise ValueError('Stale tutor context: inspect the current student before replying.')
         prepared = _prepare(state, tutor_reply, max_actions)
         remaining = manifest['max_decisions'] - decisions
         if remaining <= 0:
             raise ValueError('Session model-decision budget exhausted; this is not student silence.')
         max_actions = min(max_actions, remaining)
-        receipt = {'status': 'pending', 'started_at': datetime.now(timezone.utc).isoformat(), 'calls': [],
+        receipt = {'version': 2, 'engine': _engine(), 'status': 'pending',
+                   'started_at': datetime.now(timezone.utc).isoformat(), 'calls': [],
                    'request': {'state_sha256': digest(state), 'session_sha256': digest(manifest),
                                'tutor_reply': tutor_reply, 'max_actions': max_actions}}
         path = folder / f'step-{len(paths)+1:04}.json'
@@ -226,8 +246,11 @@ def main():
     parser.add_argument('--max-decisions', type=int, default=12)
     parser.add_argument('--max-actions', type=int, default=3)
     parser.add_argument('--tutor-file', type=Path, help='Exact supplied tutor reply, read as UTF-8.')
+    parser.add_argument('--context-file', type=Path, help='Bind the reply to an exported tutor context.')
     parser.add_argument('--send', action='store_true', help='Allow this step to call Gemini and requested local checks.')
     args = parser.parse_args()
+    if args.context_file and (args.command != 'step' or not args.tutor_file):
+        parser.error('--context-file requires step with --tutor-file.')
     if args.command == 'create':
         if not args.task or not args.activity or args.send or args.tutor_file:
             parser.error('create requires --task and --activity, without --send or --tutor-file.')
@@ -242,6 +265,10 @@ def main():
         if not args.send:
             parser.error('step requires --send; use show for offline replay.')
         tutor = args.tutor_file.read_text(encoding='utf-8') if args.tutor_file else None
+        binding = {}
+        if args.context_file:
+            from src.agents.tutor_context import read_handoff
+            binding = {'expected_' + key:value for key,value in read_handoff(args.context_file)['binding'].items()}
         provider = None
 
         def generate(prompt, schema):
@@ -253,7 +280,7 @@ def main():
             return provider(prompt, schema)
 
         result = step(args.folder, generate=generate, check=notebook_runtime.check_work,
-                      tutor_reply=tutor, max_actions=args.max_actions)
+                      tutor_reply=tutor, max_actions=args.max_actions, **binding)
     state = result['state']
     print(json.dumps({key: state[key] for key in ('status', 'message', 'work', 'observation')} |
                      {'stop_reason': result['stop_reason'], 'actions': len(state['history'])}, ensure_ascii=False, indent=2))

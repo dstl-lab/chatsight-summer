@@ -72,8 +72,12 @@ an automatic retry. The local POSIX lock prevents concurrent steps for one stude
 
 The manifest preserves input capture/omission metadata outside the model packet.
 Saved source/schema pins deliberately reject code changes during resumption;
-no migration of existing student sessions is implemented. Reuse the pinned
-environment or explicitly initialize a new session after an implementation change.
+the later tutor-context extension explicitly supports the original b2a417b wrapper
+with unchanged underlying prompts, schemas and runtime. It preserves old manifests
+and receipts, recording the current engine for new operations. Other implementation
+changes still require the pinned environment or a new session. There is no general
+migration. See [the tutor-context workflow](2026-09-14-tutor-context.md) for readable
+inspection and replies bound to the exported session/state.
 
 ## Completed implementation and integration check
 
