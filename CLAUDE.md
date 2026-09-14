@@ -2,6 +2,18 @@
 
 ## Current implementation focus (2026-09-14)
 
+Minchan requested a UI instead of the eight-case packet. The portable builder
+`src/eval/coding_review.py` and HTML template produce one self-contained page per
+reviewer, plus a local handoff index. Generated pages are in
+`data/episode-pilot/fidelity-coding-readiness-v1/ui/`; original forms and packet
+remain unchanged. Reviewers see one case, frozen context, seven existing options,
+required notes where appropriate, browser-local drafts, and copy/download answers.
+No accounts, external requests, shared response store or model calls. Give each
+reviewer only their assigned HTML; copied/exported answers retain the original
+form shape. Browser drafts do not sync across computers. Mechanical browser tests
+used a separate packet identity; they are not human judgments. Completed human
+answers remain the next input. See the UI section of the next-task-history memo.
+
 The new `src/agents/notebook_next_task.py` initializes a fresh task with shared
 observed history from one completed, generated no-reply encounter. It preserves
 the old terminal session, excludes its private evaluator/provenance and does not

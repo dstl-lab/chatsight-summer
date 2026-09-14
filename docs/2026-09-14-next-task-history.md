@@ -130,3 +130,45 @@ their forms independently before discussing cases. The next input is those two
 completed forms. Then report agreement, disagreements and uncertainty once;
 do not automatically tune the simulator or extend the batch. This is readiness
 for a measurement, not a fidelity score or a restart of the paused review loop.
+
+
+## Portable review UI
+
+Minchan requested a UI instead of the packet. `src/eval/coding_review.py` builds
+one self-contained HTML page per reviewer from the same frozen source records,
+seven action definitions and blank forms. It checks the source hashes, preserves
+numbered-line gaps, escapes embedded data and includes no prior labels or model
+candidates. All original handoff files remain unchanged.
+
+```sh
+PYTHONPATH=. ../main/.venv/bin/python -m src.eval.coding_review data/episode-pilot/fidelity-coding-readiness-v1
+python3 -m http.server 8400 --bind 127.0.0.1 --directory data/episode-pilot/fidelity-coding-readiness-v1/ui
+```
+
+The builder uses a new output directory (`--output` overrides the default `ui`).
+The server is only a local preview. Give each teammate their assigned
+`reviewer-1.html` or `reviewer-2.html` file. The page contains everything it needs;
+there are no external scripts, fonts, services or account setup.
+
+The reviewer enters their name/initials and prior exposure, then sees one recorded
+message with its context and seven choices. Notes are required for changed code,
+other and insufficient evidence. Progress resumes from browser-local storage when
+available; unreadable drafts, storage failures and changed-tab conflicts never
+silently replace saved answers. Each reviewer has a separate storage key. One
+active tab per reviewer is the intended scope; this is not synchronized storage.
+The final screen lets reviewers copy or download the original response-form JSON.
+Downloads do not submit anything, and downloaded drafts are copies, not a
+cross-device resume mechanism. Original blank forms are never rewritten.
+
+Validation: the builder regression and Node state check pass. They cover source
+integrity, exact text, embedding safety, reviewer isolation, incomplete notes,
+resume, failed saves, stale tabs and invalid saved metadata. Browser checks on a
+separate test packet completed all eight cases, enforced a required note, resumed
+partial and finished work after reload, and verified the copied eight-case JSON
+and blank second reviewer. No human ratings were created by these checks.
+Desktop layout was inspected and navigation kept visible beside long context.
+The browser viewport override did not take effect, so mobile rendering is not
+claimed verified. Direct file navigation was blocked by the browser testing
+policy; the pages were tested through localhost. The in-app download observer
+timed out without a console error; the copy-to-clipboard path and exact returned
+JSON were verified as the usable alternative. No benchmark or model run occurred.

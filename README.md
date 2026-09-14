@@ -41,6 +41,9 @@ limit, preserving the same work, checks and receipts.
 After a completed encounter, [next-task initialization](docs/2026-09-14-next-task-history.md)
 carries its observed history into a fresh task. The record is shared with both
 agents; it is not a private memory model or evidence of learning.
+The [portable coding review UI](docs/2026-09-14-next-task-history.md#portable-review-ui)
+lets two independent reviewers code the fixed eight recorded messages one at a time
+and return their answers without installing the project.
 
 ## Running the labeling loop
 
