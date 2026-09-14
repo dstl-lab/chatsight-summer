@@ -2,6 +2,22 @@
 
 ## Current implementation focus (2026-09-14)
 
+The new `src/agents/notebook_lesson.py` runs one bounded encounter by alternating
+the existing student and tutor transactions automatically. It preserves cumulative
+student usage, separately caps tutor replies and records one create-only `lesson/`
+directory per session; interruptions cannot automatically resend through a fresh
+output path. Existing student/tutor commands provide explicit continuation after
+inspection. See docs/2026-09-14-notebook-lesson.md. No prior engine module changed.
+The related suite passes 50 tests with two optional container integrations skipped.
+One authored proportion run in data/episode-pilot/notebook-lesson-v1 completed five
+generated student decisions: quiet edit, requested TypeError, quiet revision,
+requested pass at 0.5, chosen no-reply. One decision remained. No student chat was
+generated, so there were zero generated tutor replies and the optional tutor API
+note was not delivered. Two-tutor alternation is tested offline, not by this live
+trace. Exact replay, source/input pins and unchanged earlier sessions verify.
+This is a working bounded mechanism, not learner fidelity or learning evidence.
+No reroll or human plausibility review is pending; the review loop remains paused.
+
 Minchan asked how the tool generalizes. The current increment separates a private
 scalar evaluation from the visible task, using the existing notebook action loop
 for distinct counting and category proportion. See

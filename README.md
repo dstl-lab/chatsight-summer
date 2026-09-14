@@ -35,6 +35,9 @@ Use [tutor context](docs/2026-09-14-tutor-context.md) to inspect work and supply
 own reply, or [the notebook tutor](docs/2026-09-14-notebook-tutor.md) to generate one
 reply under a supplied teaching policy and continue the same student. Both paths
 bind the reply to the inspected state. Saved student replay makes no external calls.
+The [bounded lesson command](docs/2026-09-14-notebook-lesson.md) alternates student
+actions and generated tutor replies automatically until a terminal state or budget
+limit, preserving the same work, checks and receipts.
 
 ## Running the labeling loop
 
