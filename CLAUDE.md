@@ -314,6 +314,12 @@ fields remain null; 24 rows/54 ratings are incomplete and no final summary exist
 Use review-remaining.md for grouped missing judgments without repeating prior
 comments. Do not assign model labels as human judgments, reveal origins, infer
 rejection from preference, tune prompts or turn these fits into a success rate.
+Minchan then requested continuation. The separate private label-suggestions.md
+offers grouped assistant-only action/task suggestions for confirmation. No fit
+or human judgment is filled by this step. Later confirmed suggestions must be
+marked human-reviewed assistant labels: assistance can anchor decisions and is
+not independent annotation. Keep the frozen packet/protocol/generator unchanged,
+origins concealed and the formal report pending until actual judgments arrive.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.

@@ -178,3 +178,20 @@ Keep candidate origins concealed, generation frozen and the original review pack
 unchanged until the remaining human judgments arrive. No additional model calls,
 prompt changes, behavior score or category-equality conclusion follows from this
 recording step.
+
+## Assisted label review (2026-09-14)
+
+After Minchan requested continuation, a separate private `label-suggestions.md`
+groups provisional assistant suggestions for the missing action/task labels with
+visible evidence. It contains no new fit judgments and does not populate
+`judgments.json`. Original cases, prompts, criteria, outputs and human feedback
+remain unchanged; no model batch or additional source retrieval is part of this
+step. Candidate origins stay concealed.
+
+This assistance begins after the first qualitative feedback and may anchor later
+decisions. Any confirmed suggestions must be recorded as human-reviewed assistant
+labels, distinct from the earlier unaided feedback and from independent annotation.
+Unconfirmed suggestions remain outside the report. Explicitly surface ambiguous
+short messages and task relationships that rely only on the tutor's interpretation.
+Human confirmation/correction of the draft and the six missing fit ratings remain
+necessary; a request to continue is not a label or plausibility verdict.
