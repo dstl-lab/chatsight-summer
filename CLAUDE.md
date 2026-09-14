@@ -1,6 +1,18 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
-## Current research pause (2026-09-14)
+## Current implementation focus (2026-09-14)
+
+Minchan set presentation work aside and directed continuation of simulated-student
+implementation. The bounded next milestone is one saved notebook student that
+can receive a supplied tutor reply and continue with the same work and history;
+see docs/2026-09-14-continuing-student.md and src/agents/notebook_student.py.
+Existing prompts, action/runtime modules and completed experiments remain
+unchanged. The new session wrapper has a per-step cap and cumulative model budget;
+chosen no-reply remains terminal, while a budget pause is not student silence.
+The earlier history ablation and repeated plausibility-review loop remain paused.
+The reassessment below remains research context, not a block on this implementation.
+
+## Research reassessment (2026-09-14)
 
 Minchan requested a project-level reassessment of the repeated plausibility-review
 loop and a decision-focused update for the research team they lead. The proposed
@@ -9,10 +21,9 @@ are incomplete and no results exist. Do not automatically resume it or start
 another review batch. See docs/2026-09-14-research-reassessment.md for the evidence,
 architecture explanation, data limits and proposed finite benchmark/stopping rules.
 The benchmark and two-week time box are proposals for team agreement, not a run
-or an established success threshold. Completed experiments and production modules
-remain frozen. The meeting deck uses aggregate results and an authored saved
-runtime demonstration. Standing authorization persists, but is not an instruction
-to resume experiments that the latest research direction has paused.
+or an established success threshold. Completed experiments remain frozen.
+Standing authorization persists, but is not an instruction to resume experiments
+that the latest research direction has paused. Presentation preparation is deferred.
 
 ## Current North Star (2026-09-11 clarification)
 
