@@ -1,5 +1,19 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Current research pause (2026-09-14)
+
+Minchan requested a project-level reassessment of the repeated plausibility-review
+loop and a decision-focused update for the research team they lead. The proposed
+history ablation is paused before preparation or dispatch; its private scripts
+are incomplete and no results exist. Do not automatically resume it or start
+another review batch. See docs/2026-09-14-research-reassessment.md for the evidence,
+architecture explanation, data limits and proposed finite benchmark/stopping rules.
+The benchmark and two-week time box are proposals for team agreement, not a run
+or an established success threshold. Completed experiments and production modules
+remain frozen. The meeting deck uses aggregate results and an authored saved
+runtime demonstration. Standing authorization persists, but is not an instruction
+to resume experiments that the latest research direction has paused.
+
 ## Current North Star (2026-09-11 clarification)
 
 Minchan's primary inspiration is Generative Agents: an interactive world of
