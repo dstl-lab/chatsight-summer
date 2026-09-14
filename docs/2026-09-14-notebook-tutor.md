@@ -50,6 +50,10 @@ It uses the student's configured Gemini model for both roles, with separate
 prompts and no shared provider conversation. `context.json` retains the exact
 export; `receipt.json` contains the tutor request/response and continuation status.
 The student's original operation receipts remain the source for offline replay.
+The later [library-reference extension](2026-09-14-tutor-library-reference.md) adds
+an optional `--reference-file` for API guidance matched to the activity's library
+and version. Omitting it preserves the original prompt; the earlier live trace
+below is unchanged and was generated without a reference.
 
 An active student can continue quiet work with the existing `notebook_student step`
 command. A new pending question can receive another explicit tutor command with

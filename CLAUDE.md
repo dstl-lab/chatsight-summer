@@ -19,6 +19,14 @@ its fixed budget. The tutor suggested an unavailable Babypandas method, so this
 is evidence of connected interaction and a tutor limitation, not successful teaching.
 See docs/2026-09-14-notebook-tutor.md. Exact replay and 36 related offline tests pass
 (one container integration test skipped); no human plausibility review is pending.
+The tutor now supports an optional library/version-matched API reference through
+--reference-file; see docs/2026-09-14-tutor-library-reference.md. The shipped
+Babypandas note is verified against the existing image with an authored check,
+separate from student observations. The default tutor prompt and earlier trace
+remain unchanged. The final related suite passes 38 tests with one skipped. No
+new student trajectory or completed model generation was made; an initial failed
+test adapter connection and its correction are documented in the memo. Reference
+delivery is verified; model compliance and tutor correctness remain unmeasured.
 Original b2a417b sessions remain replayable without rewriting saved receipts;
 new operations record their actual engine. Other source/schema changes still fail.
 Existing prompts, action/runtime modules and completed experiments remain

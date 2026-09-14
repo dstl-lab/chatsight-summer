@@ -37,12 +37,17 @@ def test_generated_tutor_uses_visible_context_and_continues_bound_work(tmp_path)
     packet = tutor_context.snapshot(folder)
     exact = 'Count each distinct shade once.\nKeep the result in n_shades.\n'
     policy = 'Give one concrete next step and keep the reply brief.'
+    expected_prompt = tutor.PROMPT + json.dumps({'policy':policy, 'context':{
+        key:packet[key] for key in ('initialization', 'task', 'activity', 'dialogue',
+                                   'pending_message', 'work', 'feedback', 'changes')}},
+        ensure_ascii=False, sort_keys=True)
     choices = iter([Action(decision='revise-work', source="n_shades = len(swatches.get('shade').unique())", text=''),
                     Action(decision='request-check', source=None, text='')])
     tutor_calls, student_packets = [], []
 
     def generate_tutor(prompt, schema):
         tutor_calls.append(prompt)
+        assert prompt == expected_prompt
         pending = student._read(output / 'receipt.json')
         assert pending['status'] == 'pending' and pending['request']['prompt'] == prompt
         assert pending['request']['schema'] == schema.model_json_schema()
@@ -144,23 +149,37 @@ def test_invalid_tutor_requests_and_reply_schema_fail_before_output_or_dispatch(
 def test_cli_requires_send_and_reports_student_failure(tmp_path, monkeypatch, capsys, ending):
     import sys
     tutor = api()
+    monkeypatch.setenv('GEMINI_API_KEY', 'invented-test-key')
+    monkeypatch.setattr(student.llm, 'make_generate', lambda *a, **kw:pytest.fail('Invalid input reached provider'))
     folder, output, policy = tmp_path / 'student', tmp_path / 'exchange', tmp_path / 'policy.txt'
     student.create(folder, task=TASK, activity=ACTIVITY, branch_id='synthetic/cli')
     choose(folder)
     policy.write_text('Offer a brief hint.\n')
     argv = ['notebook_tutor', str(folder), '--output', str(output), '--policy-file', str(policy)]
+    reference = {'library':ACTIVITY['library'], 'library_version':ACTIVITY['library_version'],
+                 'text':'Use supported column access.', 'source':'Authored CLI reference.'}
+    reference_path = tmp_path / 'reference.json'
+    reference_path.write_text(json.dumps(reference))
+    if ending == 'no-reply':
+        argv += ['--reference-file', str(reference_path)]
     monkeypatch.setattr(sys, 'argv', argv)
     with pytest.raises(SystemExit) as missing:
         tutor.main()
     assert missing.value.code == 2 and not output.exists()
     capsys.readouterr()
+    if ending == 'no-reply':
+        reference_path.write_text('null')
+        monkeypatch.setattr(sys, 'argv', argv + ['--send'])
+        with pytest.raises(ValueError):
+            tutor.main()
+        assert not output.exists()
+        reference_path.write_text(json.dumps(reference))
 
     def generate(prompt, schema):
         if schema is tutor.Reply:
             return schema(text='Count distinct shades.\n')
         return schema(decision='request-check' if ending == 'environment-error' else 'no-reply', text='', source=None)
 
-    monkeypatch.setenv('GEMINI_API_KEY', 'invented-test-key')
     monkeypatch.setattr(student.llm, 'make_generate', lambda *a, **kw:generate)
     monkeypatch.setattr(student.notebook_runtime, 'check_work',
                         lambda *a, **kw:observation(*a, **kw, status='environment-error'))
@@ -175,3 +194,52 @@ def test_cli_requires_send_and_reports_student_failure(tmp_path, monkeypatch, ca
     rendered = capsys.readouterr().out
     assert 'Tutor reply:' in rendered and 'Count distinct shades.' in rendered and ending in rendered
     assert student._read(output / 'receipt.json')['response']['text'] == 'Count distinct shades.\n'
+    if ending == 'no-reply':
+        assert student._read(output / 'receipt.json')['request']['library_reference'] == reference
+
+
+def test_library_reference_is_recorded_exactly_and_seen_only_by_tutor(tmp_path):
+    tutor = api()
+    folder, output = tmp_path / 'student', tmp_path / 'exchange'
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id='synthetic/reference')
+    choose(folder)
+    reference = {'library':ACTIVITY['library'], 'library_version':ACTIVITY['library_version'],
+                 'text':'  REFERENCE_ONLY: table.get(column) selects a column.\n',
+                 'source':'SOURCE_ONLY: an authored reference for this test.\n'}
+
+    def generate_tutor(prompt, schema):
+        payload = json.loads(prompt[prompt.index('{'):])
+        assert payload['library_reference'] == reference
+        assert student._read(output / 'receipt.json')['request']['library_reference'] == reference
+        return schema(text='Select the column first.')
+
+    def generate_student(prompt, schema):
+        assert all(marker not in prompt for marker in ('REFERENCE_ONLY', 'SOURCE_ONLY', 'library_reference'))
+        return schema(decision='no-reply', text='', source=None)
+
+    result = tutor.respond(folder, output, policy='Give a brief hint.', reference=reference,
+        generate_tutor=generate_tutor, generate_student=generate_student, check=None)
+    assert result['state']['status'] == 'no-reply' and student.load(folder) == result['state']
+    assert result['state']['dialogue'][-1]['text'] == 'Select the column first.'
+    assert all(marker not in json.dumps(result['state']) for marker in ('REFERENCE_ONLY', 'SOURCE_ONLY'))
+
+
+def test_invalid_library_reference_fails_before_output_or_dispatch(tmp_path):
+    tutor = api()
+    folder = tmp_path / 'student'
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id='synthetic/reference-invalid')
+    choose(folder)
+    before = files(folder)
+    reference = {'library':ACTIVITY['library'], 'library_version':ACTIVITY['library_version'],
+                 'text':'Use supported column access.', 'source':'Authored reference.'}
+    invalid = [reference | {'library':'another-library'}, reference | {'library_version':'0.0.0'},
+               reference | {'extra':'unexpected'}, reference | {'text':1},
+               {key:value for key,value in reference.items() if key != 'source'}, []]
+    invalid += [reference | {key:' \n '} for key in reference]
+    for index, candidate in enumerate(invalid):
+        output = tmp_path / f'exchange-{index}'
+        with pytest.raises(ValueError):
+            tutor.respond(folder, output, policy='Give a brief hint.', reference=candidate,
+                generate_tutor=lambda *_: pytest.fail('Invalid reference dispatched'),
+                generate_student=lambda *_: pytest.fail('Invalid reference continued student'), check=None)
+        assert not output.exists() and files(folder) == before
