@@ -137,7 +137,7 @@ notifications. The original prompt, paired inputs and request order stayed fixed
 No student code ran and no notebook observation was supplied. Exact offline replay
 and all 50 preparation hashes verify; the eight-case review renders identically
 twice. The original 24-row `review.json` remains blank, with a separate editable
-`judgments.json` copy. Its pending summary reports 24 messages awaiting review and
+`judgments.json` copy. Its initial pending summary reported 24 messages awaiting review and
 72 missing ratings; it creates no final summary files. An independent audit confirms
 the receipts, approval timing, all candidate mappings and first-message references.
 The completion record binds 18 artifact hashes; its audit's judgment-file hash is
@@ -153,3 +153,28 @@ Successful generation supplies candidates for evaluation, not evidence that thei
 behavior fits students. The next milestone is the frozen descriptive report after
 all eight cases have human judgments; uncertainty is a valid judgment, and missing
 ratings remain missing.
+
+## First human feedback received (2026-09-14)
+
+Minchan commented on all eight cases. Cases 2/4/5/6/7/8 explicitly allow all three
+candidates as possible; these supply 18 plausible-fit entries, without equal
+probabilities. Cases 1/3 express preferences for A/C respectively; their six
+absolute fit fields remain blank pending clarification. No candidate was explicitly
+rejected. Keep capitalization concerns in cases 4/5, the qualified lower preference
+for case 7 A and sparse-context uncertainty. Case 7's responding-trend explanation
+is retained verbatim without resolving its ambiguous direction.
+
+The exact reply and seven evidence hashes are preserved separately in
+`human-review-response-1.json`; only the editable `judgments.json` receives the
+supported fits and notes. No follow-up action or task-relationship judgments were
+supplied, so all 48 category fields remain blank. The current pending summary has
+24 incomplete rows and 54 missing ratings; no final report is produced. Relative
+preference is not rejection, uncertain likelihood is not implausibility, and
+assistant-inferred categories must not be passed off as human labels.
+
+The private `review-remaining.md` groups the missing fields and permits shared
+answers across candidates where applicable. Existing comments need not be repeated.
+Keep candidate origins concealed, generation frozen and the original review packet
+unchanged until the remaining human judgments arrive. No additional model calls,
+prompt changes, behavior score or category-equality conclusion follows from this
+recording step.

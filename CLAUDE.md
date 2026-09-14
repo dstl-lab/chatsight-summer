@@ -298,13 +298,22 @@ completion audit passes; completion-verification.json binds 18 artifact hashes.
 The audit's judgments.json hash describes only its initial blank snapshot, not
 an immutability requirement on the separate human judgment file.
 The original review.json remains blank; judgments.json is its separate editable
-copy. All24 messages/72 ratings await human review, and the pending summary writes
-no final report. Present REVIEW_START.md and the whole review.md packet; accept
+copy. Initially all24 messages/72 ratings awaited human review; the pending summary
+writes no final report. Present REVIEW_START.md and the whole review.md packet; accept
 plain-English chat judgments in parts without tuning or replacing cases. Do not
 resume the old per-example tuning loop. Keep origin-key.json concealed until all
 judgments are recorded; request-send approval is not a behavior verdict. Preserve
 the earlier recovery case2's ambiguity and all completed evidence. Generation is
 finished; the next milestone is the report after the complete human review.
+Minchan's first whole-batch feedback is recorded separately in
+human-review-response-1.json with seven evidence hashes. Cases2/4/5/6/7/8 allow
+all candidates as possible: 18 plausible fits with qualifications retained.
+Cases1/3 express relative A/C preferences only; six absolute fits remain missing.
+Keep case7's ambiguous responding-trend explanation verbatim. All48 action/task
+fields remain null; 24 rows/54 ratings are incomplete and no final summary exists.
+Use review-remaining.md for grouped missing judgments without repeating prior
+comments. Do not assign model labels as human judgments, reveal origins, infer
+rejection from preference, tune prompts or turn these fits into a success rate.
 Labeling and continuation diagnostics
 support this goal. Behavioral fidelity, educator usefulness and real learning
 outcomes remain separate questions; the invariants below still apply.
