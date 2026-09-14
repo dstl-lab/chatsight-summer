@@ -2,6 +2,27 @@
 
 ## Current implementation focus (2026-09-14)
 
+The new `src/agents/notebook_next_task.py` initializes a fresh task with shared
+observed history from one completed, generated no-reply encounter. It preserves
+the old terminal session, excludes its private evaluator/provenance and does not
+recursively carry earlier initialization. Both agents see the shared record.
+Fresh work, feedback, history, budget and branch identity belong to the new task.
+Initialization and ancestry are staged before atomic publication. The related
+suite passes 56 tests with two optional container integrations skipped.
+In data/episode-pilot/next-task-history-v1, the generated follow-on student quietly
+edited, requested a passing check at 2, and chose no-reply in three decisions.
+No tutor reply was generated. Both encounters and older traces replay unchanged.
+This demonstrates history delivery and task continuity, not a measured history
+effect or learning. See docs/2026-09-14-next-task-history.md.
+Minchan specified "2 reviewers" for a fixed independent coding readiness pass.
+The handoff in data/episode-pilot/fidelity-coding-readiness-v1 contains only the
+eight recorded next messages from the exposed communication development set,
+their exact prefixes, existing v7 action definitions and two blank separate forms.
+Prior labels and generated candidates are omitted. No reviewer messages were
+sent, no human ratings received and no model benchmark launched. The next input
+needed is the two completed independent forms. Do not fill them with model labels,
+restart plausibility review/history ablation or claim this set is a holdout.
+
 The new `src/agents/notebook_lesson.py` runs one bounded encounter by alternating
 the existing student and tutor transactions automatically. It preserves cumulative
 student usage, separately caps tutor replies and records one create-only `lesson/`
