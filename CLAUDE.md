@@ -2,6 +2,21 @@
 
 ## Current implementation focus (2026-09-15)
 
+Main-flow source audit located the actual lab tutor/logger repositories; see
+`docs/2026-09-15-logged-work-boundary.md`. Old DSC10 client at3eab46cd and pre-April
+8f8957f0 send sanitized notebook each request but persist source only on the first
+completed turn, re-reading it after streaming. New generalized client7ffe89e has
+the same limits. Sanitization omits native cell IDs; grader events lack request/
+execution/source bindings. Collector078e54cd stores arbitrary payload unchanged.
+No durable per-turn notebook archive found in the inspected old backend; deployed
+versions/external traces remain unverified. Historical captures are response-time
+work, not verified exact tutor-request inputs. Preserve all old results and pins.
+A minimal future change would capture exact request-time work per turn with shared
+request IDs, schema/client version and retained cell IDs; it is proposed only.
+No upstream/DB/model/UI change. Minchan says assume the two teammate tasks handed
+off: new runner exercises and a read-only Marimo viewer. Do not duplicate them;
+continue core work independently. Scope for future-session logging needs a decision.
+
 PR#25 is MERGED at 35ae189; continuation branch is codex/observation-contract
 in the same isolated worktree. Preserve its ignored historical research evidence.
 Minchan explicitly selected MARIMO for the eventual educator/researcher simulation
