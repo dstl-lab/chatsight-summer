@@ -2,6 +2,24 @@
 
 ## Current implementation focus (2026-09-15)
 
+Minchan asked to continue after the fixed help/work benchmark closed. The bounded
+notebook-pair availability check is complete; see
+`docs/2026-09-15-notebook-snapshot-pairs.md` and ignored
+`data/episode-pilot/notebook-snapshot-pairs-v1/`. One read-only historical metadata
+inventory found 5,921 eligible adjacent capture pairs across 222 learner identities.
+These are candidates, not validated transitions. Three pairs were fixed by metadata
+hash order, at most one per learner, before content fetch; no replacements.
+All six captures parse and pass endpoint attribution/window checks. Two pairs
+have equal cell layouts and exact non-code source, with one/four changed code
+positions. The third has three more code cells overall and unresolved alignment.
+None has stable cell IDs. These are net changes between captures, not recovered
+intermediate actions, grader-to-source bindings, tutoring effects or learning.
+The three exposed pairs are development evidence, not a holdout. The next possible
+benchmark must align notebook observation boundaries and the simulator's single-cell
+scope before scoring. The availability check stops here; no models, labels, prompt
+changes or further plausibility review. Existing help/work results remain closed
+and unchanged. Keep PR #25 draft/unmerged.
+
 The fixed help/work benchmark is now COMPLETE; see
 `docs/2026-09-15-help-work-results.md`. Minchan returned all 72 messages/144 flags
 in one JSON form, preserved byte-for-byte under
