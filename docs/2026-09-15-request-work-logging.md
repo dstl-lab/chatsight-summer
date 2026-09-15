@@ -38,7 +38,7 @@ initial commit `3843d12d98efad67113b366af3b5908b7f7d2d37`, with browser integrat
 and CI follow-up at `adff528fad664f1c8fd93a64b2e64a97a774a20a`.
 The persistent isolated worktree is
 `../tutor-request-logging`, with its separate Git store at `../.tutor-source.git`.
-The PR is draft and has not been deployed or merged. The repository requires one
+The PR is ready for review and has not been deployed or merged. The repository requires one
 approving GitHub review before merge; no rule was bypassed.
 
 The exact request object, raw typed question, SHA-256 of serialized notebook JSON,
@@ -92,7 +92,10 @@ CI-only `tornado<6.5.9` bound restores local startup while leaving shipped runti
 requirements unchanged. It is not a production downgrade recommendation; remove
 it when compatible upstream versions pass the browser check. The updated
 [PR CI](https://github.com/dstl-lab/jupyterlab-ai-tutor/actions/runs/34934925819)
-is in progress and must be assessed separately.
+passes build, isolated installation, browser integration and link checks at
+`adff528`; the release and PR-title checks also pass. All six GitHub checks are
+green. CI result receipts are saved beside the local evidence. The PR is ready for
+the required approving GitHub review; no branch protection was bypassed.
 
 Minchan asked whether this adds reply latency. The current request path serializes
 and copies the request and awaits a notebook checksum before tutor dispatch.

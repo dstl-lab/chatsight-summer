@@ -3,8 +3,8 @@
 ## Current implementation focus (2026-09-15)
 
 Minchan approved the future logging implementation with "Let's do it" after the
-coding-assistant tracking comparison. Implemented in generalized tutor draft PR#11
-https://github.com/dstl-lab/jupyterlab-ai-tutor/pull/11 atadff528 (initial3843d12), separate persistent
+coding-assistant tracking comparison. Implemented in generalized tutor PR #11
+https://github.com/dstl-lab/jupyterlab-ai-tutor/pull/11 at `adff528` (initial `3843d12`), separate persistent
 worktree ../tutor-request-logging on codex/request-work-logging. See
 docs/2026-09-15-request-work-logging.md. Streamed requests retain exact work/context,
 request IDs, source hashes and native cell IDs; responses/failures join by request
@@ -18,7 +18,8 @@ data/episode-pilot/tutor-logging-integration-v1. Logging remains best effort; no
 deployed retention claim. No model/DB calls, new ratings, historical reruns or
 deployment. Main/initial PR startup failure traced to Tornado6.5.9 versus Jupyter
 Server2.21.0; CI-only bound restores local startup, runtime requirements unchanged.
-Updated PR CI is running. User asked about latency: serialization/copy/hash precede
+All six PR checks now pass; PR #11 is ready for required human review, unmerged and
+undeployed. User asked about latency: serialization/copy/hash precede
 dispatch, logging uploads asynchronous; latency remains unmeasured and needs a
 representative deployment check. One approving GitHub review is required.
 Implementation/PR approval does not authorize starting real collection.
