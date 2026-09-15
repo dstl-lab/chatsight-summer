@@ -2,13 +2,27 @@
 
 ## Current implementation focus (2026-09-15)
 
+Minchan explicitly directed continuation with one completed review because the
+second will be delayed. This supersedes the two-form waiting condition below and
+in earlier handoff documents. The single-review pass is complete in ignored
+`data/episode-pilot/fidelity-coding-readiness-v1/single-review-v1/`; reviewer 2 is
+optional later evidence, not a simulator-development blocker. Reviewer 1 supplied
+5 help / 2 code / 1 work labels. Cases 2 and 8 differ from historical assisted
+coding at revision and code-plus-help boundaries; preserve both coding sets.
+No inter-rater agreement, fidelity score, adjudication or new model batch. The
+older chat generator differs from the current notebook student; no routing defect
+or production behavior change is justified. Two existing scripted continuation/
+lesson checks pass. See `docs/2026-09-15-single-review-decision.md`. Keep repeated
+plausibility review and history ablation paused; continue engineering independently
+of the delayed form. Benchmark design and coding reliability remain unvalidated.
+
 Reviewer 1's returned form is saved byte-for-byte in ignored
 `data/episode-pilot/fidelity-coding-readiness-v1/received/reviewer-1/`, alongside
 an intake receipt. All eight case IDs, allowed labels and required-note rules
 pass validation; independent intake review agrees. Prior exposure is self-reported
 false. The export lacks a packet ID, so association follows the handoff context.
 All four original packet artifacts, including blank forms, remain unchanged.
-Await reviewer 2, then report agreement, disagreements and uncertainty once.
+The original two-form comparison is deferred by the newer direction above.
 No labels were assigned or changed by the assistant; no model calls or tuning.
 
 The approved work while reviewers code is complete: `src/eval/behavior_scoring.py`
@@ -24,8 +38,8 @@ reviewer artifacts remain unchanged. Related suite: 27 passed. Scoring review
 and browser replay inspection completed. See
 `docs/2026-09-14-offline-scoring-and-replay.md` for commands and limits.
 Stop at these artifacts: no new model batch, no scoring the exposed eight-case
-readiness set, no automatic history-ablation restart. The second independent human
-review remains the next research input; real benchmark protocol/budget is pending.
+readiness set, no automatic history-ablation restart. The later single-review
+decision above removes the reviewer wait; real benchmark protocol/budget is pending.
 
 Minchan requested a UI instead of the eight-case packet. The portable builder
 `src/eval/coding_review.py` and HTML template produce one self-contained page per
