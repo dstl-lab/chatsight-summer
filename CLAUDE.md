@@ -2,6 +2,28 @@
 
 ## Current implementation focus (2026-09-15)
 
+The conversation handoff is COMPLETE on `codex/chat-continuation-handoff`.
+PR #28 merged as `9ac3e45` INTO PR #27's branch, not main; PR #27 still awaits
+the required human review. Its tree is identical to the completed saved-chat
+branch. This increment changes no simulator source or generator prompt.
+
+All 29 already-generated original-control replies are imported locally into
+separate sessions under data/episode-pilot/chat-continuation-handoff-v1/.
+Every import matches the original query, prompt, schema, model and response.
+All reopen awaiting-tutor with one reused decision and five remaining. There
+were zero new provider requests, new samples or labels. INDEX.md links one
+readable tutor handoff percase; contexts/ contains current state exports.
+handoff.json preserves original call indices/generation times and local import
+times with source/output hashes. New step timestamps describe cache imports,
+not fresh model calls. The earlier initial29 sessions and closed comparison
+are unchanged. See docs/2026-09-15-chat-continuation-handoff.md.
+
+Use the imported sessions for later interactions instead of regenerating their
+first replies. A next tutor reply is supplied intervention; no recorded future
+can be appended after divergence. Later generation needs its exact private-data
+send scope handled separately. This is a usable conversation handoff, not an
+additional benchmark, persona-fidelity result or another plausibility-review loop.
+
 The saved-chat workflow is COMPLETE in PR #28
 https://github.com/dstl-lab/chatsight-summer/pull/28 on `codex/saved-chat-student`,
 stacked on PR #27 while its required human review is outstanding. `src/agents/chat_student.py`
