@@ -2,31 +2,27 @@
 
 ## Current implementation focus (2026-09-15)
 
-One actual saved-chat continuation is PREPARED, BLOCKED BEFORE SEND, under
-data/episode-pilot/chat-clarification-v1/. Automatic approval review rejected
-`run.py send` before process creation: the sensitive private historical chat and
-derived/generated content need explicit authorization for this exact payload
-and Google Gemini destination; standing approval/current continuation were not
-accepted for that scope. `dispatch-review.json` preserves the rejection and
-preparation/request/disclosure/authorization hashes. Zero new requests/attempts;
-no dispatch receipt or second step exists. No workaround or resend. Ask Minchan
-for this specific one-request scope; leave all frozen preparation files intact.
-Independent authored tests of the actual driver cover reply, no-reply, failure
-and interruption; one factory, at most four attempts, preserved receipts and
-blocked resends. Preparation review reproduces the exact request and all207pins.
+The one saved-chat continuation is COMPLETE and CLOSED under
+data/episode-pilot/chat-clarification-v1/. After the initial automatic-review
+rejection, Minchan explicitly replied "Yes, I approve" to the exact private
+payload/Gemini scope. exact-scope-approval.json preserves that reply and five
+scope hashes before dispatch; the earlier rejection/standing approval remain.
+One new Gemini 2.5 Pro request completed in one adapter attempt, zero retries.
+The separate session has one reused reply plus one new decision, zero remaining.
+Offline replay matches the receipt; all 207 preparation pins and both earlier
+sets of 29 sessions remain intact. Independent audit passed. No generator source,
+prompt or frozen protocol changed. No further request or plausibility rating.
 
-Use first case in the fixed order;
-its generated message names a question whose text is missing from chat. Supply
-the frozen researcher-authored clarification asking for that text, then permit
-one student decision (one Gemini 2.5 Pro request, at most four adapter attempts).
-No new tutor generator/bridge is needed. The original prompt and runner stay
-unchanged. The separate session has one imported control reply and one remaining
-decision; prior29 handoffs/initializations and closed comparison are preserved.
-See frozen docs/2026-09-15-chat-clarification.md; do not edit it after preparation.
-Handle this exact private-data scope and actual dispatch review separately;
-authorization.json records standing approval without claiming a new exact reply.
-Stop after the single outcome/error, no rerolls or plausibility questions.
-Generated task text would be scenario content, not recovered assignment evidence.
+The student supplied assignment-like text after the tutor asked for missing
+question text. That content was absent from the input: preserve it as generated
+scenario content, not recovered question 1.6 or historical assignment evidence.
+The run demonstrates saved-chat continuation, not student fidelity, learning or
+a tutoring-policy effect. Budget exhaustion is not student silence. Private
+REPORT.md/report.json retain the exchange and receipts; see
+docs/2026-09-15-chat-clarification-result.md. Keep the preparation memo unchanged.
+A subsequent grounded interaction needs task text in its starting context or an
+explicitly authored task before generation; repeated calls cannot recover missing
+assignment state. Do not automatically extend or reroll this closed run.
 
 The conversation handoff is COMPLETE on `codex/chat-continuation-handoff`.
 PR #28 merged as `9ac3e45` INTO PR #27's branch, not main; PR #27 still awaits
