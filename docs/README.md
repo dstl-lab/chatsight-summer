@@ -5,6 +5,11 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-15 | `2026-09-15-grounded-chat-result.md` — completed local-task continuation | Complete: one reply adds the visible name assignment to existing code; exact replay and 224 pins verified; initial saved-chat demonstration closed |
+| 2026-09-15 | `2026-09-15-grounded-chat.md` — continue an explicit local task from the saved prefix | Frozen protocol; case-6 exact scope approved, one-request run complete and closed |
+| 2026-09-15 | `2026-09-15-chat-clarification-result.md` — one actual saved-chat continuation | Complete: one new reply, one adapter attempt, exact replay; generated question text is scenario content, not recovered assignment evidence |
+| 2026-09-15 | `2026-09-15-chat-clarification.md` — one saved student after supplied tutor clarification | Frozen protocol; exact scope approved and one-request run closed in result memo |
+| 2026-09-15 | `2026-09-15-chat-continuation-handoff.md` — begin tutoring using existing generated replies | Complete: 29 replies imported into separate awaiting-tutor sessions; readable handoffs; zero new requests, samples or labels |
 | 2026-09-15 | `2026-09-15-saved-chat-student.md` — resume dialogue-only scenarios from existing prefixes | Implemented: unchanged generator, state-bound tutor replies, fixed budgets and offline replay; 29 historical scenarios initialized, zero model calls |
 | 2026-09-15 | `2026-09-15-student-communication-result.md` — fixed original/candidate comparison | Complete: 58 valid outcomes; paired length error 127.357 vs 126.107; current generator retained, no new labeling round |
 | 2026-09-15 | `2026-09-15-student-communication-candidate.md` — make visible student messages more prominent | Frozen protocol; comparison complete in result memo, candidate not adopted |
