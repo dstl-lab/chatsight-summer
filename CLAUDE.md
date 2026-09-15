@@ -2,21 +2,41 @@
 
 ## Current implementation focus (2026-09-15)
 
+The prepared third task has now run once under `multi-task-history-v1/run-plan.json`:
+quiet code edit -> requested passing check at float 0.4 -> chosen no-reply. Three
+student requests, zero generated tutor replies and one container check; three of
+six decisions remain. Both previous records appear unchanged in all three student
+prompts. The optional tutor API note was not delivered. All three linked tasks
+replay exactly; six distinct prior sessions/35 files and eight preparation
+artifacts remain unchanged. The earlier preparation-only report/replay is retained;
+new `RUN_REPORT.md`, `run-summary.json` and `completed-replay.html` record execution.
+Automatic review initially rejected dispatch; exact payload/source inspection
+proved all content authored/generated with no real-student data. The same command
+was accepted on reconsideration with that evidence; preserve rejection and audit.
+No rerolls, labels or human ratings. This closes the authored continuity checkpoint.
+Minchan asked whether progress is concrete: distinguish the functioning simulation
+prototype from unvalidated behavioral fidelity. The recommended next milestone is
+a fixed recorded-behavior comparison against a generic baseline. No new benchmark
+protocol, threshold, extra model run or labeling batch has been approved or launched.
+
 The multi-task history extension is complete. New `notebook_next_task` handoffs
 retain a flat oldest-first `earlier_encounters` list plus the immediate
 `previous_encounter`, reconstructed from a verified saved chain and bounded at
 64,000 UTF-8 bytes. Shared ancestry loading in handoff/replay checks each edge;
 old source-pinned engines and receipts remain unchanged. Replay shows every task
 and only the historical records actually delivered at each initialization.
-Related suite: 32 passed; independent ancestry audit passed. Eight earlier sessions
-replay exactly, 44 prior files remain unchanged and 60 historical report hashes
-match. `data/episode-pilot/multi-task-history-v1/` contains a prepared third task
-with both completed encounters (4,334 bytes) and a browser-checked replay. It has
-no new model decisions, checks or ratings; this proves retention, not learning or
-fidelity. No new labeling or history-ablation run. The next task is prepared only;
-do not describe it as generated. See `docs/2026-09-15-multi-task-history.md` for use,
+Related suite: 32 passed; independent ancestry audit passed. Six distinct earlier sessions
+replay exactly, 35 distinct prior files remain unchanged and 60 historical report hashes
+match. The original preparation under `data/episode-pilot/multi-task-history-v1/`
+retained both completed encounters (4,334 bytes) and made no new model requests.
+The subsequent third-task execution is recorded above; both stages remain saved.
+This proves retention and delivery, not learning or fidelity. No new labeling or
+history-ablation run. See `docs/2026-09-15-multi-task-history.md` for use,
 scope and the unchanged local-manifest trust boundary. This supersedes the older
 one-predecessor limit below for new handoffs.
+The original verification counted eight session paths/44 file paths; relative and
+absolute aliases duplicated two sessions/nine files. Corrected counts above use
+resolved paths. Original verification artifacts remain unchanged.
 
 The prepared teaching pair has now run once per condition under the frozen
 `teaching-pair-v1/run-plan.json`: six student decisions/two follow-up tutor replies
