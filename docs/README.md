@@ -5,7 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-15 | `2026-09-15-chat-clarification.md` — one saved student after supplied tutor clarification | Frozen one-request continuation prepared; original generator, no new labels or automated tutor component |
+| 2026-09-15 | `2026-09-15-chat-clarification.md` — one saved student after supplied tutor clarification | Frozen one-request continuation prepared; actual dispatch rejected before process creation pending exact private-payload/Gemini approval; zero sends |
 | 2026-09-15 | `2026-09-15-chat-continuation-handoff.md` — begin tutoring using existing generated replies | Complete: 29 replies imported into separate awaiting-tutor sessions; readable handoffs; zero new requests, samples or labels |
 | 2026-09-15 | `2026-09-15-saved-chat-student.md` — resume dialogue-only scenarios from existing prefixes | Implemented: unchanged generator, state-bound tutor replies, fixed budgets and offline replay; 29 historical scenarios initialized, zero model calls |
 | 2026-09-15 | `2026-09-15-student-communication-result.md` — fixed original/candidate comparison | Complete: 58 valid outcomes; paired length error 127.357 vs 126.107; current generator retained, no new labeling round |

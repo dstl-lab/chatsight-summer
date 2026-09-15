@@ -2,8 +2,20 @@
 
 ## Current implementation focus (2026-09-15)
 
-One actual saved-chat continuation is PREPARED, NOT SENT, under
-data/episode-pilot/chat-clarification-v1/. Use first case in the fixed order;
+One actual saved-chat continuation is PREPARED, BLOCKED BEFORE SEND, under
+data/episode-pilot/chat-clarification-v1/. Automatic approval review rejected
+`run.py send` before process creation: the sensitive private historical chat and
+derived/generated content need explicit authorization for this exact payload
+and Google Gemini destination; standing approval/current continuation were not
+accepted for that scope. `dispatch-review.json` preserves the rejection and
+preparation/request/disclosure/authorization hashes. Zero new requests/attempts;
+no dispatch receipt or second step exists. No workaround or resend. Ask Minchan
+for this specific one-request scope; leave all frozen preparation files intact.
+Independent authored tests of the actual driver cover reply, no-reply, failure
+and interruption; one factory, at most four attempts, preserved receipts and
+blocked resends. Preparation review reproduces the exact request and all207pins.
+
+Use first case in the fixed order;
 its generated message names a question whose text is missing from chat. Supply
 the frozen researcher-authored clarification asking for that text, then permit
 one student decision (one Gemini 2.5 Pro request, at most four adapter attempts).
