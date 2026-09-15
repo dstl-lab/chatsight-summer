@@ -34,7 +34,9 @@ these controls demonstrates recording mechanics, not student fidelity or learnin
 ## Implementation and verification
 
 Implemented in [generalized tutor PR #11](https://github.com/dstl-lab/jupyterlab-ai-tutor/pull/11),
-commit `3843d12d98efad67113b366af3b5908b7f7d2d37`. The persistent isolated worktree is
+initial commit `3843d12d98efad67113b366af3b5908b7f7d2d37`, with browser integration
+and CI follow-up at `adff528fad664f1c8fd93a64b2e64a97a774a20a`.
+The persistent isolated worktree is
 `../tutor-request-logging`, with its separate Git store at `../.tutor-source.git`.
 The PR is draft and has not been deployed or merged. The repository requires one
 approving GitHub review before merge; no rule was bypassed.
@@ -55,18 +57,50 @@ review was reproduced and fixed before commit. Retained output is a bounded text
 transcript, not complete rich output or kernel state. Submitted messages can be
 queued; submission alone does not prove execution.
 
-All 20 frontend tests pass (19 new authored checks and the existing placeholder).
-TypeScript compilation and alias build, changed-production ESLint, changed-file
-Prettier and diff checks pass. Two independent reviews found no remaining issues.
-Controls reopen serialized request records and verify source hashes and joins
-without model calls. These are module/protocol checks, not a deployed collector or
-live-kernel integration test. Existing package versions and lockfile are unchanged;
+All 20 frontend unit tests pass (19 new authored checks and the existing
+placeholder), along with both local browser tests. TypeScript compilation and
+alias build, the full development extension build, changed-production ESLint,
+changed TypeScript/JavaScript/Markdown Prettier and diff checks pass. Independent
+request, execution and integration reviews found no remaining issues after fixes.
+Existing package versions and lockfiles are unchanged;
 local Yarn 3.8.7 substituted its TypeScript compatibility patch for installation
 only, then the original lockfile was restored.
 
-Main already fails its browser-startup check with static-asset HTTP 500 errors and
-a page timeout: [baseline CI](https://github.com/dstl-lab/jupyterlab-ai-tutor/actions/runs/34929387647).
-The logging PR's CI must be assessed separately. Delivery is still best effort:
+The new browser control runs the built plugin and a real local Python kernel.
+It holds a cell running `x = 1` while changing the editor to `x = 2`; the emitted
+result retains the submitted source and output `1`. A first help request captures
+`x = 2`, then an edit during the scripted tutor response makes the next request
+capture `x = 3`. Both snapshots retain output `1`. The check verifies nonempty
+native execution/kernel/cell identities, exact request bodies, SHA-256 hashes,
+response joins and the legacy initial snapshot. A review found a test route-lifetime
+gap; context-level interception now persists through Galata cleanup.
+
+This is an actual local browser/kernel integration check with invented work,
+scripted tutor responses and intercepted logging uploads. It does not contact the
+model or deployed collector. The ignored evidence directory
+`data/episode-pilot/tutor-logging-integration-v1/` retains `observations.json`,
+unit/browser/build logs, local configuration and `receipt.json` with source pins,
+artifact hashes and installed versions: JupyterLab 4.6.3, Jupyter Server 2.21.0,
+Tornado 6.5.8, ipykernel 7.3.0, Galata 5.6.3 and Playwright 1.63.0.
+
+Main and the initial logging PR failed static-asset loading:
+[baseline CI](https://github.com/dstl-lab/jupyterlab-ai-tutor/actions/runs/34929387647),
+[initial PR CI](https://github.com/dstl-lab/jupyterlab-ai-tutor/actions/runs/34933300477).
+Direct local reproduction identified Jupyter Server 2.21.0's static handler lacking
+the `allowed_symlink_directory` attribute required by Tornado 6.5.9. A temporary
+CI-only `tornado<6.5.9` bound restores local startup while leaving shipped runtime
+requirements unchanged. It is not a production downgrade recommendation; remove
+it when compatible upstream versions pass the browser check. The updated
+[PR CI](https://github.com/dstl-lab/jupyterlab-ai-tutor/actions/runs/34934925819)
+is in progress and must be assessed separately.
+
+Minchan asked whether this adds reply latency. The current request path serializes
+and copies the request and awaits a notebook checksum before tutor dispatch.
+Logging uploads run asynchronously, but CPU and network overhead remain possible.
+No latency benchmark has run. Measure request-to-first-token delay with
+representative notebook sizes and connections before deployment.
+
+Delivery is still best effort:
 HTTP/network failures are reported to the browser console, without durable retry.
 Received records must be inspected before treating a deployed session as usable
 research evidence. No data/model requests, new human ratings or deployments ran.

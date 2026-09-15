@@ -4,17 +4,24 @@
 
 Minchan approved the future logging implementation with "Let's do it" after the
 coding-assistant tracking comparison. Implemented in generalized tutor draft PR#11
-https://github.com/dstl-lab/jupyterlab-ai-tutor/pull/11 at3843d12, separate persistent
+https://github.com/dstl-lab/jupyterlab-ai-tutor/pull/11 atadff528 (initial3843d12), separate persistent
 worktree ../tutor-request-logging on codex/request-work-logging. See
 docs/2026-09-15-request-work-logging.md. Streamed requests retain exact work/context,
 request IDs, source hashes and native cell IDs; responses/failures join by request
 ID. Execution records bind submitted code to kernel message IDs and reply+idle,
 with bounded text, qualified grader heuristics and explicit incomplete outcomes.
-20 frontend tests, TS build, changed-file lint/format and independent reviews pass.
-Logging remains best effort; no deployed retention/live-kernel claim. No model/DB
-calls, new ratings, historical reruns or deployment. Main's browser startup CI was
-already failing; assess new PR CI separately. One approving GitHub review is
-required. Implementation/PR approval does not authorize starting real collection.
+20 frontend unit tests, two browser tests, TS/extension build, changed-file
+lint/format and independent reviews pass. The browser test uses invented work and
+a real local Python kernel with scripted tutor/intercepted collector; source-bound
+output and two distinct request snapshots verified. Private receipts/logs are in
+data/episode-pilot/tutor-logging-integration-v1. Logging remains best effort; no
+deployed retention claim. No model/DB calls, new ratings, historical reruns or
+deployment. Main/initial PR startup failure traced to Tornado6.5.9 versus Jupyter
+Server2.21.0; CI-only bound restores local startup, runtime requirements unchanged.
+Updated PR CI is running. User asked about latency: serialization/copy/hash precede
+dispatch, logging uploads asynchronous; latency remains unmeasured and needs a
+representative deployment check. One approving GitHub review is required.
+Implementation/PR approval does not authorize starting real collection.
 Next: review concrete PR, then verify an invented example through an approved
 installation/collector before designing another fixed fidelity comparison. The
 earlier source-audit-only/proposed status immediately below is historical.
