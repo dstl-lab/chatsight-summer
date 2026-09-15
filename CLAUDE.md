@@ -16,13 +16,23 @@ unclear; one blind pass, then complete-case paired binary Brier plus all coverag
 and exclusions. No tuning, replacement draws, automatic adoption or second batch.
 The portable grouped-message UI and strict offline scorer are implemented; 12
 related tests and the private future-exclusion/no-resend/package canary check pass.
-Independent pre-freeze audit passed; 38 preparation hashes verify. Dispatch was
-rejected by automatic approval review before process creation: private real-student
-payloads require exact-payload authorization to Gemini beyond the standing grant.
-No requests or outputs exist. Preserve `send-blocked.json` and exact `disclosure.md`;
-do not retry indirectly. The next required input is this specific send approval,
-then the one blind coding pass. This supersedes older pending-benchmark statements
-below; the separate incomplete six-case history ablation remains paused. These
+Independent pre-freeze audit passed. After the initial automatic-review rejection,
+Minchan explicitly answered Yes to sending the exact frozen excerpts to Gemini.
+The separate `approval-response.json` binds the unchanged disclosure/inputs and
+predates dispatch; preserve both the original rejection and preparation grant.
+The fixed run is complete: 64 valid replies, zero final errors/no-reply, one adapter
+retry and 65 adapter attempts. Physical HTTP attempts below the SDK are unmeasured.
+No replacements or prompt changes. Exact offline replay and independent final
+audit pass: 38 preparation, four approval, three review and 12 completion-file
+hashes match. The 72 blind review messages (64 generated plus eight recorded) and
+34 shared prefix turns map exactly to source; origins/conditions stay outside HTML.
+`run-summary.json` and `RUN_REPORT.md` record generation only. No human judgments or
+behavior score exist. The next required input is one completed coding form from
+`ui/index.html`, served on loopback at http://127.0.0.1:8422/ with only the UI folder
+exposed. The page begins blank and provides browser-local drafts and JSON export.
+Do not resend, repackage or begin another batch. After intake, run the frozen scorer
+once and stop at the report even if inconclusive. This supersedes older pending-
+benchmark statements below; the incomplete six-case history ablation remains paused. These
 audited same-course exports cannot establish a student-separated/pristine holdout,
 notebook action fidelity, learning or transfer. The existing notebook engine and
 all prior artifacts remain unchanged. Keep draft PR #25 open and unmerged.
@@ -42,8 +52,8 @@ No rerolls, labels or human ratings. This closes the authored continuity checkpo
 Minchan asked whether progress is concrete: distinguish the functioning simulation
 prototype from unvalidated behavioral fidelity. The recommended next milestone is
 a fixed recorded-behavior comparison against a generic baseline. Its then-pending
-recommendation is superseded by the frozen, send-blocked comparison above. No model
-requests have been launched for that comparison.
+recommendation is superseded by the completed fixed comparison above. Its single
+blind human coding pass remains pending.
 
 The multi-task history extension is complete. New `notebook_next_task` handoffs
 retain a flat oldest-first `earlier_encounters` list plus the immediate

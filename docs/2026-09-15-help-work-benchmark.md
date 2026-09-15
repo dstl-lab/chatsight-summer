@@ -1,5 +1,8 @@
 # One fixed help/work comparison
 
+Generation is complete: 64 valid replies, one adapter retry, no replacements.
+The next input is one blind coding pass over 72 messages. No behavior score exists.
+
 ## Decision and scope
 
 Minchan authorized a finite recorded-behavior comparison and selected
@@ -124,10 +127,11 @@ unchanged. No dependencies or new simulator abstractions.
   completed human form; compute the fixed paired score/coverage. One invented
   numerical regression also checks ambiguous/missing slots and mapping rejection.
 - [x] Freeze and independently audit selection/input/scoring boundaries.
-- [ ] Dispatch the fixed 64 slots once if permitted, preserving failures and interruptions.
-- [ ] Build and verify the concealed-origin page, commit code/memo, update draft
-  PR #25 without merging, and stop for the single human coding pass. After intake,
-  run the frozen scorer and publish the limited report without automatic tuning.
+- [x] Dispatch the fixed 64 slots once if permitted, preserving failures and interruptions.
+- [x] Build and verify the concealed-origin page, commit code/memo, update draft
+  PR #25 without merging, and stop for the single human coding pass.
+- [ ] After intake, run the frozen scorer and publish the limited report without
+  automatic tuning or another batch.
 
 ## Prepared result and dispatch boundary
 
@@ -142,11 +146,44 @@ related tests passed; the new UI also passed an invented browser exercise.
 Automatic approval review rejected the exact dispatch command **before process
 creation**. It considered these private student–tutor excerpts sensitive and
 required specific authorization to send them to Gemini, beyond the logged standing
-project approval. No request was sent, no output was created, and no score or human
-judgment exists. The rejection is preserved in `send-blocked.json`; the exact
+project approval. That rejected attempt sent no requests and created no outputs.
+The rejection is preserved in `send-blocked.json`; the exact
 16 distinct prompts (each to be sent four times) are in `disclosure.md`. No indirect
-execution or alternate destination was attempted. User approval of that concrete
-payload is now the required input; the single blind coding pass follows dispatch.
+execution or alternate destination was attempted. Minchan subsequently answered
+Yes to that specific payload and destination. `approval-response.json` preserves
+the answer and binds all four disclosed/preparation/rejection artifacts. The same
+frozen command then ran successfully; approval predates its first request.
+
+## Completed generation and review handoff
+
+The fixed run completed on 2026-09-15, 02:16:48–02:33:16 UTC. All 64 logical
+requests returned valid replies. One adapter retry produced 65 adapter attempts;
+physical HTTP attempts below the SDK were not instrumented. No final errors or
+no-reply outputs occurred in either condition (32 replies each). This says nothing
+about the quality or labels of those messages. No outputs were replaced, fed into
+subsequent inputs or used to change prompts.
+
+The concealed-origin page contains 72 messages / 144 independent flag judgments:
+nine messages under each of eight shared prefixes. The exact 34 prefix turns and
+all candidate texts were independently matched to source without assigning labels.
+All 38 preparation, four approval, three review and 12 completion-artifact hashes
+verify; these groups overlap and are not a count of distinct files. Exact offline
+replay passes. The HTML equals the frozen template plus the strict blind packet;
+its payload has no origin/condition/reference mapping or preselected judgments.
+
+The page is served locally at http://127.0.0.1:8422/ and was opened to its blank
+introduction. Browser inspection did not enter reviewer details or judgments.
+Only `ui/` is served. The portable `ui/index.html` also works independently; the
+private origin mapping and run report must stay outside the reviewer handoff.
+Earlier UI behavior checks used invented data and a separate packet identity.
+
+One reviewer completes the two yes/no/unclear flags for each message; both yes is
+valid and unclear needs a note. Copy or download the final JSON and return it for
+intake. Browser-local drafts allow pauses but do not sync between computers.
+No human form has been returned for this packet and no behavior score exists.
+`run-summary.json`, `RUN_REPORT.md` and `completion-verification.json` preserve
+this stage. `report.py` verifies the approved completed run and produces those
+create-only artifacts; it does not assign labels. Stop for this one human input.
 
 Reproducible commands from the isolated worktree:
 
@@ -156,12 +193,11 @@ PYTHONPATH=. ../main/.venv/bin/python data/episode-pilot/help-work-benchmark-v1/
 PYTHONPATH=. ../main/.venv/bin/python -m pytest tests/test_communication_review.py tests/test_communication_scoring.py tests/test_coding_review.py tests/test_behavior_scoring.py tests/test_student_continuation.py -q
 ```
 
-After the specific authorization, the already prepared command is `benchmark.py
-verify --send`; its exclusive results-file claim prevents resubmission. `replay`
-verifies the completed receipts offline, then `package` creates the one blank blind
-page under `ui/index.html`. Serve/share only that HTML, not the directory containing
-the private mapping or source artifacts. No page of actual candidates is available
-before generation. The scoring command is:
+The completed command was `benchmark.py verify --send`; its exclusive results-file
+claim prevents resubmission. Do not rerun it or repackage the finished review.
+`benchmark.py replay` verifies the completed receipts offline. Serve/share only
+`ui/index.html`, not the directory containing the private mapping or source
+artifacts. After the single completed human form is received, the scoring command is:
 
 ```sh
 PYTHONPATH=. ../main/.venv/bin/python -m src.eval.communication_scoring \
