@@ -1,11 +1,10 @@
-"""Export a saved notebook encounter and its verified predecessor to static HTML."""
+"""Export saved notebook encounters and their verified shared history to static HTML."""
 from contextlib import ExitStack
-import fcntl
 from html import escape
 import json
 from pathlib import Path
 
-from src.agents import notebook_student as student
+from src.agents import notebook_next_task, notebook_student as student
 
 
 def _text(value):
@@ -59,7 +58,7 @@ def _action(event, number, prefix):
 def _encounter(manifest, state, receipts, decisions, *, prefix, title):
     initial = manifest['initial']
     initialization = initial['initialization']
-    if isinstance(initialization, dict) and 'previous_encounter' in initialization:
+    if manifest.get('provenance', {}).get('previous_encounter') is not None:
         initialization = initialization.get('current_task', 'Earlier shared context is shown separately.')
     body = (f'<section id="{prefix}"><h2>{title}</h2><h3>{_text(initial["task"])}</h3>'
             '<details><summary>Supplied initial task context and dialogue</summary>'
@@ -101,20 +100,6 @@ def _encounter(manifest, state, receipts, decisions, *, prefix, title):
     return body + '</section>'
 
 
-def _load(folder, stack):
-    # Use the existing lock read-only: exporting must not create files in a session.
-    try:
-        stream = stack.enter_context((folder / '.lock').open('rb'))
-    except FileNotFoundError as exc:
-        raise ValueError('A saved session lock is required for read-only replay.') from exc
-    try:
-        fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
-    except BlockingIOError as exc:
-        raise ValueError('This student session is busy.') from exc
-    manifest, state, paths, decisions = student._load(folder)
-    return manifest, state, [student._read(path) for path in paths], decisions
-
-
 def export(folder, output, *, previous=None):
     """Create one escaped, self-contained page; verify ancestry and dispatch no calls."""
     output = Path(output)
@@ -122,50 +107,28 @@ def export(folder, output, *, previous=None):
         raise FileExistsError(output)
     folder, output = Path(folder).resolve(), output.resolve()
     with ExitStack() as stack:
-        current = _load(folder, stack)
-        manifest = current[0]
-        ancestry = manifest.get('provenance', {}).get('previous_encounter')
-        initialization = manifest['initial']['initialization']
-        shared = initialization.get('previous_encounter') if isinstance(initialization, dict) else None
-        previous = Path(previous).resolve() if previous is not None else (
-            Path(ancestry['path']).resolve() if isinstance(ancestry, dict) and ancestry.get('path') else None)
-        if output.is_relative_to(folder) or (previous is not None and output.is_relative_to(previous)):
+        entries = notebook_next_task.lineage(folder, stack, previous=previous)
+        if any(output.is_relative_to(entry[0]) for entry in entries):
             raise ValueError('Replay output must be outside each input session.')
-        predecessor = None
-        if previous is not None:
-            if previous == folder or not isinstance(ancestry, dict) or not isinstance(shared, dict):
-                raise ValueError('Ancestry is missing or does not identify a separate predecessor.')
-            predecessor = _load(previous, stack)
-            old_manifest, old_state = predecessor[:2]
-            observed = {key:old_state[key] for key in ('task', 'dialogue', 'work', 'status')}
-            observed.update(activity={k:v for k,v in old_state['activity'].items() if k != 'image_id'},
-                observation=student.notebook_session._feedback(old_state['observation']),
-                history=[event | {'observation':student.notebook_session._feedback(event['observation'])}
-                         for event in old_state['history']])
-            if (ancestry.get('session_sha256') != student.digest(old_manifest)
-                    or ancestry.get('state_sha256') != student.digest(old_state)
-                    or ancestry.get('history_sha256') != student.digest(shared)
-                    or shared != observed or old_state['status'] != 'no-reply'
-                    or not old_state['history'] or old_state['history'][-1]['origin'] != 'model'
-                    or old_state['history'][-1]['action']['decision'] != 'no-reply'):
-                raise ValueError('Ancestry does not match the saved predecessor and shared history.')
-        elif ancestry is not None or shared is not None:
-            raise ValueError('Ancestry requires an available predecessor; supply --previous.')
-
         body = '<header><p class="eyebrow">Saved notebook simulation</p><h1>Encounter replay</h1>'
         body += '<p>Read-only replay of saved evidence. No model calls or code execution.</p></header>'
-        if predecessor is not None:
-            body += ('<p class="notice">Verified linked continuation: a researcher supplied the second task '
-                     'with the first encounter’s observed history. Continuation does not establish learning.</p>'
-                     '<nav aria-label="Replay sections"><a href="#previous">Task 1</a>'
-                     '<a href="#shared-history">Shared history</a><a href="#current">Task 2</a></nav>')
-            body += _encounter(*predecessor, prefix='previous', title='Task 1 · predecessor')
-            body += ('<section id="shared-history"><h2>Shared predecessor history</h2>'
-                     '<p>Origin: the saved observed record delivered to both agents at Task 2 initialization. '
-                     'All work and check feedback in this section belong to Task 1.</p>'
-                     '<details><summary>Inspect the exact shared observed record</summary>'
-                     + _block(shared) + '</details></section>')
-        body += _encounter(*current, prefix='current', title='Task 2 · new encounter' if predecessor else 'Saved encounter')
+        prefixes = [f'task-{i + 1}' for i in range(len(entries) - 1)] + ['current']
+        if len(entries) > 1:
+            body += ('<p class="notice">Verified linked continuation: each new task was supplied by a researcher. '
+                     'The history actually delivered at each initialization is shown separately. '
+                     'Continuation does not establish learning.</p><nav aria-label="Replay sections">')
+            body += ''.join(f'<a href="#{prefix}">Task {i + 1}</a>' for i, prefix in enumerate(prefixes)) + '</nav>'
+        for i, ((_, manifest, state, receipts, decisions), prefix) in enumerate(zip(entries, prefixes), 1):
+            if i > 1:
+                initialization = manifest['initial']['initialization']
+                records = initialization.get('earlier_encounters', []) + [initialization['previous_encounter']]
+                body += (f'<section id="{prefix}-history"><h2>Shared history supplied to Task {i}</h2>'
+                         f'<p>Origin: {len(records)} saved observed encounter(s), supplied to both agents. '
+                         'Each record’s work and feedback belong to its earlier task.</p>'
+                         '<details><summary>Inspect the exact shared observed records</summary>'
+                         + _block(records) + '</details></section>')
+            body += _encounter(manifest, state, receipts, decisions, prefix=prefix,
+                               title=f'Task {i}' if len(entries) > 1 else 'Saved encounter')
         body += ('<footer>Only selected-cell work and recorded dialogue/actions are available. Checks apply to their '
                  'recorded revision and supplied data; a pass is not a general correctness proof. '
                  'No pacing, hidden attempts, learner traits or learning are inferred.</footer>')

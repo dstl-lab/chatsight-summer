@@ -1,5 +1,9 @@
 # Carry one observed encounter into the next task
 
+The later [multi-task extension](2026-09-15-multi-task-history.md) supersedes the
+one-predecessor limit for new handoffs. This memo records the original design and
+completed run; those saved inputs and results remain unchanged.
+
 The bounded student now acts and stops within an encounter. A new task still
 starts without that experience. Minchan directed continuation until input is
 needed; the earlier coaching direction calls for retaining observed task,

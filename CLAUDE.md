@@ -2,6 +2,22 @@
 
 ## Current implementation focus (2026-09-15)
 
+The multi-task history extension is complete. New `notebook_next_task` handoffs
+retain a flat oldest-first `earlier_encounters` list plus the immediate
+`previous_encounter`, reconstructed from a verified saved chain and bounded at
+64,000 UTF-8 bytes. Shared ancestry loading in handoff/replay checks each edge;
+old source-pinned engines and receipts remain unchanged. Replay shows every task
+and only the historical records actually delivered at each initialization.
+Related suite: 32 passed; independent ancestry audit passed. Eight earlier sessions
+replay exactly, 44 prior files remain unchanged and 60 historical report hashes
+match. `data/episode-pilot/multi-task-history-v1/` contains a prepared third task
+with both completed encounters (4,334 bytes) and a browser-checked replay. It has
+no new model decisions, checks or ratings; this proves retention, not learning or
+fidelity. No new labeling or history-ablation run. The next task is prepared only;
+do not describe it as generated. See `docs/2026-09-15-multi-task-history.md` for use,
+scope and the unchanged local-manifest trust boundary. This supersedes the older
+one-predecessor limit below for new handoffs.
+
 The prepared teaching pair has now run once per condition under the frozen
 `teaching-pair-v1/run-plan.json`: six student decisions/two follow-up tutor replies
 maximum per condition, same policy/reference, A then B, no rerolls. Both used three

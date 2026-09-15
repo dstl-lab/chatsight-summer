@@ -129,7 +129,7 @@ def test_unfinished_failed_and_authored_stops_cannot_create_a_follow_on(tmp_path
         assert not folder.exists() and files(previous) == before
 
 
-def test_one_prior_encounter_and_utf8_limit_prevent_recursive_or_oversized_context(tmp_path):
+def test_utf8_limit_rejects_oversized_context(tmp_path):
     next_task = api()
     previous, folder = tmp_path / 'large', tmp_path / 'next'
     task = deepcopy(TASK)
@@ -186,3 +186,77 @@ def test_interrupted_provenance_write_never_publishes_a_runnable_child(tmp_path,
         student.load(folder)
     with pytest.raises((OSError, ValueError)):
         student.step(folder, generate=lambda *_:pytest.fail('Interrupted child reached provider'), check=None)
+
+
+def test_multiple_tasks_keep_flat_verified_history_in_both_agents_and_replay(tmp_path, monkeypatch):
+    from src.eval import notebook_replay
+
+    next_task = api()
+    worker(monkeypatch, 'FIRST_OBSERVED_VALUE')
+    first = tmp_path / 'first'
+    task = deepcopy(TASK)
+    task.update(task='First task', initialization={'earlier_encounters':'UNVERIFIED_INITIALIZATION'})
+    finished(first, task=task, evaluation={'expected':'PRIVATE_FIRST_EXPECTED'}, check=runtime.check_work)
+    folders, states = [first], [student.load(first)]
+    for number in (2, 3, 4):
+        folder = tmp_path / str(number)
+        task = deepcopy(TASK)
+        task.update(task=f'Task {number}', initialization='Fresh supplied context')
+        before = [files(path) for path in folders]
+        initial = next_task.create(folders[-1], folder, task=task, activity=ACTIVITY,
+                                   evaluation={'expected':'PRIVATE_CURRENT_EXPECTED'}, max_decisions=2)
+        assert [files(path) for path in folders] == before
+        assert initial['observation'] is None and initial['history'] == []
+        assert initial['branch_id'] not in [state['branch_id'] for state in states]
+        packet = json.loads(session.make_prompt(initial).split('\nSTATE JSON:\n')[1])
+        memory = packet['initialization']
+        records = memory['earlier_encounters'] + [memory['previous_encounter']]
+        assert [record['task'] for record in records] == [state['task'] for state in states]
+        assert all('initialization' not in record for record in records)
+        assert records[0]['observation']['value'] == 'FIRST_OBSERVED_VALUE'
+        assert tutor_context.snapshot(folder)['initialization'] == memory
+        for private in ('PRIVATE_FIRST_EXPECTED', 'PRIVATE_CURRENT_EXPECTED', 'UNVERIFIED_INITIALIZATION',
+                        str(first), 'image_id', 'evaluation', 'session_sha256', 'branch_id'):
+            assert private not in json.dumps(memory)
+        choose = lambda *_:session.Action(decision='no-reply', text='', source=None)
+        states.append(student.step(folder, generate=choose, check=None, max_actions=1)['state'])
+        folders.append(folder)
+
+    before = [files(path) for path in folders]
+    monkeypatch.setattr(student.llm, 'make_generate', lambda *a, **kw:pytest.fail('Unexpected provider'))
+    destination = tmp_path / 'four-tasks.html'
+    notebook_replay.export(folders[-1], destination)
+    page = destination.read_text()
+    assert all(state['task'] in page for state in states)
+    assert 'FIRST_OBSERVED_VALUE' in page and 'PRIVATE_FIRST_EXPECTED' not in page
+    assert 'FIRST_OBSERVED_VALUE' not in page.split('<section id="current">')[1]
+    assert [files(path) for path in folders] == before
+    with pytest.raises(ValueError, match='[Ii]nput session'):
+        notebook_replay.export(folders[-1], first / 'should-not-write.html')
+
+    # Even a fresh, replayable child cannot falsely claim a changed or unrelated history.
+    fresh = tmp_path / 'fresh'
+    next_task.create(folders[-1], fresh, task=TASK, activity=ACTIVITY)
+    manifest_path = fresh / 'session.json'
+    manifest = student._read(manifest_path)
+    manifest['initial']['initialization']['earlier_encounters'][0]['task'] = 'FORGED'
+    student._save(manifest_path, manifest)
+    student.step(fresh, generate=choose, check=None, max_actions=1)
+    with pytest.raises(ValueError, match='[Aa]ncestry'):
+        next_task.create(fresh, tmp_path / 'rejected', task=TASK, activity=ACTIVITY)
+    with pytest.raises(ValueError, match='[Aa]ncestry'):
+        notebook_replay.export(fresh, tmp_path / 'rejected.html')
+    assert not (tmp_path / 'rejected').exists() and not (tmp_path / 'rejected.html').exists()
+
+    # Each record fits independently, but their total exceeds the shared-history ceiling.
+    large_task = deepcopy(TASK)
+    large_task['task'] = '가' * 11000
+    large = tmp_path / 'large'
+    finished(large, task=large_task)
+    second_large = tmp_path / 'second-large'
+    next_task.create(large, second_large, task=large_task, activity=ACTIVITY)
+    student.step(second_large, generate=choose, check=None, max_actions=1)
+    with pytest.raises(ValueError, match='64000'):
+        next_task.create(second_large, tmp_path / 'too-large', task=TASK, activity=ACTIVITY)
+    assert not (tmp_path / 'too-large').exists()
+    assert [files(path) for path in folders] == before
