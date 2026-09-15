@@ -18,8 +18,16 @@ at most232 adapter attempts. Exact prompts total262419/291553 characters. The
 disclosure and the recorded standing approval; no new exact-payload reply is
 claimed. Authored actual-runner checks verify cap/retries, no-reply/error exclusion,
 metrics and no-resend. All376 tests pass, two optional container tests skip.
-Independent preparation review precedes dispatch. No model requests yet; update
-actual status separately. Stop at one fixed mechanical report; no semantic-label
+Independent preparation review passed all 29 projections, 58 exact prompts and
+59 pins. PR #27 is DRAFT at https://github.com/dstl-lab/chatsight-summer/pull/27.
+Dispatch was rejected by automatic approval review before process creation:
+private historical student/tutor dialogue would go to external Gemini, and the
+review judged the broad standing grant insufficient for this exact payload and
+destination. See private dispatch-review.json. Zero requests sent; results.json
+and report.json are absent. Do not retry or use another execution route without
+specific approval of the prepared 58-request scope and Gemini destination. The
+user's standing grant remains recorded unchanged; no new approval is inferred.
+Stop at one fixed mechanical report after an authorized run; no semantic-label
 review or automatic adoption. Prior baseline/benchmarks remain unchanged.
 
 The first existing-data baseline is COMPLETE. `src/eval/retrieval_baseline.py`
