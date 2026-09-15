@@ -66,10 +66,11 @@ before proposing instrumentation. A new label taxonomy would not supply it.
 
 ## Team explorations and verification
 
-The [two informal teammate briefs](2026-09-15-teammate-explorations.md) split this
-into independent questions: recoverable real student activity, and a useful
-Marimo simulation workspace. They are drafts to share, not assignments sent to
-anyone or new automated coding tasks.
+The [two informal teammate briefs](2026-09-15-teammate-explorations.md) explore
+related simulated-student work and potential educator use cases. Minchan clarified
+that these should not block the main flow: logger discovery and simulator work
+remain here, and neither brief is a prerequisite. They are drafts to share, not
+assignments sent to anyone or new automated coding tasks.
 
 The new branch starts from the exact merged tree. Its baseline passed 371 Python
 tests with two optional container tests skipped and one upstream deprecation

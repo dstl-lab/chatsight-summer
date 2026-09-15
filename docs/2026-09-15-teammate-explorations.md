@@ -1,29 +1,27 @@
-# Two things to explore
+# Two parallel explorations
 
-## 1. What can we actually reconstruct about a student's work?
+These are optional inputs for later decisions. Our simulator and logging work
+continues independently; neither exploration is a prerequisite for implementation.
 
-Take a look at the existing tutor logs and, if available, the code that records
-them. How much of a student's activity can we piece together: changing code,
-asking for help, running a check, and moving to another question? Try following
-one example and separating what we can directly observe from what we're guessing.
+## 1. What can we learn from other simulated-student projects?
 
-The interesting question is where the gaps come from: data we haven't connected
-yet, or events that were never saved. Bring back a short walkthrough and your
-thoughts on what would make these records useful for evaluating simulated students.
+Explore papers, demos, or tools that try to simulate learners or human behavior.
+Follow whatever seems interesting: how they represent differences between people,
+use memory, model mistakes, or decide whether the simulation is believable.
 
-Starting point: [observation-window findings](2026-09-15-observation-window-readiness.md).
+Bring back a few ideas worth borrowing, assumptions worth questioning, or examples
+that changed how you think about our project. This can be informal; it does not
+need to become a comprehensive literature review.
 
-## 2. What could a useful simulation workspace look like in Marimo?
+## 2. What would educators actually want to try with simulated students?
 
-Explore how Marimo could help an educator or researcher follow a simulated
-student's work. What would you want to see or control: code changes, tutor
-interactions, checks, pauses, or alternative teaching decisions? Pick whichever
-part seems most useful and try a sketch or a small toy example.
+Imagine a few situations where an educator or researcher could use this tool.
+What teaching decision would they experiment with? What would they want to see
+in the student's behavior, and what would make the result useful?
 
-We're interested in whether readable Python diffs and Marimo's execution model
-make the student's activity easier to understand. Think about how to distinguish
-an edit, an explicitly requested run, and something the interface reruns
-automatically. Bring back what felt promising, awkward, or worth trying next.
+Feel free to sketch an interaction, talk with someone, or play with a small Marimo
+toy example. We're interested in possibilities for the eventual experience;
+none of these ideas needs to become a production feature yet.
 
-Starting point: [Marimo documentation](https://docs.marimo.io/) and our
-[saved-student workflow](2026-09-14-continuing-student.md).
+Starting points: our [project recap](2026-09-15-simulation-progress-summary.md)
+and [Marimo direction](2026-09-15-marimo-and-observation-contract.md).
