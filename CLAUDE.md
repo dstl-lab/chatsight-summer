@@ -2,6 +2,23 @@
 
 ## Current implementation focus (2026-09-15)
 
+Minchan approved the future logging implementation with "Let's do it" after the
+coding-assistant tracking comparison. Implemented in generalized tutor draft PR#11
+https://github.com/dstl-lab/jupyterlab-ai-tutor/pull/11 at3843d12, separate persistent
+worktree ../tutor-request-logging on codex/request-work-logging. See
+docs/2026-09-15-request-work-logging.md. Streamed requests retain exact work/context,
+request IDs, source hashes and native cell IDs; responses/failures join by request
+ID. Execution records bind submitted code to kernel message IDs and reply+idle,
+with bounded text, qualified grader heuristics and explicit incomplete outcomes.
+20 frontend tests, TS build, changed-file lint/format and independent reviews pass.
+Logging remains best effort; no deployed retention/live-kernel claim. No model/DB
+calls, new ratings, historical reruns or deployment. Main's browser startup CI was
+already failing; assess new PR CI separately. One approving GitHub review is
+required. Implementation/PR approval does not authorize starting real collection.
+Next: review concrete PR, then verify an invented example through an approved
+installation/collector before designing another fixed fidelity comparison. The
+earlier source-audit-only/proposed status immediately below is historical.
+
 Main-flow source audit located the actual lab tutor/logger repositories; see
 `docs/2026-09-15-logged-work-boundary.md`. Old DSC10 client at3eab46cd and pre-April
 8f8957f0 send sanitized notebook each request but persist source only on the first
