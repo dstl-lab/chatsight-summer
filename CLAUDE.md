@@ -2,6 +2,20 @@
 
 ## Current implementation focus (2026-09-15)
 
+One actual saved-chat continuation is PREPARED, NOT SENT, under
+data/episode-pilot/chat-clarification-v1/. Use first case in the fixed order;
+its generated message names a question whose text is missing from chat. Supply
+the frozen researcher-authored clarification asking for that text, then permit
+one student decision (one Gemini 2.5 Pro request, at most four adapter attempts).
+No new tutor generator/bridge is needed. The original prompt and runner stay
+unchanged. The separate session has one imported control reply and one remaining
+decision; prior29 handoffs/initializations and closed comparison are preserved.
+See frozen docs/2026-09-15-chat-clarification.md; do not edit it after preparation.
+Handle this exact private-data scope and actual dispatch review separately;
+authorization.json records standing approval without claiming a new exact reply.
+Stop after the single outcome/error, no rerolls or plausibility questions.
+Generated task text would be scenario content, not recovered assignment evidence.
+
 The conversation handoff is COMPLETE on `codex/chat-continuation-handoff`.
 PR #28 merged as `9ac3e45` INTO PR #27's branch, not main; PR #27 still awaits
 the required human review. Its tree is identical to the completed saved-chat
