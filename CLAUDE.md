@@ -2,6 +2,31 @@
 
 ## Current implementation focus (2026-09-15)
 
+Minchan approved one finite recorded-behavior comparison and selected help-seeking
+versus work submission with one fixed blind coding pass. The protocol is frozen
+in `docs/2026-09-15-help-work-benchmark.md` and ignored
+`data/episode-pilot/help-work-benchmark-v1/`: eight distinct conversations selected
+without target-text criteria from 29 eligible windows/14 conversations, excluding
+47 known continuation conversations across 252 deduplicated conversations. Four
+draws each for full available dialogue and current-exchange-only: 64 logical Gemini
+2.5 Pro requests, at most 256 adapter attempts. The only input difference is earlier
+context. No recorded next messages or source identities enter prompts. The two
+observable help/work flags are independent, including both yes and explicit
+unclear; one blind pass, then complete-case paired binary Brier plus all coverage
+and exclusions. No tuning, replacement draws, automatic adoption or second batch.
+The portable grouped-message UI and strict offline scorer are implemented; 12
+related tests and the private future-exclusion/no-resend/package canary check pass.
+Independent pre-freeze audit passed; 38 preparation hashes verify. Dispatch was
+rejected by automatic approval review before process creation: private real-student
+payloads require exact-payload authorization to Gemini beyond the standing grant.
+No requests or outputs exist. Preserve `send-blocked.json` and exact `disclosure.md`;
+do not retry indirectly. The next required input is this specific send approval,
+then the one blind coding pass. This supersedes older pending-benchmark statements
+below; the separate incomplete six-case history ablation remains paused. These
+audited same-course exports cannot establish a student-separated/pristine holdout,
+notebook action fidelity, learning or transfer. The existing notebook engine and
+all prior artifacts remain unchanged. Keep draft PR #25 open and unmerged.
+
 The prepared third task has now run once under `multi-task-history-v1/run-plan.json`:
 quiet code edit -> requested passing check at float 0.4 -> chosen no-reply. Three
 student requests, zero generated tutor replies and one container check; three of
@@ -16,8 +41,9 @@ was accepted on reconsideration with that evidence; preserve rejection and audit
 No rerolls, labels or human ratings. This closes the authored continuity checkpoint.
 Minchan asked whether progress is concrete: distinguish the functioning simulation
 prototype from unvalidated behavioral fidelity. The recommended next milestone is
-a fixed recorded-behavior comparison against a generic baseline. No new benchmark
-protocol, threshold, extra model run or labeling batch has been approved or launched.
+a fixed recorded-behavior comparison against a generic baseline. Its then-pending
+recommendation is superseded by the frozen, send-blocked comparison above. No model
+requests have been launched for that comparison.
 
 The multi-task history extension is complete. New `notebook_next_task` handoffs
 retain a flat oldest-first `earlier_encounters` list plus the immediate
