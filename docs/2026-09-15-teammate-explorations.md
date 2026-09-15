@@ -1,27 +1,36 @@
-# Two parallel explorations
+# Two hands-on repo explorations
 
-These are optional inputs for later decisions. Our simulator and logging work
-continues independently; neither exploration is a prerequisite for implementation.
+Both tasks can happen on separate branches while the main simulator and logger
+work continues. Their results are useful additions, not prerequisites.
 
-## 1. What can we learn from other simulated-student projects?
+## 1. Try new exercises with the existing simulated student
 
-Explore papers, demos, or tools that try to simulate learners or human behavior.
-Follow whatever seems interesting: how they represent differences between people,
-use memory, model mistakes, or decide whether the simulation is believable.
+Use the current student runner to try a couple of small exercises beyond the
+examples we've already used. Stay within its table/one-cell/scalar-result setup;
+counting a particular category or calculating a proportion could be starting points.
+Explore what kinds of tasks it handles, where the student's behavior gets strange,
+and what is awkward about setting up an exercise.
 
-Bring back a few ideas worth borrowing, assumptions worth questioning, or examples
-that changed how you think about our project. This can be informal; it does not
-need to become a comprehensive literature review.
+Bring back runnable examples and a short walkthrough of anything interesting.
+You can use invented tasks and data, so this doesn't depend on access to the
+private student dataset. Keep experiments in new session folders.
 
-## 2. What would educators actually want to try with simulated students?
+Start with `src/agents/notebook_student.py`, `tests/test_notebook_student.py`,
+`tests/test_task_evaluation.py`, and the
+[task setup guide](2026-09-14-task-portability.md).
 
-Imagine a few situations where an educator or researcher could use this tool.
-What teaching decision would they experiment with? What would they want to see
-in the student's behavior, and what would make the result useful?
+## 2. Make a small Marimo viewer for a simulated student's session
 
-Feel free to sketch an interaction, talk with someone, or play with a small Marimo
-toy example. We're interested in possibilities for the eventual experience;
-none of these ideas needs to become a production feature yet.
+Use the repo's saved-session loader and replay code to explore how a simulation
+could be easier to follow in Marimo. What would help you understand what happened:
+stepping through actions, seeing code diffs, following tutor messages, or comparing
+work before and after a check? Pick the view that seems most useful and try it.
 
-Starting points: our [project recap](2026-09-15-simulation-progress-summary.md)
-and [Marimo direction](2026-09-15-marimo-and-observation-contract.md).
+Build around an invented session using the existing test patterns, or a saved
+session available locally. Keep this first viewer read-only and reuse the loader,
+so exploring the display doesn't require changing the runner or making model calls.
+A small working prototype and your observations would be useful.
+
+Start with `src/eval/notebook_replay.py`, `src/agents/tutor_context.py`,
+`tests/test_notebook_replay.py`, and the
+[replay guide](2026-09-14-offline-scoring-and-replay.md#saved-simulation-replay).
