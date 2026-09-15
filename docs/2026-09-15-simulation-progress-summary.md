@@ -29,7 +29,7 @@ The main achievements across this chat are:
   inspected; two permit cautious positional comparisons, showing one and four
   changed code cells. The third has unresolved alignment.
 - **The work is reproducible.** Code, tests and research decisions live in the
-  isolated `codex/episode-pilot` worktree and draft PR #25. Private student data
+  isolated `codex/episode-pilot` worktree and PR #25. Private student data
   stays outside Git; saved inputs and results are hash-checked.
 
 The strongest measured finding is that the older chat generator often submitted
@@ -48,7 +48,7 @@ course notebooks. Small exposed samples, one completed review at each relevant
 stage and limited course coverage do not establish annotation reliability,
 population fidelity, persistent learner traits or improved learning outcomes.
 
-The immediate evaluation target is the **two-example next-capture work forecast**:
+The completed development evaluation is the **two-example next-capture work forecast**:
 give the model the initial notebook and first tutor exchange, predict net source
 at a later eligible recorded capture, and compare missed/unnecessary changes with
 an unchanged-work baseline. All 112 initial code positions are eligible; future
@@ -70,11 +70,19 @@ two of five observed changed positions, with six extra changes and three misses;
 one changed source matched exactly. This is a completed development result, not
 correctness or general student-fidelity evidence. The fixed batch is closed.
 
-Beyond that development check, the priority is one finite fidelity study with a
-fixed dataset, baseline, metric and stopping rule. Broader claims need evidence
-across students/tasks and eventually courses. Exact action-sequence claims need
-better observations at chat/run boundaries. More agreeable examples alone will
-not close those gaps.
+The subsequent [observation-window audit](2026-09-15-observation-window-readiness.md)
+found three additional recorded tutor replies before one target capture, plus a
+later linked student query in the other example. Neither pair establishes the
+same question throughout. The net-state scores remain descriptive results; they
+cannot diagnose a one-turn action policy or isolate a tutor effect. Changed-cell
+counts also measure net differences, not student effort.
+
+The next engineering priority is a common observation contract for real and
+simulated sessions: task/version, cell identity, work revision, tutor boundary,
+and revision-bound checks. Verify whether the logger already retains those
+records before proposing changes. One replayable recorded example with the
+bindings is the acceptance criterion before a next-action fidelity study.
+This audit closes without new model calls, labels, or prompt tuning.
 
 The architecture is an LLM choosing open-ended messages or code within a stateful
 runner. It is not a fitted giant decision tree or transition matrix. The research

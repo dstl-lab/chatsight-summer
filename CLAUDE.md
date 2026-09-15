@@ -2,6 +2,21 @@
 
 ## Current implementation focus (2026-09-15)
 
+The offline observation-window audit is COMPLETE; see
+`docs/2026-09-15-observation-window-readiness.md`. Same-notebook capture comparisons
+are possible, but same-question identity and next-action endpoints are unverified.
+Pair3 includes three later tutor replies outside the forecast prompt; pair2 has
+at least one later linked student query. Net-state forecast results remain valid
+within their stated conditional scope and unchanged; do not tune or rerun them.
+No new DB/model calls, human labels or simulator changes. Next engineering work
+should verify a common real/simulated observation contract before a fidelity study.
+Minchan explicitly authorized merging PR#25 if ready; this supersedes all older
+keep-draft/unmerged instructions below. Full suite: 371 passed, two optional
+container tests skipped; three Node checks pass; independent code reviews found
+no blockers. Main's organization rule requires one approving GitHub review and
+squash merge; do not bypass it. Preserve this worktree's private evidence.
+All older preparation/approval/merge-status entries below are historical.
+
 The fixed V2 next-capture work run is now COMPLETE; see
 `docs/2026-09-15-next-visit-work-v2-results.md`. Minchan explicitly approved the new
 two-request/eight-attempt cap. The separate explicit-approval-response.json binds
