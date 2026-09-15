@@ -2,6 +2,19 @@
 
 ## Current implementation focus (2026-09-15)
 
+The prepared teaching pair has now run once per condition under the frozen
+`teaching-pair-v1/run-plan.json`: six student decisions/two follow-up tutor replies
+maximum per condition, same policy/reference, A then B, no rerolls. Both used three
+student decisions: identical quiet source edit -> requested pass at float 0.5 ->
+chosen no-reply. Six logical model requests and two actual container checks total;
+physical provider attempts are unknown. Neither condition chatted, so no tutor
+reply was generated and no API reference was delivered. Three decisions remained
+per student. Reports and static replays preserve both outcomes. Exact offline
+replay and 49 earlier artifact hashes verify; no labels or production code changed.
+This is an end-to-end authored comparison mechanism, not evidence of teaching
+equivalence, learning or behavioral fidelity. Stop at this fixed report; do not
+rerun to obtain a difference. See `docs/2026-09-15-teaching-pair.md` for results.
+
 The next bounded engineering increment is complete: `notebook_teaching_pair`
 prepares two alternative initial tutor replies using the unchanged saved-student
 engine. Shared task/work/prior dialogue/evaluation/budget remain identical; only
@@ -9,10 +22,10 @@ the final tutor text differs in the student prompts. Private branch identities
 and staged publication isolate checks and prevent a partially prepared pair.
 This does not fork a progressed learner. Existing student/tutor/lesson APIs can
 continue each child. See `docs/2026-09-15-teaching-pair.md` for commands and limits.
-An authored hint-versus-worked-answer pair is prepared under ignored
-`data/episode-pilot/teaching-pair-v1/`; no generated actions or checks have run.
+An authored hint-versus-worked-answer pair was prepared under ignored
+`data/episode-pilot/teaching-pair-v1/`; its later execution is recorded above.
 Related suite: 31 passed. Independent review found no concrete issue. No new
-labeling or model batch, production engine edits, or old trace changes occurred.
+labeling, production engine edits, or old trace changes occurred during setup.
 
 Minchan explicitly directed continuation with one completed review because the
 second will be delayed. This supersedes the two-form waiting condition below and
