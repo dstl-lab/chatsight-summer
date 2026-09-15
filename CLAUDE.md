@@ -2,6 +2,23 @@
 
 ## Current implementation focus (2026-09-15)
 
+The fixed V2 next-capture work run is now COMPLETE; see
+`docs/2026-09-15-next-visit-work-v2-results.md`. Minchan explicitly approved the new
+two-request/eight-attempt cap. The separate explicit-approval-response.json binds
+seven unchanged artifacts and precedes both requests; prior inferred authorization
+and rejection remain preserved. Two logical requests/two adapter attempts yielded
+two valid forecasts. Pair2: observed1 changed cell, predicted7, TP1/FP6/FN0/exact0.
+Pair3: observed4, predicted1, TP1/FP0/FN3/exact1. Unchanged baseline misses1/4 with
+no extra edits. All58/54 code positions were forecastable. No correctness tests,
+chat, execution, labels, replacements or exclusions. Independent raw-cell counts,
+approval/source pins and exact score replay pass; V1 failures and earlier notebook/
+help-work artifacts remain unchanged. These two exposed positional comparisons
+show uneven work-extent/location forecasts, not action-policy fidelity, learning
+or a general baseline ranking. Close the batch with its report: no further review,
+rerolls, prompt tuning or automatic model runs. A future fidelity study must fix
+its observation boundary, sampling and baseline before generation. Keep PR#25
+draft/unmerged. The older pending V2 entries below are historical.
+
 The corrected next-capture schema now passes a live authored smoke check:
 one logical Gemini request/one adapter attempt, expected edit received and locally
 validated, no code execution. See `docs/2026-09-15-next-visit-work-v2.md` and ignored

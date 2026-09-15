@@ -62,9 +62,13 @@ compatibility error; neither returned a forecast. I had missed an existing Gemin
 schema convention in the new helper. That omission is now corrected offline, with
 17 tests passing. The failed run remains preserved and has no behavioral score.
 A subsequent authored API smoke check succeeded on its first adapter attempt, so
-the specific format issue is now verified fixed live. A separate V2 of the same
-two real-data examples is prepared. Automatic approval review requires explicit
-permission for that new batch; no V2 real-data requests have been made.
+the specific format issue is now verified fixed live. After explicit permission
+for the separate V2, both real-data forecasts completed on their first adapter
+attempts. One predicted seven changed code cells where
+one changed; the other predicted one where four changed. Together they overlapped
+two of five observed changed positions, with six extra changes and three misses;
+one changed source matched exactly. This is a completed development result, not
+correctness or general student-fidelity evidence. The fixed batch is closed.
 
 Beyond that development check, the priority is one finite fidelity study with a
 fixed dataset, baseline, metric and stopping rule. Broader claims need evidence
