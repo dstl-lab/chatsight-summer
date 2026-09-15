@@ -2,6 +2,20 @@
 
 ## Current implementation focus (2026-09-15)
 
+A grounded local-task continuation is PREPARED, NOT SENT, in
+data/episode-pilot/grounded-chat-v1/. Case 6 is the first eligible saved handoff
+after excluding closed/missing-task/completed-request cases 1-5. The recorded
+tutor explicitly describes extracting three first-row values into a list; the
+cached student submission implements that operation. This grounds a local task,
+not the full assignment or actual data/execution. Supply the frozen brief code
+feedback, then allow one new Gemini 2.5 Pro decision, maximum four attempts.
+The separate session has one reused decision and one remaining. Exact prompt
+(4,467 characters), tutor reply, grounding record and 224 pins are frozen.
+Prior sessions and the completed clarification stay intact. No production code,
+prompt revision, new labels or rerolls. See frozen docs/2026-09-15-grounded-chat.md.
+Handle actual dispatch review for this new private scope; the case-1 approval
+does not claim exact approval of this payload. Stop after one outcome/error.
+
 The one saved-chat continuation is COMPLETE and CLOSED under
 data/episode-pilot/chat-clarification-v1/. After the initial automatic-review
 rejection, Minchan explicitly replied "Yes, I approve" to the exact private
