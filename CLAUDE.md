@@ -2,6 +2,103 @@
 
 ## Current implementation focus (2026-09-15)
 
+The first existing-data baseline is COMPLETE. `src/eval/retrieval_baseline.py`
+retrieves the recorded next message from a train-only TF-IDF prefix library;
+query targets are excluded, conversation/known-learner overlaps rejected, and
+blank messages/no lexical match kept distinct. Run with
+`python -m src.eval.retrieval_baseline INPUT.json OUTPUT.json` (create-only output).
+The frozen protocol is docs/2026-09-15-historical-response-baseline.md; leave that
+file unchanged because the private run pins it. Results/inputs/references and
+verification are in ignored data/episode-pilot/historical-response-baseline-v1/.
+1179 examples from156 conversations supplied29 responses for29 separate query
+conversations, excluding all55 minimum known continuation-exposed conversations
+from queries. All source windows and joins independently reproduce. Length MAE
+381.586 versus74.172 for the constant train-median35-character baseline; one7594
+error contributes68.6% of total retrieval error. This is a narrow mechanical
+diagnostic, not help/work coding, contextual appropriateness or improved fidelity.
+374 tests pass, two optional container tests skip; a full authored-harness future
+mutation leaves split, inputs and predictions unchanged. No model/DB calls,
+labels, prompt tuning or changes to old benchmark evidence. Stop this fixed run;
+the next model candidate/comparison requires its own frozen decision, not automatic
+rerolls. A baseline now exists; repeating its construction is not a new milestone.
+
+Minchan corrected the main priority: the next quarter is not imminent, so build
+and evaluate simulated students with the data already available. Future logging,
+deployment and new collection are NOT prerequisites for the main research flow.
+The completed logging PR is a separate supporting improvement. This supersedes
+older statements below that put collector verification before all further
+simulator work; that verification gates claims about newly logged data only.
+
+Reuse the existing historical chat prefixes, captured-work initialization,
+continuation/action helpers and saved-session machinery. Do not repeat the
+already completed three-action historical notebook demonstration or build another
+importer. The next development priority is the known excess-work/narration
+communication mismatch, with a simple baseline and a fixed comparison on what
+historical records actually observe. Prior exposed examples may inform development
+but are not a fresh holdout. Keep completed help/work and notebook forecast batches,
+labels, prompts and results intact; any changed model is a separate candidate.
+No exhaustive label taxonomy, repeated plausibility review, or invented execution/
+stop/learning ground truth. New private-data model sends still need their exact
+scope handled separately; this priority correction itself sends nothing.
+See the current-direction note in docs/2026-09-15-simulation-progress-summary.md.
+
+### Completed logging work (separate from the main simulation flow)
+
+Minchan approved the future logging implementation with "Let's do it" after the
+coding-assistant tracking comparison. Implemented in generalized tutor PR #11
+https://github.com/dstl-lab/jupyterlab-ai-tutor/pull/11 at `adff528` (initial `3843d12`), separate persistent
+worktree ../tutor-request-logging on codex/request-work-logging. See
+docs/2026-09-15-request-work-logging.md. Streamed requests retain exact work/context,
+request IDs, source hashes and native cell IDs; responses/failures join by request
+ID. Execution records bind submitted code to kernel message IDs and reply+idle,
+with bounded text, qualified grader heuristics and explicit incomplete outcomes.
+20 frontend unit tests, two browser tests, TS/extension build, changed-file
+lint/format and independent reviews pass. The browser test uses invented work and
+a real local Python kernel with scripted tutor/intercepted collector; source-bound
+output and two distinct request snapshots verified. Private receipts/logs are in
+data/episode-pilot/tutor-logging-integration-v1. Logging remains best effort; no
+deployed retention claim. No model/DB calls, new ratings, historical reruns or
+deployment. Main/initial PR startup failure traced to Tornado6.5.9 versus Jupyter
+Server2.21.0; CI-only bound restores local startup, runtime requirements unchanged.
+All six PR checks now pass; PR #11 is ready for required human review, unmerged and
+undeployed. User asked about latency: serialization/copy/hash precede
+dispatch, logging uploads asynchronous; latency remains unmeasured and needs a
+representative deployment check. One approving GitHub review is required.
+Implementation/PR approval does not authorize starting real collection.
+For use of future logging: review the concrete PR, then verify an invented example
+through an approved installation/collector. Existing-data simulation proceeds
+independently. The
+earlier source-audit-only/proposed status immediately below is historical.
+
+Main-flow source audit located the actual lab tutor/logger repositories; see
+`docs/2026-09-15-logged-work-boundary.md`. Old DSC10 client at3eab46cd and pre-April
+8f8957f0 send sanitized notebook each request but persist source only on the first
+completed turn, re-reading it after streaming. New generalized client7ffe89e has
+the same limits. Sanitization omits native cell IDs; grader events lack request/
+execution/source bindings. Collector078e54cd stores arbitrary payload unchanged.
+No durable per-turn notebook archive found in the inspected old backend; deployed
+versions/external traces remain unverified. Historical captures are response-time
+work, not verified exact tutor-request inputs. Preserve all old results and pins.
+A minimal future change would capture exact request-time work per turn with shared
+request IDs, schema/client version and retained cell IDs; it is proposed only.
+No upstream/DB/model/UI change. Minchan says assume the two teammate tasks handed
+off: new runner exercises and a read-only Marimo viewer. Do not duplicate them;
+continue core work independently. Scope for future-session logging needs a decision.
+
+PR#25 is MERGED at 35ae189; continuation branch is codex/observation-contract
+in the same isolated worktree. Preserve its ignored historical research evidence.
+Minchan explicitly selected MARIMO for the eventual educator/researcher simulation
+workspace, motivated by Python source and readable diffs. See
+`docs/2026-09-15-marimo-and-observation-contract.md` and the two open-ended teammate
+briefs in `docs/2026-09-15-teammate-explorations.md`. No UI implementation or new
+Marimo dependency yet. Keep explicit student/check actions distinct from reactive
+UI reruns. A bounded local source search found consumers/parsers but no deployed
+tutor emitter/version; real task/revision/check bindings remain unverified.
+The next evidence needed is one replayable recorded example bound to that logger
+version, or a precise account of the missing fields. No new models or labels.
+The new-branch baseline passed371 tests, two optional container tests skipped.
+The older PR#25 merge/review status below is historical and superseded.
+
 The offline observation-window audit is COMPLETE; see
 `docs/2026-09-15-observation-window-readiness.md`. Same-notebook capture comparisons
 are possible, but same-question identity and next-action endpoints are unverified.

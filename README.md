@@ -20,6 +20,10 @@ are never compared or mixed.
 **Read `CLAUDE.md` first** — it carries the rules (classifier parity, snapshot immutability,
 blind measurement, no student data in git) that every claim in this project depends on.
 
+The eventual educator/researcher workspace will use **Marimo**, with Python source
+and readable diffs. See the [UI direction and observation work](docs/2026-09-15-marimo-and-observation-contract.md);
+the current saved-student commands remain the implemented interface.
+
 ## Running a saved student
 
 The [saved-student workflow](docs/2026-09-14-continuing-student.md) initializes a task

@@ -1,5 +1,26 @@
 # Separate task evaluation from student actions
 
+## TL;DR — setting up a new task
+
+Give the existing student a small table exercise, such as counting categories or
+calculating a proportion. The current runtime supports **one editable code cell,
+one string column, and one scalar answer**.
+
+1. Prepare three files: **task JSON** with instructions, initial code and dialogue
+   ending in a tutor reply; **activity JSON** with the table data and declared
+   runtime; **evaluation JSON** with the expected answer, e.g. `{"expected": 0.5}`.
+   The expected answer stays out of the student/tutor prompts.
+2. Create a **new session folder** using `notebook_student create` with `--task`,
+   `--activity` and `--evaluation-file`. The full command is
+   [below](#use-a-different-scalar-task).
+3. Use `step --send` to generate actions and `show` to inspect the saved state.
+   When it reaches `awaiting-tutor`, supply a reply with `--tutor-file` on the
+   next step. See the [runner guide](2026-09-14-continuing-student.md#run-the-student).
+
+Live steps need the Python dependencies and a Gemini API key; requested checks
+need local Docker and the declared image. `show` works offline. Expected values
+must match both value **and type**: `1`, `1.0` and `true` are different answers.
+
 Minchan asked how the current implementation becomes generalizable. Saving a
 student and supplying a version-matched tutor reference makes an interaction
 reusable, but does not establish transfer of student behavior. The immediate
