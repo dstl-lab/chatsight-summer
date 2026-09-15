@@ -2,6 +2,20 @@
 
 ## Current implementation focus (2026-09-15)
 
+PR#25 is MERGED at 35ae189; continuation branch is codex/observation-contract
+in the same isolated worktree. Preserve its ignored historical research evidence.
+Minchan explicitly selected MARIMO for the eventual educator/researcher simulation
+workspace, motivated by Python source and readable diffs. See
+`docs/2026-09-15-marimo-and-observation-contract.md` and the two open-ended teammate
+briefs in `docs/2026-09-15-teammate-explorations.md`. No UI implementation or new
+Marimo dependency yet. Keep explicit student/check actions distinct from reactive
+UI reruns. A bounded local source search found consumers/parsers but no deployed
+tutor emitter/version; real task/revision/check bindings remain unverified.
+The next evidence needed is one replayable recorded example bound to that logger
+version, or a precise account of the missing fields. No new models or labels.
+The new-branch baseline passed371 tests, two optional container tests skipped.
+The older PR#25 merge/review status below is historical and superseded.
+
 The offline observation-window audit is COMPLETE; see
 `docs/2026-09-15-observation-window-readiness.md`. Same-notebook capture comparisons
 are possible, but same-question identity and next-action endpoints are unverified.

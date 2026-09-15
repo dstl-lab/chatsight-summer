@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-15 | `2026-09-15-marimo-and-observation-contract.md` — Marimo direction and observation-source discovery | Marimo selected for future UI; emitter/deployment bindings still unverified; two exploratory teammate briefs prepared |
 | 2026-09-15 | `2026-09-15-observation-window-readiness.md` — define what existing notebook intervals measure | Offline audit complete: conditional net state is observable; same-task next action and causal tutor effects are not established |
 | 2026-09-13 | `2026-09-13-fixed-communication-evaluation.md` — fixed cases and one communication review batch | Review complete: all candidates plausible; primary action mix differs; history-use diagnostic proposed, no generator change |
 | 2026-09-13 | `2026-09-13-initial-work-sequence.md` — short action sequence from recovered initial work | Three quiet edits accepted as plausible; imposed cap remains distinct from a student stop; review complete |
