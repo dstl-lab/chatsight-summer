@@ -156,7 +156,8 @@ def test_classifier_hash_golden_regression():
     h = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
     # re-vintaged 2026-08-10 (3rd): evidence-span instruction is
     # prompt-visible (rule 2)
-    assert h == "8b2243f4224a"
+    # 2026-09-10 (4th): per-turn sequence derivation and window pin.
+    assert h == "68acfc7d4fb2"
 
 
 def test_calls_run_concurrently():
@@ -386,7 +387,7 @@ def test_v1_golden_hash_unchanged_and_v2_hash_moves():
     # re-vintaged 2026-08-09 (2nd): sequence rendering + qref patterns
     # folded into hash (rule 2)
     h1 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
-    assert h1 == "8b2243f4224a"          # v1 path: evidence vintage (3rd)
+    assert h1 == "68acfc7d4fb2"          # v1 path: sequence-window vintage (4th)
     v2 = _v2_profile()
     h2 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE, profile2=v2)
     assert h2 != h1
@@ -436,7 +437,11 @@ def test_mechanical_facets_copied_not_judged():
     assert legacy.attempted is None and legacy.error_verified is None
 
 
-def test_hash_covers_sequence_rendering():
+def test_hash_covers_sequence_rendering_and_derivation(monkeypatch):
+    import src.labeling.draft as draft
     HASH_BEFORE_SEQUENCE = "840c1db2c5ad"
     h1 = classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE)
     assert h1 != HASH_BEFORE_SEQUENCE   # vintage moved, deliberately
+    assert h1 != "8b2243f4224a"  # before the per-turn sequence-window fix
+    monkeypatch.setattr(draft, "SEQUENCE_DERIVATION_VERSION", "changed")
+    assert classifier_hash(SCHEMA, "gemini-2.5-flash", PROFILE) != h1

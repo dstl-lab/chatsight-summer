@@ -7,16 +7,19 @@ with model-uncertainty and embedding-diversity strata so boundary and rare
 cases surface."""
 import random
 from collections import defaultdict
+from datetime import timedelta
 
 from pydantic import BaseModel
 
 from src.ingest.rawlog import Conversation, Turn
-from src.ingest.sequences import AutograderRun
+from src.ingest.sequences import AutograderRun, BEFORE_MIN
 from src.labeling.qref import extract_question_ref
 
 # Hash-visible context parameter (2026-08-06 memo): folded into
 # classifier_hash via draft.classifier_hash. Changing it is a new classifier.
 WINDOW_TURNS = 6
+# Hash-pinned derivation semantics, distinct from rendered prompt wording.
+SEQUENCE_DERIVATION_VERSION = "prior-window-v2"
 
 # Latency buckets (2026-08-07 context-timing spec): elapsed time from the
 # nearest preceding tutor turn to the student turn. Mechanical, computed
@@ -111,22 +114,23 @@ def _sequence_fields(conv: Conversation, turn: Turn,
     fields["mode"] = turn.mode
     ref = extract_question_ref(turn.text)
     fields["question_ref"] = ref
-    conv_runs = runs.get(conv.conv_id, [])
-    scoped = ([r for r in conv_runs
-              if r.grader_id == ref or r.grader_id.startswith(ref + "_")]
-              if ref else conv_runs)
-    fields["seq_granularity"] = ("question" if ref and scoped
-                                 else "notebook")
     if turn.at is None:
         # Timing unknown, not "no prior run" — leave pre_pattern/last_run_*
         # at their defaults ("" / None) rather than asserting ask-first.
         return fields
-    pool = scoped if ref and scoped else conv_runs
-    prior = [r for r in pool if r.at <= turn.at]
-    if not prior:
+    # Scope only on this turn's eligible events: future/expired matching
+    # runs must not change an earlier turn's state or granularity.
+    start = turn.at - timedelta(minutes=BEFORE_MIN)
+    prior = [r for r in runs.get(conv.conv_id, []) if start <= r.at <= turn.at]
+    scoped = ([r for r in prior
+               if r.grader_id == ref or r.grader_id.startswith(ref + "_")]
+              if ref else [])
+    fields["seq_granularity"] = "question" if scoped else "notebook"
+    pool = scoped or prior
+    if not pool:
         fields["pre_pattern"] = "ask-first"
     else:
-        last = prior[-1]
+        last = max(pool, key=lambda r: r.at)
         fields["pre_pattern"] = ("pass-then-ask" if last.success
                                  else "fail-then-ask")
         fields["last_run_minutes"] = (turn.at - last.at).total_seconds() / 60

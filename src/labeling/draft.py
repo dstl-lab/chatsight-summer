@@ -22,7 +22,8 @@ from src.labeling.course import CourseProfile
 from src.labeling import qref
 from src.labeling.llm import Generate
 from src.labeling.sampler import (DELAYED_S, RAPID_S, WINDOW_TURNS,
-                                  WORKING_S, SampledMessage)
+                                  WORKING_S, SEQUENCE_DERIVATION_VERSION,
+                                  SampledMessage)
 from src.labeling.schema import LabelDef, LabelSchema
 
 
@@ -405,6 +406,7 @@ def classifier_hash(schema: LabelSchema, model: str,
         "forms=" + ",".join(FORM_TAXONOMY),
         "move=" + ",".join(MOVE_TAXONOMY),
         f"latency=rapid<{RAPID_S},working<{WORKING_S},delayed<{DELAYED_S}",
+        f"sequence={SEQUENCE_DERIVATION_VERSION},prior_minutes={BEFORE_MIN},inclusive",
         _render_sequence(_fail_msg),
         _render_sequence(_ask_msg),
         _render_sequence(_nodata_msg),

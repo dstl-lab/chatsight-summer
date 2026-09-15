@@ -194,6 +194,7 @@ def test_sequence_fields_unknown_timing_leaves_pre_pattern_default():
     assert m.last_run_success is None
     assert m.last_run_grader == ""
     assert m.last_run_minutes is None
+    assert m.seq_granularity == ""
     assert m.snapshot_traceback is True
     assert m.question_ref != ""  # timestamp-independent field still fills
 
@@ -225,6 +226,67 @@ def test_grader_narrowing_does_not_prefix_mislink():
     # last (most recent, in-order) scoped run must be q1_1_2, not q1_10
     assert fields["last_run_grader"] == "q1_1_2"
     assert fields["last_run_success"] is False
+
+
+@pytest.mark.parametrize("irrelevant_minutes", [1, -46])
+def test_sequence_scope_ignores_future_and_expired_matching_runs(irrelevant_minutes):
+    from datetime import timedelta
+    from src.ingest.sequences import AutograderRun
+    from src.labeling.sampler import _sequence_fields
+    conv = _timed_conv_for_sequences()
+    turn = conv.turns[0]
+    prior = AutograderRun(at=turn.at - timedelta(minutes=4),
+                         grader_id="q2_1", success=False)
+    runs = {conv.conv_id: [prior]}
+    before = _sequence_fields(conv, turn, runs, {})
+    assert before["pre_pattern"] == "fail-then-ask"
+    assert before["seq_granularity"] == "notebook"
+    runs[conv.conv_id].append(AutograderRun(
+        at=turn.at + timedelta(minutes=irrelevant_minutes),
+        grader_id="q1_1", success=True))
+    assert _sequence_fields(conv, turn, runs, {}) == before
+
+
+@pytest.mark.parametrize("offset_seconds,pattern", [
+    (-2701, "ask-first"), (-2700, "fail-then-ask"),
+    (0, "fail-then-ask"), (1, "ask-first"),
+])
+def test_sequence_window_is_inclusive_and_relative_to_each_turn(offset_seconds, pattern):
+    from datetime import timedelta
+    from src.ingest.sequences import AutograderRun
+    from src.labeling.sampler import _sequence_fields
+    conv = _timed_conv_for_sequences()
+    turn = Turn(index=2, role="student", text="stuck on q1_1", student_index=1,
+                at=conv.turns[0].at + timedelta(hours=2))
+    conv.turns.append(turn)
+    runs = {conv.conv_id: [AutograderRun(
+        at=turn.at + timedelta(seconds=offset_seconds),
+        grader_id="q1_1", success=False)]}
+    fields = _sequence_fields(conv, turn, runs, {})
+    assert fields["pre_pattern"] == pattern
+    assert fields["seq_granularity"] == (
+        "notebook" if pattern == "ask-first" else "question")
+    if pattern == "ask-first":
+        assert "last_run_success" not in fields
+    else:
+        assert fields["last_run_minutes"] == -offset_seconds / 60
+
+
+def test_sequence_latest_run_uses_time_not_input_order():
+    from datetime import timedelta
+    from src.ingest.sequences import AutograderRun
+    from src.labeling.sampler import _sequence_fields
+    conv = _timed_conv_for_sequences()
+    turn = conv.turns[0]
+    runs = {conv.conv_id: [
+        AutograderRun(at=turn.at - timedelta(minutes=1),
+                      grader_id="q1_1", success=True),
+        AutograderRun(at=turn.at - timedelta(minutes=4),
+                      grader_id="q1_1", success=False),
+    ]}
+    fields = _sequence_fields(conv, turn, runs, {})
+    assert fields["pre_pattern"] == "pass-then-ask"
+    assert fields["last_run_minutes"] == 1
 
 
 def test_defection_is_first_chatgpt_after_tutor_mode():

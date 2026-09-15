@@ -1,0 +1,30 @@
+// node tests/coaching_session.cjs — invented storyboard; no dependencies/network.
+// This fails if replay deletes an earlier branch or switching learners mixes responses.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const file = path.join(__dirname, '../src/eval/coaching_session.html');
+assert(fs.existsSync(file), 'The coaching storyboard page must exist');
+const script = fs.readFileSync(file, 'utf8').split('<script>')[1].split('</script>')[0];
+const context = vm.createContext({});
+vm.runInContext(script.slice(0, script.indexOf('// Connect the page.')), context);
+vm.runInContext('render = () => {};', context);
+vm.runInContext('chooseApproach(0); chooseApproach(1);', context);
+const before = vm.runInContext('JSON.stringify(state.branches)', context);
+assert.equal(vm.runInContext('state.branches.length', context), 2);
+vm.runInContext('tryAgain();', context);
+assert.equal(vm.runInContext('state.active', context), null);
+assert.equal(vm.runInContext('JSON.stringify(state.branches)', context), before);
+vm.runInContext("selectLearner('nori'); chooseApproach(2);", context);
+assert.equal(vm.runInContext('state.branches.length', context), 3);
+assert.equal(vm.runInContext('state.branches[2].learner', context), 'nori');
+assert.equal(vm.runInContext('CASES.nori.choices[2].reply', context), null);
+vm.runInContext('openBranch(1);', context);
+assert.equal(vm.runInContext('state.learner', context), 'tavi');
+assert.equal(vm.runInContext('state.active', context), 1);
+assert.equal(vm.runInContext('JSON.stringify(state.branches.slice(0, 2))', context), before);
+assert.throws(() => vm.runInContext('chooseApproach(99);', context), /Unknown approach/);
+assert.throws(() => vm.runInContext('openBranch(99);', context), /Unknown branch/);
+assert.equal(vm.runInContext('state.branches.length', context), 3);
+console.log('Coaching alternatives, learner separation and no-reply boundary passed');

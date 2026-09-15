@@ -1,0 +1,28 @@
+{
+  "description": "Invented arithmetic fixture only; no real students or generated forecasts.",
+  "classes": ["help", "code"],
+  "train": [
+    {"id":"train-1", "conversation_id":"train-conversation-1", "student_id":"train-student-1", "label":"help"},
+    {"id":"train-2", "conversation_id":"train-conversation-2", "student_id":"train-student-2", "label":"help"},
+    {"id":"train-3", "conversation_id":"train-conversation-3", "student_id":"train-student-3", "label":"help"},
+    {"id":"train-4", "conversation_id":"train-conversation-4", "student_id":"train-student-4", "label":"code"},
+    {"id":"train-unknown", "conversation_id":"train-conversation-5", "label":null, "exclusion_reason":"Invented unresolved reference"}
+  ],
+  "evaluation": [
+    {"id":"eval-1", "conversation_id":"eval-conversation-1", "student_id":"eval-student-a", "label":"code"},
+    {"id":"eval-2", "conversation_id":"eval-conversation-2", "student_id":"eval-student-a", "label":"help"},
+    {"id":"eval-3", "conversation_id":"eval-conversation-3", "student_id":"eval-student-b", "label":"help"},
+    {"id":"eval-error", "conversation_id":"eval-conversation-4", "student_id":"eval-student-c", "label":"code"},
+    {"id":"eval-unknown", "conversation_id":"eval-conversation-5", "label":null, "exclusion_reason":"Invented reviewer disagreement"},
+    {"id":"eval-stop", "conversation_id":"eval-conversation-6", "student_id":"eval-student-d", "label":"help"},
+    {"id":"eval-missing", "conversation_id":"eval-conversation-7", "label":"help"}
+  ],
+  "predictions": [
+    {"id":"eval-1", "status":"ok", "probabilities":{"help":0.2,"code":0.8}},
+    {"id":"eval-2", "status":"ok", "probabilities":{"help":0.6,"code":0.4}},
+    {"id":"eval-3", "status":"ok", "probabilities":{"help":0.5,"code":0.5}},
+    {"id":"eval-error", "status":"error", "reason":"Invented provider failure"},
+    {"id":"eval-unknown", "status":"ok", "probabilities":{"help":0.1,"code":0.9}},
+    {"id":"eval-stop", "status":"no-reply", "reason":"Invented model stop; not observed student silence"}
+  ]
+}

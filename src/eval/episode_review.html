@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Episode review</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172638;background:#f4f7fa;font-size:15px;line-height:1.5;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button,select{cursor:pointer}button{background:white;border:1px solid #b8c6d5;border-radius:6px;color:#18334f;padding:.55rem .9rem;min-height:42px}button:hover{background:#edf3fa}button:disabled{opacity:.48;cursor:default}button.primary{background:#205ab3;border-color:#205ab3;color:white}button.primary:hover{background:#16478e}:focus-visible{outline:3px solid #2471d1;outline-offset:3px}a{color:#1656a8}h1,h2,h3,p{margin:0}h1{font-size:1.65rem;line-height:1.3;font-weight:650;letter-spacing:-.025em}h2{font-size:1.2rem;line-height:1.4}h3{font-size:1rem}small,.muted{color:#55677a}.shell{max-width:1320px;margin:auto;padding:32px 30px 64px}header{margin-bottom:25px}.topline{display:flex;justify-content:space-between;gap:20px;align-items:start}.session{font-size:.88rem;margin-top:7px}.question{font-size:1.15rem;margin-top:18px;max-width:70ch}.navigation{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:15px 0;border-top:1px solid #d8e1ea;border-bottom:1px solid #d8e1ea;margin-bottom:24px}.progress{margin-right:auto;font-variant-numeric:tabular-nums}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 375px;gap:34px;align-items:start}.reading{min-width:0}.episode-meta{margin:7px 0 20px;font-size:.88rem;overflow-wrap:anywhere}.limitations{margin:20px 0;font-size:.88rem;color:#55677a}.limitations ul{padding-left:20px;margin:7px 0}.context{margin:20px 0;border-top:1px solid #d8e1ea;border-bottom:1px solid #d8e1ea;padding:13px 0}.context summary{cursor:pointer;font-weight:550}.context .turn{margin-top:18px}.turn{margin-bottom:22px;padding-left:18px;border-left:2px solid #c2cfdd}.turn.student{border-left-color:#4a7dbf}.turn-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:7px;font-size:.84rem;color:#52657a}.turn-head strong{color:#203c5b;font-size:.93rem}.turn-text{font-size:1.04rem;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere;max-width:73ch}.turn-id{font-size:.75rem;color:#617287}.legacy{margin-top:8px;font-size:.85rem;color:#634f16;background:#faf5e8;padding:7px 10px}.empty-followup{padding:16px 18px;border-left:2px solid #b9c7d4;background:#eaf0f6;color:#344c66;margin-bottom:24px}.draft{background:#edf3fb;border:1px solid #c7d8ee;border-radius:7px;margin:26px 0;padding:19px}.draft h2{font-size:1.05rem}.draft>p{font-size:.86rem;margin-top:4px;color:#4b617b}.draft-item{padding-top:16px}.draft-item p{font-size:.9rem;margin-top:5px}.draft blockquote{font-size:.9rem;margin:8px 0;padding-left:12px;border-left:2px solid #8daed6;white-space:pre-wrap;overflow-wrap:anywhere}.form-panel{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;background:white;border:1px solid #d4dfe9;border-radius:9px;padding:22px}.form-intro{font-size:.87rem;color:#55677a;margin:6px 0 12px}fieldset{border:0;border-top:1px solid #e0e6ed;margin:21px 0 0;padding:17px 0 0;min-width:0}legend{font-weight:650;font-size:.97rem;padding:0 6px 0 0}label{display:block;font-size:.84rem;font-weight:550;margin:12px 0 5px}select,textarea{width:100%;border:1px solid #b7c6d6;border-radius:5px;background:white;color:#172638;padding:9px;min-height:42px}textarea{resize:vertical;min-height:65px;line-height:1.5}.description{font-size:.85rem;color:#50647c;margin-top:7px}.evidence-row{border-left:2px solid #d6e1ee;padding-left:11px;margin-top:13px}.minor{font-size:.82rem;min-height:32px;padding:4px 8px;margin-top:8px}.remove{color:#78403b}.rationale{margin-top:13px}.form-footer{border-top:1px solid #dfe7ee;margin-top:22px;padding-top:15px;display:grid;gap:10px}.save-status{font-size:.85rem;min-height:1.5em}.save-status.error{color:#a12424}.completed{color:#246440}.fatal{border:1px solid #d7a6a6;background:#fff4f3;color:#8b2525;padding:20px;border-radius:6px}.hidden{display:none!important}.skip-link{position:absolute;left:12px;top:-80px;background:white;padding:12px;z-index:5}.skip-link:focus{top:12px}@media(max-width:900px){.workspace{grid-template-columns:minmax(0,1fr) 335px;gap:22px}.shell{padding:24px 20px}.form-panel{padding:17px}}@media(max-width:720px){.workspace{display:block}.form-panel{position:static;max-height:none;margin-top:28px}.shell{padding:22px 16px 40px}.topline{display:block}.topline>a{display:inline-block;margin-top:12px}.question{font-size:1.05rem}.progress{width:100%;margin-bottom:2px}.turn-text{font-size:1rem}.navigation{gap:8px}}
+
+/* Development review keeps decisions together and correction controls folded. */
+.development-review { --review-width: 420px; --review-gap: 32px; --page-pad: 30px; }
+.development-review .shell { padding-top: 20px; }
+.development-review header, .development-review .navigation { width: calc(100% - var(--review-width) - var(--review-gap)); }
+.development-review .topline > a { display: none; }
+.development-review header { margin-bottom: 12px; }
+.development-review .question { margin-top: 8px; }
+.development-review .navigation { padding: 10px 0; margin-bottom: 18px; }
+.development .workspace { grid-template-columns: minmax(0, 1fr) var(--review-width); gap: var(--review-gap); }
+.development .form-panel { position: fixed; top: 20px; bottom: 20px; right: max(var(--page-pad), calc((100vw - 1320px) / 2 + var(--page-pad))); width: var(--review-width); display: flex; flex-direction: column; padding: 0; overflow: hidden; max-height: none; border-radius: 8px; }
+.development .form-panel > h2 { padding: 16px 20px 0; }
+.development .form-intro { padding: 0 20px 10px; margin-bottom: 0; }
+.development #fields { min-height: 0; overflow-y: auto; padding: 0 20px; }
+.decision { padding: 10px 0; border-top: 1px solid #dce4ed; }
+.decision-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.decision-heading h3 { font-size: .86rem; font-weight: 550; color: #50647c; }
+.decision-status { font-size: .76rem; color: #52657a; }
+.decision-value { font-size: 1.08rem; font-weight: 650; margin-top: 2px; }
+.decision .description { font-size: .83rem; line-height: 1.45; margin-top: 4px; }
+.decision-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.decision-actions button { padding: 4px 10px; font-size: .83rem; min-height: 32px; }
+.decision-actions button[aria-pressed="true"] { background: #e8f1ed; color: #18503a; border-color: #8cb5a2; }
+.quote-details { font-size: .82rem; margin-top: 5px; }
+.quote-details summary, .review-note summary { cursor: pointer; color: #24568e; padding: 4px 0; }
+.quote-details blockquote { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 4px; border-left: 2px solid #9aadc3; padding-left: 11px; line-height: 1.6; }
+.quote-details a { font-size: .78rem; }
+.review-note { border-top: 1px solid #dce4ed; padding: 14px 0; font-size: .87rem; }
+.development .form-footer { flex-shrink: 0; margin: 0; padding: 12px 20px 16px; gap: 7px; background: #fff; box-shadow: 0 -3px 8px #17263808; }
+.development .save-status { font-size: .78rem; }
+.development #cannot-assess-episode { min-height: 32px; padding: 3px 6px; border: 0; color: #52657a; font-size: .8rem; }
+.turn { scroll-margin-top: 24px; }
+.turn:target { border-left-color: #b57a15; background: #fff8e9; }
+@media (max-width: 1050px) { .development-review { --review-width: 365px; --review-gap: 22px; } }
+@media (max-width: 900px) { .development-review { --page-pad: 20px; } }
+@media (max-width: 800px) {
+  .development .workspace { display: block; }
+  .development-review header, .development-review .navigation { width: auto; }
+  .development-review .topline > a { display: inline-block; }
+  .development .form-panel { position: static; width: auto; max-height: none; margin-top: 24px; }
+  .development #fields { overflow: visible; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#judgment-form">Skip to judgments</a>
+<div class="shell">
+  <header><div class="topline"><div><h1>Episode review</h1><p id="session" class="session muted">Loading local session…</p></div><a href="#judgment-form">Your judgments</a></div><p id="question" class="question"></p></header>
+  <div id="fatal" class="fatal hidden" role="alert"></div>
+  <main id="main" class="hidden">
+    <nav class="navigation" aria-label="Episode navigation"><div class="progress"><strong id="position"></strong><span id="completion" class="muted"></span></div><button id="previous" type="button">Previous</button><button id="next" type="button">Next episode</button></nav>
+    <div class="workspace"><section class="reading" aria-labelledby="episode-title"><h2 id="episode-title" tabindex="-1"></h2><p id="episode-meta" class="episode-meta muted"></p><details id="context" class="context"><summary id="context-title">Earlier context</summary><div id="context-turns"></div></details><div id="timeline"></div><aside id="draft" class="draft hidden" aria-label="Machine draft"></aside><details class="limitations"><summary>What this episode cannot show</summary><ul id="limitations"></ul></details></section>
+      <form id="judgment-form" class="form-panel" aria-labelledby="judgments-title"><h2 id="judgments-title">Your judgments</h2><p id="form-intro" class="form-intro">Describe only what is visible. Choose an explicit unknown when the evidence is insufficient. Drafts save as you work.</p><div id="fields"></div><div class="form-footer"><p id="save-status" class="save-status" role="status" aria-live="polite">No changes yet</p><button id="complete" class="primary" type="submit">Mark reviewed</button><button id="cannot-assess-episode" class="hidden" type="button">Cannot assess this episode</button><button id="retry" class="hidden" type="button">Retry save</button></div></form>
+    </div>
+  </main>
+</div>
+<script>
+"use strict";
+let session, index = 0, answer, clockStarted = null, elapsed = 0, dirty = false, version = 0, timer;
+let navigating = false, hasInteraction = false;
+let editing = {};
+let saves = Promise.resolve(true);
+const dimensions = {request: ["request", "student"], tutor_response: ["response", "tutor"], followup: ["followup", "student"]};
+const $ = id => document.getElementById(id);
+const node = (tag, text, className) => { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; };
+const pretty = value => (value || "").replaceAll("_", " ").replaceAll("-", " ");
+const currentEpisode = () => session.episodes[index];
+const timeNow = () => Math.round(elapsed + (clockStarted === null ? 0 : performance.now() - clockStarted));
+function runningClock() { if (!document.hidden && document.hasFocus() && clockStarted === null) clockStarted = performance.now(); }
+function pauseClock() { elapsed = timeNow(); clockStarted = null; }
+function setStatus(message, error = false) { $("save-status").textContent = message; $("save-status").classList.toggle("error", error); $("retry").classList.toggle("hidden", !error); }
+function edited() { hasInteraction = true; answer.complete = false; dirty = true; version++; updateReviewButton(); setStatus("Unsaved changes…"); clearTimeout(timer); timer = setTimeout(() => save(), 450); }
+function save() {
+  clearTimeout(timer);
+  if (!answer || !hasInteraction || !dirty) return saves;
+  const episodeId = answer.episode_id, capturedVersion = version;
+  const body = JSON.parse(JSON.stringify({...answer, elapsed_ms: timeNow()}));
+  saves = saves.then(async () => {
+    setStatus("Saving…");
+    try {
+      body.revision = session.reviews[episodeId]?.revision ?? 0;
+      const response = await fetch("/api/review", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+      const data = await response.json();
+      if (!response.ok) { const detail = Array.isArray(data.detail) ? data.detail.map(d => d.msg).join("; ") : data.detail; throw new Error(detail || "Save failed"); }
+      session.reviews[episodeId] = data.review;
+      if (answer.episode_id === episodeId && version === capturedVersion) {
+        dirty = false;
+        setStatus(data.review.complete ? "Review saved" : "Changes saved");
+        updateReviewButton();
+      }
+      updateProgress();
+      return true;
+    } catch (error) { dirty = true; setStatus(error.message + " Your changes are still on this page.", true); return false; }
+  });
+  return saves;
+}
+function updateProgress() {
+  $("position").textContent = `Episode ${index + 1} of ${session.episodes.length}`;
+  const count = Object.values(session.reviews).filter(review => review.complete).length;
+  $("completion").textContent = `  /  ${count} completed`;
+  $("previous").disabled = navigating || index === 0;
+  $("next").disabled = navigating || index === session.episodes.length - 1;
+  $("complete").disabled = navigating;
+  $("cannot-assess-episode").disabled = navigating;
+}
+function reviewAnswer(episode, saved) {
+  return saved ? JSON.parse(JSON.stringify({episode_id: saved.episode_id, judgments: saved.judgments,
+    instructor_action: saved.instructor_action, elapsed_ms: saved.elapsed_ms, complete: saved.complete,
+    workflow: saved.workflow || "manual"})) : {episode_id: episode.id, judgments: {},
+    instructor_action: {text: "", evidence: []}, elapsed_ms: 0, complete: false,
+    workflow: session.task === "development" ? "draft-review" : "manual"};
+}
+function hasDecision(dimension) {
+  const judgment = answer.judgments[dimension];
+  return Boolean(judgment?.assessment || (answer.workflow === "manual" && judgment?.value));
+}
+function updateReviewButton() {
+  if (session.task !== "development") {
+    $("complete").textContent = answer.complete ? "Reviewed · save again" : "Mark reviewed";
+    return;
+  }
+  const pending = Object.keys(dimensions).filter(d => !hasDecision(d));
+  const remaining = pending.length;
+  const next = index < session.episodes.length - 1 ? " & next" : "";
+  $("complete").textContent = remaining && pending.every(d => currentEpisode().annotation?.[d]) ? (remaining === 3 ? "Accept all" : "Accept remaining") + next : "Save review" + next;
+}
+function chooseAssessment(dimension, assessment) {
+  if (navigating) return;
+  const draft = currentEpisode().annotation?.[dimension];
+  const previous = answer.judgments[dimension];
+  if (assessment === "accepted" && !draft) return;
+  if (assessment === "cannot-assess") {
+    answer.judgments[dimension] = {value: null, evidence: [], rationale: previous?.assessment === "cannot-assess" ? previous.rationale : "", assessment};
+  } else {
+    const source = assessment === "changed" && previous?.value ? previous : draft;
+    answer.judgments[dimension] = {value: source?.value || null,
+      evidence: JSON.parse(JSON.stringify(source?.evidence || [])),
+      rationale: assessment === "changed" ? previous?.rationale || "" : "", assessment};
+  }
+  editing[dimension] = assessment !== "accepted";
+  edited(); showFields(currentEpisode());
+}
+async function finishReview() {
+  if (navigating) return;
+  if (session.task === "development") {
+    for (const dimension of Object.keys(dimensions)) {
+      if (!hasDecision(dimension) && currentEpisode().annotation?.[dimension]) chooseAssessment(dimension, "accepted");
+    }
+    if (Object.keys(dimensions).some(d => !hasDecision(d))) {
+      setStatus("Choose a label or Cannot assess for each item before saving.", true); return;
+    }
+  }
+  hasInteraction = true; answer.complete = true; dirty = true; version++;
+  if (session.task === "development" && index < session.episodes.length - 1) await navigate(1);
+  else await save();
+}
+function turnElement(turn, legacy = []) {
+  const article = node("article", undefined, "turn " + turn.role);
+  article.id = "turn-" + turn.id;
+  const header = node("div", undefined, "turn-head");
+  header.append(node("strong", turn.role === "student" ? "Student" : "Tutor"));
+  if (turn.phase) header.append(node("span", {request: "Request", response: "Response", followup: "Follow-up"}[turn.phase] || pretty(turn.phase)));
+  if (turn.at) { const timestamp = new Date(turn.at); header.append(node("time", Number.isNaN(timestamp.getTime()) ? turn.at : timestamp.toLocaleString())); }
+  header.append(node("span", "Turn " + turn.id, "turn-id"));
+  article.append(header, node("div", turn.text, "turn-text"));
+  const labels = legacy.filter(item => item.turn_id === turn.id).flatMap(item => item.labels);
+  if (labels.length) article.append(node("p", "Legacy labels: " + labels.join(", "), "legacy"));
+  return article;
+}
+function showDraft(episode) {
+  const root = $("draft"); root.replaceChildren();
+  root.classList.toggle("hidden", episode.condition !== "annotated" || session.task === "development");
+  if (episode.condition !== "annotated" || session.task === "development") return;
+  root.append(node("h2", "Machine draft"), node("p", "A draft for review, not human ground truth. Your judgments are saved separately."));
+  if (!episode.annotation) { root.append(node("p", "Draft not generated. You can still review the dialogue and record your judgments.")); return; }
+  for (const [dimension, rubric] of Object.entries(session.rubric)) {
+    const judgment = episode.annotation[dimension];
+    if (!judgment) continue;
+    const section = node("div", undefined, "draft-item");
+    section.append(node("h3", rubric.title + ": " + pretty(judgment.value)));
+    for (const evidence of judgment.evidence || []) section.append(node("blockquote", `“${evidence.quote}” (turn ${evidence.turn_id})`));
+    if (judgment.rationale) section.append(node("p", judgment.rationale));
+    root.append(section);
+  }
+}
+function labeledControl(parent, labelText, control, id) {
+  control.id = id;
+  const label = node("label", labelText); label.htmlFor = id;
+  parent.append(label, control);
+  return control;
+}
+function evidenceControls(parent, target, turns, prefix) {
+  const list = node("div"); parent.append(list);
+  const add = node("button", "Add supporting evidence", "minor"); add.type = "button";
+  add.disabled = turns.length === 0;
+  parent.append(add);
+  const renderEvidence = () => {
+    list.replaceChildren();
+    target.evidence.forEach((evidence, n) => {
+      const row = node("div", undefined, "evidence-row");
+      const select = node("select"); select.append(new Option("Choose a turn", ""));
+      for (const turn of turns) select.append(new Option(`${turn.role === "student" ? "Student" : "Tutor"} · ${turn.id}`, turn.id));
+      select.value = evidence.turn_id;
+      const quote = node("textarea"); quote.rows = 2; quote.value = evidence.quote;
+      labeledControl(row, "Evidence turn", select, `${prefix}-turn-${n}`);
+      labeledControl(row, "Exact quote (shorten if helpful)", quote, `${prefix}-quote-${n}`);
+      select.addEventListener("change", () => {
+        evidence.turn_id = select.value;
+        evidence.quote = turns.find(turn => turn.id === select.value)?.text || "";
+        quote.value = evidence.quote; edited();
+      });
+      quote.addEventListener("input", () => { evidence.quote = quote.value; edited(); });
+      const remove = node("button", "Remove evidence", "minor remove"); remove.type = "button";
+      remove.addEventListener("click", () => { target.evidence.splice(n, 1); renderEvidence(); edited(); add.focus(); });
+      row.append(remove); list.append(row);
+    });
+  };
+  add.addEventListener("click", () => {
+    const turn = turns[0];
+    if (!turn) return;
+    target.evidence.push({turn_id: turn.id, quote: turn.text}); renderEvidence(); edited();
+    list.lastElementChild.querySelector("select").focus();
+  });
+  renderEvidence();
+}
+function showFields(episode) {
+  if (session.task === "development") { showDevelopmentFields(episode); return; }
+  const root = $("fields"); root.replaceChildren();
+  for (const [dimension, [phase, role]] of Object.entries(dimensions)) {
+    const rubric = session.rubric[dimension];
+    const judgment = answer.judgments[dimension] ||= {value: null, evidence: [], rationale: ""};
+    const turns = episode.turns.filter(turn => turn.phase === phase && turn.role === role);
+    const fieldset = node("fieldset"); fieldset.append(node("legend", rubric.title));
+    const select = node("select"); select.append(new Option("Choose a judgment", ""));
+    for (const [value, description] of Object.entries(rubric.options)) {
+      const option = new Option(pretty(value), value);
+      if (dimension === "followup" && ((value === "no-followup-observed") !== (turns.length === 0))) option.disabled = true;
+      select.append(option);
+    }
+    select.value = judgment.value || "";
+    labeledControl(fieldset, "Judgment", select, dimension + "-value");
+    const description = node("p", rubric.options[judgment.value] || "Choose the closest description. Evidence can be added below.", "description");
+    description.id = dimension + "-description"; select.setAttribute("aria-describedby", description.id);
+    fieldset.append(description);
+    select.addEventListener("change", () => { judgment.value = select.value || null; description.textContent = rubric.options[judgment.value] || "Choose the closest description."; edited(); });
+    evidenceControls(fieldset, judgment, turns, dimension);
+    const rationale = node("textarea"); rationale.rows = 2; rationale.value = judgment.rationale;
+    labeledControl(fieldset, "Reasoning or uncertainty (optional)", rationale, dimension + "-rationale");
+    rationale.addEventListener("input", () => { judgment.rationale = rationale.value; edited(); });
+    root.append(fieldset);
+  }
+  const action = node("fieldset"); action.append(node("legend", "Instructor action (optional)"));
+  const text = node("textarea"); text.rows = 2; text.value = answer.instructor_action.text;
+  labeledControl(action, "What, if anything, would you do next?", text, "instructor-action");
+  text.addEventListener("input", () => { answer.instructor_action.text = text.value; edited(); });
+  evidenceControls(action, answer.instructor_action, [...episode.context, ...episode.turns], "action");
+  root.append(action);
+}
+function showDevelopmentFields(episode) {
+  const root = $("fields"); root.replaceChildren();
+  for (const [dimension, [phase, role]] of Object.entries(dimensions)) {
+    const rubric = session.rubric[dimension], draft = episode.annotation?.[dimension];
+    const judgment = answer.judgments[dimension], displayed = judgment || draft;
+    const assessment = judgment?.assessment;
+    const cannotAssess = assessment === "cannot-assess";
+    const section = node("section", undefined, "decision");
+    section.setAttribute("aria-labelledby", dimension + "-title");
+    const heading = node("div", undefined, "decision-heading");
+    const title = node("h3", rubric.title); title.id = dimension + "-title";
+    heading.append(title, node("span", assessment === "accepted" ? "Accepted" : assessment === "changed" ? "Changed" : cannotAssess ? "Cannot assess" : hasDecision(dimension) ? "Previously reviewed" : "Suggested", "decision-status"));
+    const value = node("p", cannotAssess ? "No judgment recorded" : pretty(displayed?.value) || "No draft available", "decision-value");
+    const description = node("p", cannotAssess ? "This item will be saved without a label." : rubric.options[displayed?.value] || "Choose Change to add a label, or Cannot assess.", "description");
+    section.append(heading, value);
+    if (cannotAssess || !displayed) section.append(description);
+    if (cannotAssess && !editing[dimension] && judgment.rationale) section.append(node("p", "Your note: " + judgment.rationale, "description"));
+    const actions = node("div", undefined, "decision-actions");
+    for (const [choice, label] of [["accepted", "Accept"], ["changed", "Change"], ["cannot-assess", "Cannot assess"]]) {
+      const button = node("button", label); button.type = "button"; button.id = dimension + "-" + choice;
+      button.setAttribute("aria-label", label + " " + rubric.title.toLowerCase());
+      button.setAttribute("aria-pressed", String(assessment === choice));
+      button.disabled = choice === "accepted" && !draft;
+      button.addEventListener("click", () => {
+        chooseAssessment(dimension, choice);
+        $(dimension + (choice === "changed" ? "-value" : choice === "cannot-assess" ? "-rationale" : "-accepted"))?.focus();
+      });
+      actions.append(button);
+    }
+    section.append(actions);
+    if (editing[dimension]) {
+      if (!cannotAssess) {
+        const select = node("select"); select.append(new Option("Choose a label", ""));
+        const turns = episode.turns.filter(t => t.phase === phase && t.role === role);
+        for (const optionValue of Object.keys(rubric.options)) {
+          const option = new Option(pretty(optionValue), optionValue);
+          if (dimension === "followup" && ((optionValue === "no-followup-observed") !== (turns.length === 0))) option.disabled = true;
+          select.append(option);
+        }
+        select.value = judgment.value || "";
+        labeledControl(section, "Your label", select, dimension + "-value");
+        section.append(description);
+        select.addEventListener("change", () => {
+          judgment.value = select.value || null;
+          value.textContent = pretty(judgment.value) || "Choose a label";
+          description.textContent = rubric.options[judgment.value] || "";
+          edited();
+        });
+        const evidence = node("details", undefined, "quote-details");
+        evidence.append(node("summary", "Edit selected evidence"));
+        evidenceControls(evidence, judgment, turns, dimension); section.append(evidence);
+      }
+      const note = node("textarea"); note.rows = 2; note.value = judgment.rationale;
+      labeledControl(section, cannotAssess ? "Why can't you assess this? (optional)" : "Why change it? (optional)", note, dimension + "-rationale");
+      note.addEventListener("input", () => { judgment.rationale = note.value; edited(); });
+    } else if (!cannotAssess && displayed) {
+      const details = node("details", undefined, "quote-details");
+      details.append(node("summary", `Meaning & evidence (${displayed.evidence.length})`), description);
+      if (!displayed.evidence.length) details.append(node("p", "No quote is required for this label.", "description"));
+      for (const evidence of displayed.evidence) {
+        details.append(node("blockquote", evidence.quote));
+        const link = node("a", "Show in conversation"); link.href = "#turn-" + evidence.turn_id;
+        details.append(link);
+      }
+      if (judgment?.rationale) details.append(node("p", "Your note: " + judgment.rationale, "description"));
+      if (draft?.rationale) details.append(node("p", "Draft reasoning: " + draft.rationale, "description"));
+      section.append(details);
+    }
+    root.append(section);
+  }
+  const notes = node("details", undefined, "review-note");
+  notes.append(node("summary", answer.instructor_action.text ? "Your note" : "Add a note (optional)"));
+  const text = node("textarea"); text.rows = 2; text.value = answer.instructor_action.text;
+  labeledControl(notes, "Anything unclear, missing, or worth acting on?", text, "instructor-action");
+  text.addEventListener("input", () => { answer.instructor_action.text = text.value; edited(); });
+  if (answer.instructor_action.evidence.length) evidenceControls(notes, answer.instructor_action, [...episode.context, ...episode.turns], "action");
+  root.append(notes);
+}
+function render() {
+  const episode = currentEpisode();
+  const saved = session.reviews[episode.id];
+  hasInteraction = false; editing = {};
+  answer = reviewAnswer(episode, saved);
+  if (saved && !saved.complete) for (const [dimension, judgment] of Object.entries(answer.judgments)) {
+    editing[dimension] = ["changed", "cannot-assess"].includes(judgment.assessment);
+  }
+  elapsed = answer.elapsed_ms; clockStarted = null; runningClock(); dirty = false; version++;
+  updateProgress();
+  $("episode-title").textContent = "Request, response, and what follows";
+  $("episode-meta").textContent = [episode.notebook, episode.question_ref ? "Question reference: " + episode.question_ref + " (unverified)" : "No question reference", "Episode " + episode.id].filter(Boolean).join(" / ");
+  $("context").open = false; $("context").classList.toggle("hidden", !episode.context.length);
+  $("context-title").textContent = `Earlier context (${episode.context.length} turns)`;
+  $("context-turns").replaceChildren(...episode.context.map(turn => turnElement(turn, episode.legacy_labels)));
+  $("timeline").replaceChildren(...episode.turns.map(turn => turnElement(turn, episode.legacy_labels)));
+  if (!episode.turns.some(turn => turn.phase === "followup")) $("timeline").append(node("p", "No follow-up observed. This does not establish what the student did outside this recorded episode.", "empty-followup"));
+  $("limitations").replaceChildren(...episode.limitations.map(limit => node("li", limit)));
+  showDraft(episode); showFields(episode);
+  $("fields").scrollTop = 0;
+  setStatus(saved ? saved.complete ? "Saved review restored" : "Changes restored" : "Nothing accepted yet");
+  updateReviewButton();
+}
+async function navigate(delta) {
+  const fromIndex = index, episodeId = answer.episode_id, targetIndex = index + delta;
+  if (navigating || targetIndex < 0 || targetIndex >= session.episodes.length) return;
+  navigating = true; updateProgress();
+  try {
+    let pending = save();
+    while (await pending) {
+      if (pending !== saves) { pending = saves; continue; }
+      if (!dirty && index === fromIndex && answer.episode_id === episodeId) {
+        pauseClock(); index = targetIndex; render(); $("episode-title").focus(); window.scrollTo({top: 0});
+      }
+      break;
+    }
+  } finally { navigating = false; updateProgress(); }
+}
+$("previous").addEventListener("click", () => navigate(-1));
+$("next").addEventListener("click", () => navigate(1));
+$("retry").addEventListener("click", () => save());
+$("judgment-form").addEventListener("submit", async event => { event.preventDefault(); await finishReview(); });
+$("cannot-assess-episode").addEventListener("click", async () => {
+  if (navigating) return;
+  for (const dimension of Object.keys(dimensions)) chooseAssessment(dimension, "cannot-assess");
+  await finishReview();
+});
+window.addEventListener("blur", pauseClock);
+window.addEventListener("focus", runningClock);
+document.addEventListener("visibilitychange", () => { if (document.hidden) { pauseClock(); if (answer) save(); } else runningClock(); });
+window.addEventListener("beforeunload", event => { if (dirty) { event.preventDefault(); event.returnValue = ""; } });
+setInterval(() => { if (answer && !document.hidden && document.hasFocus()) save(); }, 15000);
+async function start() {
+  try {
+    const response = await fetch("/api/session");
+    session = await response.json();
+    if (!response.ok) throw new Error(session.detail || "Cannot load the review session.");
+    $("session").textContent = `${pretty(session.task)} / ${session.split} / Reviewer ${session.reviewer}`;
+    $("question").textContent = session.question;
+    if (session.task === "development") {
+      $("main").classList.add("development");
+      document.body.classList.add("development-review");
+      $("session").textContent = `Reviewing as ${session.reviewer}`;
+      $("judgments-title").textContent = "Do these labels fit?";
+      $("form-intro").textContent = "Accept, change, or mark what you cannot assess.";
+      $("cannot-assess-episode").classList.remove("hidden");
+    }
+    if (!session.episodes.length) throw new Error("There are no episodes in this split. Open a bundle with episodes to review.");
+    const firstIncomplete = session.episodes.findIndex(episode => !session.reviews[episode.id]?.complete);
+    index = firstIncomplete < 0 ? 0 : firstIncomplete;
+    $("main").classList.remove("hidden"); render();
+  } catch (error) { $("session").textContent = "Session unavailable"; $("fatal").textContent = error.message; $("fatal").classList.remove("hidden"); }
+}
+start();
+</script>
+</body>
+</html>

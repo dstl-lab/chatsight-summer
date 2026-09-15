@@ -18,7 +18,7 @@ column on every row:
 | Attempt (notebook state at ask) | `tutor_notebook_info` | 36,803 | full notebook JSON + the student message it accompanied |
 | Error / test result | `autograder_info` | 281,882 (41,486 failures) | per-question `grader_id` (q1_1…), success bool, output, timestamp |
 | Tutor conversation | `tutor_query`/`tutor_response` | 45,652 / 42,727 | as already ingested |
-| Code change | successive `tutor_notebook_info` snapshots | — | one snapshot per conversation (turn 1 only — see appendix); diffable across *consecutive conversations*, not within one |
+| Code change | successive `tutor_notebook_info` initial snapshots | — | one full initial capture per conversation (see appendix); these captures alone cannot show within-conversation edits |
 | Session context | `session_start` | 25,841 | cell counts per notebook open |
 
 Coverage: autograder 2026-03-04..07-31; chat 2026-02-09..08-06 — the
@@ -125,8 +125,11 @@ Rows for later turns carry the field as null. Consequences:
 
 - Valid snapshots are clean: full notebooks (typically 21+ cells), cell
   outputs captured including tracebacks — a rich at-ask error signal.
-- **Within-conversation code-change diffing is impossible** (the earlier
-  "76% diffable" figure counted rows, not non-null snapshots — wrong).
+- **Initial snapshots alone cannot show within-conversation code changes**
+  (the earlier "76% diffable" figure counted rows, not non-null snapshots — wrong).
+  Other payload fields were not inspected by that calculation. The bounded
+  [2026-09-11 audit](2026-09-11-notebook-context-recovery.md) checked four reviewed
+  conversations and still found no later work diffs, without claiming global absence.
 - **Across-conversation diffing works**: same student + notebook,
   consecutive conversations' initial snapshots show code evolution
   between chats, which brackets "what changed after the tutor's advice"

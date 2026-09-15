@@ -1,0 +1,6 @@
+{
+  "library": "babypandas",
+  "library_version": "1.0.0",
+  "text": "Babypandas has a restricted DataFrame and Series API. Select a named column with frame.get('column'); frame['column'] is not column selection. A Series supports unique(), which returns a NumPy array of distinct values, not their count. len(array) gives the number of array elements. Series.nunique() is unavailable in this package version. These are API facts, not evidence that student work has executed or passed.",
+  "source": "https://babypandas.readthedocs.io/en/latest/_modules/bpd.html"
+}

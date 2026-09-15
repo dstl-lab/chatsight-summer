@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Student communication review</title>
+<style>
+:root{color-scheme:light;--ink:#18384d;--muted:#506776;--paper:#f5f8fa;--line:#c7d5dd;--accent:#006c70;--tint:#e9f4f3}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Avenir Next","Segoe UI",sans-serif}button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:7px;padding:10px 16px;min-height:44px;background:white;color:var(--ink);font-weight:600}button:hover{background:var(--tint)}button:disabled{opacity:.5;cursor:default}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover{background:#00585c}:focus-visible{outline:3px solid #087bba;outline-offset:4px}[hidden]{display:none!important}h1,h2,h3,p{margin:0}h1{font-size:25px;letter-spacing:-.6px;line-height:1.2}h2{font-size:22px}h3{font-size:18px}.muted,small{color:var(--muted)}.shell{max-width:1400px;margin:auto;padding:24px 36px 56px}.masthead,.controls,.progress{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.masthead{padding-bottom:20px;border-bottom:1px solid var(--line)}.controls{justify-content:flex-start}.intro{max-width:740px;margin:36px auto;background:white;border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:10px;padding:28px}.intro p,.intro form{margin-top:18px}.intro label{display:block}.intro input[type=text]{display:block;margin:8px 0 18px;width:100%;max-width:380px;padding:10px;border:1px solid var(--line);border-radius:6px}fieldset{border:0;padding:0;margin:0;min-width:0}legend{font-weight:600}.choices{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}.choices label{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer;min-height:44px}.choices label:has(input:checked){background:var(--tint);border-color:var(--accent)}input[type=radio]{accent-color:var(--accent);width:18px;height:18px;margin:0}.progress{margin:24px 0}.progress p{font-size:14px;color:var(--muted)}.case-nav{display:flex;gap:6px;flex-wrap:wrap}.case-nav button{width:44px;padding:0}.case-nav .done{border-bottom:4px solid var(--accent)}.case-nav [aria-current=step]{background:var(--ink);color:white}.workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:32px;align-items:start}.context-notice{font-size:14px;color:var(--muted);margin:8px 0 20px}.turn{border-bottom:1px solid var(--line);padding:16px 0}.turn.student{border-left:3px solid #92b8bf;padding-left:14px}.turn strong{display:block;font-size:14px;margin-bottom:8px}.raw{white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;font:14px/1.7 ui-monospace,"SFMono-Regular",Consolas,monospace;margin:0}.turn.tutor .raw{font-family:"Avenir Next","Segoe UI",sans-serif;font-size:15px}.group-title{font-size:14px;color:var(--muted);margin:20px 0 0}.candidate{background:white;border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:22px;margin:16px 0}.candidate>.raw{padding:16px 0 20px;border-bottom:1px solid var(--line);margin-bottom:20px}.candidate fieldset p{font-size:13px;color:var(--muted);margin-top:4px}.candidate>label{display:block;font-weight:600;font-size:14px}.candidate textarea{margin-top:8px}.rule{background:var(--tint);padding:14px;border-radius:6px;font-size:14px;margin-top:12px}textarea{display:block;width:100%;resize:vertical;min-height:75px;border:1px solid var(--line);border-radius:6px;padding:10px;color:var(--ink);background:white}.footer{border-top:1px solid var(--line);margin-top:24px;padding-top:20px}.alert{margin:16px 0;background:#fff3de;border:1px solid #b48436;color:#684100;padding:12px 16px;border-radius:6px;font-size:14px}.fine{font-size:13px;color:var(--muted);margin-top:12px}.export{margin-top:28px;max-width:850px}.export textarea{min-height:180px;font-family:monospace}.export summary{cursor:pointer;padding:10px 0;min-height:44px}.skip{position:absolute;top:-70px;left:16px;background:white;padding:10px;z-index:10}.skip:focus{top:12px}
+.context{position:sticky;top:20px;max-height:calc(100dvh - 40px);overflow-y:auto;padding-right:12px}
+@media(max-width:780px){.shell{padding:18px 16px 40px}.workspace{display:block}.intro{padding:22px;margin:28px auto}.masthead h1{font-size:22px}.candidate{padding:18px}.context{position:static;max-height:none;overflow:visible;padding-right:0;margin-bottom:28px}.controls button{font-size:14px}.case-nav button{width:40px}.raw{font-size:13px}}
+</style>
+</head>
+<body>
+<a class="skip" href="#candidate-title">Skip to candidate messages</a>
+<div class="shell">
+<header class="masthead"><h1>Student communication review</h1><div class="controls"><button id="draft-copy" type="button">Copy draft</button><button id="draft-download" type="button">Download draft</button><button id="profile" type="button" hidden>Your details</button></div></header>
+<p id="storage-warning" class="alert" role="alert" hidden></p>
+<section id="intro" class="intro"><h2>Read each exchange once</h2><p>Several candidate student messages follow the same exchange. Judge each message independently using the two questions. Both answers can be yes. This is a coding task, so do not rank candidates or guess where they came from.</p><p>Use “unclear” when the visible evidence is insufficient and briefly explain why. Keep your review independent until you have returned your answers.</p>
+<form id="start-form"><label for="reviewer-name">Your name or reviewer ID</label><input id="reviewer-name" type="text" required autocomplete="off"><fieldset><legend>Have you previously seen any of these cases or candidate messages?</legend><div class="choices"><label><input type="radio" name="exposure" value="yes" required>Yes</label><label><input type="radio" name="exposure" value="no">No</label><label><input type="radio" name="exposure" value="unsure">Unsure</label></div></fieldset><button id="start" class="primary" type="submit">Start review</button></form><p class="fine">Answers stay in this browser. Copy or download them to return to your study lead. Nothing is sent automatically.</p></section>
+<main id="review" hidden><div class="progress"><div><h2 id="position" tabindex="-1"></h2><p id="completion"></p></div><nav id="case-nav" class="case-nav" aria-label="Cases"></nav></div><div class="workspace"><section class="context" aria-labelledby="context-title"><h2 id="context-title">Shared conversation</h2><p id="context-notice" class="context-notice"></p><div id="conversation"></div></section><section aria-labelledby="candidate-title"><h2 id="candidate-title" tabindex="-1">Candidate student messages</h2><p class="rule">Code what each message communicates. Answer both questions independently; both can be yes. Earlier turns provide context, but do not count as work present in the candidate itself.</p><div id="candidates"></div></section></div><div class="footer controls"><button id="previous" type="button">Previous case</button><button id="next" type="button">Next case</button><button id="finish" class="primary" type="button">Finish review</button></div></main>
+<p id="validation" class="alert" role="alert" hidden></p><p id="save-status" class="fine" role="status">No judgments recorded.</p>
+<section id="finished" class="intro" hidden><h2 tabindex="-1" id="finish-title">Your answers are ready</h2><p>Copy or download the completed JSON and return it to your study lead.</p><div class="controls footer"><button id="answers-copy" type="button" class="primary">Copy answers</button><button id="answers-download" type="button">Download answers</button><button id="revisit" type="button">Review answers</button></div></section>
+<details id="text-export" class="export"><summary>Plain text export and copy fallback</summary><label for="answer-text">Current answers (incomplete drafts contain null values)</label><textarea id="answer-text" readonly spellcheck="false"></textarea><p class="fine">Select this text and use your browser’s Copy command if copying or downloading is unavailable.</p></details><p id="export-status" class="fine" role="status"></p>
+</div>
+<script id="review-data" type="application/json">__REVIEW_PAYLOAD__</script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const packet = JSON.parse($("review-data").textContent);
+const storageKey = `chatsight-communication:${packet.packet_id}`;
+const signature = JSON.stringify(packet);
+const ids = packet.cases.flatMap(c => c.candidates.map(a => a.id));
+const titles = {help_request:"Does this message request help or a check?",work_present:"Does this message present work or diagnostic evidence?"};
+let draft = {signature,index:0,started:false,form:{packet_id:packet.packet_id,rubric_id:packet.rubric_id,reviewer:null,previously_seen_cases:null,judgments:ids.map(id=>({id,help_request:null,work_present:null,note:null}))}};
+let lastSaved = null, storageBlocked = false, changed = false;
+function keys(value,names) {return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).sort().join(" ") === names.split(" ").sort().join(" ");}
+function answerComplete(a) {return ["yes","no","unclear"].includes(a.help_request) && ["yes","no","unclear"].includes(a.work_present) && (![a.help_request,a.work_present].includes("unclear") || Boolean(a.note?.trim()));}
+function reviewComplete() {return Boolean(draft.form.reviewer?.trim()) && ["yes","no","unsure"].includes(draft.form.previously_seen_cases) && draft.form.judgments.every(answerComplete);}
+function exportText(complete) {if (complete && !reviewComplete()) throw Error("Complete all judgments and reviewer details before exporting final answers.");return JSON.stringify(draft.form,null,2)+"\n";}
+function validDraft(d) {
+  return keys(d,"signature index started form") && d.signature === signature && Number.isInteger(d.index) && d.index >= 0 && d.index < packet.cases.length && typeof d.started === "boolean"
+    && keys(d.form,"packet_id rubric_id reviewer previously_seen_cases judgments") && d.form.packet_id === packet.packet_id && d.form.rubric_id === packet.rubric_id
+    && (d.form.reviewer === null || typeof d.form.reviewer === "string") && [null,"yes","no","unsure"].includes(d.form.previously_seen_cases)
+    && (!d.started || (Boolean(d.form.reviewer?.trim()) && d.form.previously_seen_cases !== null))
+    && Array.isArray(d.form.judgments) && d.form.judgments.length === ids.length && d.form.judgments.every((a,i)=> keys(a,"id help_request work_present note") && a.id === ids[i] && [null,"yes","no","unclear"].includes(a.help_request) && [null,"yes","no","unclear"].includes(a.work_present) && (a.note === null || typeof a.note === "string"));
+}
+function warnStorage(message) {$("storage-warning").hidden=false;$("storage-warning").textContent=message;}
+function loadDraft() {
+  try {const saved=localStorage.getItem(storageKey);if(saved!==null){const parsed=JSON.parse(saved);if(!validDraft(parsed))throw Error("Stale or unreadable draft");draft=parsed;}lastSaved=saved;}
+  catch(_){storageBlocked=true;warnStorage("This browser could not read a matching draft. Any saved draft is preserved. You can continue here; copy or download your answers before closing.");}
+}
+function persist() {
+  changed=true;$("answer-text").value=exportText(false);
+  if(storageBlocked){$("save-status").textContent="Changes are only on this page. Copy or download a draft to keep them.";return false;}
+  try {
+    // ponytail: browser-local draft, one active tab/reviewer per packet; JSON is the handoff.
+    if(localStorage.getItem(storageKey)!==lastSaved){storageBlocked=true;warnStorage("Another tab changed the saved draft. This page will not overwrite it. Copy or download this page’s answers before reopening.");return false;}
+    const value=JSON.stringify(draft);localStorage.setItem(storageKey,value);lastSaved=value;$("save-status").textContent="Saved in this browser. Nothing sent.";return true;
+  }catch(_){storageBlocked=true;warnStorage("This browser could not save your answers. Keep this page open and copy or download a draft.");return false;}
+}
+function node(tag,text,className) {const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
+function answer(id) {return draft.form.judgments[ids.indexOf(id)];}
+function caseComplete(c) {return c.candidates.every(a=>answerComplete(answer(a.id)));}
+function progress() {
+  $("position").textContent=`Case ${draft.index+1} of ${packet.cases.length}`;$("completion").textContent=`${draft.form.judgments.filter(answerComplete).length} of ${ids.length} candidate messages completed`;
+  $("case-nav").replaceChildren();packet.cases.forEach((c,i)=>{const done=caseComplete(c),button=node("button",i+1,done?"done":"");button.type="button";button.setAttribute("aria-label",`Case ${i+1}, ${done?"completed":"incomplete"}`);if(i===draft.index)button.setAttribute("aria-current","step");button.onclick=()=>go(i);$("case-nav").append(button);});
+}
+function showCase() {
+  $("intro").hidden=true;$("finished").hidden=true;$("review").hidden=false;$("profile").hidden=false;$("validation").hidden=true;progress();
+  const c=packet.cases[draft.index];$("context-notice").textContent=c.context_status;$("conversation").replaceChildren();
+  for(const [turns,title] of [[c.prefix.context,"Earlier context"],[c.prefix.turns,"Current exchange"]]){$("conversation").append(node("h3",title,"group-title"));if(!turns.length)$("conversation").append(node("p","No messages available.","fine"));for(const t of turns){const article=node("article",undefined,`turn ${t.role}`);article.append(node("strong",t.role==="student"?"Student":"Tutor"),node("pre",t.text,"raw"));$("conversation").append(article);}}
+  $("candidates").replaceChildren();c.candidates.forEach((candidate,i)=>{
+    const a=answer(candidate.id),card=node("article",undefined,"candidate"),heading=node("h3",`Candidate ${i+1}`);card.append(heading,node("pre",candidate.text,"raw"));
+    const noteLabel=node("label"),note=node("textarea"),noteId=`note-${i}`;note.id=noteId;note.value=a.note||"";noteLabel.htmlFor=noteId;
+    const noteHint=()=>{const required=[a.help_request,a.work_present].includes("unclear");noteLabel.textContent=required?"Brief reason for unclear (required)":"Note (optional)";note.required=required;};
+    for(const key of ["help_request","work_present"]){const field=node("fieldset"),legend=node("legend",titles[key]),description=node("p",packet.definitions[key]),choices=node("div",undefined,"choices");field.append(legend,description,choices);for(const value of ["yes","no","unclear"]){const label=node("label"),input=node("input");input.type="radio";input.name=`candidate-${i}-${key}`;input.value=value;input.checked=a[key]===value;input.onchange=()=>{a[key]=value;noteHint();persist();progress();};label.append(input,document.createTextNode(value[0].toUpperCase()+value.slice(1)));choices.append(label);}card.append(field);}
+    note.oninput=()=>{a.note=note.value||null;persist();progress();};noteHint();card.append(noteLabel,note);$("candidates").append(card);
+  });
+  $("previous").disabled=draft.index===0;$("next").disabled=draft.index===packet.cases.length-1;
+}
+function go(index) {draft.index=index;persist();showCase();window.scrollTo(0,0);$("position").focus({preventScroll:true});}
+function showIntro() {$("intro").hidden=false;$("review").hidden=true;$("finished").hidden=true;$("reviewer-name").value=draft.form.reviewer||"";document.querySelectorAll('input[name="exposure"]').forEach(e=>e.checked=e.value===draft.form.previously_seen_cases);$("start").textContent=draft.started?"Resume review":"Start review";}
+function finish() {
+  if(!reviewComplete()){const missing=packet.cases.findIndex(c=>!caseComplete(c));if(missing>=0)go(missing);else showIntro();$("validation").textContent="Complete both questions for every candidate, add a note for each unclear answer, and fill in your reviewer details.";$("validation").hidden=false;$("validation").scrollIntoView({block:"center"});return;}
+  $("review").hidden=true;$("intro").hidden=true;$("finished").hidden=false;$("validation").hidden=true;$("answer-text").value=exportText(true);$("finish-title").focus();
+}
+function fallback(text) {$("answer-text").value=text;$("text-export").open=true;$("answer-text").focus();$("answer-text").select();$("export-status").textContent="Use your browser’s Copy command on the selected answers.";}
+async function copy(complete) {const text=exportText(complete);try{await navigator.clipboard.writeText(text);changed=false;$("export-status").textContent=complete?"Answers copied. Return them to your study lead.":"Draft copied. Unfinished answers remain null.";}catch(_){fallback(text);}}
+function download(complete) {const text=exportText(complete);try{const blob=new Blob([text],{type:"application/json"}),url=URL.createObjectURL(blob),a=node("a");a.href=url;a.download=complete?"communication-review.json":"communication-review-draft.json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);changed=false;$("export-status").textContent="Download requested. Check your downloads; use the plain text export below if no file appeared.";}catch(_){fallback(text);}}
+// Wire page controls.
+$("reviewer-name").oninput=()=>{draft.form.reviewer=$("reviewer-name").value||null;if(!draft.form.reviewer?.trim())draft.started=false;persist();};
+document.querySelectorAll('input[name="exposure"]').forEach(e=>e.onchange=()=>{draft.form.previously_seen_cases=e.value;persist();});
+$("start-form").onsubmit=e=>{e.preventDefault();if(!draft.form.reviewer?.trim()||!draft.form.previously_seen_cases)return;draft.form.reviewer=draft.form.reviewer.trim();draft.started=true;persist();showCase();};
+$("profile").onclick=showIntro;$("previous").onclick=()=>go(draft.index-1);$("next").onclick=()=>go(draft.index+1);$("finish").onclick=finish;$("revisit").onclick=()=>go(0);
+$("draft-copy").onclick=()=>copy(false);$("draft-download").onclick=()=>download(false);$("answers-copy").onclick=()=>copy(true);$("answers-download").onclick=()=>download(true);
+window.addEventListener("beforeunload",e=>{if(storageBlocked&&changed){e.preventDefault();e.returnValue="";}});
+loadDraft();$("answer-text").value=exportText(false);if(draft.started)showCase();else showIntro();
+</script>
+</body>
+</html>
