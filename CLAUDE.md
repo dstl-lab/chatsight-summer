@@ -10,25 +10,26 @@ history field from the already visible prefix. Old instructions, schema and
 the new variable is prominence of observed student messages, not another rule.
 See the frozen docs/2026-09-15-student-communication-candidate.md.
 
-The private fixed comparison is PREPARED, NOT RUN, under
-data/episode-pilot/student-communication-candidate-v1/: same29 historical query
-prefixes, one control/candidate draw each, 58 logical Gemini2.5Pro requests and
-at most232 adapter attempts. Exact prompts total262419/291553 characters. The
-59 pinned artifacts include sources, inputs, separately withheld references,
-disclosure and the recorded standing approval; no new exact-payload reply is
-claimed. Authored actual-runner checks verify cap/retries, no-reply/error exclusion,
-metrics and no-resend. All376 tests pass, two optional container tests skip.
-Independent preparation review passed all 29 projections, 58 exact prompts and
-59 pins. PR #27 is DRAFT at https://github.com/dstl-lab/chatsight-summer/pull/27.
-Dispatch was rejected by automatic approval review before process creation:
-private historical student/tutor dialogue would go to external Gemini, and the
-review judged the broad standing grant insufficient for this exact payload and
-destination. See private dispatch-review.json. Zero requests sent; results.json
-and report.json are absent. Do not retry or use another execution route without
-specific approval of the prepared 58-request scope and Gemini destination. The
-user's standing grant remains recorded unchanged; no new approval is inferred.
-Stop at one fixed mechanical report after an authorized run; no semantic-label
-review or automatic adoption. Prior baseline/benchmarks remain unchanged.
+The fixed comparison is COMPLETE under
+data/episode-pilot/student-communication-candidate-v1/. After the initial
+zero-send rejection, Minchan explicitly approved the exact private-prefix/Gemini
+scope; exact-scope-approval.json and dispatch-start.json preserve that sequence.
+All 58 requests returned valid outcomes, using 61 adapter attempts (case 8 candidate
+needed three retries). Original: 29 replies. Candidate: 28 replies, one no-reply.
+On 28 paired replies, length MAE was 127.357 original versus 126.107 candidate;
+primary paired difference −1.25 characters. The same-case constant 35-character
+baseline was better on length (75.679); retrieval was 393.357. Candidate median
+length/error fell, but neither that nor literal formatting flags establish less
+extra work, relevance, persona fidelity or realistic silence. Case 4 no-reply is
+excluded from paired scores and retained as a separate disposition.
+
+Decision: RETAIN THE CURRENT GENERATOR; no automatic adoption or further prompt
+experiment. See docs/2026-09-15-student-communication-result.md and private
+REPORT.md/report.json. One fixed report closes this run. Replay verifies 58 slots
+and all 59 preparation/source pins. The source commit passed 376 tests, with two
+optional container tests skipped. Source generator/schema and older experiments
+remain unchanged. Do not rerun create-only send/score or tune this frozen batch.
+PR #27 records the separate candidate and completed development result.
 
 The first existing-data baseline is COMPLETE. `src/eval/retrieval_baseline.py`
 retrieves the recorded next message from a train-only TF-IDF prefix library;

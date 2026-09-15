@@ -5,7 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-15 | `2026-09-15-student-communication-candidate.md` — make visible student messages more prominent | Candidate implemented and audited; draft PR #27; dispatch rejected before execution, exact private-payload approval needed; zero requests sent |
+| 2026-09-15 | `2026-09-15-student-communication-result.md` — fixed original/candidate comparison | Complete: 58 valid outcomes; paired length error 127.357 vs 126.107; current generator retained, no new labeling round |
+| 2026-09-15 | `2026-09-15-student-communication-candidate.md` — make visible student messages more prominent | Frozen protocol; comparison complete in result memo, candidate not adopted |
 | 2026-09-15 | `2026-09-15-historical-response-baseline.md` — existing-data lexical response comparator | Complete: 1179 library examples, 29 query conversations; length error exceeds train-median baseline, dominated by one outlier; no model calls or new labels |
 | 2026-09-15 | `2026-09-15-logged-work-boundary.md` — tutor-visible work versus persisted observations | Actual emitter/collector source found; first-turn response-time captures omit later work; minimal per-request logging change proposed |
 | 2026-09-15 | `2026-09-15-marimo-and-observation-contract.md` — Marimo direction and observation-source discovery | Marimo selected for future UI; emitter/deployment bindings still unverified; two exploratory teammate briefs prepared |
