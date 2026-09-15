@@ -2,6 +2,26 @@
 
 ## Current implementation focus (2026-09-15)
 
+The next-eligible-capture work forecast is prepared but NOT RUN; see
+`docs/2026-09-15-next-visit-work-forecast.md` and ignored
+`data/episode-pilot/next-visit-work-v1/`. This is an explicit net-state forecast,
+not a next-action score or a change to the production student. The pure helper
+`src/eval/notebook_forecast.py` projects initial source + matched first exchange,
+applies in-scope net edits and compares changed positions against unchanged source.
+Pairs 2/3 from the prior exposed check recover uniquely; all 58/54 initial code
+positions are supplied, with 1/4 changed positions in separately stored targets.
+Two Gemini 2.5 Pro logical requests maximum (eight adapter attempts), one per case.
+Exact prompts are 35,900/25,765 characters; no future work, timing, outputs or
+identifying metadata. Private identifying text may remain within source excerpts.
+17 related tests, the private future/no-resend control and independent preparation
+review pass. Automatic approval review rejected dispatch before process creation:
+standing approval did not specifically authorize these private sources/exchanges
+to Gemini. Zero requests/attempts and no run.json. Preserve send-blocked.json;
+obtain exact authorization for the unchanged disclosure, record its bound receipt
+before dispatch, then run the two fixed requests once. No replacements, new labels,
+rerolls or automatic adoption. Prior notebook-pair/help-work pins remain unchanged.
+Keep PR #25 draft/unmerged. The prior availability check below remains closed.
+
 Minchan asked to continue after the fixed help/work benchmark closed. The bounded
 notebook-pair availability check is complete; see
 `docs/2026-09-15-notebook-snapshot-pairs.md` and ignored
