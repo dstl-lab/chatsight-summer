@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-15 | `2026-09-15-historical-response-baseline.md` — existing-data lexical response comparator | Complete: 1179 library examples, 29 query conversations; length error exceeds train-median baseline, dominated by one outlier; no model calls or new labels |
 | 2026-09-15 | `2026-09-15-logged-work-boundary.md` — tutor-visible work versus persisted observations | Actual emitter/collector source found; first-turn response-time captures omit later work; minimal per-request logging change proposed |
 | 2026-09-15 | `2026-09-15-marimo-and-observation-contract.md` — Marimo direction and observation-source discovery | Marimo selected for future UI; emitter/deployment bindings still unverified; two exploratory teammate briefs prepared |
 | 2026-09-15 | `2026-09-15-observation-window-readiness.md` — define what existing notebook intervals measure | Offline audit complete: conditional net state is observable; same-task next action and causal tutor effects are not established |

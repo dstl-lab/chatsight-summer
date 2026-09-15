@@ -2,6 +2,26 @@
 
 ## Current implementation focus (2026-09-15)
 
+The first existing-data baseline is COMPLETE. `src/eval/retrieval_baseline.py`
+retrieves the recorded next message from a train-only TF-IDF prefix library;
+query targets are excluded, conversation/known-learner overlaps rejected, and
+blank messages/no lexical match kept distinct. Run with
+`python -m src.eval.retrieval_baseline INPUT.json OUTPUT.json` (create-only output).
+The frozen protocol is docs/2026-09-15-historical-response-baseline.md; leave that
+file unchanged because the private run pins it. Results/inputs/references and
+verification are in ignored data/episode-pilot/historical-response-baseline-v1/.
+1179 examples from156 conversations supplied29 responses for29 separate query
+conversations, excluding all55 minimum known continuation-exposed conversations
+from queries. All source windows and joins independently reproduce. Length MAE
+381.586 versus74.172 for the constant train-median35-character baseline; one7594
+error contributes68.6% of total retrieval error. This is a narrow mechanical
+diagnostic, not help/work coding, contextual appropriateness or improved fidelity.
+374 tests pass, two optional container tests skip; a full authored-harness future
+mutation leaves split, inputs and predictions unchanged. No model/DB calls,
+labels, prompt tuning or changes to old benchmark evidence. Stop this fixed run;
+the next model candidate/comparison requires its own frozen decision, not automatic
+rerolls. A baseline now exists; repeating its construction is not a new milestone.
+
 Minchan corrected the main priority: the next quarter is not imminent, so build
 and evaluate simulated students with the data already available. Future logging,
 deployment and new collection are NOT prerequisites for the main research flow.
