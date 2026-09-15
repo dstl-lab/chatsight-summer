@@ -2,6 +2,26 @@
 
 ## Current implementation focus (2026-09-15)
 
+The fixed help/work benchmark is now COMPLETE; see
+`docs/2026-09-15-help-work-results.md`. Minchan returned all 72 messages/144 flags
+in one JSON form, preserved byte-for-byte under
+`data/episode-pilot/help-work-benchmark-v1/received/review.json`; prior exposure is
+self-reported unsure. No missing/unclear flags, no notes, all eight cases included.
+The frozen scorer produced `coding-result.json` once; independent arithmetic agrees.
+All eight references are help=yes/work=no. Earlier-dialogue draws are help32/32,
+work26/32; current-exchange-only help30/32, work23/32. Mean two-flag Brier is
+0.359375 versus 0.29296875; paired difference +0.06640625 (higher error with earlier
+dialogue in this sample). The mismatch is frequent additional work/evidence, while
+help requests largely remain. Homogeneous reference flags, four draws/condition,
+one reviewer and uncertain exposure limit the conclusion. No positive-work or
+negative-help reference coverage, reliability, general history effect, notebook
+action fidelity or learning claim. All original generation/review artifacts remain
+unchanged; the generation-only reports retain their historical pending-coding status.
+No new model calls, relabeling, adjudication or prompt changes. The prescribed
+stopping point has been reached: no further coding input is required; do not rerun,
+extend or auto-tune this benchmark. Retain production behavior and keep PR #25
+draft/unmerged. Further research needs a new decision, not an automatic next batch.
+
 Minchan approved one finite recorded-behavior comparison and selected help-seeking
 versus work submission with one fixed blind coding pass. The protocol is frozen
 in `docs/2026-09-15-help-work-benchmark.md` and ignored
@@ -26,12 +46,13 @@ No replacements or prompt changes. Exact offline replay and independent final
 audit pass: 38 preparation, four approval, three review and 12 completion-file
 hashes match. The 72 blind review messages (64 generated plus eight recorded) and
 34 shared prefix turns map exactly to source; origins/conditions stay outside HTML.
-`run-summary.json` and `RUN_REPORT.md` record generation only. No human judgments or
-behavior score exist. The next required input is one completed coding form from
+`run-summary.json` and `RUN_REPORT.md` record generation only. At that stage, no
+human judgments or behavior score existed; the completed intake above supersedes
+that pending state. The requested input was one completed coding form from
 `ui/index.html`, served on loopback at http://127.0.0.1:8422/ with only the UI folder
 exposed. The page begins blank and provides browser-local drafts and JSON export.
-Do not resend, repackage or begin another batch. After intake, run the frozen scorer
-once and stop at the report even if inconclusive. This supersedes older pending-
+Do not resend, repackage or begin another batch. The frozen scorer has now run once
+and the fixed report closes the benchmark. This supersedes older pending-
 benchmark statements below; the incomplete six-case history ablation remains paused. These
 audited same-course exports cannot establish a student-separated/pristine holdout,
 notebook action fidelity, learning or transfer. The existing notebook engine and
@@ -52,8 +73,8 @@ No rerolls, labels or human ratings. This closes the authored continuity checkpo
 Minchan asked whether progress is concrete: distinguish the functioning simulation
 prototype from unvalidated behavioral fidelity. The recommended next milestone is
 a fixed recorded-behavior comparison against a generic baseline. Its then-pending
-recommendation is superseded by the completed fixed comparison above. Its single
-blind human coding pass remains pending.
+recommendation is superseded by the completed fixed comparison and human coding
+report above.
 
 The multi-task history extension is complete. New `notebook_next_task` handoffs
 retain a flat oldest-first `earlier_encounters` list plus the immediate

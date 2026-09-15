@@ -1,7 +1,8 @@
 # One fixed help/work comparison
 
-Generation is complete: 64 valid replies, one adapter retry, no replacements.
-The next input is one blind coding pass over 72 messages. No behavior score exists.
+The fixed benchmark is complete: 64 requests, one returned coding pass, one report.
+See [results and stopping decision](2026-09-15-help-work-results.md). The frozen
+protocol and historical preparation/generation record remain below.
 
 ## Decision and scope
 
@@ -130,7 +131,7 @@ unchanged. No dependencies or new simulator abstractions.
 - [x] Dispatch the fixed 64 slots once if permitted, preserving failures and interruptions.
 - [x] Build and verify the concealed-origin page, commit code/memo, update draft
   PR #25 without merging, and stop for the single human coding pass.
-- [ ] After intake, run the frozen scorer and publish the limited report without
+- [x] After intake, run the frozen scorer and publish the limited report without
   automatic tuning or another batch.
 
 ## Prepared result and dispatch boundary
@@ -180,10 +181,13 @@ Earlier UI behavior checks used invented data and a separate packet identity.
 One reviewer completes the two yes/no/unclear flags for each message; both yes is
 valid and unclear needs a note. Copy or download the final JSON and return it for
 intake. Browser-local drafts allow pauses but do not sync between computers.
-No human form has been returned for this packet and no behavior score exists.
+At this generation-stage handoff, no human form had been returned and no behavior
+score existed. The subsequent completed intake and results are recorded in the
+[results report](2026-09-15-help-work-results.md).
 `run-summary.json`, `RUN_REPORT.md` and `completion-verification.json` preserve
 this stage. `report.py` verifies the approved completed run and produces those
-create-only artifacts; it does not assign labels. Stop for this one human input.
+create-only artifacts; it does not assign labels. This generation stage stopped
+for the single human input, which has since been received and scored.
 
 Reproducible commands from the isolated worktree:
 
