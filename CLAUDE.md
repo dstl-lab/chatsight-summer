@@ -2,7 +2,7 @@
 
 ## Current implementation focus (2026-09-15)
 
-A grounded local-task continuation is PREPARED, NOT SENT, in
+A grounded local-task continuation is PREPARED, BLOCKED BEFORE SEND, in
 data/episode-pilot/grounded-chat-v1/. Case 6 is the first eligible saved handoff
 after excluding closed/missing-task/completed-request cases 1-5. The recorded
 tutor explicitly describes extracting three first-row values into a list; the
@@ -15,6 +15,13 @@ Prior sessions and the completed clarification stay intact. No production code,
 prompt revision, new labels or rerolls. See frozen docs/2026-09-15-grounded-chat.md.
 Handle actual dispatch review for this new private scope; the case-1 approval
 does not claim exact approval of this payload. Stop after one outcome/error.
+Automatic approval review rejected actual dispatch before process creation:
+standing approval and prior case-1 approval do not specifically authorize this
+case-6 sensitive payload/Gemini destination. dispatch-review.json records the
+rejection and five scope/audit hashes. Zero new requests or provider attempts;
+no dispatch.json or second step. No workaround. Ask for this exact one-request
+scope, preserving frozen files. Independent preparation audit passed: exact
+cached reply/next prompt, state binding, 224 pins and unchanged send/verify logic.
 
 The one saved-chat continuation is COMPLETE and CLOSED under
 data/episode-pilot/chat-clarification-v1/. After the initial automatic-review

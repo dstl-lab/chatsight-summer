@@ -5,7 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-15 | `2026-09-15-grounded-chat.md` — continue an explicit local task from the saved prefix | Frozen case-6 request prepared; one remaining student decision; task grounded in recorded instruction, data/execution unknown |
+| 2026-09-15 | `2026-09-15-grounded-chat.md` — continue an explicit local task from the saved prefix | Frozen case-6 request prepared and audited; dispatch rejected before process creation pending exact private-payload/Gemini approval; zero sends |
 | 2026-09-15 | `2026-09-15-chat-clarification-result.md` — one actual saved-chat continuation | Complete: one new reply, one adapter attempt, exact replay; generated question text is scenario content, not recovered assignment evidence |
 | 2026-09-15 | `2026-09-15-chat-clarification.md` — one saved student after supplied tutor clarification | Frozen protocol; exact scope approved and one-request run closed in result memo |
 | 2026-09-15 | `2026-09-15-chat-continuation-handoff.md` — begin tutoring using existing generated replies | Complete: 29 replies imported into separate awaiting-tutor sessions; readable handoffs; zero new requests, samples or labels |
