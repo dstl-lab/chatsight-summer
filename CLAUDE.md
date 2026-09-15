@@ -1,6 +1,15 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
-## Current implementation focus (2026-09-14)
+## Current implementation focus (2026-09-15)
+
+Reviewer 1's returned form is saved byte-for-byte in ignored
+`data/episode-pilot/fidelity-coding-readiness-v1/received/reviewer-1/`, alongside
+an intake receipt. All eight case IDs, allowed labels and required-note rules
+pass validation; independent intake review agrees. Prior exposure is self-reported
+false. The export lacks a packet ID, so association follows the handoff context.
+All four original packet artifacts, including blank forms, remain unchanged.
+Await reviewer 2, then report agreement, disagreements and uncertainty once.
+No labels were assigned or changed by the assistant; no model calls or tuning.
 
 The approved work while reviewers code is complete: `src/eval/behavior_scoring.py`
 scores supplied probabilities against training frequencies, checks declared
@@ -15,8 +24,8 @@ reviewer artifacts remain unchanged. Related suite: 27 passed. Scoring review
 and browser replay inspection completed. See
 `docs/2026-09-14-offline-scoring-and-replay.md` for commands and limits.
 Stop at these artifacts: no new model batch, no scoring the exposed eight-case
-readiness set, no automatic history-ablation restart. The two independent human
-reviews remain the next research input; real benchmark protocol/budget is pending.
+readiness set, no automatic history-ablation restart. The second independent human
+review remains the next research input; real benchmark protocol/budget is pending.
 
 Minchan requested a UI instead of the eight-case packet. The portable builder
 `src/eval/coding_review.py` and HTML template produce one self-contained page per
@@ -47,8 +56,8 @@ The handoff in data/episode-pilot/fidelity-coding-readiness-v1 contains only the
 eight recorded next messages from the exposed communication development set,
 their exact prefixes, existing v7 action definitions and two blank separate forms.
 Prior labels and generated candidates are omitted. No reviewer messages were
-sent, no human ratings received and no model benchmark launched. The next input
-needed is the two completed independent forms. Do not fill them with model labels,
+sent and no model benchmark launched. No ratings were received at preparation;
+reviewer 1's later return is recorded above. Do not fill forms with model labels,
 restart plausibility review/history ablation or claim this set is a holdout.
 
 The new `src/agents/notebook_lesson.py` runs one bounded encounter by alternating
