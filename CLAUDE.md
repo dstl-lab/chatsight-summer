@@ -2,6 +2,26 @@
 
 ## Current implementation focus (2026-09-15)
 
+PR #26 is MERGED as `0f1a586`. Continue in the same isolated worktree on
+`codex/student-communication-candidate`. A separate 19-line candidate helper,
+`src/eval/student_communication.py`, adds an explicit student-only communication
+history field from the already visible prefix. Old instructions, schema and
+`student_continuation.py` stay unchanged. Chat-only wording was tested before;
+the new variable is prominence of observed student messages, not another rule.
+See the frozen docs/2026-09-15-student-communication-candidate.md.
+
+The private fixed comparison is PREPARED, NOT RUN, under
+data/episode-pilot/student-communication-candidate-v1/: same29 historical query
+prefixes, one control/candidate draw each, 58 logical Gemini2.5Pro requests and
+at most232 adapter attempts. Exact prompts total262419/291553 characters. The
+59 pinned artifacts include sources, inputs, separately withheld references,
+disclosure and the recorded standing approval; no new exact-payload reply is
+claimed. Authored actual-runner checks verify cap/retries, no-reply/error exclusion,
+metrics and no-resend. All376 tests pass, two optional container tests skip.
+Independent preparation review precedes dispatch. No model requests yet; update
+actual status separately. Stop at one fixed mechanical report; no semantic-label
+review or automatic adoption. Prior baseline/benchmarks remain unchanged.
+
 The first existing-data baseline is COMPLETE. `src/eval/retrieval_baseline.py`
 retrieves the recorded next message from a train-only TF-IDF prefix library;
 query targets are excluded, conversation/known-learner overlaps rejected, and
