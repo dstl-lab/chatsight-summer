@@ -2,6 +2,18 @@
 
 ## Current implementation focus (2026-09-15)
 
+The next bounded engineering increment is complete: `notebook_teaching_pair`
+prepares two alternative initial tutor replies using the unchanged saved-student
+engine. Shared task/work/prior dialogue/evaluation/budget remain identical; only
+the final tutor text differs in the student prompts. Private branch identities
+and staged publication isolate checks and prevent a partially prepared pair.
+This does not fork a progressed learner. Existing student/tutor/lesson APIs can
+continue each child. See `docs/2026-09-15-teaching-pair.md` for commands and limits.
+An authored hint-versus-worked-answer pair is prepared under ignored
+`data/episode-pilot/teaching-pair-v1/`; no generated actions or checks have run.
+Related suite: 31 passed. Independent review found no concrete issue. No new
+labeling or model batch, production engine edits, or old trace changes occurred.
+
 Minchan explicitly directed continuation with one completed review because the
 second will be delayed. This supersedes the two-form waiting condition below and
 in earlier handoff documents. The single-review pass is complete in ignored

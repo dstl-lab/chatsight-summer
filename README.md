@@ -38,6 +38,9 @@ bind the reply to the inspected state. Saved student replay makes no external ca
 The [bounded lesson command](docs/2026-09-14-notebook-lesson.md) alternates student
 actions and generated tutor replies automatically until a terminal state or budget
 limit, preserving the same work, checks and receipts.
+The [teaching-pair setup](docs/2026-09-15-teaching-pair.md) prepares two initial
+tutor alternatives with identical student work, earlier dialogue and budgets,
+ready for the existing saved-student commands.
 After a completed encounter, [next-task initialization](docs/2026-09-14-next-task-history.md)
 carries its observed history into a fresh task. The record is shared with both
 agents; it is not a private memory model or evidence of learning.
