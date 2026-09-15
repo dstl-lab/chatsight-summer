@@ -2,26 +2,25 @@
 
 ## Current implementation focus (2026-09-15)
 
-A grounded local-task continuation is PREPARED, BLOCKED BEFORE SEND, in
-data/episode-pilot/grounded-chat-v1/. Case 6 is the first eligible saved handoff
-after excluding closed/missing-task/completed-request cases 1-5. The recorded
-tutor explicitly describes extracting three first-row values into a list; the
-cached student submission implements that operation. This grounds a local task,
-not the full assignment or actual data/execution. Supply the frozen brief code
-feedback, then allow one new Gemini 2.5 Pro decision, maximum four attempts.
-The separate session has one reused decision and one remaining. Exact prompt
-(4,467 characters), tutor reply, grounding record and 224 pins are frozen.
-Prior sessions and the completed clarification stay intact. No production code,
-prompt revision, new labels or rerolls. See frozen docs/2026-09-15-grounded-chat.md.
-Handle actual dispatch review for this new private scope; the case-1 approval
-does not claim exact approval of this payload. Stop after one outcome/error.
-Automatic approval review rejected actual dispatch before process creation:
-standing approval and prior case-1 approval do not specifically authorize this
-case-6 sensitive payload/Gemini destination. dispatch-review.json records the
-rejection and five scope/audit hashes. Zero new requests or provider attempts;
-no dispatch.json or second step. No workaround. Ask for this exact one-request
-scope, preserving frozen files. Independent preparation audit passed: exact
-cached reply/next prompt, state binding, 224 pins and unchanged send/verify logic.
+The grounded local-task continuation is COMPLETE and CLOSED in
+data/episode-pilot/grounded-chat-v1/. Minchan explicitly approved case 6 with
+"Yes" after the initial automatic-review rejection. exact-scope-approval.json
+records that reply and six hashes before dispatch; preserve both records.
+One Gemini 2.5 Pro request completed in one adapter attempt, zero retries.
+The student prepended the exact already-visible name assignment to its three
+cached code lines. It stayed within the locally described task; no code ran.
+The full assignment, data values, grading, learning and fidelity remain unknown.
+One reused plus one new decision exhaust the fixed budget. Exact prompt/binding/
+replay, all 224 preparation pins and prior evidence verify; independent audit
+passed. No production source, prompt or frozen protocol changed. Private
+REPORT.md/report.json preserve the exchange; see docs/2026-09-15-grounded-chat-result.md.
+
+The initial saved-chat demonstration is now closed: 29 handoffs plus the
+missing-context and grounded-task continuations. Do not start another one-off
+sample to recheck the same mechanism or ask for more plausibility ratings.
+Use the saved sessions as fixtures for researcher interaction, coordinating with
+the existing Marimo viewer work rather than duplicating it. A further fidelity
+study needs a separate behavioral question and stopping rule.
 
 The one saved-chat continuation is COMPLETE and CLOSED under
 data/episode-pilot/chat-clarification-v1/. After the initial automatic-review
