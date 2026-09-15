@@ -2,6 +2,37 @@
 specific behavior mismatch. We have not yet validated realistic student personas,
 learning, or transfer to other courses.**
 
+## Current direction: use the data already available
+
+Minchan clarified that the next quarter is not imminent. Simulator development
+must proceed from the existing corpus; new logging and collection are supporting
+work, not a dependency. The earlier observation-contract priority below records
+the path taken, not the current prerequisite for all further research.
+
+The current data supports conditioning on recorded conversation prefixes and
+captured work, comparing the next recorded message, and comparing net source
+between compatible captures. It does not require an exhaustive set of student
+labels before simulation can continue. Missing intermediate events limit which
+claims we can test; they do not make the whole corpus unusable.
+
+The immediate development target is the observed excess-work/narration mismatch.
+Reuse existing continuation and action code and compare a separately identified
+candidate with the unchanged generator and a simple baseline. Fix the comparison
+and stopping rule before another generation run. A completed fixed comparison
+must lead to an adoption/rejection/inconclusive decision, not another automatic
+round of plausibility questions. Existing exposed cases can inform development;
+they cannot become fresh validation cases. Additional historical conversations
+remain a possible evaluation source, subject to overlap and coverage checks.
+
+The historical notebook initialization and three-action example already exist;
+repeating them is not a new milestone. Preserve the completed help/work benchmark,
+notebook forecasts and human judgments. No new model run, labels, data collection
+or simulator-quality claim follows from this priority correction. Full silent
+action sequences, stopping probabilities, learning and causal tutor effects remain
+unvalidated; those limitations do not block observable-message development now.
+
+## Progress and earlier decisions
+
 The North Star remains a tool for educators and researchers to experiment with
 how to support students. The coaching game and Animal Crossing-inspired visual
 direction are deferred while we establish the simulation's behavior.

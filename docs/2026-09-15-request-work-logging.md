@@ -108,7 +108,10 @@ HTTP/network failures are reported to the browser console, without durable retry
 Received records must be inspected before treating a deployed session as usable
 research evidence. No data/model requests, new human ratings or deployments ran.
 
-The next human review is the concrete tutor PR, followed by a deliberate deployment
-decision. After installation in an approved test environment, verify one invented
-two-request/execution example in the actual collector before collecting a new
-fixed simulator comparison. Earlier exposed examples remain closed and unchanged.
+The next human review for this logging work is the concrete tutor PR, followed by
+a deliberate deployment decision. After installation in an approved test
+environment, verify one invented two-request/execution example in the actual
+collector before using newly collected observations in a simulator comparison.
+Minchan subsequently clarified that main-flow simulator development must use the
+existing data now, independently of this PR and the next quarter. Earlier exposed
+examples remain closed and unchanged.

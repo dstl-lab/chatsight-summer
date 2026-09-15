@@ -2,6 +2,28 @@
 
 ## Current implementation focus (2026-09-15)
 
+Minchan corrected the main priority: the next quarter is not imminent, so build
+and evaluate simulated students with the data already available. Future logging,
+deployment and new collection are NOT prerequisites for the main research flow.
+The completed logging PR is a separate supporting improvement. This supersedes
+older statements below that put collector verification before all further
+simulator work; that verification gates claims about newly logged data only.
+
+Reuse the existing historical chat prefixes, captured-work initialization,
+continuation/action helpers and saved-session machinery. Do not repeat the
+already completed three-action historical notebook demonstration or build another
+importer. The next development priority is the known excess-work/narration
+communication mismatch, with a simple baseline and a fixed comparison on what
+historical records actually observe. Prior exposed examples may inform development
+but are not a fresh holdout. Keep completed help/work and notebook forecast batches,
+labels, prompts and results intact; any changed model is a separate candidate.
+No exhaustive label taxonomy, repeated plausibility review, or invented execution/
+stop/learning ground truth. New private-data model sends still need their exact
+scope handled separately; this priority correction itself sends nothing.
+See the current-direction note in docs/2026-09-15-simulation-progress-summary.md.
+
+### Completed logging work (separate from the main simulation flow)
+
 Minchan approved the future logging implementation with "Let's do it" after the
 coding-assistant tracking comparison. Implemented in generalized tutor PR #11
 https://github.com/dstl-lab/jupyterlab-ai-tutor/pull/11 at `adff528` (initial `3843d12`), separate persistent
@@ -23,8 +45,9 @@ undeployed. User asked about latency: serialization/copy/hash precede
 dispatch, logging uploads asynchronous; latency remains unmeasured and needs a
 representative deployment check. One approving GitHub review is required.
 Implementation/PR approval does not authorize starting real collection.
-Next: review concrete PR, then verify an invented example through an approved
-installation/collector before designing another fixed fidelity comparison. The
+For use of future logging: review the concrete PR, then verify an invented example
+through an approved installation/collector. Existing-data simulation proceeds
+independently. The
 earlier source-audit-only/proposed status immediately below is historical.
 
 Main-flow source audit located the actual lab tutor/logger repositories; see
