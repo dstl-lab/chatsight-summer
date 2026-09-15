@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-15 | `2026-09-15-saved-chat-student.md` — resume dialogue-only scenarios from existing prefixes | Implemented: unchanged generator, state-bound tutor replies, fixed budgets and offline replay; 29 historical scenarios initialized, zero model calls |
 | 2026-09-15 | `2026-09-15-student-communication-result.md` — fixed original/candidate comparison | Complete: 58 valid outcomes; paired length error 127.357 vs 126.107; current generator retained, no new labeling round |
 | 2026-09-15 | `2026-09-15-student-communication-candidate.md` — make visible student messages more prominent | Frozen protocol; comparison complete in result memo, candidate not adopted |
 | 2026-09-15 | `2026-09-15-historical-response-baseline.md` — existing-data lexical response comparator | Complete: 1179 library examples, 29 query conversations; length error exceeds train-median baseline, dominated by one outlier; no model calls or new labels |

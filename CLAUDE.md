@@ -2,6 +2,28 @@
 
 ## Current implementation focus (2026-09-15)
 
+The saved-chat workflow is COMPLETE in PR #28
+https://github.com/dstl-lab/chatsight-summer/pull/28 on `codex/saved-chat-student`,
+stacked on PR #27 while its required human review is outstanding. `src/agents/chat_student.py`
+reuses the strict historical Query, unchanged continuation prompt/schema/branch
+helper and existing atomic-save/lock helpers. Create/show are offline. One step
+generates one reply or no-reply; later steps require a supplied tutor response
+and the exact inspected session/state binding. Unique session IDs isolate even
+identical seeds. Fixed budget, terminal error/no-reply, pending-before-dispatch
+and exact replay prevent accidental resends. No notebook runtime or label state
+is invented. Code in chat is text only. See docs/2026-09-15-saved-chat-student.md.
+
+All 381 tests pass, two optional container checks skip. The private preparation
+under data/episode-pilot/saved-chat-student-v1/ initializes all 29 existing query
+prefixes as separate ready scenarios, each with zero decisions and a six-decision
+budget. All first prompts exactly match the frozen original-control prompts;
+earlier comparison files and pins remain unchanged. No model calls, new labels,
+historical notebook demonstration, UI or new fidelity result. These are dialogue
+scenarios, not reconstructed people or calibrated student personas. `prepare.py
+verify` checks the untouched preparation; do not rerun create-only preparation.
+Later private-data sends need their exact scope handled separately. The 58-request
+approval and completed comparison below do not authorize a replacement benchmark.
+
 PR #26 is MERGED as `0f1a586`. Continue in the same isolated worktree on
 `codex/student-communication-candidate`. A separate 19-line candidate helper,
 `src/eval/student_communication.py`, adds an explicit student-only communication
