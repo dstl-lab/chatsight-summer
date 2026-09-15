@@ -2,8 +2,9 @@
 
 ## Current implementation focus (2026-09-15)
 
-The saved-chat workflow is COMPLETE on `codex/saved-chat-student`, stacked on
-PR #27 while its required human review is outstanding. `src/agents/chat_student.py`
+The saved-chat workflow is COMPLETE in PR #28
+https://github.com/dstl-lab/chatsight-summer/pull/28 on `codex/saved-chat-student`,
+stacked on PR #27 while its required human review is outstanding. `src/agents/chat_student.py`
 reuses the strict historical Query, unchanged continuation prompt/schema/branch
 helper and existing atomic-save/lock helpers. Create/show are offline. One step
 generates one reply or no-reply; later steps require a supplied tutor response
