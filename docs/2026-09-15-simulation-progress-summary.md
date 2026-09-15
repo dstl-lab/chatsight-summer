@@ -31,6 +31,24 @@ or simulator-quality claim follows from this priority correction. Full silent
 action sequences, stopping probabilities, learning and causal tutor effects remain
 unvalidated; those limitations do not block observable-message development now.
 
+## Completed comparison: keep the current generator
+
+The fixed existing-data comparison is complete; see
+[the result memo](2026-09-15-student-communication-result.md). Across 29 prefixes,
+the original produced 29 replies and the candidate produced 28 replies plus one
+no-reply. On 28 paired replies, mean absolute length error was 127.357 versus
+126.107 characters: a 1.25-character reduction. The simple constant-length
+baseline scored 75.679 on those same cases. The candidate's median length/error
+fell, but this does not establish better behavioral fidelity or fix the earlier
+excess-work mismatch. All 58 calls completed, using 61 adapter attempts.
+
+The decision is to retain the current generator and close this experiment.
+The separate candidate and evidence are preserved in PR #27; no new labeling
+round or automatic prompt iteration follows. This is a completed comparison with
+a concrete non-adoption decision, not a validated student model. The prototype
+can still be used for research; any later fidelity claim needs a measurable
+behavioral target beyond message length.
+
 ## Progress and earlier decisions
 
 The North Star remains a tool for educators and researchers to experiment with

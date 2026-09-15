@@ -2,6 +2,121 @@
 
 ## Current implementation focus (2026-09-15)
 
+The grounded local-task continuation is COMPLETE and CLOSED in
+data/episode-pilot/grounded-chat-v1/. Minchan explicitly approved case 6 with
+"Yes" after the initial automatic-review rejection. exact-scope-approval.json
+records that reply and six hashes before dispatch; preserve both records.
+One Gemini 2.5 Pro request completed in one adapter attempt, zero retries.
+The student prepended the exact already-visible name assignment to its three
+cached code lines. It stayed within the locally described task; no code ran.
+The full assignment, data values, grading, learning and fidelity remain unknown.
+One reused plus one new decision exhaust the fixed budget. Exact prompt/binding/
+replay, all 224 preparation pins and prior evidence verify; independent audit
+passed. No production source, prompt or frozen protocol changed. Private
+REPORT.md/report.json preserve the exchange; see docs/2026-09-15-grounded-chat-result.md.
+
+The initial saved-chat demonstration is now closed: 29 handoffs plus the
+missing-context and grounded-task continuations. Do not start another one-off
+sample to recheck the same mechanism or ask for more plausibility ratings.
+Use the saved sessions as fixtures for researcher interaction, coordinating with
+the existing Marimo viewer work rather than duplicating it. A further fidelity
+study needs a separate behavioral question and stopping rule.
+
+The one saved-chat continuation is COMPLETE and CLOSED under
+data/episode-pilot/chat-clarification-v1/. After the initial automatic-review
+rejection, Minchan explicitly replied "Yes, I approve" to the exact private
+payload/Gemini scope. exact-scope-approval.json preserves that reply and five
+scope hashes before dispatch; the earlier rejection/standing approval remain.
+One new Gemini 2.5 Pro request completed in one adapter attempt, zero retries.
+The separate session has one reused reply plus one new decision, zero remaining.
+Offline replay matches the receipt; all 207 preparation pins and both earlier
+sets of 29 sessions remain intact. Independent audit passed. No generator source,
+prompt or frozen protocol changed. No further request or plausibility rating.
+
+The student supplied assignment-like text after the tutor asked for missing
+question text. That content was absent from the input: preserve it as generated
+scenario content, not recovered question 1.6 or historical assignment evidence.
+The run demonstrates saved-chat continuation, not student fidelity, learning or
+a tutoring-policy effect. Budget exhaustion is not student silence. Private
+REPORT.md/report.json retain the exchange and receipts; see
+docs/2026-09-15-chat-clarification-result.md. Keep the preparation memo unchanged.
+A subsequent grounded interaction needs task text in its starting context or an
+explicitly authored task before generation; repeated calls cannot recover missing
+assignment state. Do not automatically extend or reroll this closed run.
+
+The conversation handoff is COMPLETE on `codex/chat-continuation-handoff`.
+PR #28 merged as `9ac3e45` INTO PR #27's branch, not main; PR #27 still awaits
+the required human review. Its tree is identical to the completed saved-chat
+branch. This increment changes no simulator source or generator prompt.
+
+All 29 already-generated original-control replies are imported locally into
+separate sessions under data/episode-pilot/chat-continuation-handoff-v1/.
+Every import matches the original query, prompt, schema, model and response.
+All reopen awaiting-tutor with one reused decision and five remaining. There
+were zero new provider requests, new samples or labels. INDEX.md links one
+readable tutor handoff percase; contexts/ contains current state exports.
+handoff.json preserves original call indices/generation times and local import
+times with source/output hashes. New step timestamps describe cache imports,
+not fresh model calls. The earlier initial29 sessions and closed comparison
+are unchanged. See docs/2026-09-15-chat-continuation-handoff.md.
+
+Use the imported sessions for later interactions instead of regenerating their
+first replies. A next tutor reply is supplied intervention; no recorded future
+can be appended after divergence. Later generation needs its exact private-data
+send scope handled separately. This is a usable conversation handoff, not an
+additional benchmark, persona-fidelity result or another plausibility-review loop.
+
+The saved-chat workflow is COMPLETE in PR #28
+https://github.com/dstl-lab/chatsight-summer/pull/28 on `codex/saved-chat-student`,
+stacked on PR #27 while its required human review is outstanding. `src/agents/chat_student.py`
+reuses the strict historical Query, unchanged continuation prompt/schema/branch
+helper and existing atomic-save/lock helpers. Create/show are offline. One step
+generates one reply or no-reply; later steps require a supplied tutor response
+and the exact inspected session/state binding. Unique session IDs isolate even
+identical seeds. Fixed budget, terminal error/no-reply, pending-before-dispatch
+and exact replay prevent accidental resends. No notebook runtime or label state
+is invented. Code in chat is text only. See docs/2026-09-15-saved-chat-student.md.
+
+All 381 tests pass, two optional container checks skip. The private preparation
+under data/episode-pilot/saved-chat-student-v1/ initializes all 29 existing query
+prefixes as separate ready scenarios, each with zero decisions and a six-decision
+budget. All first prompts exactly match the frozen original-control prompts;
+earlier comparison files and pins remain unchanged. No model calls, new labels,
+historical notebook demonstration, UI or new fidelity result. These are dialogue
+scenarios, not reconstructed people or calibrated student personas. `prepare.py
+verify` checks the untouched preparation; do not rerun create-only preparation.
+Later private-data sends need their exact scope handled separately. The 58-request
+approval and completed comparison below do not authorize a replacement benchmark.
+
+PR #26 is MERGED as `0f1a586`. Continue in the same isolated worktree on
+`codex/student-communication-candidate`. A separate 19-line candidate helper,
+`src/eval/student_communication.py`, adds an explicit student-only communication
+history field from the already visible prefix. Old instructions, schema and
+`student_continuation.py` stay unchanged. Chat-only wording was tested before;
+the new variable is prominence of observed student messages, not another rule.
+See the frozen docs/2026-09-15-student-communication-candidate.md.
+
+The fixed comparison is COMPLETE under
+data/episode-pilot/student-communication-candidate-v1/. After the initial
+zero-send rejection, Minchan explicitly approved the exact private-prefix/Gemini
+scope; exact-scope-approval.json and dispatch-start.json preserve that sequence.
+All 58 requests returned valid outcomes, using 61 adapter attempts (case 8 candidate
+needed three retries). Original: 29 replies. Candidate: 28 replies, one no-reply.
+On 28 paired replies, length MAE was 127.357 original versus 126.107 candidate;
+primary paired difference −1.25 characters. The same-case constant 35-character
+baseline was better on length (75.679); retrieval was 393.357. Candidate median
+length/error fell, but neither that nor literal formatting flags establish less
+extra work, relevance, persona fidelity or realistic silence. Case 4 no-reply is
+excluded from paired scores and retained as a separate disposition.
+
+Decision: RETAIN THE CURRENT GENERATOR; no automatic adoption or further prompt
+experiment. See docs/2026-09-15-student-communication-result.md and private
+REPORT.md/report.json. One fixed report closes this run. Replay verifies 58 slots
+and all 59 preparation/source pins. The source commit passed 376 tests, with two
+optional container tests skipped. Source generator/schema and older experiments
+remain unchanged. Do not rerun create-only send/score or tune this frozen batch.
+PR #27 records the separate candidate and completed development result.
+
 The first existing-data baseline is COMPLETE. `src/eval/retrieval_baseline.py`
 retrieves the recorded next message from a train-only TF-IDF prefix library;
 query targets are excluded, conversation/known-learner overlaps rejected, and

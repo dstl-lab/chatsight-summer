@@ -26,6 +26,14 @@ the current saved-student commands remain the implemented interface.
 
 ## Running a saved student
 
+For historical **chat-only prefixes**, use the
+[saved-chat workflow](docs/2026-09-15-saved-chat-student.md). It starts a conversation
+scenario, generates one student reply at a time, and accepts your tutor response
+after reopening. It uses the unchanged continuation prompt and requires no notebook
+runtime. Saved state, fixed budgets and explicit no-reply are preserved; code in
+chat does not execute or establish student work. `create` and `show` are offline;
+generation requires `step --send` with a current context export.
+
 The [saved-student workflow](docs/2026-09-14-continuing-student.md) initializes a task
 and resumes bounded student actions across process reloads. The current executor
 supports one selected cell, a supplied string column and a scalar result, with
