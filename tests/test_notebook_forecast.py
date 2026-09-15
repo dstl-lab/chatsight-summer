@@ -8,6 +8,8 @@ import pytest
 def test_forecast_excludes_future_and_measures_net_edits_without_changing_inputs():
     from src.eval.notebook_forecast import Forecast, apply_forecast, compare, make_prompt
 
+    assert 'additionalProperties' not in json.dumps(Forecast.model_json_schema())
+
     initial = [
         {'index': 0, 'cell_type': 'markdown', 'source': 'Update the values.'},
         {'index': 1, 'cell_type': 'code', 'source': ['x = 0\n'], 'outputs': ['PRIVATE OUTPUT']},

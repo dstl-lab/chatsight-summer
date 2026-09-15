@@ -2,6 +2,25 @@
 
 ## Current implementation focus (2026-09-15)
 
+The two next-eligible-capture requests have now run after Minchan explicitly
+approved the exact payloads and requested the project recap first. The recap was
+created and linked before dispatch; see `docs/2026-09-15-simulation-progress-summary.md`.
+The run exhausted two logical requests/eight adapter attempts, with zero forecasts:
+Gemini rejected root/nested additional_properties fields (HTTP400). Both errors and
+the earlier automatic-review rejection remain preserved. No behavioral score or
+replacement request exists. See `docs/2026-09-15-next-visit-work-results.md`.
+The root cause was new forecast configs omitting the existing Gemini-compatible
+BeforeHelpSelection config. The failed helper is preserved byte-for-byte privately
+and at Gitf9c44f5. Both classes now reuse the compatible config with strict local
+validation; the new regression failed first and all17relatedtests then passed.
+No prompt/scoring/runtime change. Current helper/test pins intentionally differ
+from the failed experiment; use preserved originals for its source audit. Exact
+failure scoring still reproduces. Live acceptance of the correction remains
+untested; first perform an authored schema smoke check before any separately
+bounded real-data run. Do not rerun or replace this exhausted fixed batch.
+The former pending preparation below is historical and superseded by this result.
+Keep PR#25 draft/unmerged; no new human labels or plausibility review are needed.
+
 The next-eligible-capture work forecast is prepared but NOT RUN; see
 `docs/2026-09-15-next-visit-work-forecast.md` and ignored
 `data/episode-pilot/next-visit-work-v1/`. This is an explicit net-state forecast,

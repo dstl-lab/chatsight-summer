@@ -1,17 +1,19 @@
 """A source-only forecast at a later recorded return, separate from action policy."""
 import json
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
+
+from src.labeling.episodes import BeforeHelpSelection
 
 
 class Edit(BaseModel):
-    model_config = ConfigDict(extra='forbid', strict=True)
+    model_config = BeforeHelpSelection.model_config | {'strict': True}
     index: int = Field(ge=0)
     source: str
 
 
 class Forecast(BaseModel):
-    model_config = ConfigDict(extra='forbid', strict=True)
+    model_config = BeforeHelpSelection.model_config | {'strict': True}
     edits: list[Edit]
 
 
