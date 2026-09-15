@@ -61,8 +61,10 @@ dispatch. The two requests then exhausted eight adapter attempts with a schema
 compatibility error; neither returned a forecast. I had missed an existing Gemini
 schema convention in the new helper. That omission is now corrected offline, with
 17 tests passing. The failed run remains preserved and has no behavioral score.
-The next technical step is an authored API smoke check before a separately bounded
-real-data run; the corrected format has not yet been verified live.
+A subsequent authored API smoke check succeeded on its first adapter attempt, so
+the specific format issue is now verified fixed live. A separate V2 of the same
+two real-data examples is prepared. Automatic approval review requires explicit
+permission for that new batch; no V2 real-data requests have been made.
 
 Beyond that development check, the priority is one finite fidelity study with a
 fixed dataset, baseline, metric and stopping rule. Broader claims need evidence

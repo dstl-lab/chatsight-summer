@@ -2,6 +2,23 @@
 
 ## Current implementation focus (2026-09-15)
 
+The corrected next-capture schema now passes a live authored smoke check:
+one logical Gemini request/one adapter attempt, expected edit received and locally
+validated, no code execution. See `docs/2026-09-15-next-visit-work-v2.md` and ignored
+`data/episode-pilot/next-visit-work-v2/`. V2 is separately prepared with unchanged
+initial contexts/inputs/targets/disclosure/runner/scorer; only the two unsupported
+provider schema fields were removed. Independent audit and offline checks pass.
+However, automatic approval review rejected the V2 private-data resend before
+process creation because prior permission covered only the exhausted V1 batch.
+Zero V2 real-data requests/attempts and no run.json. Preparation inferred renewed
+authorization from the latest continuation; that inference was not accepted.
+Preserve its approval-response.json and send-blocked.json. Obtain explicit consent
+for two NEW requests/eight adapter attempts with the SAME private excerpts to
+Gemini, record a separate bound approval before dispatch, then run once. No
+workaround, replacement of V1 failures, more samples, labels or human fit review.
+The specific live schema issue is resolved; student forecast results remain absent.
+V1 and earlier benchmark artifacts remain unchanged. Keep PR#25 draft/unmerged.
+
 The two next-eligible-capture requests have now run after Minchan explicitly
 approved the exact payloads and requested the project recap first. The recap was
 created and linked before dispatch; see `docs/2026-09-15-simulation-progress-summary.md`.
