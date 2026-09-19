@@ -1,5 +1,27 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Corpus description (2026-09-19)
+
+Minchan approved step 1 of the simulation-fidelity study: describe the existing
+corpus before selecting another comparison. The offline corpus report is complete;
+see docs/2026-09-19-corpus-summary.md and src/eval/corpus_summary.py. Eight canonical
+exports contain 455 memberships / 252 distinct conversations. Fresh message
+analysis uses only the existing 156-conversation development library (1,400 student
+messages), preserving the old split. Median message length is 34 characters; the
+largest 16 conversations supply 36.1% of messages. Equal-conversation statistics
+are reported separately. About 60% of the full corpus starts in February; most
+development student timestamps/modes are missing. Known modes include tutor and
+chatgpt. These selected exports are not a representative or untouched student
+sample. The canonical chat snapshots and saved notebook-pair metadata provide no
+usable learner mapping for this corpus; conversation IDs are not student IDs.
+
+The create-only private aggregate report is at
+data/episode-pilot/corpus-summary-v1/report.json. Source hashes and independent
+arithmetic verify; old experiments remain unchanged. No model/DB calls, labels,
+reviewer tasks, generator changes or replacement benchmark. This descriptive step
+is closed. The next study must separately freeze its observable endpoint, sampling,
+comparison and stopping rule; do not resume one-off plausibility checks.
+
 ## Current implementation focus (2026-09-15)
 
 The grounded local-task continuation is COMPLETE and CLOSED in
