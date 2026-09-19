@@ -1,5 +1,22 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Marimo intervention workspace (2026-09-19)
+
+Minchan approved continuing to saved-session controls. The notebook workspace in
+apps/student_workspace.py uses tutor_context.snapshot and a small bound-step
+helper in src/agents/student_workspace.py. Viewing/reloading is offline. Only
+explicit UI callbacks can dispatch, only with --send=true, one student decision
+at a time. Both displayed hashes go to the existing runner; no changed prompts,
+engine, receipt format or bypass of terminal/budget/pending-operation protections.
+The tutor form appears only for a pending student message. No new labeling queue.
+Marimo is an optional workspace dependency; see
+docs/2026-09-19-saved-student-workspace.md for use and verification.
+
+The separate authored example in data/episode-pilot/student-workspace-v1/session
+starts with six unused decisions. Browser checks use a separate invented fixture
+and injected adapters, not new Gemini samples. Do not reopen old closed demos.
+This is an operational interface, not new evidence of persona fidelity or learning.
+
 ## Standing preference: minimize manual labeling (2026-09-19)
 
 Minchan explicitly instructed: "yes, do that. minimize manual labeling unless

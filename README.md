@@ -28,9 +28,11 @@ are never compared or mixed.
 **Read `CLAUDE.md` first** — it carries the rules (classifier parity, snapshot immutability,
 blind measurement, no student data in git) that every claim in this project depends on.
 
-The eventual educator/researcher workspace will use **Marimo**, with Python source
-and readable diffs. See the [UI direction and observation work](docs/2026-09-15-marimo-and-observation-contract.md);
-the current saved-student commands remain the implemented interface.
+The [Marimo workspace](docs/2026-09-19-saved-student-workspace.md) opens one saved
+notebook student, shows work/diffs and dialogue, and lets a researcher supply tutor
+guidance and continue one decision. Viewing is offline; sending requires an
+explicit launch option and button click. The existing saved-student commands
+remain available. See also the [UI direction](docs/2026-09-15-marimo-and-observation-contract.md).
 
 ## Running a saved student
 
