@@ -1,6 +1,24 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
-## Recorded behavior audit (2026-09-19)
+## Standing preference: minimize manual labeling (2026-09-19)
+
+Minchan explicitly instructed: "yes, do that. minimize manual labeling unless
+absolutely necessary." The 86-message audit below is PAUSED. It does not block
+simulator development. This supersedes older instructions to await more coding.
+Preserve all frozen evidence and browser drafts; do not silently assign missing
+labels. Use existing judgments and automatic diagnostics, with their limits.
+Request human labeling only for a specific consequential decision that existing
+evidence cannot resolve, stating the smallest useful sample and stopping rule.
+No standing queue, replacement bulk batch or repeated plausibility checks.
+See docs/2026-09-19-minimize-manual-labeling.md.
+
+Expose the existing three-task saved replay without generating another demo.
+Then prioritize researcher intervention using the existing saved-session commands,
+coordinating with the Marimo viewer work. Keep the current generator; unresolved
+semantic fidelity does not prevent mechanism/UI development. The local review
+address now serves a pause page with optional access to the unchanged old form.
+
+## Recorded behavior audit (2026-09-19; paused)
 
 Minchan approved proceeding from the corpus summary to a conversation-level
 behavioral benchmark. The bounded next step reuses the existing 29 query cases and
@@ -12,8 +30,9 @@ data/episode-pilot/recorded-behavior-audit-v1/ for the protocol, private mapping
 coverage, preparation and portable UI. This is a new secondary analysis of exposed
 saved messages, not a replacement length comparison or probability calibration.
 
-Await ONE human coding pass in the existing UI (localhost:8423). Preserve the
-returned JSON, verify the frozen preparation, and use
+The original plan was ONE human coding pass; Minchan subsequently paused it.
+The following scoring instructions apply only if that audit is explicitly resumed.
+Preserve returned JSON, verify the frozen preparation, and use
 src/eval/cached_communication_scoring.py for the fixed report. Primary is signed
 original-generator work-incidence gap, accompanied by its 2x2 disagreement table;
 help and same-case candidate comparisons are secondary. Each flag has its own

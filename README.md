@@ -14,8 +14,11 @@ data limitations and proposed finite evaluation.
 The [existing-data corpus summary](docs/2026-09-19-corpus-summary.md) describes the
 252 saved conversations, the development subset's message patterns, and the limits
 of sampling students from the current exports.
-The [recorded behavior audit](docs/2026-09-19-recorded-behavior-audit.md) reuses saved
-simulator replies for one blind help/work coding pass across 29 conversations.
+The [recorded behavior audit](docs/2026-09-19-recorded-behavior-audit.md) is **paused**;
+its 86-message coding pass is not required to continue. Our
+[standing workflow](docs/2026-09-19-minimize-manual-labeling.md) minimizes manual
+labeling, reuses existing evidence, and prioritizes the saved simulator. Human
+review returns only when needed for a specific consequential decision.
 
 Raw data: DSC 10 tutor chat logs in an external Postgres (`dsc10_tutor_logs`), read-only
 via `kubectl port-forward`. The database is shared with ChatSight, a distant-cousin project
