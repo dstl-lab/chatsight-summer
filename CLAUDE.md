@@ -1,5 +1,27 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Recorded behavior audit (2026-09-19)
+
+Minchan approved proceeding from the corpus summary to a conversation-level
+behavioral benchmark. The bounded next step reuses the existing 29 query cases and
+cached original/candidate outputs: 29 references +29 original replies +28 candidate
+replies =86 messages /172 help-work flags. Candidate's one no-reply is retained
+outside the reviewer UI. No new model/DB calls or changes to old experiments.
+See docs/2026-09-19-recorded-behavior-audit.md and ignored
+data/episode-pilot/recorded-behavior-audit-v1/ for the protocol, private mapping,
+coverage, preparation and portable UI. This is a new secondary analysis of exposed
+saved messages, not a replacement length comparison or probability calibration.
+
+Await ONE human coding pass in the existing UI (localhost:8423). Preserve the
+returned JSON, verify the frozen preparation, and use
+src/eval/cached_communication_scoring.py for the fixed report. Primary is signed
+original-generator work-incidence gap, accompanied by its 2x2 disagreement table;
+help and same-case candidate comparisons are secondary. Each flag has its own
+complete-pair denominator. Do not assign labels, treat no-reply as no/no, request
+another plausibility round, generate replacements or adopt a changed simulator.
+26/29 cases start in February; ten have no earlier student context. Target is the
+first next message, including the one case with a five-message follow-up block.
+
 ## Corpus description (2026-09-19)
 
 Minchan approved step 1 of the simulation-fidelity study: describe the existing
