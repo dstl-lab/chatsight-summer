@@ -1,5 +1,14 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Saved-result inspection (2026-09-20)
+
+TASKLIST.md item 1 is complete: the Marimo Saved results tab reads existing chat
+and notebook receipts, linking policies only through matching pre-step bindings,
+tutor text and saved continuation results. Failed/interrupted records remain
+inspectable when session replay fails; no repair, retry or new generation occurs.
+Student engines/prompts are unchanged. See docs/2026-09-20-workspace-saved-results.md.
+The next proposed item is two-policy comparison from the same starting chat context.
+
 ## Existing chat scenarios in the workspace (2026-09-20)
 
 Minchan approved connecting the 29 cached chat scenarios to the Marimo workspace:

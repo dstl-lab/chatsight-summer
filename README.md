@@ -40,6 +40,8 @@ The same app also [opens saved chat scenarios](docs/2026-09-20-chat-scenario-wor
 with a scenario selector and policy controls. The local preparation reuses the 29
 cached first replies in separate sessions; recorded and simulated messages stay
 distinct, and missing notebook activity is shown as unknown. No new labeling is required.
+The [Saved results tab](docs/2026-09-20-workspace-saved-results.md) shows the policy
+and outcomes of each saved exchange, including interrupted and failed requests.
 
 ## Running a saved student
 

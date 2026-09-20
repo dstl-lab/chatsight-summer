@@ -27,11 +27,13 @@ milestones; the former does not establish the latter.
 
 ## Next, in order
 
-- [ ] **1. Make the saved result understandable inside the workspace.** Show the
+- [x] **1. Make the saved result understandable inside the workspace.** Show the
   policy actually used for each exchange, its tutor reply, student response, and
   whether the run stopped, exhausted its budget, or failed. Read existing receipts.
   **Done when:** reopening a run explains what happened without inspecting JSON;
   viewing and reloading make no model calls.
+  Completed in the [Saved results tab](docs/2026-09-20-workspace-saved-results.md),
+  including failed/interrupted exchanges and notebook actions.
 
 - [ ] **2. Compare two policies from the same conversation starting point.** Use
   separate session identities, the same recorded prefix and cached first reply,
