@@ -3,8 +3,8 @@
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is excess work/evidence presentation in chat, but the current
 help-only reference set cannot validate a fix. Further fidelity experiments are deferred.
-Next independent engineering task: package the existing tools for teammates;
-keep the labeling queue and workspace redesign paused.
+The teammate quickstart and authored offline demo are ready. Integration still
+needs the PR stack's normal review; keep the labeling queue and workspace redesign paused.
 
 Updated: September 20, 2026. Unchecked items are proposed work, not completed results.
 
@@ -81,11 +81,18 @@ milestones; the former does not establish the latter.
   work changes in one view. No historical notebook actions are invented.
   **Deferred by Minchan:** leave the current layout for the later workspace redesign.
 
-- [ ] **6. Package the prototype for a teammate to run (next engineering task).** Document startup, local
+- [ ] **6. Package the prototype for a teammate to run.** Document startup, local
   private-data setup, scenario selection, policy controls and saved results. Resolve
   the existing PR stack through its normal checks and review requirements.
   **Done when:** a teammate can reproduce a saved interaction without this chat,
   with no private student data committed to Git.
+  **Packaging complete:** [teammate quickstart](docs/teammate-quickstart.md) and
+  `src.agents.chat_demo` provide a create-only authored example using the existing
+  runner and views. Setup was checked in a clean temporary checkout using locked
+  dependencies; the demo needs no key, private files, database or Docker.
+  **Integration pending:** PR #30 targets main and requires GitHub review; PR #31
+  remains a draft, and the later workspace PRs are stacked on it. Preserve the
+  paused audit and normal review requirements when integrating the stack.
 
 ## Current difficulties
 
