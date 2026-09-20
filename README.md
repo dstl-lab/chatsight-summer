@@ -46,6 +46,14 @@ The [policy comparison](docs/2026-09-20-chat-policy-comparison.md) starts two
 independent branches from the same cached student reply, with fixed tutor policies
 and equal budgets, and shows both saved outcomes together.
 
+## Start here: teammate walkthrough
+
+Follow the [teammate quickstart](docs/teammate-quickstart.md) to install the optional
+workspace and open an authored offline example in Marimo. It uses the existing
+saved-chat runner and comparison view with scripted replies: no student data,
+credentials or model calls. The guide also covers private working sessions,
+policy controls, saved results and matching the session's code revision.
+
 ## Running a saved student
 
 For historical **chat-only prefixes**, use the

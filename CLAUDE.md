@@ -1,5 +1,24 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Teammate setup (2026-09-20)
+
+The teammate quickstart is docs/teammate-quickstart.md. The create-only
+src.agents.chat_demo command saves entirely invented, scripted source dialogue
+and tutor/student responses through the existing chat runner and policy pair.
+Both branches finish after one new decision: A exhausts its budget and B has an
+authored no-reply. The model identifier is authored-offline-demo; no provider is
+constructed. Visible policies and seeded context identify the fixture as authored.
+This demonstrates setup, replay and saved results, not student fidelity or policy
+effects. Existing engines, prompts, private sessions and the live workspace remain
+unchanged. No new labels or model calls. Task-list item 6 packaging is ready;
+integration remains pending required GitHub review at PR #30 and the draft #31
+dependency. Do not bypass review or resume the paused audit to integrate this work.
+Verification: 418 tests passed, two optional container checks skipped; both Marimo
+apps validate. A clean temporary checkout installed the locked workspace packages
+from the local cache, created the demo and passed the new offline/copy/no-overwrite
+check. Standalone browser checks covered both apps, saved results, reload and
+scenario switching. Existing 195 source pins and 87 workspace startup files verify.
+
 ## Fidelity target and measurement limit (2026-09-20)
 
 Task-list item 3 selected excess work/evidence presentation in student chat.
