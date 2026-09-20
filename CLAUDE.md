@@ -1,5 +1,15 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Workspace direction and tutor-policy continuation (2026-09-20)
+
+Minchan's intended interface is a notebook-focused VS Code/Cursor-style workspace:
+notebooks on the left, student–tutor chat on the right. Defer the larger redesign
+as requested; Marimo is the current prototype, not the final layout. Continue
+with optional policy-generated tutor replies so the researcher need not manually
+write every tutor message. Reuse the existing tutor/runner, explicit one-exchange
+controls, displayed-state bindings and saved receipts. No manual labeling queue.
+See docs/2026-09-20-workspace-tutor-policy.md.
+
 ## Marimo intervention workspace (2026-09-19)
 
 Minchan approved continuing to saved-session controls. The notebook workspace in

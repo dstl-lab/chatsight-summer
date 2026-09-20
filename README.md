@@ -30,9 +30,12 @@ blind measurement, no student data in git) that every claim in this project depe
 
 The [Marimo workspace](docs/2026-09-19-saved-student-workspace.md) opens one saved
 notebook student, shows work/diffs and dialogue, and lets a researcher supply tutor
-guidance and continue one decision. Viewing is offline; sending requires an
+guidance or [use a tutor policy](docs/2026-09-20-workspace-tutor-policy.md) and continue
+one decision. Viewing is offline; sending requires an
 explicit launch option and button click. The existing saved-student commands
 remain available. See also the [UI direction](docs/2026-09-15-marimo-and-observation-contract.md).
+The intended interface is a notebook-focused VS Code/Cursor-style editor on the
+left with student–tutor chat on the right; the current layout is a prototype.
 
 ## Running a saved student
 
