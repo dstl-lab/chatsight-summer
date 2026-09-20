@@ -103,3 +103,66 @@ def test_visible_controls_survive_standalone_cleanup(tmp_path, missing_packet):
                 assert calls == ['reload', 'respond']
     finally:
         teardown_context()
+
+
+def test_damaged_receipt_keeps_saved_results_and_reload_available(tmp_path, monkeypatch):
+    from src.agents import chat_student, chat_workspace, notebook_student, workspace_history
+    from src.eval.student_continuation import Continuation
+    from tests.test_chat_student import QUERY, files
+
+    folder = tmp_path / 'authored'
+    initial = chat_student.create(folder, query=QUERY)
+    first = chat_student.step(folder, binding=initial['binding'],
+        generate=lambda *_: Continuation(decision='reply', text='Readable saved reply'))
+    chat_student.step(folder, binding=first['binding'], tutor_reply='Authored tutor reply',
+        generate=lambda *_: Continuation(decision='reply', text='Second saved reply'))
+    path = folder / 'step-0002.json'
+    receipt = notebook_student._read(path)
+    del receipt['result']
+    notebook_student._save(path, receipt)
+    before = files(folder)
+    monkeypatch.setattr(notebook_student.llm, 'make_generate',
+                        lambda *_a, **_k: pytest.fail('Inspection contacted provider'))
+
+    app._maybe_initialize()
+    internal = InternalApp(app)
+    cells = [cell._cell for _, cell in internal.cell_manager.valid_cells()]
+    initial_cell = compile_cell(next(cell.code for cell in cells if 'get_view' in cell.defs), cell_id='initial')
+    view_cell = compile_cell(next(cell.code for cell in cells if 'get_view' in cell.refs), cell_id='view')
+    initialize_script_context(internal, NoopStream(), None)
+    runtime = get_context()
+    try:
+        globals_ = dict(mo=mo, folder=folder, snapshot_session=chat_workspace.snapshot,
+                       chat_mode=True, scenario_picker=mo.md('Authored case'), send_enabled=True,
+                       tutor_context=tutor_context, workspace_history=workspace_history)
+        evaluator = Evaluator(executor=resolve_executor(), lifecycles=[])
+        with runtime.with_cell_id('initial'):
+            initial_result = evaluator.evaluate_sync(initial_cell, globals_)
+        exception = initial_result.exception
+        if isinstance(exception, MarimoRuntimeException):
+            exception = unwrap_user_exception(exception)
+        assert exception is None, exception
+        assert globals_['get_view']() == (None, "'result'")
+
+        with runtime.with_cell_id('view'):
+            result = evaluator.evaluate_sync(view_cell, globals_)
+        exception = result.exception
+        if isinstance(exception, MarimoRuntimeException):
+            exception = unwrap_user_exception(exception)
+        assert isinstance(exception, MarimoStopError), exception
+        assert 'Readable saved reply' in exception.output.text
+        assert 'unreadable or inconsistent' in exception.output.text
+        controls = list(_buttons(exception.output))
+        assert len(controls) == 1 and 'Reload saved session' in controls[0].text
+        reload_id = controls[0]._id
+        context = SimpleNamespace(glbls=globals_)
+        _store_reference_to_output(view_cell, context, result)
+        _delete_local_variables(view_cell, context, result)
+        del controls, result, exception
+        gc.collect()
+        with runtime.with_cell_id('view'):
+            runtime.ui_element_registry.get_object(reload_id)._update(1)
+        assert globals_['get_view']() == (None, "'result'")
+        assert files(folder) == before
+    finally:
+        teardown_context()
