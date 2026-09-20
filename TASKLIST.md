@@ -1,9 +1,9 @@
 # Simulated students: task list
 
-**TL;DR:** Next, make saved interactions easy to inspect, then let an instructor
-compare two tutor policies from the same starting conversation. Keep using the
-existing data. Improve student fidelity through one bounded research question at
-a time, without restarting the labeling queue.
+**TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
+Next, choose one measurable student-fidelity improvement using the existing
+evidence. Keep one bounded research question at a time, without restarting the
+labeling queue or redesigning the workspace yet.
 
 Updated: September 20, 2026. Unchecked items are proposed work, not completed results.
 
@@ -35,7 +35,7 @@ milestones; the former does not establish the latter.
   Completed in the [Saved results tab](docs/2026-09-20-workspace-saved-results.md),
   including failed/interrupted exchanges and notebook actions.
 
-- [ ] **2. Compare two policies from the same conversation starting point.** Use
+- [x] **2. Compare two policies from the same conversation starting point.** Use
   separate session identities, the same recorded prefix and cached first reply,
   and equal fixed budgets. Show both saved conversations together. Reuse the
   existing session machinery and lessons from notebook teaching pairs; those
@@ -45,6 +45,8 @@ milestones; the former does not establish the latter.
   **Done when:** both conditions can continue and reopen independently, with
   visible policies and no overwrite of the original. One pair demonstrates the
   mechanism; it does not establish which policy helps real students.
+  Completed in the [fixed-policy comparison](docs/2026-09-20-chat-policy-comparison.md),
+  verified with authored responses. No live policy comparison was run.
 
 - [ ] **3. Choose one measurable student-fidelity improvement.** Use the existing
   reports and instructor feedback to identify a specific failure, such as excess

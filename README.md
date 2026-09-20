@@ -42,6 +42,9 @@ cached first replies in separate sessions; recorded and simulated messages stay
 distinct, and missing notebook activity is shown as unknown. No new labeling is required.
 The [Saved results tab](docs/2026-09-20-workspace-saved-results.md) shows the policy
 and outcomes of each saved exchange, including interrupted and failed requests.
+The [policy comparison](docs/2026-09-20-chat-policy-comparison.md) starts two
+independent branches from the same cached student reply, with fixed tutor policies
+and equal budgets, and shows both saved outcomes together.
 
 ## Running a saved student
 

@@ -1,5 +1,18 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Fixed chat-policy comparison (2026-09-20)
+
+TASKLIST.md item 2 is implemented by chat_policy_pair and the separate Marimo
+comparison app. Prepare only from a frozen first-reply session; import its cached
+response into fresh independent identities, freeze both policies and equal new
+decision budgets, and preserve terminal/error outcomes. Default acceptance is one
+new decision per arm with authored responses; no live policy comparison was run.
+The original workspace and source-pinned student engines are unchanged. Minchan
+confirmed generation works and deferred layout redesign to the later VS Code-style
+workspace. Next is selecting one measurable fidelity improvement from existing
+evidence, not more bulk labels or repeated plausibility checks. See
+docs/2026-09-20-chat-policy-comparison.md.
+
 ## Saved-result inspection (2026-09-20)
 
 TASKLIST.md item 1 is complete: the Marimo Saved results tab reads existing chat
