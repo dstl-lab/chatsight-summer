@@ -73,7 +73,7 @@ def _(folder, mo, snapshot_session):
     try:
         _initial = snapshot_session(folder)
         _error = ""
-    except (OSError, ValueError) as _exc:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as _exc:
         _initial, _error = None, str(_exc)
     # Callbacks only: rerendering these controls never dispatches a student action.
     get_view, set_view = mo.state((_initial, _error), allow_self_loops=True)
@@ -88,7 +88,7 @@ def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenari
     def _refresh(_=None, selected_folder=folder):
         try:
             set_view((snapshot_session(selected_folder), ""))
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             set_view((None, str(exc)))
 
     _reload = mo.ui.button(label="Reload saved session", on_change=_refresh)
@@ -97,7 +97,7 @@ def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenari
     _error_view = mo.callout(mo.plain_text(_error), kind="danger") if _error else mo.md("")
     try:
         _saved_results = mo.md(workspace_history.render(folder))
-    except (OSError, ValueError) as _exc:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as _exc:
         _saved_results = mo.callout(mo.plain_text("Saved results could not be read: " + str(_exc)), kind="danger")
     # Standalone Marimo clears private variables; retain the rendered controls.
     workspace_view = mo.vstack([
