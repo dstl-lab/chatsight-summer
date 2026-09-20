@@ -1,5 +1,16 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Consolidated simulator review (2026-09-20)
+
+PRs #31–#39 are merged into their parent branches, leaving one combined PR #30
+against main on codex/corpus-summary. Each consolidation preserved the tested
+tree exactly. Main is unchanged and GitHub still requires one independent
+approving review; the final merge must use squash. No protections were bypassed.
+The full suite passes 419 tests with two optional container skips; both Marimo
+apps validate. The only integration-review defect was the receipt fallback below,
+fixed in ef531a3. All 195 frozen source pins and 87 workspace startup files verify.
+The audit and UI redesign remain paused. No new labels, model calls or data exports.
+
 ## Integration review fix (2026-09-20)
 
 The workspace now catches structural receipt-read errors during initialization,
@@ -21,8 +32,8 @@ constructed. Visible policies and seeded context identify the fixture as authore
 This demonstrates setup, replay and saved results, not student fidelity or policy
 effects. Existing engines, prompts, private sessions and the live workspace remain
 unchanged. No new labels or model calls. Task-list item 6 packaging is ready;
-integration remains pending required GitHub review at PR #30 and the draft #31
-dependency. Do not bypass review or resume the paused audit to integrate this work.
+integration remains pending the independent GitHub review of combined PR #30.
+Do not bypass review or resume the paused audit to integrate this work.
 Verification: 418 tests passed, two optional container checks skipped; both Marimo
 apps validate. A clean temporary checkout installed the locked workspace packages
 from the local cache, created the demo and passed the new offline/copy/no-overwrite

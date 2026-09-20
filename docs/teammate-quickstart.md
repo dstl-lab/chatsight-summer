@@ -12,11 +12,12 @@ POSIX. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if
 needed. Run every command below from the repository root containing
 `pyproject.toml`, `src/` and `apps/`.
 
-These tools are currently on `codex/teammate-quickstart`, pending the PR stack's
-normal review and merge. A fresh checkout can use:
+These tools are currently on `codex/corpus-summary` in the combined
+[PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30), awaiting independent
+review before merging to main. A fresh checkout can use:
 
 ```sh
-git clone --branch codex/teammate-quickstart https://github.com/dstl-lab/chatsight-summer.git
+git clone --branch codex/corpus-summary https://github.com/dstl-lab/chatsight-summer.git
 cd chatsight-summer
 uv sync --locked --extra workspace
 ```

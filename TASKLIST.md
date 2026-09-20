@@ -3,8 +3,9 @@
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is excess work/evidence presentation in chat, but the current
 help-only reference set cannot validate a fix. Further fidelity experiments are deferred.
-The teammate quickstart and authored offline demo are ready. Integration still
-needs the PR stack's normal review; keep the labeling queue and workspace redesign paused.
+The teammate quickstart and authored offline demo are ready. The stack is now
+combined in [PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30), awaiting
+one independent GitHub approval. Keep labeling and workspace redesign paused.
 
 Updated: September 20, 2026. Unchecked items are proposed work, not completed results.
 
@@ -90,9 +91,11 @@ milestones; the former does not establish the latter.
   `src.agents.chat_demo` provide a create-only authored example using the existing
   runner and views. Setup was checked in a clean temporary checkout using locked
   dependencies; the demo needs no key, private files, database or Docker.
-  **Integration pending:** PR #30 targets main and requires GitHub review; PR #31
-  remains a draft, and the later workspace PRs are stacked on it. Preserve the
-  paused audit and normal review requirements when integrating the stack.
+  **Integration pending:** PRs #31–#39 are merged into the combined PR #30 branch;
+  main is unchanged. Three code-review scopes are complete, one damaged-receipt
+  fallback is fixed, and 419 tests pass with two optional skips. GitHub requires
+  one independent approving review before the final squash merge. The manual
+  audit stays paused; merging its preserved tooling does not resume labeling.
 
 ## Current difficulties
 
