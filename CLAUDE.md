@@ -1,5 +1,15 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Integration review fix (2026-09-20)
+
+The workspace now catches structural receipt-read errors during initialization,
+Reload and saved-history loading. A missing result field previously raised an
+uncaught KeyError before the fallback could render. The authored regression uses
+the actual Marimo cells and standalone cleanup, keeping readable prior records,
+the damaged-record warning and Reload available without generation or file repair.
+No source-pinned engine changed. All three review scopes are complete; this small
+workspace defect was the only actionable finding before stack consolidation.
+
 ## Teammate setup (2026-09-20)
 
 The teammate quickstart is docs/teammate-quickstart.md. The create-only
