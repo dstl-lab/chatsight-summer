@@ -1,5 +1,18 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Fidelity target and measurement limit (2026-09-20)
+
+Task-list item 3 selected excess work/evidence presentation in student chat.
+The eight-case help/work report replays exactly: recorded work0/8, grounded26/32,
+current-exchange23/32. A new constant-flag diagnostic gives always-help/no-work a
+zero combined Brier error on those homogeneous references, showing why that score
+cannot validate preserving appropriate work submissions. Balanced work-flag error
+would require both reference groups and is currently unavailable. Retain the
+generator; no new model/judge requests or labels. Item4 is deferred, not a queued
+experiment or a reason to resume the paused audit. No coding procedures are pooled.
+See docs/2026-09-20-student-fidelity-target.md and the ignored aggregate diagnostic.
+UI redesign also remains deferred; packaging current tools for teammates can proceed.
+
 ## Fixed chat-policy comparison (2026-09-20)
 
 TASKLIST.md item 2 is implemented by chat_policy_pair and the separate Marimo

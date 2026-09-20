@@ -1,9 +1,10 @@
 # Simulated students: task list
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
-Next, choose one measurable student-fidelity improvement using the existing
-evidence. Keep one bounded research question at a time, without restarting the
-labeling queue or redesigning the workspace yet.
+The fidelity target is excess work/evidence presentation in chat, but the current
+help-only reference set cannot validate a fix. Further fidelity experiments are deferred.
+Next independent engineering task: package the existing tools for teammates;
+keep the labeling queue and workspace redesign paused.
 
 Updated: September 20, 2026. Unchecked items are proposed work, not completed results.
 
@@ -48,7 +49,7 @@ milestones; the former does not establish the latter.
   Completed in the [fixed-policy comparison](docs/2026-09-20-chat-policy-comparison.md),
   verified with authored responses. No live policy comparison was run.
 
-- [ ] **3. Choose one measurable student-fidelity improvement.** Use the existing
+- [x] **3. Choose one measurable student-fidelity improvement.** Use the existing
   reports and instructor feedback to identify a specific failure, such as excess
   explanation in otherwise terse student conversations. Establish whether existing
   evidence can measure it before changing the generator. Length and formatting
@@ -56,6 +57,10 @@ milestones; the former does not establish the latter.
   **Done when:** one written decision specifies the target, baseline, measure,
   fixed cases and call budget, and adoption/stopping rule. If measurement cannot
   support the claim, narrow the claim instead of generating more examples.
+  [Target and readiness decision](docs/2026-09-20-student-fidelity-target.md):
+  work/evidence presentation. A constant help-only flag rule scores perfectly on
+  the eight existing references. The proposed balanced work measure is unavailable
+  because no reference contains work; retain the generator, zero new calls/labels.
 
 - [ ] **4. Run only that declared comparison, if it is justified.** Preserve the
   original generator and frozen evidence; treat any changed prompt as a separate
@@ -64,6 +69,8 @@ milestones; the former does not establish the latter.
   fixed sample and no rolling review queue.
   **Done when:** report improvement, no improvement, or inconclusive evidence and
   close the comparison. Do not reroll until an appealing difference appears.
+  **Deferred:** the measurement gate in item 3 failed. No generation or review
+  batch is queued; this does not block simulator engineering.
 
 - [ ] **5. Make the notebook and chat experience coherent.** Bring the existing
   authored notebook mode into the same scenario workflow, with notebook work and
@@ -72,8 +79,9 @@ milestones; the former does not establish the latter.
   teammate's viewer work before duplicating it.
   **Done when:** an instructor can follow an existing notebook interaction and its
   work changes in one view. No historical notebook actions are invented.
+  **Deferred by Minchan:** leave the current layout for the later workspace redesign.
 
-- [ ] **6. Package the prototype for a teammate to run.** Document startup, local
+- [ ] **6. Package the prototype for a teammate to run (next engineering task).** Document startup, local
   private-data setup, scenario selection, policy controls and saved results. Resolve
   the existing PR stack through its normal checks and review requirements.
   **Done when:** a teammate can reproduce a saved interaction without this chat,
