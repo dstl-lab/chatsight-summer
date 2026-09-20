@@ -4,8 +4,9 @@
 The fidelity target is excess work/evidence presentation in chat, but the current
 help-only reference set cannot validate a fix. Further fidelity experiments are deferred.
 The teammate quickstart and authored offline demo are on main via
-[PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30). Contributor checks
-are being automated; keep labeling and workspace redesign paused.
+[PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30). Automated contributor
+checks pass in [PR #40](https://github.com/dstl-lab/chatsight-summer/pull/40), pending
+review and merge. Keep labeling and workspace redesign paused.
 
 Updated: September 20, 2026. Unchecked items are proposed work, not completed results.
 
@@ -95,10 +96,13 @@ milestones; the former does not establish the latter.
   version; 419 tests pass with two optional container skips. The manual audit
   stays paused; merging its preserved tooling does not resume labeling.
 
-- [ ] **7. Automate the existing contributor checks.** Run the Python suite,
+- [x] **7. Automate the existing contributor checks.** Run the Python suite,
   Marimo validation and existing review-navigation check on GitHub using authored
   fixtures and locked dependencies. No private data or provider credentials.
   **Done when:** a clean GitHub runner reports the checks passing on this PR.
+  **Verified:** the [first GitHub run](https://github.com/dstl-lab/chatsight-summer/actions/runs/35516294840)
+  passed all 419 tests (two optional skips), both Marimo checks and the Node check.
+  PR #40 remains subject to the repository's normal review and merge requirements.
 
 ## Current difficulties
 
