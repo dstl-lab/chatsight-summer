@@ -11,6 +11,14 @@ and feedback to propose edits, request checks, communicate or stop. Labels suppo
 description and evaluation; they are not the current generator's state space.
 See the [research reassessment](docs/2026-09-14-research-reassessment.md) for the evidence,
 data limitations and proposed finite evaluation.
+The [existing-data corpus summary](docs/2026-09-19-corpus-summary.md) describes the
+252 saved conversations, the development subset's message patterns, and the limits
+of sampling students from the current exports.
+The [recorded behavior audit](docs/2026-09-19-recorded-behavior-audit.md) is **paused**;
+its 86-message coding pass is not required to continue. Our
+[standing workflow](docs/2026-09-19-minimize-manual-labeling.md) minimizes manual
+labeling, reuses existing evidence, and prioritizes the saved simulator. Human
+review returns only when needed for a specific consequential decision.
 
 Raw data: DSC 10 tutor chat logs in an external Postgres (`dsc10_tutor_logs`), read-only
 via `kubectl port-forward`. The database is shared with ChatSight, a distant-cousin project
@@ -20,9 +28,31 @@ are never compared or mixed.
 **Read `CLAUDE.md` first** — it carries the rules (classifier parity, snapshot immutability,
 blind measurement, no student data in git) that every claim in this project depends on.
 
-The eventual educator/researcher workspace will use **Marimo**, with Python source
-and readable diffs. See the [UI direction and observation work](docs/2026-09-15-marimo-and-observation-contract.md);
-the current saved-student commands remain the implemented interface.
+The [Marimo workspace](docs/2026-09-19-saved-student-workspace.md) opens one saved
+notebook student, shows work/diffs and dialogue, and lets a researcher supply tutor
+guidance or [use a tutor policy](docs/2026-09-20-workspace-tutor-policy.md) and continue
+one decision. Viewing is offline; sending requires an
+explicit launch option and button click. The existing saved-student commands
+remain available. See also the [UI direction](docs/2026-09-15-marimo-and-observation-contract.md).
+The intended interface is a notebook-focused VS Code/Cursor-style editor on the
+left with student–tutor chat on the right; the current layout is a prototype.
+The same app also [opens saved chat scenarios](docs/2026-09-20-chat-scenario-workspace.md)
+with a scenario selector and policy controls. The local preparation reuses the 29
+cached first replies in separate sessions; recorded and simulated messages stay
+distinct, and missing notebook activity is shown as unknown. No new labeling is required.
+The [Saved results tab](docs/2026-09-20-workspace-saved-results.md) shows the policy
+and outcomes of each saved exchange, including interrupted and failed requests.
+The [policy comparison](docs/2026-09-20-chat-policy-comparison.md) starts two
+independent branches from the same cached student reply, with fixed tutor policies
+and equal budgets, and shows both saved outcomes together.
+
+## Start here: teammate walkthrough
+
+Follow the [teammate quickstart](docs/teammate-quickstart.md) to install the optional
+workspace and open an authored offline example in Marimo. It uses the existing
+saved-chat runner and comparison view with scripted replies: no student data,
+credentials or model calls. The guide also covers private working sessions,
+policy controls, saved results and matching the session's code revision.
 
 ## Running a saved student
 

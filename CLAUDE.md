@@ -1,5 +1,183 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Consolidated simulator review (2026-09-20)
+
+PRs #31–#39 are merged into their parent branches, leaving one combined PR #30
+against main on codex/corpus-summary. Each consolidation preserved the tested
+tree exactly. Main is unchanged and GitHub still requires one independent
+approving review; the final merge must use squash. No protections were bypassed.
+The full suite passes 419 tests with two optional container skips; both Marimo
+apps validate. The only integration-review defect was the receipt fallback below,
+fixed in ef531a3. All 195 frozen source pins and 87 workspace startup files verify.
+The audit and UI redesign remain paused. No new labels, model calls or data exports.
+
+## Integration review fix (2026-09-20)
+
+The workspace now catches structural receipt-read errors during initialization,
+Reload and saved-history loading. A missing result field previously raised an
+uncaught KeyError before the fallback could render. The authored regression uses
+the actual Marimo cells and standalone cleanup, keeping readable prior records,
+the damaged-record warning and Reload available without generation or file repair.
+No source-pinned engine changed. All three review scopes are complete; this small
+workspace defect was the only actionable finding before stack consolidation.
+
+## Teammate setup (2026-09-20)
+
+The teammate quickstart is docs/teammate-quickstart.md. The create-only
+src.agents.chat_demo command saves entirely invented, scripted source dialogue
+and tutor/student responses through the existing chat runner and policy pair.
+Both branches finish after one new decision: A exhausts its budget and B has an
+authored no-reply. The model identifier is authored-offline-demo; no provider is
+constructed. Visible policies and seeded context identify the fixture as authored.
+This demonstrates setup, replay and saved results, not student fidelity or policy
+effects. Existing engines, prompts, private sessions and the live workspace remain
+unchanged. No new labels or model calls. Task-list item 6 packaging is ready;
+integration remains pending the independent GitHub review of combined PR #30.
+Do not bypass review or resume the paused audit to integrate this work.
+Verification: 418 tests passed, two optional container checks skipped; both Marimo
+apps validate. A clean temporary checkout installed the locked workspace packages
+from the local cache, created the demo and passed the new offline/copy/no-overwrite
+check. Standalone browser checks covered both apps, saved results, reload and
+scenario switching. Existing 195 source pins and 87 workspace startup files verify.
+
+## Fidelity target and measurement limit (2026-09-20)
+
+Task-list item 3 selected excess work/evidence presentation in student chat.
+The eight-case help/work report replays exactly: recorded work0/8, grounded26/32,
+current-exchange23/32. A new constant-flag diagnostic gives always-help/no-work a
+zero combined Brier error on those homogeneous references, showing why that score
+cannot validate preserving appropriate work submissions. Balanced work-flag error
+would require both reference groups and is currently unavailable. Retain the
+generator; no new model/judge requests or labels. Item4 is deferred, not a queued
+experiment or a reason to resume the paused audit. No coding procedures are pooled.
+See docs/2026-09-20-student-fidelity-target.md and the ignored aggregate diagnostic.
+UI redesign also remains deferred; packaging current tools for teammates can proceed.
+
+## Fixed chat-policy comparison (2026-09-20)
+
+TASKLIST.md item 2 is implemented by chat_policy_pair and the separate Marimo
+comparison app. Prepare only from a frozen first-reply session; import its cached
+response into fresh independent identities, freeze both policies and equal new
+decision budgets, and preserve terminal/error outcomes. Default acceptance is one
+new decision per arm with authored responses; no live policy comparison was run.
+The original workspace and source-pinned student engines are unchanged. Minchan
+confirmed generation works and deferred layout redesign to the later VS Code-style
+workspace. Next is selecting one measurable fidelity improvement from existing
+evidence, not more bulk labels or repeated plausibility checks. See
+docs/2026-09-20-chat-policy-comparison.md.
+
+## Saved-result inspection (2026-09-20)
+
+TASKLIST.md item 1 is complete: the Marimo Saved results tab reads existing chat
+and notebook receipts, linking policies only through matching pre-step bindings,
+tutor text and saved continuation results. Failed/interrupted records remain
+inspectable when session replay fails; no repair, retry or new generation occurs.
+Student engines/prompts are unchanged. See docs/2026-09-20-workspace-saved-results.md.
+The next proposed item is two-policy comparison from the same starting chat context.
+
+## Existing chat scenarios in the workspace (2026-09-20)
+
+Minchan approved connecting the 29 cached chat scenarios to the Marimo workspace:
+select a scenario, set a tutor policy, continue a bounded interaction, reopen the
+saved result. Use separate new session identities under ignored
+data/episode-pilot/chat-workspace-v1/sessions; never continue the frozen handoff
+sources directly or regenerate their first replies. The original student generator
+and source-pinned engines stay unchanged. A chat-specific workspace adapter supplies
+visible dialogue to the tutor and binds delivery to the displayed state. Recorded,
+simulated and intervention messages are distinct; notebook activity is unknown.
+No new labeling queue, benchmark or one-off plausibility check. See
+docs/2026-09-20-chat-scenario-workspace.md for operation and limitations.
+
+## Workspace direction and tutor-policy continuation (2026-09-20)
+
+Minchan's intended interface is a notebook-focused VS Code/Cursor-style workspace:
+notebooks on the left, student–tutor chat on the right. Defer the larger redesign
+as requested; Marimo is the current prototype, not the final layout. Continue
+with optional policy-generated tutor replies so the researcher need not manually
+write every tutor message. Reuse the existing tutor/runner, explicit one-exchange
+controls, displayed-state bindings and saved receipts. No manual labeling queue.
+See docs/2026-09-20-workspace-tutor-policy.md.
+
+## Marimo intervention workspace (2026-09-19)
+
+Minchan approved continuing to saved-session controls. The notebook workspace in
+apps/student_workspace.py uses tutor_context.snapshot and a small bound-step
+helper in src/agents/student_workspace.py. Viewing/reloading is offline. Only
+explicit UI callbacks can dispatch, only with --send=true, one student decision
+at a time. Both displayed hashes go to the existing runner; no changed prompts,
+engine, receipt format or bypass of terminal/budget/pending-operation protections.
+The tutor form appears only for a pending student message. No new labeling queue.
+Marimo is an optional workspace dependency; see
+docs/2026-09-19-saved-student-workspace.md for use and verification.
+
+The separate authored example in data/episode-pilot/student-workspace-v1/session
+starts with six unused decisions. Browser checks use a separate invented fixture
+and injected adapters, not new Gemini samples. Do not reopen old closed demos.
+This is an operational interface, not new evidence of persona fidelity or learning.
+
+## Standing preference: minimize manual labeling (2026-09-19)
+
+Minchan explicitly instructed: "yes, do that. minimize manual labeling unless
+absolutely necessary." The 86-message audit below is PAUSED. It does not block
+simulator development. This supersedes older instructions to await more coding.
+Preserve all frozen evidence and browser drafts; do not silently assign missing
+labels. Use existing judgments and automatic diagnostics, with their limits.
+Request human labeling only for a specific consequential decision that existing
+evidence cannot resolve, stating the smallest useful sample and stopping rule.
+No standing queue, replacement bulk batch or repeated plausibility checks.
+See docs/2026-09-19-minimize-manual-labeling.md.
+
+Expose the existing three-task saved replay without generating another demo.
+Then prioritize researcher intervention using the existing saved-session commands,
+coordinating with the Marimo viewer work. Keep the current generator; unresolved
+semantic fidelity does not prevent mechanism/UI development. The local review
+address now serves a pause page with optional access to the unchanged old form.
+
+## Recorded behavior audit (2026-09-19; paused)
+
+Minchan approved proceeding from the corpus summary to a conversation-level
+behavioral benchmark. The bounded next step reuses the existing 29 query cases and
+cached original/candidate outputs: 29 references +29 original replies +28 candidate
+replies =86 messages /172 help-work flags. Candidate's one no-reply is retained
+outside the reviewer UI. No new model/DB calls or changes to old experiments.
+See docs/2026-09-19-recorded-behavior-audit.md and ignored
+data/episode-pilot/recorded-behavior-audit-v1/ for the protocol, private mapping,
+coverage, preparation and portable UI. This is a new secondary analysis of exposed
+saved messages, not a replacement length comparison or probability calibration.
+
+The original plan was ONE human coding pass; Minchan subsequently paused it.
+The following scoring instructions apply only if that audit is explicitly resumed.
+Preserve returned JSON, verify the frozen preparation, and use
+src/eval/cached_communication_scoring.py for the fixed report. Primary is signed
+original-generator work-incidence gap, accompanied by its 2x2 disagreement table;
+help and same-case candidate comparisons are secondary. Each flag has its own
+complete-pair denominator. Do not assign labels, treat no-reply as no/no, request
+another plausibility round, generate replacements or adopt a changed simulator.
+26/29 cases start in February; ten have no earlier student context. Target is the
+first next message, including the one case with a five-message follow-up block.
+
+## Corpus description (2026-09-19)
+
+Minchan approved step 1 of the simulation-fidelity study: describe the existing
+corpus before selecting another comparison. The offline corpus report is complete;
+see docs/2026-09-19-corpus-summary.md and src/eval/corpus_summary.py. Eight canonical
+exports contain 455 memberships / 252 distinct conversations. Fresh message
+analysis uses only the existing 156-conversation development library (1,400 student
+messages), preserving the old split. Median message length is 34 characters; the
+largest 16 conversations supply 36.1% of messages. Equal-conversation statistics
+are reported separately. About 60% of the full corpus starts in February; most
+development student timestamps/modes are missing. Known modes include tutor and
+chatgpt. These selected exports are not a representative or untouched student
+sample. The canonical chat snapshots and saved notebook-pair metadata provide no
+usable learner mapping for this corpus; conversation IDs are not student IDs.
+
+The create-only private aggregate report is at
+data/episode-pilot/corpus-summary-v1/report.json. Source hashes and independent
+arithmetic verify; old experiments remain unchanged. No model/DB calls, labels,
+reviewer tasks, generator changes or replacement benchmark. This descriptive step
+is closed. The next study must separately freeze its observable endpoint, sampling,
+comparison and stopping rule; do not resume one-off plausibility checks.
+
 ## Current implementation focus (2026-09-15)
 
 The grounded local-task continuation is COMPLETE and CLOSED in
