@@ -49,3 +49,20 @@ Private UI fixtures and verification are under
 `data/episode-pilot/saved-results-ui-v1/`. No live model calls, notebook execution,
 new labels or changes to earlier evidence were needed. Task-list item 1 is complete;
 comparing two policies from one starting conversation remains the next item.
+
+## Standalone control fix
+
+The standalone workspace initially displayed Generate and Reload buttons whose
+callbacks had been discarded. Marimo 0.24.2 clears cell-private variables after
+rendering; its output-retention hook does not traverse the children of a layout.
+The app now retains the displayed layout in a public `workspace_view` binding,
+including the load-error view so Reload can recover a readable session.
+
+Earlier embedded-app checks retained their outputs and missed this lifecycle
+difference. A regression check now applies the standalone cleanup hooks to the
+actual display cell and dispatches both controls through Marimo's registry.
+An authored standalone browser check reproduced the dead button before the fix;
+afterward policy and manual replies each saved exactly one decision, while Reload
+saved none. No model requests or live-scenario changes were needed.
+The updated suite passes 402 tests with two optional checks skipped; Marimo
+validation and an independent code review pass.
