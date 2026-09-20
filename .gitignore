@@ -18,6 +18,7 @@ __pycache__/
 
 # Notebooks: checkpoints always; outputs may quote student text — strip before commit
 .ipynb_checkpoints/
+__marimo__/
 
 # SQLite (should never exist here — this repo never opens a DB — but ignore defensively)
 *.db
