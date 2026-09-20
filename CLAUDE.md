@@ -1,5 +1,18 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Existing chat scenarios in the workspace (2026-09-20)
+
+Minchan approved connecting the 29 cached chat scenarios to the Marimo workspace:
+select a scenario, set a tutor policy, continue a bounded interaction, reopen the
+saved result. Use separate new session identities under ignored
+data/episode-pilot/chat-workspace-v1/sessions; never continue the frozen handoff
+sources directly or regenerate their first replies. The original student generator
+and source-pinned engines stay unchanged. A chat-specific workspace adapter supplies
+visible dialogue to the tutor and binds delivery to the displayed state. Recorded,
+simulated and intervention messages are distinct; notebook activity is unknown.
+No new labeling queue, benchmark or one-off plausibility check. See
+docs/2026-09-20-chat-scenario-workspace.md for operation and limitations.
+
 ## Workspace direction and tutor-policy continuation (2026-09-20)
 
 Minchan's intended interface is a notebook-focused VS Code/Cursor-style workspace:
