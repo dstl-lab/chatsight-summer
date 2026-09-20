@@ -40,6 +40,19 @@ The same app also [opens saved chat scenarios](docs/2026-09-20-chat-scenario-wor
 with a scenario selector and policy controls. The local preparation reuses the 29
 cached first replies in separate sessions; recorded and simulated messages stay
 distinct, and missing notebook activity is shown as unknown. No new labeling is required.
+The [Saved results tab](docs/2026-09-20-workspace-saved-results.md) shows the policy
+and outcomes of each saved exchange, including interrupted and failed requests.
+The [policy comparison](docs/2026-09-20-chat-policy-comparison.md) starts two
+independent branches from the same cached student reply, with fixed tutor policies
+and equal budgets, and shows both saved outcomes together.
+
+## Start here: teammate walkthrough
+
+Follow the [teammate quickstart](docs/teammate-quickstart.md) to install the optional
+workspace and open an authored offline example in Marimo. It uses the existing
+saved-chat runner and comparison view with scripted replies: no student data,
+credentials or model calls. The guide also covers private working sessions,
+policy controls, saved results and matching the session's code revision.
 
 ## Running a saved student
 

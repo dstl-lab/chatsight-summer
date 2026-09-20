@@ -8,9 +8,9 @@ app = marimo.App(width="medium", app_title="Student workspace")
 def _():
     from pathlib import Path
     import marimo as mo
-    from src.agents import chat_workspace, tutor_context
+    from src.agents import chat_workspace, tutor_context, workspace_history
     from src.agents.student_workspace import advance, respond
-    return Path, advance, chat_workspace, mo, respond, tutor_context
+    return Path, advance, chat_workspace, mo, respond, tutor_context, workspace_history
 
 
 @app.cell
@@ -73,7 +73,7 @@ def _(folder, mo, snapshot_session):
     try:
         _initial = snapshot_session(folder)
         _error = ""
-    except (OSError, ValueError) as _exc:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as _exc:
         _initial, _error = None, str(_exc)
     # Callbacks only: rerendering these controls never dispatches a student action.
     get_view, set_view = mo.state((_initial, _error), allow_self_loops=True)
@@ -82,20 +82,29 @@ def _(folder, mo, snapshot_session):
 
 @app.cell
 def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenario_picker,
-      send_enabled, set_view, snapshot_session, tutor_context, tutor_inputs):
+      send_enabled, set_view, snapshot_session, tutor_context, tutor_inputs, workspace_history):
     _packet, _error = get_view()
 
     def _refresh(_=None, selected_folder=folder):
         try:
             set_view((snapshot_session(selected_folder), ""))
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             set_view((None, str(exc)))
 
     _reload = mo.ui.button(label="Reload saved session", on_change=_refresh)
     _heading = mo.md("# Student workspace\nInspect the saved student and continue one decision at a time.")
     _selector = mo.vstack([scenario_picker, mo.md("Tutor drafts reset when you choose another scenario.")]) if chat_mode else mo.md("")
     _error_view = mo.callout(mo.plain_text(_error), kind="danger") if _error else mo.md("")
-    mo.stop(_packet is None, mo.vstack([_heading, _selector, _error_view, _reload]))
+    try:
+        _saved_results = mo.md(workspace_history.render(folder))
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as _exc:
+        _saved_results = mo.callout(mo.plain_text("Saved results could not be read: " + str(_exc)), kind="danger")
+    # Standalone Marimo clears private variables; retain the rendered controls.
+    workspace_view = mo.vstack([
+        _heading, _selector, _error_view, mo.ui.tabs({"Saved results": _saved_results}),
+        mo.md("Continuation is unavailable while the saved session cannot be loaded."), _reload,
+    ])
+    mo.stop(_packet is None, workspace_view)
 
     _waiting = _packet["status"] == "awaiting-tutor"
     _can_step = _packet["status"] in ("ready", "active", "awaiting-tutor") and _packet["decisions_remaining"] > 0
@@ -145,10 +154,12 @@ def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenari
         _conversation.append(mo.md(f"**{_turn['role'].capitalize()} · {_origin}**\n\n" + _block(_turn["text"])))
     if _waiting:
         _conversation.append(mo.md("**Simulated student · Awaiting a reply**\n\n" + _block(_packet["pending_message"])))
-    _tabs = mo.ui.tabs({"Conversation": mo.vstack(_conversation), "Notebook": _work} if chat_mode else {
+    _tabs = mo.ui.tabs({"Conversation": mo.vstack(_conversation), "Notebook": _work,
+                        "Saved results": _saved_results} if chat_mode else {
         "Work": mo.vstack([_work, _feedback]),
         "Changes": _changes,
         "Conversation": mo.vstack(_conversation),
+        "Saved results": _saved_results,
     })
     if _can_step:
         _controls = mo.vstack([
@@ -166,7 +177,7 @@ def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenari
              "Tutor-policy mode replies to a pending student message before the next decision. "
              + ("" if chat_mode else "A local container runs a check only if the student requests one.")
              if send_enabled else "Viewing only. Sending is disabled for this workspace.")
-    mo.vstack([
+    workspace_view = mo.vstack([
         _heading, _selector, mo.md("## Scenario" if chat_mode else "## Task"), mo.plain_text(_packet["task"]),
         mo.md(_status + f" **{_packet['decisions_remaining']} decisions remaining.**"),
         _error_view, _tabs, _controls, mo.md(_send_notice), _reload,
@@ -179,7 +190,8 @@ def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenari
                   "Reloading reads saved evidence without generating another action."),
         ])}),
     ], gap=1.5)
-    return
+    workspace_view
+    return (workspace_view,)
 
 
 if __name__ == "__main__":
