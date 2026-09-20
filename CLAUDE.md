@@ -1,5 +1,24 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Main integration and contributor checks (2026-09-20)
+
+Minchan completed PR #30's merge; GitHub records squash commit 2720455 on main.
+Its file tree matches the reviewed 87baed6 exactly. The merged suite passes 419
+tests with two optional container skips, and both Marimo apps validate. Packaging
+task 6 is complete. The quickstart now clones main; private sessions still need
+their matching source revision. The old review-pending notes below are historical.
+
+PR #40 adds .github/workflows/tests.yml for the existing
+offline tests, Marimo checks and authored Node navigation check on pull requests
+and main. Use locked dependencies, Python 3.13 and Node 22, read-only repository
+permissions and pinned official actions. Do not supply private data or credentials,
+or change branch protection. The optional container tests stay opt-in. No student
+engine, prompt, live session, labeling or deferred UI work changes in this step.
+The first GitHub run, 35516294840, passed 419 tests with the expected two optional
+container skips; Marimo and Node checks passed too. Task 7's clean-run acceptance
+is complete. PR #40 still needs normal GitHub review before integration. All 195
+frozen source pins and 87 workspace startup files continue to verify locally.
+
 ## Consolidated simulator review (2026-09-20)
 
 PRs #31–#39 are merged into their parent branches, leaving one combined PR #30

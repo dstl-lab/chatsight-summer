@@ -12,20 +12,18 @@ POSIX. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if
 needed. Run every command below from the repository root containing
 `pyproject.toml`, `src/` and `apps/`.
 
-These tools are currently on `codex/corpus-summary` in the combined
-[PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30), awaiting independent
-review before merging to main. A fresh checkout can use:
+The prototype is on `main` following
+[PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30). A fresh checkout can use:
 
 ```sh
-git clone --branch codex/corpus-summary https://github.com/dstl-lab/chatsight-summer.git
+git clone https://github.com/dstl-lab/chatsight-summer.git
 cd chatsight-summer
 uv sync --locked --extra workspace
 ```
 
 The project requires Python 3.11 or later; the local verification environment
-uses Python 3.13.9 and Marimo 0.24.2. Keep the checked-in `uv.lock`. Once this work
-is merged, use the team's agreed revision containing it rather than assuming an
-older `main` includes these commands.
+uses Python 3.13.9 and Marimo 0.24.2. Keep the checked-in `uv.lock`. When reopening
+private sessions, use the team's agreed code revision as described in step 3.
 
 ## 2. Reproduce a saved interaction offline
 
@@ -116,3 +114,19 @@ requests remain saved and cannot be resent automatically; inspect their results
 instead of editing receipts or extending an exhausted budget. Keep session data
 and credentials out of Git. This prototype supports inspection and intervention;
 realistic student behavior and learning effects remain unvalidated.
+
+## Checks for contributors
+
+GitHub's **Tests / offline-tests** workflow runs on pull requests and changes to
+main using Ubuntu, Python 3.13 and Node 22. For local contributor checks, install
+Node 22 in addition to the setup above, then run:
+
+```sh
+.venv/bin/python -m pytest -q
+.venv/bin/marimo check apps/student_workspace.py apps/chat_policy_comparison.py
+node tests/episode_review_navigation.cjs
+```
+
+Tests use authored fixtures and injected providers; no student-data bundle, API
+key or database connection is configured. Two optional container checks skip
+without `NOTEBOOK_RUNTIME_IMAGE`. Dependency installation needs network access.
