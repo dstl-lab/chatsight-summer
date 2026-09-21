@@ -1,5 +1,31 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Public notebook setup (2026-09-21)
+
+The existing notebook engine is now reachable without private experiment inputs:
+src.agents.notebook_example creates an explicitly authored four-row proportion
+task, initial count-as-proportion code, private expected float and concise hint
+policy. Require an immutable runtime image ID; creation validates and publishes
+session plus policy together, with no execution or model calls. Existing paths and
+dangling symlinks are refused. See docs/2026-09-21-notebook-example.md and the
+teammate quickstart section 2b for viewing, optional live lesson and HTML replay.
+
+The session has six student decisions; the documented lesson caps tutor replies
+at two, at most eight logical requests/32 adapter attempts if explicitly run.
+No such live run occurred in this packaging step. A fresh local example is saved
+at ignored data/notebook-example/session with initial.html for offline inspection.
+Keep it separate from all frozen historical and authored proof artifacts.
+
+432 tests pass (three optional container skips, one upstream warning), both Marimo
+checks and Node navigation pass. The new integration test separately passed two
+actual local container checks: wrong2 → quiet edit/feedback cleared → correct0.5,
+then unchanged saved replay. Actions were scripted test callbacks; legacy origin
+tags do not turn those into provider-generated behavior. Independent review found
+no substantive issue. Student/tutor engines, prompts, schemas and existing source
+pins stay unchanged; this does not repair or validate chat-only hallucinations.
+Task9 is complete; labeling and UI redesign remain paused. This setup joins the
+existing isolated branch and PR #43, still requiring independent main review.
+
 ## Live cohort completed and closed (2026-09-21)
 
 PR #44 merged into codex/selection-results as 0ba649b. Combined PR #43 now includes

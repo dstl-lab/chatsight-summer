@@ -23,6 +23,9 @@ six tutor replies and six simulated student replies, 12 recorded requests and
 no failures. All budgets are exhausted and the readable results are saved.
 PR #44 merged into the results branch; combined PR #43 awaits independent review
 against main. This verifies operation, not student realism or policy effects.
+The [public notebook example](docs/2026-09-21-notebook-example.md) now makes the
+existing task/work/execution path reproducible without private inputs. Its authored
+container check passes; no new model calls or labels were needed.
 
 Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
 
@@ -136,6 +139,16 @@ milestones; the former does not establish the latter.
   is closed; no rerolls or further labeling are queued.
   See [workflow and limits](docs/2026-09-21-chat-cohort.md). This is simulator
   engineering, not a new fidelity experiment or evidence of tutor-policy effects.
+
+- [x] **9. Make an explicit notebook task runnable from public files.** Package
+  the existing four-row proportion exercise, initial cell and local evaluator
+  through the existing notebook engine. Create a fresh session and editable tutor
+  policy offline; keep historical chat work unknown and the UI redesign deferred.
+  **Verified:** the [example command and guide](docs/2026-09-21-notebook-example.md)
+  prepare/view without calls. An authored two-execution container check verifies
+  wrong result, quiet edit, feedback clearing, correct result and exact replay.
+  Full suite: 432 passed, three optional skips; the new container check also passed
+  separately. No live generations or claims of improved student realism.
 
 ## Current difficulties
 

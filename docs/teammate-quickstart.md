@@ -64,6 +64,63 @@ To inspect the same completed branches one at a time in the generic workspace:
 Open **http://127.0.0.1:8426/** and select `a` or `b`. Both are finished and
 viewing only. The Notebook tab correctly shows that notebook activity is unknown.
 
+## 2b. Start with an explicit notebook task
+
+Use the revision containing this guide; this example is part of PR #43 until
+that branch merges. It requires the notebook runtime only for code execution.
+The example supplies an entirely authored task, four table rows and one editable
+cell. It does not reconstruct a student's missing notebook or replay real behavior.
+
+Build the existing runtime once with local Docker, then record its immutable ID:
+
+```sh
+docker build -t chatsight-notebook runtime/notebook
+NOTEBOOK_RUNTIME_IMAGE=$(docker image inspect chatsight-notebook --format '{{.Id}}')
+.venv/bin/python -m src.agents.notebook_example data/notebook-example \
+  --image-id "$NOTEBOOK_RUNTIME_IMAGE"
+.venv/bin/marimo run apps/student_workspace.py \
+  --host 127.0.0.1 --port 8427 --headless -- \
+  --session data/notebook-example/session
+```
+
+Open **http://127.0.0.1:8427/**. Inspect the task, table and initial code. Creation
+and viewing make no model or execution calls; current check feedback is empty.
+The session starts before any generated action and permits six student decisions.
+The creator refuses an existing destination. Keep the saved session and runtime
+image available for replay; do not edit the session's JSON to change an experiment.
+
+To optionally run a bounded encounter, configure `GEMINI_API_KEY` as in step 4,
+edit `data/notebook-example/policy.txt`, and run once:
+
+```sh
+.venv/bin/python -m src.agents.notebook_lesson data/notebook-example/session \
+  --policy-file data/notebook-example/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json \
+  --max-tutor-turns 2 --send
+```
+
+This permits at most six student decisions and two tutor replies (eight logical
+model requests, at most 32 adapter attempts). A student decision may edit code,
+request a local check, send a message or stop; a check runs in the declared local
+container. Editing clears current feedback. Missing Docker or an unavailable
+image produces an environment error, not a failed student answer. The supplied
+expected answer is withheld from both agents and the worker; it remains readable
+in the saved manifest and is not a secret from the researcher.
+
+The lesson command refuses a second invocation. Inspect its saved result rather
+than extending the budget or rerunning failed requests. Refresh the viewing
+workspace or export an existing HTML replay to a new filename:
+
+```sh
+.venv/bin/python -m src.eval.notebook_replay data/notebook-example/session \
+  --output data/notebook-example/replay.html
+```
+
+Reopening makes no model or container calls. A local pass checks one scalar on
+the supplied table; it is not a course-autograder result or evidence of learning.
+Free-form generated chat still needs interpretation. See the
+[example scope and verification](2026-09-21-notebook-example.md).
+
 ## 3. Open private working sessions, when provided
 
 The real course scenarios are not in Git. Obtain a private bundle from the team
@@ -128,5 +185,5 @@ node tests/episode_review_navigation.cjs
 ```
 
 Tests use authored fixtures and injected providers; no student-data bundle, API
-key or database connection is configured. Two optional container checks skip
+key or database connection is configured. Three optional container checks skip
 without `NOTEBOOK_RUNTIME_IMAGE`. Dependency installation needs network access.
