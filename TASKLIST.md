@@ -2,14 +2,18 @@
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is excess work/evidence presentation in chat, but the current
-help-only reference set cannot validate a fix. Further fidelity experiments are deferred.
+help-only reference set cannot validate a fix. Generator-adoption experiments stay deferred.
 The teammate quickstart and authored offline demo are on main via
 [PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30). Automated contributor
 checks are also merged via [PR #40](https://github.com/dstl-lab/chatsight-summer/pull/40).
 The six-case [joint evaluation](docs/2026-09-21-joint-fidelity-check.md) is closed:
 four recorded-message preferences and two both-possible judgments. It supplies
 qualitative feedback, not the missing binary labels. Keep bulk labeling and
-workspace redesign paused; no further review batch is queued.
+workspace redesign paused; no further review batch is queued. One automatic
+[recorded-continuation selection comparison](docs/2026-09-21-recorded-continuation-selection.md)
+is prepared: 19 cases, 38 requests, no manual labels. Sending the private dialogue
+and option texts to Gemini awaits the payload-specific approval required by
+automatic review; no model calls have been made.
 
 Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
 
@@ -109,6 +113,12 @@ milestones; the former does not establish the latter.
   PR #40 merged to main at `93904ef`.
 
 ## Current difficulties
+
+The next authorized research step is the prepared selection comparison above.
+Its method, offline checks and exact inputs are complete. After dispatch approval,
+run those 38 requests once, report history-versus-current accuracy, baseline
+accuracy and failures, then close. It is a separate recognition diagnostic and
+does not satisfy or reopen item 4's generator-adoption gate.
 
 | Difficulty | What it means for the next work |
 | --- | --- |

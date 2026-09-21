@@ -97,3 +97,28 @@ Only the frozen prompts go to Gemini, including historical dialogue and candidat
 recorded student messages, which may contain identifying details. Private student
 text and provider credentials remain outside Git. Preserve the current simulator,
 old studies, paused bulk audit and deferred workspace redesign.
+
+## Preparation status (September 21)
+
+The fixed preparation reproduced: 19 included, 10 excluded solely for lacking
+earlier student messages, balanced answer positions 5/5/5/4, and 38 exact prompts.
+The lexical, shortest and longest baselines select the recorded answer in 7/19,
+7/19 and 6/19 cases, respectively. Median option lengths are 39 characters for
+recorded targets and 33 for library alternatives. These are offline properties of
+the fixed task, not Gemini results or evidence that history helps.
+
+Independent reviews found no remaining blocking issues in the method or runner.
+The runner's create-only ledger comes before credential loading; a separate
+read-only preflight confirmed a key is present without constructing a provider.
+An authored dispatch check verified all 38 slots, a four-attempt failure, retained
+error scoring, and refusal to resend completed or interrupted runs. The full suite
+passed 422 tests with two optional container skips and one upstream deprecation
+warning; both Marimo apps and the Node navigation check passed.
+
+**Awaiting explicit payload authorization:** automatic approval review rejected
+dispatch before process creation because these private dialogue excerpts and
+recorded alternatives would go to Gemini. It required approval specific to that
+payload and destination despite the standing grant. No result ledger exists and
+zero provider requests were made. Exact payloads are preserved in the ignored
+`disclosure.md`; no rerun, replacement study or manual review batch is queued.
+The code and protocol are ready; the empirical comparison has not happened.

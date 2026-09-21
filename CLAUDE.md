@@ -1,5 +1,23 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Automatic continuation selection prepared (2026-09-21)
+
+Minchan approved the recommended automatic research comparison after PR #41
+merged as d645733. New branch codex/recorded-continuation-selection starts there.
+The selection module and authored tests implement one fixed 19-case comparison:
+Gemini identifies the actual recorded next message among four recorded options,
+with/without earlier dialogue. This is recognition, not generation fidelity.
+See docs/2026-09-21-recorded-continuation-selection.md; the ignored matching v1
+folder contains the exact prompts, source mappings, protocol, runner and pins.
+38 requests, at most 152 adapter attempts, one report and stop. No manual labels,
+prompt tuning, generator adoption or reopening the six-case pass. Preparation and
+independent review pass; 422 tests pass, two optional skips, Marimo/Node pass.
+Automatic approval review rejected send before process creation, requiring
+explicit permission to send this private historical dialogue and recorded option
+payload to Gemini despite the logged standing approval. No result ledger or
+provider requests exist. Keep the frozen preparation intact; obtain that specific
+authorization before dispatch. Do not bypass the rejection or imply model results.
+
 ## Joint instructor evaluation closed (2026-09-21)
 
 Minchan completed six cached recorded/generated continuation comparisons. After
