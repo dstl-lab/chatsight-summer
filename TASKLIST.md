@@ -9,11 +9,11 @@ checks are also merged via [PR #40](https://github.com/dstl-lab/chatsight-summer
 The six-case [joint evaluation](docs/2026-09-21-joint-fidelity-check.md) is closed:
 four recorded-message preferences and two both-possible judgments. It supplies
 qualitative feedback, not the missing binary labels. Keep bulk labeling and
-workspace redesign paused; no further review batch is queued. One automatic
+workspace redesign paused; no further review batch is queued. The automatic
 [recorded-continuation selection comparison](docs/2026-09-21-recorded-continuation-selection.md)
-is prepared: 19 cases, 38 requests, no manual labels. Sending the private dialogue
-and option texts to Gemini awaits the payload-specific approval required by
-automatic review; no model calls have been made.
+is closed: with and without history both scored 8/16 complete pairs; word overlap
+scored 7/16. Five of 38 requests remain missing after a schema failure; none were
+resent. No manual labels or generator change. PR #42 merged the diagnostic.
 
 Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
 
@@ -35,6 +35,7 @@ milestones; the former does not establish the latter.
 - [x] Support authored notebook tasks with work changes and isolated checks in the separate notebook mode.
 - [x] Pause bulk labeling; keep the current generator because the tested candidate did not establish sufficient improvement.
 - [x] Complete the requested six-case joint development evaluation, preserve the protocol amendment and instructor judgments, reveal origins, and close the pass without changing the generator.
+- [x] Complete one fixed automatic recorded-continuation choice comparison, report the tie and five missing choices, and close without new labels, rerolls or generator adoption.
 
 ## Next, in order
 
@@ -114,11 +115,11 @@ milestones; the former does not establish the latter.
 
 ## Current difficulties
 
-The next authorized research step is the prepared selection comparison above.
-Its method, offline checks and exact inputs are complete. After dispatch approval,
-run those 38 requests once, report history-versus-current accuracy, baseline
-accuracy and failures, then close. It is a separate recognition diagnostic and
-does not satisfy or reopen item 4's generator-adoption gate.
+The automatic selection comparison above is complete. Earlier history showed no
+accuracy benefit on the 16 complete pairs; all-19 missing-outcome bounds range
+from -15.8 to +10.5 percentage points. This separate recognition diagnostic does
+not satisfy or reopen item 4's generator-adoption gate. No new labeling, generation
+or replacement experiment is queued; retain the existing simulator.
 
 | Difficulty | What it means for the next work |
 | --- | --- |

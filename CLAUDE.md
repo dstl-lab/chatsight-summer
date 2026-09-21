@@ -1,22 +1,29 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
-## Automatic continuation selection prepared (2026-09-21)
+## Automatic continuation selection closed (2026-09-21)
 
-Minchan approved the recommended automatic research comparison after PR #41
-merged as d645733. New branch codex/recorded-continuation-selection starts there.
-The selection module and authored tests implement one fixed 19-case comparison:
-Gemini identifies the actual recorded next message among four recorded options,
-with/without earlier dialogue. This is recognition, not generation fidelity.
-See docs/2026-09-21-recorded-continuation-selection.md; the ignored matching v1
-folder contains the exact prompts, source mappings, protocol, runner and pins.
-38 requests, at most 152 adapter attempts, one report and stop. No manual labels,
-prompt tuning, generator adoption or reopening the six-case pass. Preparation and
-independent review pass; 422 tests pass, two optional skips, Marimo/Node pass.
-Automatic approval review rejected send before process creation, requiring
-explicit permission to send this private historical dialogue and recorded option
-payload to Gemini despite the logged standing approval. No result ledger or
-provider requests exist. Keep the frozen preparation intact; obtain that specific
-authorization before dispatch. Do not bypass the rejection or imply model results.
+PR #42 merged the offline diagnostic as b179876. Results follow-up is on
+codex/selection-results in the existing isolated episode-pilot worktree. Minchan
+explicitly approved sending the frozen private dialogue/options to Gemini after
+the initial automatic-review block; payload-approval.json binds that approval.
+The first dispatch failed on unsupported additional_properties: four errors and
+one interruption, no choices. Preserve original run.py/results.json/source pins.
+A frozen transport amendment removed only that wire-schema field, kept strict
+local validation, and sent only the 33 untouched jobs. All succeeded, zero resends;
+at most 53 adapter attempts across both phases, below the 152 ceiling. The original
+five missing choices remain missing in the combined report, not replaced.
+
+Result: history 8/16 and current 8/16 on the same complete pairs, zero accuracy
+difference and 16 ties (8 both-correct, 8 both-wrong). Actual choices agree 15/16.
+Paired lexical 7/16, shortest 4/16, longest 6/16; coverage history 16/19, current 17/19.
+All-19 missing-outcome delta bounds: -15.8 to +10.5 percentage points, not a CI.
+See docs/2026-09-21-recorded-continuation-selection.md and the ignored matching v1
+folder for protocol, amendment, sources and receipts. This is recognition of logged
+continuations, not generation fidelity; the cases have prior development exposure.
+Close the comparison and retain the generator. No labels, failed-case rerolls,
+option/prompt tuning, generator adoption or new comparison is queued. Keep the
+bulk audit, UI redesign and closed six-case pass unchanged. Public engines and
+dependencies did not change; private transport checks cover the compatibility fix.
 
 ## Joint instructor evaluation closed (2026-09-21)
 
