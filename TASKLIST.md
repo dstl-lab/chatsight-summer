@@ -26,6 +26,9 @@ against main. This verifies operation, not student realism or policy effects.
 The [public notebook example](docs/2026-09-21-notebook-example.md) now makes the
 existing task/work/execution path reproducible without private inputs. Its authored
 container check passes; no new model calls or labels were needed.
+Its [first generated walkthrough](docs/2026-09-21-live-notebook-example.md) then
+quietly edited code, requested one real passing check and chose no further reply.
+Three student requests, no additional tutor replies; that bounded run is closed.
 
 Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
 
@@ -150,12 +153,24 @@ milestones; the former does not establish the latter.
   Full suite: 432 passed, three optional skips; the new container check also passed
   separately. No live generations or claims of improved student realism.
 
+- [x] **10. Run the public notebook example once with generated actions.** Use
+  the exact authored task/data and existing bounded lesson runner; allow checks
+  only when requested. Preserve the model's chosen actions and stop reason.
+  **Completed:** quiet revision → real local check (`0.5`, pass) → no-reply;
+  three student requests, one container execution, no errors or generated tutor
+  turns, three unused decisions. All 77 frozen files and exact saved replay verify.
+  The policy/reference were configured but never delivered to a new tutor turn.
+  See [walkthrough and limits](docs/2026-09-21-live-notebook-example.md). No new
+  labels, forced errors, replacement draws or fidelity claims.
+
 ## Current difficulties
 
 The live demonstration is complete. Different policy instructions did not always
 produce different tutor behavior; single simulated outcomes cannot estimate policy
-effects. Generated task details and notebook-like output remain synthetic chat.
-No notebook execution or assignment verification occurred. Combined PR #43 still
+effects. Generated task details and notebook-like output in that chat-only run
+remain synthetic chat; that run performed no execution or assignment verification.
+The separate authored notebook walkthrough did execute its supplied task once,
+but cannot validate historical student behavior. Combined PR #43 still
 needs independent review for main integration; no new labels are requested.
 
 The automatic selection comparison above is complete. Earlier history showed no

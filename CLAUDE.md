@@ -1,5 +1,30 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Public notebook live walkthrough closed (2026-09-21)
+
+After the next Continue, ran the prepared data/notebook-example/session once
+through the existing notebook_lesson runner. All initial task/table/work/dialogue
+were public authored content; no private historical student payload. The frozen
+live-run/scope.json records standing authorization, initial prompt/state, policy,
+reference, 77 source/setup pins and a six-student/two-tutor ceiling (eight logical
+requests, 32 adapter attempts).
+
+Actual sequence: quiet revision → requested container check → generated no-reply.
+Three Gemini 2.5 Pro student requests, one real check returning float 0.5/pass on
+revision 1, zero generated tutor replies or errors. Three decisions remain unused;
+no-reply closed the encounter. Actual retries are unknown, with at most 12 adapter
+attempts for the three recorded requests. No rerolls or new labels.
+
+The configured policy/reference were not delivered to a generated tutor; only the
+authored initial hint was present. No generated chat was emitted, and no initial
+failing check occurred in this live run. Do not claim tutor-policy effects or a
+fixed chat hallucination problem. audit.json and replay.html verify actual saved
+prompts, actions, bound check feedback, all 77 pins and unchanged read-only replay.
+Repeating the lesson is rejected. See docs/2026-09-21-live-notebook-example.md.
+Keep the old preparation verification and initial.html intact. Task 10 complete;
+all older studies and source pins remain unchanged, generator/UI work stays as
+previously scoped, and combined PR #43 still needs independent review for main.
+
 ## Public notebook setup (2026-09-21)
 
 The existing notebook engine is now reachable without private experiment inputs:
