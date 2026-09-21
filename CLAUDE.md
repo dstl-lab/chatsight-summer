@@ -1,5 +1,30 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Live cohort prepared; send blocked (2026-09-21)
+
+PR #44 merged into codex/selection-results as 0ba649b. Combined PR #43 now includes
+the closed selection result and three-scenario coordinator; independent review
+against main is still required. Do not treat its old docs-only description or
+the older branch notes below as current scope.
+
+The next bounded demonstration is frozen in ignored chat-cohort-live-v1:
+three existing historical-group cases, hint/direct policies, one new decision
+each, Gemini 2.5 Pro both roles, at most 12 logical requests / 48 adapter attempts.
+See docs/2026-09-21-live-cohort.md. Exact six tutor prompts, dynamic student-prompt
+templates, schemas and 106 file pins are saved; independent audit and 25 focused
+workflow tests pass. run.py reuses the coordinator with an exclusive dispatch
+receipt, preserving every outcome and stopping after one invocation.
+
+Automatic approval review rejected send before process creation because this
+private dialogue/generated-content payload and Gemini destination require
+specific approval. send-blocked.json preserves the rejection; authorization.json
+accurately records only the standing grant and current Continue, not approval for
+this new exact payload. Zero new model calls, no dispatch.json, all six conditions
+still untouched. Obtain the user's exact-payload approval, bind it separately to
+scope/disclosure/rejection, then run once and audit saved outcomes. No bypass or
+replacement samples. Original source pins, authored proof artifacts, closed
+studies, live workspace and paused labeling remain unchanged. No fidelity claim.
+
 ## Three-scenario policy workflow (2026-09-21)
 
 codex/chat-cohort adds a thin coordinator around chat_policy_pair: exactly three

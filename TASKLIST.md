@@ -17,7 +17,10 @@ resent. No manual labels or generator change. PR #42 merged the diagnostic.
 The next engineering increment now coordinates three existing conversation
 scenarios under the same two policies, with one new decision per condition.
 The [cohort workflow](docs/2026-09-21-chat-cohort.md) is verified with scripted
-responses; a historical group is prepared but has made no new model calls.
+responses. Its [one live round](docs/2026-09-21-live-cohort.md) is fully prepared,
+but automatic approval review blocked sending the new private payload to Gemini.
+Zero calls occurred; exact-payload approval is the next input needed. PR #44 merged
+into the results branch; combined PR #43 awaits independent review against main.
 
 Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
 
@@ -130,11 +133,16 @@ milestones; the former does not establish the latter.
 
 ## Current difficulties
 
+The prepared live demonstration needs specific Gemini payload approval after an
+automatic-review block. It permits one invocation, at most 12 logical requests
+and 48 adapter attempts, followed by a saved overview. All six conditions remain
+untouched. This is the next operational step; no new labels are requested.
+
 The automatic selection comparison above is complete. Earlier history showed no
 accuracy benefit on the 16 complete pairs; all-19 missing-outcome bounds range
 from -15.8 to +10.5 percentage points. This separate recognition diagnostic does
-not satisfy or reopen item 4's generator-adoption gate. No new labeling, generation
-or replacement experiment is queued; retain the existing simulator.
+not satisfy or reopen item 4's generator-adoption gate. No new labeling or
+replacement fidelity experiment is queued; retain the existing simulator.
 
 | Difficulty | What it means for the next work |
 | --- | --- |
