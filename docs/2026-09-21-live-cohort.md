@@ -57,32 +57,57 @@ prompt omits origin markers; generated tutor interventions are stored as `script
 in dialogue but linked to their actual provider receipts. Do not infer human
 authorship from that stored marker. There is no causal or fidelity estimate here.
 
-The current user instruction is “Continue,” alongside the standing project
-approval for Gemini work. The private authorization record must state that basis
-without treating the earlier 38-prompt selection approval as approval of this new
-payload. This run would send historical private dialogue, cached simulated replies,
-the fixed tutor policies and newly generated replies to Gemini. Exact initial
-payloads and subsequent-prompt templates are in the ignored
+The initial instruction was “Continue,” alongside the standing project approval
+for Gemini work. Automatic approval review rejected that send before process
+creation, requiring approval for this specific private payload and destination.
+`authorization.json` and `send-blocked.json` preserve that sequence; the earlier
+38-prompt selection approval was not reused. Minchan then answered “Yes, approved”
+to the disclosed cohort payload and its 12-request / 48-attempt ceiling.
+`payload-approval.json` binds that reply to the unchanged scope, disclosure and
+prior rejection before dispatch. The run sent historical private dialogue, cached
+simulated replies, fixed policies and newly generated replies to Gemini. Exact
+initial payloads and subsequent-prompt templates remain in ignored
 `chat-cohort-live-v1/disclosure.md`. No private text or credentials enter Git.
 
 ## Status
 
-Preparation is complete: six untouched conditions, 106 frozen files, exact tutor
-prompts and student-prompt templates. Offline verification reproduces the saved
-initial state, and the 25 cohort/pair/workspace tests pass. Independent review
-reconstructed all six prompt pairs and found no material defects. The private
-runner uses the existing coordinator, checks frozen files and initial state, and
-creates an exclusive dispatch receipt before any calls. A second invocation
-cannot replace the first.
+**Complete and stopped.** The approved invocation ran from 13:34:30 to 13:37:13
+UTC on September 21, 2026. All six conditions saved a tutor reply and a simulated
+student reply. Every child exhausted its one-new-decision budget; this is a
+simulation pause, not student silence. No replacement draws or labels followed.
 
-Automatic approval review rejected the send before process creation: private
-student dialogue and generated content need specific approval for this payload
-and the Gemini destination, beyond the standing grant or earlier selection
-approval. `send-blocked.json` preserves that reason and binds the frozen scope
-and disclosure. No dispatch receipt exists; zero new requests or adapter attempts
-occurred. Offline verification after rejection confirms all six conditions remain
-untouched. The next step is exact-payload approval, then this one invocation;
-no alternative transfer, extra preparation batch or manual labeling is needed.
+| Operational outcome | Count |
+| --- | ---: |
+| Complete tutor replies | 6 |
+| Complete simulated student replies | 6 |
+| Generated no-replies | 0 |
+| Tutor/student failures | 0 |
+| Interrupted or unstarted conditions | 0 |
+| Logical requests recorded | 12 |
+| Adapter-attempt upper bound | 48 |
+
+Actual retries and SDK HTTP attempts were not recorded. The initial blocked send
+made zero requests. `dispatch.json`, `result.json`, `audit.json` and `OVERVIEW.md`
+preserve the completed run, exact verification and readable exchanges. All 106
+frozen files match, including original source and child startup files. Each tutor
+prompt matches its frozen payload; each student prompt reconstructs exactly from
+the frozen state and the generated tutor reply. Read-only replay reproduces the
+saved result without changing group files. Independent terminal audit confirmed
+the approval and call chronology, all six results, the exact 18 new group files,
+and the overview against raw receipts. All 25 focused workflow tests passed;
+the public engines, prompts and schemas are unchanged.
+
+The outputs also show a limit of the demonstration: different policy instructions
+did not consistently produce distinct tutor interventions. Both policies asked
+for missing task text in case 1 and another step in case 2. Generated task text,
+table values and an error claim are synthetic dialogue, not recovered notebook
+state. None was established by execution or assignment verification. Do not read
+differences between these single student draws as an effect of tutor policy.
+
+The operational acceptance criterion is met: six bounded interactions can run,
+remain linked to their supplied policy and reopen for inspection. Student fidelity
+remains unvalidated. Keep this run closed and the generator unchanged; no further
+manual review or generation is queued by this demonstration.
 
 PR #44 merged the coordinator into the results branch, not main. This protocol
 joins the combined PR #43, whose independent GitHub review remains required.

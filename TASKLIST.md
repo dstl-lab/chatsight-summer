@@ -17,10 +17,12 @@ resent. No manual labels or generator change. PR #42 merged the diagnostic.
 The next engineering increment now coordinates three existing conversation
 scenarios under the same two policies, with one new decision per condition.
 The [cohort workflow](docs/2026-09-21-chat-cohort.md) is verified with scripted
-responses. Its [one live round](docs/2026-09-21-live-cohort.md) is fully prepared,
-but automatic approval review blocked sending the new private payload to Gemini.
-Zero calls occurred; exact-payload approval is the next input needed. PR #44 merged
-into the results branch; combined PR #43 awaits independent review against main.
+responses. After specific payload approval, its
+[one live round](docs/2026-09-21-live-cohort.md) completed all six conditions:
+six tutor replies and six simulated student replies, 12 recorded requests and
+no failures. All budgets are exhausted and the readable results are saved.
+PR #44 merged into the results branch; combined PR #43 awaits independent review
+against main. This verifies operation, not student realism or policy effects.
 
 Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
 
@@ -127,16 +129,21 @@ milestones; the former does not establish the latter.
   conditions, retain failures, and refuse resends or budget extensions.
   **Verified:** 430 tests pass with two optional skips; both Marimo apps and the
   Node check pass. The authored group exercised three replies, two no-replies and
-  one failure with zero model calls. The historical group is prepared only.
+  one failure with zero model calls. The approved historical group then completed
+  six tutor/student exchanges in 12 requests, with no errors or missing conditions.
+  Its fixed budgets are exhausted, source pins and exact prompt linkage verify,
+  and a readable overview is saved. The [live round](docs/2026-09-21-live-cohort.md)
+  is closed; no rerolls or further labeling are queued.
   See [workflow and limits](docs/2026-09-21-chat-cohort.md). This is simulator
   engineering, not a new fidelity experiment or evidence of tutor-policy effects.
 
 ## Current difficulties
 
-The prepared live demonstration needs specific Gemini payload approval after an
-automatic-review block. It permits one invocation, at most 12 logical requests
-and 48 adapter attempts, followed by a saved overview. All six conditions remain
-untouched. This is the next operational step; no new labels are requested.
+The live demonstration is complete. Different policy instructions did not always
+produce different tutor behavior; single simulated outcomes cannot estimate policy
+effects. Generated task details and notebook-like output remain synthetic chat.
+No notebook execution or assignment verification occurred. Combined PR #43 still
+needs independent review for main integration; no new labels are requested.
 
 The automatic selection comparison above is complete. Earlier history showed no
 accuracy benefit on the 16 complete pairs; all-19 missing-outcome bounds range
