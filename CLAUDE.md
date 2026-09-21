@@ -1,5 +1,19 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Lesson policy visibility repaired (2026-09-22)
+
+Saved results now discovers notebook lesson/tutor-* records as well as workspace
+tutor-exchanges/*, using the same context/reply/continuation validation. The lesson
+policy is shown as configured, separately from confirmed delivery. Failed,
+interrupted and malformed records remain visible. See
+docs/2026-09-22-lesson-saved-results.md. Full suite: 439 passed, three optional
+container skips; Marimo/Node checks and independent review pass. Existing notebook
+replay and all six saved chat cohort views verify without changing evidence.
+Only the display renderer's source hash changes among the public walkthrough's
+77 pins; use the recorded historical revision for that all-source audit. Student
+engines, prompts and old pins remain unchanged. No new model calls, execution or
+labels. Task 11 complete; PR #43 still requires independent GitHub review for main.
+
 ## Public notebook live walkthrough closed (2026-09-21)
 
 After the next Continue, ran the prepared data/notebook-example/session once

@@ -87,7 +87,28 @@ def render(folder):
         'This view does not validate replay; if the session cannot reopen, these records remain unverified.']
     policies = []
     errors = []
-    for directory in sorted((folder / 'tutor-exchanges').glob('*')):
+    directories = sorted((folder / 'tutor-exchanges').glob('*'))
+    if notebook and (folder / 'lesson').exists():
+        directories.extend(sorted((folder / 'lesson').glob('tutor-*')))
+        try:
+            lesson = _record(folder / 'lesson/receipt.json')
+            if lesson['request']['session_sha256'] != store.digest(manifest):
+                raise ValueError('Lesson record belongs to a different session.')
+            policy = lesson['request']['policy']
+            if not isinstance(policy, str) or not policy.strip():
+                raise ValueError('Missing configured lesson policy.')
+            if lesson['status'] not in ('pending', 'complete', 'error'):
+                raise ValueError('Unknown lesson status.')
+            sections += ['### Configured lesson policy', tutor_context._block(policy),
+                         'Configuration does not confirm delivery. Confirmed policy delivery '
+                         'is shown at matching student steps below.']
+            if lesson['status'] == 'pending':
+                sections.append('Lesson incomplete. It is not automatically retried.')
+            elif lesson['status'] == 'error':
+                sections += ['Lesson failed.', _error(lesson.get('error', {}))]
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+            errors += ['**The lesson record is unreadable or inconsistent.**', tutor_context._block(str(exc))]
+    for directory in directories:
         if not directory.is_dir():
             continue
         path = directory / 'receipt.json'

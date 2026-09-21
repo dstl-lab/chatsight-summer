@@ -30,7 +30,10 @@ Its [first generated walkthrough](docs/2026-09-21-live-notebook-example.md) then
 quietly edited code, requested one real passing check and chose no further reply.
 Three student requests, no additional tutor replies; that bounded run is closed.
 
-Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
+The [Saved results repair](docs/2026-09-22-lesson-saved-results.md) also makes lesson
+tutor receipts visible and separates configured policy from confirmed delivery.
+
+Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
 
 ## North Star
 
@@ -162,6 +165,12 @@ milestones; the former does not establish the latter.
   The policy/reference were configured but never delivered to a new tutor turn.
   See [walkthrough and limits](docs/2026-09-21-live-notebook-example.md). No new
   labels, forced errors, replacement draws or fidelity claims.
+
+- [x] **11. Show lesson policies in Saved results.** Discover the lesson runner's
+  tutor receipts, retain failures and show configured policies separately from
+  confirmed delivery. Seven regression cases and the existing notebook/chat
+  replays pass without calls or evidence changes. See the
+  [repair note](docs/2026-09-22-lesson-saved-results.md).
 
 ## Current difficulties
 

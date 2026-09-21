@@ -137,3 +137,81 @@ def test_notebook_result_shows_quiet_actions_and_local_check(tmp_path):
     partial = render(folder)
     assert 'Local check' in partial and 'Operation incomplete' in partial
     assert '0 decisions remaining' not in partial
+
+
+@pytest.mark.parametrize('ending', ['complete', 'unused', 'tutor-error', 'tutor-interrupted',
+                                   'student-error', 'student-interrupted'])
+def test_lesson_policies_and_incomplete_exchanges_are_read_only(tmp_path, monkeypatch, ending):
+    from src.agents import notebook_lesson, workspace_history
+
+    folder = tmp_path / ending
+    notebook.create(folder, task=TASK, activity=ACTIVITY, branch_id='authored/lesson-history')
+    decisions = iter(['no-reply'] if ending == 'unused' else ['reply', 'no-reply'])
+
+    def generate_student(_, schema):
+        decision = next(decisions)
+        if decision == 'no-reply' and ending == 'student-error':
+            raise RuntimeError('Authored student failure')
+        if decision == 'no-reply' and ending == 'student-interrupted':
+            raise KeyboardInterrupt('Authored student interruption')
+        return schema(decision=decision, text='help' if decision == 'reply' else '', source=None)
+
+    def generate_tutor(_, schema):
+        assert ending != 'unused', 'Unused policy must not produce a tutor request'
+        if ending == 'tutor-error':
+            raise RuntimeError('Authored tutor failure')
+        if ending == 'tutor-interrupted':
+            raise KeyboardInterrupt('Authored tutor interruption')
+        return schema(text='Count the distinct shades.')
+
+    try:
+        notebook_lesson.run(folder, policy='A saved lesson policy.', generate_student=generate_student,
+                            generate_tutor=generate_tutor, check=None)
+    except (RuntimeError, KeyboardInterrupt):
+        assert ending in ('tutor-error', 'tutor-interrupted', 'student-interrupted')
+    before = files(folder)
+    monkeypatch.setattr(notebook.llm, 'make_generate', lambda *_a, **_k: pytest.fail('Inspection dispatched'))
+    monkeypatch.setattr(notebook.notebook_runtime, 'check_work', lambda *_a, **_k: pytest.fail('Inspection executed'))
+    text = workspace_history.render(folder)
+    assert 'Configured lesson policy' in text and 'A saved lesson policy.' in text
+    assert text.count('Tutor policy used') == (1 if ending in ('complete', 'student-error') else 0)
+    if ending in ('complete', 'student-error', 'student-interrupted'):
+        assert 'Count the distinct shades.' in text
+    if ending.endswith('error'):
+        assert f"Authored {ending.split('-')[0]} failure" in text
+    if ending.endswith('interrupted'):
+        assert 'incomplete' in text.lower() and 'automatically retried' in text
+    assert workspace_history.render(folder) == text and files(folder) == before
+
+
+def test_damaged_lesson_records_do_not_confirm_delivery_or_hide_steps(tmp_path):
+    from src.agents import notebook_lesson, workspace_history
+
+    folder = tmp_path / 'lesson'
+    notebook.create(folder, task=TASK, activity=ACTIVITY, branch_id='authored/damaged-lesson')
+    decisions = iter(['reply', 'no-reply'])
+    notebook_lesson.run(folder, policy='A saved lesson policy.', check=None,
+        generate_student=lambda _, schema: schema(decision=(decision := next(decisions)),
+            text='help' if decision == 'reply' else '', source=None),
+        generate_tutor=lambda _, schema: schema(text='Count distinct shades.'))
+    path = folder / 'lesson/receipt.json'
+    original = json.loads(path.read_text())
+    path.write_text('{')
+    text = workspace_history.render(folder)
+    assert 'lesson record is unreadable' in text and text.count('Tutor policy used') == 1
+    assert 'Configured lesson policy' not in text
+    context = folder / 'lesson/tutor-0001/context.json'
+    changed = json.loads(context.read_text())
+    changed['binding']['state_sha256'] = '0' * 64
+    context.write_text(json.dumps(changed))
+    for invalid in (original | {'request': original['request'] | {'session_sha256': '0' * 64}},
+                    original | {'request': original['request'] | {'policy': None}}, None):
+        if invalid is None:
+            path.unlink()
+        else:
+            path.write_text(json.dumps(invalid))
+        text = workspace_history.render(folder)
+        assert 'Configured lesson policy' not in text and 'Tutor policy used' not in text
+        assert 'lesson record is unreadable' in text and 'tutor record is unreadable' in text
+        assert 'no confirmed policy link' in text and 'Count distinct shades.' in text
+        assert 'Student chose no reply' in text and 'help' in text
