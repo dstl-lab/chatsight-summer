@@ -5,10 +5,13 @@ The fidelity target is excess work/evidence presentation in chat, but the curren
 help-only reference set cannot validate a fix. Further fidelity experiments are deferred.
 The teammate quickstart and authored offline demo are on main via
 [PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30). Automated contributor
-checks pass in [PR #40](https://github.com/dstl-lab/chatsight-summer/pull/40), pending
-review and merge. Keep labeling and workspace redesign paused.
+checks are also merged via [PR #40](https://github.com/dstl-lab/chatsight-summer/pull/40).
+The six-case [joint evaluation](docs/2026-09-21-joint-fidelity-check.md) is closed:
+four recorded-message preferences and two both-possible judgments. It supplies
+qualitative feedback, not the missing binary labels. Keep bulk labeling and
+workspace redesign paused; no further review batch is queued.
 
-Updated: September 20, 2026. Unchecked items are proposed work, not completed results.
+Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
 
 ## North Star
 
@@ -27,6 +30,7 @@ milestones; the former does not establish the latter.
 - [x] Distinguish recorded messages, simulated messages and tutor interventions; show missing notebook activity as unknown.
 - [x] Support authored notebook tasks with work changes and isolated checks in the separate notebook mode.
 - [x] Pause bulk labeling; keep the current generator because the tested candidate did not establish sufficient improvement.
+- [x] Complete the requested six-case joint development evaluation, preserve the protocol amendment and instructor judgments, reveal origins, and close the pass without changing the generator.
 
 ## Next, in order
 
@@ -102,7 +106,7 @@ milestones; the former does not establish the latter.
   **Done when:** a clean GitHub runner reports the checks passing on this PR.
   **Verified:** the [first GitHub run](https://github.com/dstl-lab/chatsight-summer/actions/runs/35516294840)
   passed all 419 tests (two optional skips), both Marimo checks and the Node check.
-  PR #40 remains subject to the repository's normal review and merge requirements.
+  PR #40 merged to main at `93904ef`.
 
 ## Current difficulties
 

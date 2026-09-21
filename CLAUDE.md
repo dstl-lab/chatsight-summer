@@ -1,5 +1,20 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Joint instructor evaluation closed (2026-09-21)
+
+Minchan completed six cached recorded/generated continuation comparisons. After
+case 1, the announced question changed from help/work coding to comparative
+likelihood. Recorded messages were preferred in four cases; both were possible
+in two, without a stated ranking. All 24 help/work flags remain unassigned.
+See docs/2026-09-21-joint-fidelity-check.md and ignored joint-fidelity-check-v1
+for the amendment, exact replies and source mapping. Prior exposure, one draw,
+assistant facilitation and changed questions limit this to development feedback.
+The working hypothesis concerns answering tutor prompts versus observed student
+communication patterns; no stable trait or improvement is established. Retain the
+generator; the binary measurement gate remains unmet. The six-case pass is closed,
+with zero new calls and no further review or generation queued. Keep the bulk
+audit and UI redesign paused. PR #40 is now merged to main at 93904ef.
+
 ## Main integration and contributor checks (2026-09-20)
 
 Minchan completed PR #30's merge; GitHub records squash commit 2720455 on main.
@@ -16,7 +31,7 @@ or change branch protection. The optional container tests stay opt-in. No studen
 engine, prompt, live session, labeling or deferred UI work changes in this step.
 The first GitHub run, 35516294840, passed 419 tests with the expected two optional
 container skips; Marimo and Node checks passed too. Task 7's clean-run acceptance
-is complete. PR #40 still needs normal GitHub review before integration. All 195
+is complete. PR #40 subsequently merged at 93904ef. All 195
 frozen source pins and 87 workspace startup files continue to verify locally.
 
 ## Consolidated simulator review (2026-09-20)
