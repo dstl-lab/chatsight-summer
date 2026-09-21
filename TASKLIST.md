@@ -14,6 +14,10 @@ workspace redesign paused; no further review batch is queued. The automatic
 is closed: with and without history both scored 8/16 complete pairs; word overlap
 scored 7/16. Five of 38 requests remain missing after a schema failure; none were
 resent. No manual labels or generator change. PR #42 merged the diagnostic.
+The next engineering increment now coordinates three existing conversation
+scenarios under the same two policies, with one new decision per condition.
+The [cohort workflow](docs/2026-09-21-chat-cohort.md) is verified with scripted
+responses; a historical group is prepared but has made no new model calls.
 
 Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
 
@@ -36,6 +40,7 @@ milestones; the former does not establish the latter.
 - [x] Pause bulk labeling; keep the current generator because the tested candidate did not establish sufficient improvement.
 - [x] Complete the requested six-case joint development evaluation, preserve the protocol amendment and instructor judgments, reveal origins, and close the pass without changing the generator.
 - [x] Complete one fixed automatic recorded-continuation choice comparison, report the tie and five missing choices, and close without new labels, rerolls or generator adoption.
+- [x] Coordinate three saved policy pairs as one bounded group, retain failures, and reopen all six outcomes without changing the student generator.
 
 ## Next, in order
 
@@ -112,6 +117,16 @@ milestones; the former does not establish the latter.
   **Verified:** the [first GitHub run](https://github.com/dstl-lab/chatsight-summer/actions/runs/35516294840)
   passed all 419 tests (two optional skips), both Marimo checks and the Node check.
   PR #40 merged to main at `93904ef`.
+
+- [x] **8. Run the existing comparison workflow across a small group.** Reuse three
+  distinct frozen conversation sources and the same two policies, one new student
+  decision per condition. Prepare and view offline, continue only untouched ready
+  conditions, retain failures, and refuse resends or budget extensions.
+  **Verified:** 430 tests pass with two optional skips; both Marimo apps and the
+  Node check pass. The authored group exercised three replies, two no-replies and
+  one failure with zero model calls. The historical group is prepared only.
+  See [workflow and limits](docs/2026-09-21-chat-cohort.md). This is simulator
+  engineering, not a new fidelity experiment or evidence of tutor-policy effects.
 
 ## Current difficulties
 

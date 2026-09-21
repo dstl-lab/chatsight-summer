@@ -1,5 +1,30 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Three-scenario policy workflow (2026-09-21)
+
+codex/chat-cohort adds a thin coordinator around chat_policy_pair: exactly three
+distinct frozen source conversations, the same model and two policies, one new
+student decision per condition. Existing pairs keep their budgets, identities,
+bindings and receipts; there is no new generator, scheduler ledger or UI. Create
+and show are offline. Run requires explicit send, preserves failures and advances
+only untouched ready peers; completed or interrupted arms cannot resend. A changed
+group plan aborts; unrecorded errors propagate; comparison symlinks are rejected.
+See docs/2026-09-21-chat-cohort.md. Eight new tests pass; full suite 430 passed,
+two optional skips, one upstream warning. Marimo and Node checks pass.
+
+Ignored chat-cohort-v1 holds the historical-group prepared from frozen handoff
+cases 1–3, all six conditions untouched. Original source hashes still match.
+Its separate authored-group has three scripted replies, two no-replies and one
+saved provider failure; twelve injected callbacks, zero model calls. Reopen and
+completed rerun change no files or dispatches. OVERVIEW.md shows both groups.
+Independent review confirmed the source/containment and failure protections.
+Existing interactive model schemas already omit the field that broke the recent
+selection evaluation; no shared engine or provider repair was needed. Leave old
+source pins, live workspace, closed studies and paused labeling unchanged.
+PR #43 remains the separate results review; this feature branches from its commit
+0599523. No live cohort comparison or new labels ran, and no fidelity claim follows
+from this engineering check. Before later research use, fix its scope and stopping rule.
+
 ## Automatic continuation selection closed (2026-09-21)
 
 PR #42 merged the offline diagnostic as b179876. Results follow-up is on
