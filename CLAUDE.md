@@ -1,5 +1,17 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Merged simulator; research scope next (2026-09-22)
+
+PR43 merged to main at 31142e3. User requested resolved-branch cleanup: 35 local
+and 36 remote branch names removed after ancestry/merged-PR verification and a
+local recovery bundle. Existing worktrees/data and dirty main files remain;
+four unmerged issue_* remote branches are preserved. Work continues from main
+in the existing isolated worktree on codex/simulation-research-scope.
+docs/2026-09-22-simulation-research-scope.md records the proposed HCI question
+about simulation errors affecting educator decisions. Pause extra infrastructure;
+next is one offline evidence-feasibility decision. No study, calls, labels or
+recruitment queued; closed experiments and the existing generator stay unchanged.
+
 ## Workspace carries the tutor library reference (2026-09-22)
 
 Optional notebook-only --reference-file now loads through the existing
