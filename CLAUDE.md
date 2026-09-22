@@ -1,5 +1,25 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Fixed cached-message review prepared; human export needed (2026-09-22)
+
+Minchan's Continue advances the inventoried scope to one help-work-v1 review.
+Eight cases, 23 distinct messages/46 flags, unchanged original prefixes and
+definitions; case 5's shared draw judgment retains both occurrence weights.
+The existing page is served only from cached-communication-review-v1/ui on
+127.0.0.1:8425. Opaque case/candidate IDs and order are frozen; origins, old labels
+and private mappings stay outside the page. All answers/reviewer details blank.
+50 pins, source joins, exact HTML/HTTP access and authored draft/report checks
+pass. Browser automation blocked a temporary authored file test; no bypass or
+live browser walkthrough. User opens the provided localhost link themselves.
+The private report helper supports missing/unclear flags and independent per-flag
+case exclusion; balanced work Brier needs both comparable reference groups.
+See docs/2026-09-22-cached-communication-review.md and ignored matching folder.
+Next input: one returned JSON export. Preserve its exact bytes and verify frozen
+files before scoring. If review stops early, preserve the partial form and close
+as incomplete; no forced adjudication. No model calls, source label conversion,
+second-reviewer dependency, replacement cases or automatic generator adoption.
+All old studies stay closed; this pass cannot estimate a grounding benefit.
+
 ## Cached communication scope inventoried, no review launched (2026-09-22)
 
 The accepted step verified eight old recorded references and 16 cached replies:

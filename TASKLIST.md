@@ -9,7 +9,8 @@ checks are also merged via [PR #40](https://github.com/dstl-lab/chatsight-summer
 The six-case [joint evaluation](docs/2026-09-21-joint-fidelity-check.md) is closed:
 four recorded-message preferences and two both-possible judgments. It supplies
 qualitative feedback, not the missing binary labels. Keep bulk labeling and
-workspace redesign paused; no further review batch is queued. The automatic
+workspace redesign paused; the separate fixed pass below is the only open review.
+The automatic
 [recorded-continuation selection comparison](docs/2026-09-21-recorded-continuation-selection.md)
 is closed: with and without history both scored 8/16 complete pairs; word overlap
 scored 7/16. Five of 38 requests remain missing after a schema failure; none were
@@ -40,7 +41,9 @@ The [cached-message inventory](docs/2026-09-22-cached-fidelity-scope.md) now ver
 eight references and 16 saved replies. One duplicate reduces any later common
 coding pass to 23 distinct messages / 46 flags. No compatible labels overlap.
 These are two draws of one condition, so this set cannot estimate a grounding
-benefit. The inventory is complete; a review pass is specified but not launched.
+benefit. The subsequent [fixed review](docs/2026-09-22-cached-communication-review.md)
+is prepared at `http://127.0.0.1:8425/`, awaiting one human export. The report rules
+are frozen; no new generations or further review rounds are queued.
 
 Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
 
@@ -199,6 +202,15 @@ milestones; the former does not establish the latter.
   closed and this inventory creates no review queue, labels or generations.
   See [scope and stopping rule](docs/2026-09-22-cached-fidelity-scope.md).
 
+- [ ] **14. Complete one common-rubric pass over the cached messages.**
+  **Prepared:** the existing page shows eight shared conversations and 23 distinct
+  messages with two flags each. Source joins, 50 pins, exact page/local access and
+  authored draft/report checks pass. Origins and previous labels are concealed.
+  **Input needed:** one review JSON export; preserve partial work if review stops.
+  **Done when:** one report states work-absent/work-present coverage, per-flag
+  discrepancy and exclusions, then closes even if inconclusive. No replacement
+  cases or generator adoption. See [fixed scope](docs/2026-09-22-cached-communication-review.md).
+
 ## Current difficulties
 
 The [single notebook run with conversation context](docs/2026-09-22-live-notebook-communication.md)
@@ -214,7 +226,8 @@ effects. Generated task details and notebook-like output in that chat-only run
 remain synthetic chat; that run performed no execution or assignment verification.
 The separate authored notebook walkthrough did execute its supplied task once,
 but cannot validate historical student behavior. Combined PR #43 still
-needs independent review for main integration; no new labels are requested.
+needs independent review for main integration. The separate fixed review in item
+14 is now the sole pending human measurement input.
 
 The automatic selection comparison above is complete. Earlier history showed no
 accuracy benefit on the 16 complete pairs; all-19 missing-outcome bounds range
