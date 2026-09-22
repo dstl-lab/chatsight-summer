@@ -24,6 +24,82 @@ def files(folder):
     return {str(path.relative_to(folder)): path.read_bytes() for path in folder.rglob('*') if path.is_file()}
 
 
+def test_saved_results_keep_delivered_policy_separate_from_current_draft(tmp_path, monkeypatch):
+    from src.agents import chat_student, chat_workspace
+    from src.agents.browser_workspace import create_app
+    from tests.test_chat_student import QUERY
+
+    folder = tmp_path / 'chat'
+    first = chat_student.create(folder, query=QUERY, max_decisions=3)
+    chat_student.step(folder, binding=first['binding'],
+        generate=lambda _, schema: schema(decision='reply', text='7?'))
+    after = chat_workspace.respond(folder, binding=chat_student.show(folder)['binding'], send=True,
+        policy='Saved instructions <img src=x onerror=alert(1)>',
+        generate_tutor=lambda _, schema: schema(text='Try counting.'),
+        generate_student=lambda _, schema: schema(decision='reply', text='this?'))
+    chat_workspace.advance(folder, binding=after['binding'], send=True, tutor_reply='Yes.',
+        generate=lambda _, schema: schema(decision='no-reply', text=''))
+    before = files(folder)
+    monkeypatch.setattr(student.llm, 'make_generate', lambda *a, **kw: pytest.fail('Model dispatch'))
+    browser = TestClient(create_app(folder, chat_mode=True, policy='Current draft only.'),
+                         base_url='http://127.0.0.1')
+    packet = browser.get('/api/workspace').json()
+    history = packet['encounters'][0]['saved_results_html']
+    assert 'Tutor policy used' in history and 'Saved instructions &lt;img' in history
+    assert '<img' not in history and 'Current draft only.' not in history
+    assert packet['controls']['policy'] == 'Current draft only.'
+    assert 'Try counting.' in history and 'Supplied tutor reply' in history
+    assert 'no confirmed policy link' in history and 'Student chose no reply' in history
+    assert browser.get('/api/workspace').json() == packet and files(folder) == before
+    # Missing tutor metadata warns without leaking its absolute filesystem path.
+    next((folder / 'tutor-exchanges').glob('*/context.json')).unlink()
+    response = browser.get('/api/workspace')
+    assert response.status_code == 200
+    assert 'Tutor policy used' not in response.text and 'unreadable' in response.text
+    assert str(folder) not in response.text
+
+
+def test_saved_results_show_unused_lesson_policy_and_hide_runtime_diagnostics(tmp_path):
+    from src.agents import notebook_lesson
+    folder = tmp_path / 'notebook'
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id='authored/unused-policy')
+
+    def failed(*_):
+        raise RuntimeError('PRIVATE_PROVIDER_DIAGNOSTIC')
+
+    notebook_lesson.run(folder, policy='Configured but unused.', generate_student=failed,
+                        generate_tutor=lambda *_: pytest.fail('Tutor dispatch'), check=None)
+    before = files(folder)
+    response = client(folder).get('/api/workspace')
+    history = response.json()['encounters'][0]['saved_results_html']
+    assert 'Configured lesson policy' in history and 'Configured but unused.' in history
+    assert 'Tutor policy used' not in history and 'Student generation failed' in history
+    assert 'PRIVATE_PROVIDER_DIAGNOSTIC' not in response.text and str(folder) not in response.text
+    assert files(folder) == before
+
+
+@pytest.mark.parametrize('linked', ['tutor-exchanges', 'tutor-exchanges/exchange',
+                                  'tutor-exchanges/exchange/receipt.json',
+                                  'tutor-exchanges/exchange/context.json', 'lesson',
+                                  'lesson/receipt.json', 'lesson/tutor-0001',
+                                  'lesson/tutor-0001/context.json'])
+def test_saved_results_reject_symlinked_receipt_paths(tmp_path, linked):
+    folder = tmp_path / 'session'
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id='authored/receipt-paths')
+    student.load(folder)
+    target = tmp_path / 'outside'
+    if linked.endswith('.json'):
+        target.write_text('PRIVATE_OUTSIDE')
+    else:
+        target.mkdir()
+    path = folder / linked
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.symlink_to(target)
+    response = client(folder).get('/api/workspace')
+    assert response.status_code == 409
+    assert 'PRIVATE_OUTSIDE' not in response.text and str(tmp_path) not in response.text
+
+
 def test_tutor_formatting_is_inert_and_preserves_original_evidence(tmp_path):
     from src.agents.browser_workspace import _tutor_html
     source = '''### Try this
@@ -135,6 +211,9 @@ def test_saved_frames_replay_chain_and_keep_feedback_pending_chat_and_budget(tmp
     assert frames[3]['dialogue'][-1]['origin'] == 'supplied'
     assert packet['encounters'][1]['initialization']['previous_encounter']['work']['revision'] == 1
     assert packet['encounters'][1]['frames'][0]['feedback'] is None
+    assert 'This is an authored hint.' in packet['encounters'][0]['saved_results_html']
+    assert 'No saved exchanges yet.' in packet['encounters'][1]['saved_results_html']
+    assert 'This is an authored hint.' not in packet['encounters'][1]['saved_results_html']
     assert len(frames[3]['binding']['state_sha256']) == 64
     for secret in ('PRIVATE_EXPECTED', 'PRIVATE_PROVENANCE', str(previous), 'image_id', 'evaluation_sha256', 'engine'):
         assert secret not in response.text

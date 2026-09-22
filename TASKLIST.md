@@ -27,6 +27,11 @@ the missing matched improvement comparison remains a separate research step.
 The [chat sidebar](docs/2026-09-22-browser-chat-sidebar.md) now keeps conversation
 beside notebook work or comparison cards; details and tutor controls use the
 center. The separate Inspect tab is retired in the connected workspace.
+**Saved results** now exposes the existing per-task/conversation receipt history
+inside the browser, separating delivered instructions from current drafts and
+unused configuration. Chat has clearer roles and first/last-message navigation.
+This [inspection update](docs/2026-09-22-browser-saved-results.md) adds no generation
+or labels and does not change the simulator.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached

@@ -256,3 +256,23 @@ open in the center while chat stays visible. **Hide chat** makes more room;
 **Show chat** restores it without changing drafts or selection. Compare keeps
 the three alternative next replies in the center and only their shared context
 in chat. See the [sidebar verification](../2026-09-22-browser-chat-sidebar.md).
+
+## Inspect saved tutor instructions
+
+Open **Saved results** in Replay to see all exchanges for the selected task or
+conversation. This includes exchanges after an earlier selected playback state;
+chat remains at that state. The view reuses the existing receipt reader and
+shows confirmed **Tutor policy used** separately from a **Supplied tutor reply**
+without a confirmed policy link, an unused configured lesson policy, or an
+incomplete tutor exchange. The current editable tutor draft never replaces a
+saved policy. Technical error details stay omitted in this browser view.
+
+Saved results is available after successful replay verification. An interrupted
+student record that cannot reopen still uses the existing failure view; this
+change does not repair it or resend anything. The separate Marimo Saved results
+reader retains its existing partial-record inspection behavior.
+
+Chat now has clearer student/tutor message styling, compact source access in each
+header, a message count, and **First/Last** navigation. These controls move only
+within the saved conversation and do not generate a reply. Implementation and
+checks: [saved-results memo](../2026-09-22-browser-saved-results.md).
