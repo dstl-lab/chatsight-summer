@@ -1,5 +1,11 @@
 # Simulated students: task list
 
+PR #47's reviewed issues are fixed, and the [browser policy comparison](docs/2026-09-22-browser-policy-comparison.md)
+now opens one saved pair with shared context once, fixed policies, tutor responses
+and distinct student outcomes. Viewing is read-only. Next: create a frozen pair
+and explicitly run it from the browser using the existing runner; batch controls
+remain deferred. This is workflow integration, not new fidelity evidence.
+
 The [replay usability pass](docs/2026-09-22-browser-replay-usability.md) is complete:
 conversation-only runs use one chat with Previous/Next; the duplicate activity
 list was removed. Notebook work and comparisons keep chat alongside. Details are

@@ -11,6 +11,7 @@ const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
 const notify = text => {$('status').textContent=text};
 const decisionNames = {'reply':'Student reply','revise-work':'Work edited','request-check':'Local check requested','no-reply':'Student chose no reply'};
+const isPolicyComparison = () => state.comparison?.kind==='saved-policy-comparison';
 const originNames = {authored:'Authored context',source:'Starting conversation',generated:'Simulated',supplied:'Supplied intervention',scripted:'Added tutor reply'};
 function statusText(f){
   if(f.decisions_remaining===0&&['active','ready','awaiting-tutor'].includes(f.status))return 'Decision budget exhausted · simulation paused';
@@ -19,7 +20,7 @@ function statusText(f){
 function turns(){
   if(state.mode==='compare'){
     const c=state.comparison?.cases[state.reviewIndex];
-    return c?[...c.prefix.context,...c.prefix.turns].map(t=>({...t,origin:'source'})):[];
+    return c?[...c.prefix.context,...c.prefix.turns].map(t=>({...t,origin:t.origin||'source'})):[];
   }
   const f=frame();
   return [...f.dialogue,...(f.pending_message!==null?[{role:'student',origin:'generated',text:f.pending_message,pending:true}]:[])];
@@ -60,12 +61,13 @@ function renderCases(){
   const query=$('search').value.toLowerCase();
   if(state.mode==='compare'){
     document.querySelector('.breadcrumb').textContent='Saved comparison';
-    document.querySelector('.explorer-heading').textContent='Reviewed cases';
+    document.querySelector('.explorer-heading').textContent=isPolicyComparison()?'Policy comparison':'Reviewed cases';
     $('conversation-guide').hidden=true;
-    $('search').placeholder='Filter reviewed cases…';$('search').setAttribute('aria-label','Filter reviewed cases');
-    document.querySelector('label[for="search"]').textContent='Filter reviewed cases';
+    const label=isPolicyComparison()?'Filter policy comparisons':'Filter reviewed cases';
+    $('search').placeholder=label+'…';$('search').setAttribute('aria-label',label);
+    document.querySelector('label[for="search"]').textContent=label;
     $('cases').innerHTML=(state.comparison?.cases||[]).map((c,i)=>({c,i})).filter(({c})=>c.title.toLowerCase().includes(query)).map(({c,i})=>
-      `<button class="case-button" data-review-case="${i}" aria-pressed="${state.reviewIndex===i}"><span><b>${esc(c.title)}</b><small>Recorded + 2 simulated replies</small></span></button>`).join('')||'<p class="empty">'+(state.comparison?'No matching cases.':'No comparison loaded.')+'</p>';
+      `<button class="case-button" data-review-case="${i}" aria-pressed="${state.reviewIndex===i}"><span><b>${esc(c.title)}</b><small>${isPolicyComparison()?'Current + proposed instructions':'Recorded + 2 simulated replies'}</small></span></button>`).join('')||'<p class="empty">'+(state.comparison?'No matching cases.':'No comparison loaded.')+'</p>';
     document.querySelectorAll('[data-review-case]').forEach(b=>b.onclick=()=>{state.reviewIndex=Number(b.dataset.reviewCase);state.showInspector=false;render();$('canvas').scrollTop=0;notify('Opened '+state.comparison.cases[state.reviewIndex].title)});
     return;
   }
@@ -119,7 +121,7 @@ function renderChat(){
   $('chat-count').textContent=rows.length+' message'+(rows.length===1?'':'s');
   document.querySelectorAll('[data-chat-jump]').forEach(b=>b.disabled=rows.length<2);
   if(!available){$('conversation-messages').innerHTML='<p class="quiet">'+(state.comparisonLoading||state.refreshing||state.monitoring?'Loading saved conversation…':'No verified conversation to display.')+'</p>';return}
-  $('conversation-messages').innerHTML=comparing?`<p class="quiet chat-context-note">${esc(c.context_status)}</p><h3 class="chat-section-label">Earlier messages supplied</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3 class="chat-section-label">Current exchange</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
+  $('conversation-messages').innerHTML=comparing?`<p class="quiet chat-context-note">${esc(c.context_status)}</p><h3 class="chat-section-label">Earlier messages supplied</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3 class="chat-section-label">${isPolicyComparison()?'Shared simulated question':'Current exchange'}</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
   if(changed&&visibleChat){
     const messages=$('conversation-messages');
     messages.scrollTop=!comparing&&state.step>0?(messages.querySelector('.chat-turn:last-of-type')?.offsetTop||0):0;
@@ -127,35 +129,52 @@ function renderChat(){
   document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
   document.querySelectorAll('.message-body pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Tutor code block')});
 }
+function policyColumns(c){
+  const outcomes={ready:'This condition has not run. The shared question is the starting point.',
+    'student-replied':'The simulated student sent a follow-up.',
+    'no-follow-up':'The simulated student chose not to send a follow-up.',
+    failed:'This condition stopped after a saved error. It has not been retried.',
+    incomplete:'This condition has an unfinished saved request. No final student outcome is available.'};
+  return '<div class="compare-grid saved-comparison policy-comparison">'+c.conditions.map(condition=>
+    `<article class="comparison"><header><h2>${esc(condition.title)}</h2><div class="kind">Condition ${esc(condition.id.toUpperCase())}</div></header><details class="policy-instructions"><summary>Tutor instructions</summary><p class="saved-message">${esc(condition.policy)}</p></details><div class="entry"><h3 class="chat-section-label">Tutor response</h3>${condition.tutor_reply!==null?`<div class="message-body">${condition.tutor_html||block(condition.tutor_reply)}</div>`:'<p class="quiet">No completed tutor response saved.</p>'}<h3 class="chat-section-label">Student outcome</h3><p class="quiet">${esc(outcomes[condition.status]||'Outcome unavailable.')}</p>${condition.student_reply!==null?`<p class="saved-message">${esc(condition.student_reply)}</p>`:''}</div></article>`
+  ).join('')+'</div><p class="note">Same starting question, different tutor instructions. These saved simulations do not establish student realism, learning, or which policy works better for real students.</p>';
+}
 function renderComparison(){
   const data=state.comparison,c=data?.cases[state.reviewIndex];
   renderCases();renderModeButtons();
   $('playback').hidden=true;$('next-step').hidden=true;
   $('saved-results').hidden=true;$('continue-run').hidden=true;
-  $('instructions').hidden=true;$('tutor-controls').textContent='Review details';
+  $('instructions').hidden=true;$('tutor-controls').textContent=isPolicyComparison()?'Comparison details':'Review details';
   $('instructions').disabled=!c;$('tutor-controls').disabled=!c;
   $('case-title').textContent=c?.title||(state.comparisonLoading?'Loading comparison…':'Comparison unavailable');
-  $('view-description').textContent=c?'Recorded next message and two saved simulated replies.':'Reading saved evidence only.';
+  $('view-description').textContent=c?(isPolicyComparison()?'One shared starting question. Two fixed tutor policies.':'Recorded next message and two saved simulated replies.'):'Reading saved evidence only.';
   $('body-grid').classList.toggle('no-inspector',!state.showInspector);
   $('body-grid').classList.toggle('inspector-open',state.showInspector);
   $('inspector-toggle').hidden=!state.showInspector;
   if(c){
+    if(isPolicyComparison()){
+      $('canvas').innerHTML=policyColumns(c);
+    }else{
     const columns=[{title:'Recorded student',subtitle:'First observed next message',...c.reference},
       ...c.draws.map(d=>({title:'Simulated reply '+d.draw,subtitle:'Same setup · draw '+d.draw,...d}))];
     const flag=value=>({yes:'Yes',no:'No',unclear:'Unclear'})[value]||'Not reviewed';
     $('canvas').innerHTML='<div class="compare-grid saved-comparison">'+columns.map(message=>
       `<article class="comparison"><header><h2>${esc(message.title)}</h2><div class="kind">${esc(message.subtitle)}</div></header><div class="entry"><p class="saved-message">${esc(message.text)}</p></div><footer><dl class="review-flags"><dt>Requests help / check</dt><dd>${flag(message.review.help_request)}</dd><dt>Shows work / evidence</dt><dd>${flag(message.review.work_present)}</dd></dl>${message.review.note?`<p class="small muted">Review note: ${esc(message.review.note)}</p>`:''}${message.shared_review_with?`<p class="small muted">Same saved text as reply ${message.shared_review_with}; one review covers both.</p>`:''}</footer></article>`).join('')+'</div><p class="note">One historical simulation setup, two draws per case. Differences from the recorded message do not establish implausibility. These saved reviews do not measure a grounding improvement.</p>';
+    }
     if(state.showInspector)renderComparisonInspector(c,data);else $('inspector').innerHTML='';
   }else{
     $('canvas').innerHTML=state.comparisonError?`<div role="alert"><p>${esc(state.comparisonError)}</p><p class="quiet">Reload saved comparison to check again. Replay remains available.</p></div>`:'<p class="quiet" role="status">Verifying the saved review and message links…</p>';
     $('inspector').innerHTML='';
   }
   renderChat();renderOperationStatus();
+  document.querySelectorAll('.comparison .message-body pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Tutor code block')});
 }
 function renderComparisonInspector(c,data){
   if(state.selected.startsWith('turn:')){
     const turn=turns()[Number(state.selected.split(':')[1])];
-    $('inspector').innerHTML='<div class="inspector-title">Conversation source</div><h2>Original message</h2>'+block(turn.text)+'<p>Exact text from the shared review context. The recorded next message stays outside the generation inputs.</p>';
+    $('inspector').innerHTML='<div class="inspector-title">Conversation source</div><h2>Original message</h2>'+block(turn.text)+(isPolicyComparison()?'<p>Exact text shared by both tutor-policy conditions.</p>':'<p>Exact text from the shared review context. The recorded next message stays outside the generation inputs.</p>');
+  }else if(isPolicyComparison()){
+    $('inspector').innerHTML='<div class="inspector-title">Saved policy comparison</div><h2>How to read this comparison</h2><p>Both conditions use the same supplied conversation and cached simulated question. Each has its own fixed tutor instructions and at most one new student decision.</p><p>The starting question is simulated. It is not an observed future student message.</p><div class="divider"></div><p>Ready means no new exchange has run. A failed or unfinished request is not student silence. A no-follow-up is a saved simulator choice.</p><p>Model: '+esc(c.model)+'</p><p>Viewing sends nothing. This comparison supplies no accuracy score or evidence of real policy effects.</p>';
   }else{
     $('inspector').innerHTML=`<div class="inspector-title">Existing human review</div><h2>How to read this comparison</h2><h3>Requests help / check</h3><p>${esc(data.definitions.help_request)}</p><div class="divider"></div><h3>Shows work / evidence</h3><p>${esc(data.definitions.work_present)}</p><div class="divider"></div><p>Both flags can be yes. Unclear and not reviewed remain separate from no.</p><p>One reviewer supplied these judgments. The cases had prior development exposure; coding reliability is unmeasured.</p><div class="divider"></div><p>Two replies from the same historical configuration do not compare baseline and grounded simulators. Notebook actions, correctness and learning remain unknown.</p><p>This view reads completed evidence and does not collect new labels or change the simulator.</p>`;
   }
@@ -169,7 +188,7 @@ async function reloadComparison(){
     const response=await fetch('/api/comparison',{cache:'no-store',signal:controller.signal});
     const data=await response.json();
     if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:'Could not read the saved comparison.');
-    if(data.version!==1||data.kind!=='saved-communication-comparison'||!Array.isArray(data.cases)||!data.cases.length)throw new Error('Unsupported saved comparison.');
+    if(data.version!==1||!['saved-communication-comparison','saved-policy-comparison'].includes(data.kind)||!Array.isArray(data.cases)||!data.cases.length)throw new Error('Unsupported saved comparison.');
     state.comparison=data;state.reviewIndex=Math.min(state.reviewIndex,data.cases.length-1);
     notify('Saved comparison loaded. No new labels or generation.');
   }catch(error){state.comparisonError=error.name==='AbortError'?'The local comparison did not respond in time.':error.message;notify('Saved comparison unavailable.');}

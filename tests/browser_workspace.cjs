@@ -382,6 +382,34 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(node('cases').innerHTML.includes('Reviewed case'),false);
   comparisonFail=false;await node('reset').onclick();
   assert.match(node('canvas').innerHTML,/Simulated reply 2/);
+  const communicationComparison={...comparison};
+  Object.assign(comparison,{kind:'saved-policy-comparison',cases:[{id:'pair',title:'Tutor policy comparison',model:'authored-demo',
+    context_status:'Same saved start for both policies.',
+    prefix:{context:[{role:'tutor',origin:'source',text:'Earlier tutor context.'}],
+      turns:[{role:'student',origin:'generated',text:'cached <question>'}]},
+    conditions:[{id:'a',title:'Current policy',policy:'hint <only>',status:'student-replied',
+      tutor_reply:'Try **count**.',tutor_html:'<p>Try <strong>count</strong>.</p>',student_reply:'<script>count?</script>'},
+      {id:'b',title:'Proposed policy',policy:'direct answer',status:'no-follow-up',tutor_reply:'Two.',tutor_html:'<p>Two.</p>',student_reply:null}]}]});
+  await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/Current policy|Proposed policy/);
+  assert.match(node('canvas').innerHTML,/hint &lt;only&gt;/);
+  assert.match(node('canvas').innerHTML,/<strong>count<\/strong>/);
+  assert.match(node('canvas').innerHTML,/&lt;script&gt;count\?&lt;\/script&gt;/);
+  assert.doesNotMatch(node('canvas').innerHTML,/cached &lt;question&gt;|<script>|Requests help|Recorded student/);
+  assert.match(node('canvas').innerHTML,/chose not to send/);
+  assert.match(node('conversation-messages').innerHTML,/Shared simulated question/);
+  assert.equal((node('conversation-messages').innerHTML.match(/cached &lt;question&gt;/g)||[]).length,1);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/Try <strong>|count\?/);
+  assert.equal(run('turns().at(-1).origin'),'generated');
+  run("selectEvidence('review')");
+  assert.match(node('inspector').innerHTML,/fixed tutor instructions/);
+  assert.doesNotMatch(node('inspector').innerHTML,/One reviewer|Requests assistance/);
+  comparison.cases[0].conditions[0]={...comparison.cases[0].conditions[0],status:'ready',tutor_reply:null,tutor_html:null,student_reply:null};
+  await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/has not run/);
+  assert.doesNotMatch(node('canvas').innerHTML,/count\?/);
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,postsBeforeCompare);
+  Object.assign(comparison,communicationComparison);
   run("selectMode('simulate')");
   assert.equal(run('state.scenarioId'),replaySelection);
   assert.equal(node('saved-results').hidden,false);

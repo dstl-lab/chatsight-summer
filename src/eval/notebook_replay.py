@@ -1,10 +1,125 @@
 """Export saved notebook encounters and their verified shared history to static HTML."""
 from contextlib import ExitStack
+from copy import deepcopy
+import difflib
 from html import escape
 import json
 from pathlib import Path
 
 from src.agents import notebook_next_task, notebook_student as student
+
+
+def _work_data(work):
+    return {key:deepcopy(work[key]) for key in ('cell_index', 'source', 'revision')}
+
+
+def _code_diff(before, after):
+    lines = difflib.unified_diff(before['source'].splitlines(keepends=True),
+        after['source'].splitlines(keepends=True),
+        fromfile=f"revision {before['revision']}", tofile=f"revision {after['revision']}")
+    return ''.join(line if line.endswith('\n') else line + '\n\\ No newline at end of file\n'
+                   for line in lines)
+
+
+def _feedback_data(observation):
+    feedback = student.notebook_session._feedback(observation)
+    if feedback is not None and feedback['status'] == 'environment-error':
+        feedback['error'] = {'message':'Local execution was unavailable; this work is ungraded. '
+                             'The operation receipt retains the diagnostic.'}
+        feedback['output'] = ''
+    return feedback
+
+
+def _shared_record_data(record):
+    dialogue = []
+    for turn in record['dialogue']:
+        saved = {'role':turn['role'], 'text':turn['text']}
+        if 'origin' in turn:
+            saved['origin'] = turn['origin']
+        dialogue.append(saved)
+    history = []
+    for event in record['history']:
+        action = event['action']
+        history.append({'origin':event['origin'],
+            'action':{key:deepcopy(action[key]) for key in ('decision', 'source', 'text')},
+            'revision_before':event['revision_before'],
+            'observation':_feedback_data(event['observation']),
+            'work_after':_work_data(event['work_after'])})
+    return {'task':record['task'], 'dialogue':dialogue, 'work':_work_data(record['work']),
+        'status':record['status'],
+        'activity':{key:deepcopy(value) for key,value in record['activity'].items() if key != 'image_id'},
+        'observation':_feedback_data(record['observation']), 'history':history}
+
+
+def _encounter_data(manifest, state, receipts, decisions, *, number, linked):
+    initial = manifest['initial']
+    initialization = initial['initialization']
+    shared_history = []
+    communication_scope = None
+    conversation_example = None
+    if manifest.get('provenance', {}).get('previous_encounter') is not None:
+        records = initialization.get('earlier_encounters', []) + [initialization['previous_encounter']]
+        shared_history = [_shared_record_data(record) for record in records]
+        communication_scope = deepcopy(initialization.get('communication_scope'))
+        conversation_example = deepcopy(initialization.get('conversation_example'))
+        initialization = initialization.get('current_task', 'Earlier shared context is shown separately.')
+    events, history_count, action_number = [], 0, 0
+    work_before = _work_data(initial['work'])
+    for recorded in [initial, *receipts]:
+        if 'request' in recorded:
+            reply = recorded['request']['tutor_reply']
+            if reply is not None:
+                events.append({'sequence':len(events) + 1, 'kind':'tutor-intervention',
+                    'origin':'supplied', 'text':reply})
+            recorded = recorded['result']['state']
+        for saved_event in recorded['history'][history_count:]:
+            history_count += 1
+            action_number += 1
+            work_after = _work_data(saved_event['work_after'])
+            action = saved_event['action']
+            events.append({'sequence':len(events) + 1, 'kind':'student-action',
+                'number':action_number, 'origin':saved_event['origin'],
+                'action':{key:deepcopy(action[key]) for key in ('decision', 'source', 'text')},
+                'work_before':work_before, 'work_after':work_after,
+                'code_diff':_code_diff(work_before, work_after),
+                'feedback':_feedback_data(saved_event['observation'])})
+            work_before = work_after
+    dialogue = [{'role':turn['role'], 'text':turn['text'],
+                 'origin':turn.get('origin', 'supplied')} for turn in initial['dialogue']]
+    disposition = ('budget-exhausted' if state['status'] in ('active', 'awaiting-tutor')
+                   and decisions >= manifest['max_decisions'] else state['status'])
+    return {'number':number, 'title':f'Task {number}' if linked else 'Saved encounter',
+        'task':initial['task'], 'initialization':deepcopy(initialization),
+        'dialogue':dialogue, 'initial_work':_work_data(initial['work']),
+        'activity':{key:deepcopy(value) for key,value in initial['activity'].items() if key != 'image_id'},
+        'shared_history':deepcopy(shared_history), 'communication_scope':communication_scope,
+        'conversation_example':conversation_example, 'events':events,
+        'final':{'status':state['status'], 'disposition':disposition, 'decisions_used':decisions,
+                 'max_decisions':manifest['max_decisions'], 'work':_work_data(state['work']),
+                 'feedback':_feedback_data(state['observation'])}}
+
+
+def _replay_data(entries):
+    linked = len(entries) > 1
+    return {'version':1, 'contains_private_content':True, 'linked':linked,
+        'tasks':[_encounter_data(manifest, state, receipts, decisions,
+            number=number, linked=linked)
+            for number, (_, manifest, state, receipts, decisions) in enumerate(entries, 1)]}
+
+
+def _read_replay(folder, *, previous=None):
+    with ExitStack() as stack:
+        entries = notebook_next_task.lineage(folder, stack, previous=previous)
+        return _replay_data(entries), [entry[0] for entry in entries]
+
+
+def load_replay(folder, *, previous=None):
+    """Return display-oriented private evidence after offline replay and ancestry checks.
+
+    The result contains saved dialogue and code. It is for local inspection and is
+    not a de-identified or shareable artifact.
+    """
+    return _read_replay(Path(folder).resolve(), previous=previous)[0]
 
 
 def _text(value):
@@ -15,8 +130,7 @@ def _block(value):
     return '<pre>' + _text(value) + '</pre>'
 
 
-def _feedback(observation):
-    feedback = student.notebook_session._feedback(observation)
+def _feedback(feedback):
     if feedback is None:
         return '<p>No check feedback for this revision.</p>'
     if feedback['status'] == 'environment-error':
@@ -37,8 +151,8 @@ def _action(event, number, prefix):
     summary = f'Action {number} · {decision}'
     if decision == 'revise-work':
         summary += ' · ' + ('message with edit' if action['text'] else 'quiet edit')
-    elif decision == 'request-check' and event['observation'] is not None:
-        feedback = event['observation']
+    elif decision == 'request-check' and event['feedback'] is not None:
+        feedback = event['feedback']
         summary += ' · ' + ('pass' if feedback['success'] else 'fail') \
             if feedback['status'] == 'checked' else ' · ' + feedback['status']
     body = f'<p>Origin: {_text(event["origin"])}</p>'
@@ -46,7 +160,7 @@ def _action(event, number, prefix):
         body += '<h4>Student message</h4>' + _block(action['text'])
     body += _work(event['work_after'])
     if decision == 'request-check':
-        body += '<h4>Recorded check result</h4>' + _feedback(event['observation'])
+        body += '<h4>Recorded check result</h4>' + _feedback(event['feedback'])
     elif decision == 'revise-work':
         body += '<p>This edit cleared the current check feedback. No check was requested by this action.</p>'
     elif decision == 'no-reply':
@@ -55,48 +169,43 @@ def _action(event, number, prefix):
             + body + '</details></li>')
 
 
-def _encounter(manifest, state, receipts, decisions, *, prefix, title):
-    initial = manifest['initial']
-    initialization = initial['initialization']
-    if manifest.get('provenance', {}).get('previous_encounter') is not None:
-        initialization = initialization.get('current_task', 'Earlier shared context is shown separately.')
-    body = (f'<section id="{prefix}"><h2>{title}</h2><h3>{_text(initial["task"])}</h3>'
+def _encounter(encounter, *, prefix):
+    body = (f'<section id="{prefix}"><h2>{_text(encounter["title"])}</h2>'
+            f'<h3>{_text(encounter["task"])}</h3>'
             '<details><summary>Supplied initial task context and dialogue</summary>'
-            '<p>Origin: supplied initial context</p>' + _block(initialization))
-    for turn in initial['dialogue']:
+            '<p>Origin: supplied initial context</p>' + _block(encounter['initialization']))
+    for turn in encounter['dialogue']:
         body += (f'<h4>{_text(turn["role"])} · Origin: {_text(turn.get("origin", "supplied"))}</h4>'
                  + _block(turn['text']))
-    body += '<h4>Initial selected cell</h4>' + _work(initial['work'])
-    body += '<h4>Declared activity</h4>' + _block({
-        key:value for key,value in initial['activity'].items() if key != 'image_id'}) + '</details>'
+    body += '<h4>Initial selected cell</h4>' + _work(encounter['initial_work'])
+    body += '<h4>Declared activity</h4>' + _block(encounter['activity']) + '</details>'
     body += '<h3>Recorded actions</h3><ol class="steps">'
-    history_count = 0
-    for recorded in [initial, *receipts]:
-        if 'request' in recorded:
-            reply = recorded['request']['tutor_reply']
-            if reply is not None:
-                body += ('<li><details open><summary>Supplied tutor turn</summary>'
-                         '<p>Origin: supplied intervention, as recorded by the student session.</p>'
-                         + _block(reply) + '</details></li>')
-            recorded = recorded['result']['state']
-        for event in recorded['history'][history_count:]:
-            history_count += 1
-            body += _action(event, history_count, prefix)
+    action_count = 0
+    for event in encounter['events']:
+        if event['kind'] == 'tutor-intervention':
+            body += ('<li><details open><summary>Supplied tutor turn</summary>'
+                     '<p>Origin: supplied intervention, as recorded by the student session.</p>'
+                     + _block(event['text']) + '</details></li>')
+        else:
+            action_count += 1
+            body += _action(event, action_count, prefix)
     body += '</ol>'
-    if not history_count:
+    if not action_count:
         body += '<p>No student action has been recorded.</p>'
-    body += '<h3>Final saved state</h3><p>Status: <strong>' + _text(state['status']) + '</strong>. '
-    body += f'Model decisions used: {decisions} / {_text(manifest["max_decisions"])}.</p>'
-    if state['status'] == 'no-reply':
+    final = encounter['final']
+    body += '<h3>Final saved state</h3><p>Status: <strong>' + _text(final['status']) + '</strong>. '
+    body += f'Model decisions used: {final["decisions_used"]} / {_text(final["max_decisions"])}.</p>'
+    if final['status'] == 'no-reply':
         body += '<p>Chosen no-reply is the recorded stop; it does not establish learning or abandonment.</p>'
-    elif state['status'] == 'active':
-        body += ('<p>Decision budget exhausted; this is a runner pause, not student silence.</p>'
-                 if decisions >= manifest['max_decisions'] else '<p>The saved encounter remains active.</p>')
-    elif state['status'] == 'awaiting-tutor':
+    elif final['disposition'] == 'budget-exhausted':
+        body += '<p>Decision budget exhausted; this is a runner pause, not student silence.</p>'
+    elif final['status'] == 'active':
+        body += '<p>The saved encounter remains active.</p>'
+    elif final['status'] == 'awaiting-tutor':
         body += '<p>The student is awaiting a tutor reply.</p>'
-    elif state['status'] == 'error':
+    elif final['status'] == 'error':
         body += '<p>The runner stopped with an error; no additional student action is established.</p>'
-    body += _work(state['work']) + '<h4>Current task feedback</h4>' + _feedback(state['observation'])
+    body += _work(final['work']) + '<h4>Current task feedback</h4>' + _feedback(final['feedback'])
     return body + '</section>'
 
 
@@ -106,37 +215,34 @@ def export(folder, output, *, previous=None):
     if output.exists() or output.is_symlink():
         raise FileExistsError(output)
     folder, output = Path(folder).resolve(), output.resolve()
-    with ExitStack() as stack:
-        entries = notebook_next_task.lineage(folder, stack, previous=previous)
-        if any(output.is_relative_to(entry[0]) for entry in entries):
-            raise ValueError('Replay output must be outside each input session.')
-        body = '<header><p class="eyebrow">Saved notebook simulation</p><h1>Encounter replay</h1>'
-        body += '<p>Read-only replay of saved evidence. No model calls or code execution.</p></header>'
-        prefixes = [f'task-{i + 1}' for i in range(len(entries) - 1)] + ['current']
-        if len(entries) > 1:
-            body += ('<p class="notice">Verified linked continuation: each new task was supplied by a researcher. '
-                     'The history actually delivered at each initialization is shown separately. '
-                     'Continuation does not establish learning.</p><nav aria-label="Replay sections">')
-            body += ''.join(f'<a href="#{prefix}">Task {i + 1}</a>' for i, prefix in enumerate(prefixes)) + '</nav>'
-        for i, ((_, manifest, state, receipts, decisions), prefix) in enumerate(zip(entries, prefixes), 1):
-            if i > 1:
-                initialization = manifest['initial']['initialization']
-                records = initialization.get('earlier_encounters', []) + [initialization['previous_encounter']]
-                body += (f'<section id="{prefix}-history"><h2>Shared history supplied to Task {i}</h2>'
-                         f'<p>Origin: {len(records)} saved observed encounter(s), supplied to both agents. '
-                         'Each record’s work and feedback belong to its earlier task.</p>'
-                         '<details><summary>Inspect the exact shared observed records</summary>'
-                         + _block(records) + '</details>')
-                if 'conversation_example' in initialization:
-                    body += ('<details><summary>Recorded communication example supplied to this task</summary>'
-                             + _block(initialization['communication_scope'])
-                             + _block(initialization['conversation_example']) + '</details>')
-                body += '</section>'
-            body += _encounter(manifest, state, receipts, decisions, prefix=prefix,
-                               title=f'Task {i}' if len(entries) > 1 else 'Saved encounter')
-        body += ('<footer>Only selected-cell work and recorded dialogue/actions are available. Checks apply to their '
-                 'recorded revision and supplied data; a pass is not a general correctness proof. '
-                 'No pacing, hidden attempts, learner traits or learning are inferred.</footer>')
+    replay, input_folders = _read_replay(folder, previous=previous)
+    if any(output.is_relative_to(input_folder) for input_folder in input_folders):
+        raise ValueError('Replay output must be outside each input session.')
+    body = '<header><p class="eyebrow">Saved notebook simulation</p><h1>Encounter replay</h1>'
+    body += '<p>Read-only replay of saved evidence. No model calls or code execution.</p></header>'
+    prefixes = [f'task-{i + 1}' for i in range(len(replay['tasks']) - 1)] + ['current']
+    if replay['linked']:
+        body += ('<p class="notice">Verified linked continuation: each new task was supplied by a researcher. '
+                 'The history actually delivered at each initialization is shown separately. '
+                 'Continuation does not establish learning.</p><nav aria-label="Replay sections">')
+        body += ''.join(f'<a href="#{prefix}">Task {i + 1}</a>' for i, prefix in enumerate(prefixes)) + '</nav>'
+    for encounter, prefix in zip(replay['tasks'], prefixes):
+        if encounter['shared_history']:
+            body += (f'<section id="{prefix}-history"><h2>Shared history supplied to Task {encounter["number"]}</h2>'
+                     f'<p>Origin: {len(encounter["shared_history"])} saved observed encounter(s), supplied to both agents. '
+                     'Each record’s work and feedback belong to its earlier task. '
+                     'Environment diagnostics are redacted from this display.</p>'
+                     '<details><summary>Inspect shared observed records</summary>'
+                     + _block(encounter['shared_history']) + '</details>')
+            if encounter['conversation_example'] is not None:
+                body += ('<details><summary>Recorded communication example supplied to this task</summary>'
+                         + _block(encounter['communication_scope'])
+                         + _block(encounter['conversation_example']) + '</details>')
+            body += '</section>'
+        body += _encounter(encounter, prefix=prefix)
+    body += ('<footer>Only selected-cell work and recorded dialogue/actions are available. Checks apply to their '
+             'recorded revision and supplied data; a pass is not a general correctness proof. '
+             'No pacing, hidden attempts, learner traits or learning are inferred.</footer>')
     page = '''<!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">

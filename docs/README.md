@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-22 | [Saved browser policy comparison](2026-09-22-browser-policy-comparison.md) | Implemented: PR #47 behind existing Compare, shared context once, saved results only; 618 tests pass |
+| 2026-09-22 | [Policy lab corrections](2026-09-22-policy-lab-corrections.md) | Implemented: receipt verification, read-only inspection, lifecycle counts and attribution; 529 tests pass |
 | 2026-09-22 | [Policy labs integration review](2026-09-22-policy-labs-integration-review.md) — PR #47 alongside the browser workspace | Compatible in temporary merge; backend reuse recommended after verification, lifecycle and attribution fixes; no merge or new experiment |
 | 2026-09-22 | [Browser replay usability](2026-09-22-browser-replay-usability.md) — follow saved activity with fewer competing controls | One chat view with playback controls; duplicate activity removed, details grouped; no new simulation |
 | 2026-09-22 | [Browser saved results](2026-09-22-browser-saved-results.md) — inspect delivered instructions and improve chat reading | Existing receipt interpretation reused; compact chat source access and first/last navigation |

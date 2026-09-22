@@ -16,7 +16,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from src.agents import chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace, workspace_history
+from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace, workspace_history
 from src.eval.saved_comparison import load_comparison
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -178,8 +178,66 @@ def _page():
     return page
 
 
-def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+def _policy_comparison(folder, expected_pin):
+    """Project a fixed one-decision pair under read-only locks, with shared context once."""
+    if folder.is_symlink() or any(path.is_symlink() for path in folder.rglob('*')):
+        raise ValueError('Policy comparison paths must not be symlinks.')
+    manifest_path = folder / 'comparison.json'
+    if sha256(manifest_path.read_bytes()).hexdigest() != expected_pin:
+        raise ValueError('The policy comparison changed after opening this workspace.')
+    receipt = chat_policy_pair._comparison(folder)
+    plan = receipt['plan']
+    if plan['max_new_decisions'] != 1:
+        raise ValueError('This view requires one student decision per policy.')
+    conditions, prefix = [], None
+    with ExitStack() as stack:
+        for name in ('a', 'b'):
+            stream = stack.enter_context((folder / 'sessions' / name / '.lock').open('rb'))
+            fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        for name in ('a', 'b'):
+            child, _, first = chat_policy_pair._startup(folder, receipt, name)
+            # Validate every path component read by the pair's receipt-link checks.
+            for path in child.glob('step-*.json'):
+                Binding.model_validate(student._read(path)['request']['binding'])
+            for path in (child / 'tutor-exchanges').iterdir() if (child / 'tutor-exchanges').exists() else []:
+                if not re.fullmatch(r'[0-9a-f]{64}', path.name) or not path.is_dir():
+                    raise ValueError('Invalid saved tutor exchange path.')
+            status = chat_policy_pair._condition_lifecycle(folder, receipt, name)
+            if prefix is None:
+                episode = first['result']['episode']
+                prefix = {'context':[{key:turn[key] for key in ('role', 'text', 'origin')}
+                                     for turn in [*episode['context'], *episode['turns']]],
+                          'turns':[{'role':'student', 'text':first['result']['message'], 'origin':'generated'}]}
+            exchanges = list((child / 'tutor-exchanges').glob('*/receipt.json'))
+            if len(exchanges) > 1:
+                raise ValueError('A one-decision policy arm has multiple tutor exchanges.')
+            tutor = student._read(exchanges[0]) if exchanges else None
+            tutor_reply = tutor['response']['text'] if tutor and tutor['status'] == 'complete' else None
+            student_reply = None
+            if status == 'student-replied':
+                _, state, _ = chat_student._load(child)
+                student_reply = state['message']
+            conditions.append({'id':name, 'title':'Current policy' if name == 'a' else 'Proposed policy',
+                               'policy':plan['policies'][name], 'status':status,
+                               'tutor_reply':tutor_reply, 'student_reply':student_reply})
+    if sha256(manifest_path.read_bytes()).hexdigest() != expected_pin:
+        raise ValueError('The policy comparison changed during inspection.')
+    return {'version':1, 'kind':'saved-policy-comparison', 'cases':[{
+        'id':plan['comparison_id'], 'title':'Tutor policy comparison', 'model':plan['model'],
+        'context_status':'Both policies start from this supplied conversation and the same cached simulated question. '
+                         'The earlier conversation may be recorded or authored; notebook activity is unknown.',
+        'prefix':prefix, 'conditions':conditions}]}
+
+
+def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
     folder = Path(folder).resolve()
+    if comparison is not None and policy_comparison is not None:
+        raise ValueError('Choose one comparison: a communication review or a tutor-policy pair.')
+    if policy_comparison is not None:
+        policy_comparison = Path(policy_comparison).absolute()
+        if policy_comparison.is_symlink() or (policy_comparison / 'comparison.json').is_symlink():
+            raise ValueError('The policy comparison must not be a symlink.')
+    policy_comparison_pin = sha256((policy_comparison / 'comparison.json').read_bytes()).hexdigest() if policy_comparison else None
     if comparison is not None and Path(comparison).is_symlink():
         raise ValueError('The comparison folder must not be a symlink.')
     comparison = Path(comparison).resolve() if comparison is not None else None
@@ -282,23 +340,27 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
         if request.query_params:
             raise HTTPException(400, 'The scenario catalog does not accept query parameters.')
         return {'version':1, 'scenarios':[{'id':key, 'title':titles[key]} for key in scenarios],
-                **({'comparison_available':True} if comparison is not None else {})}
+                **({'comparison_available':True} if comparison is not None or policy_comparison is not None else {})}
 
     @app.get('/api/comparison')
     def comparison_view(request: Request):
         if request.query_params:
-            raise HTTPException(400, 'The comparison uses only the review selected at launch.')
-        if comparison is None:
+            raise HTTPException(400, 'The comparison uses only the saved evidence selected at launch.')
+        if comparison is None and policy_comparison is None:
             raise HTTPException(404, 'No saved comparison is configured.')
         try:
-            result = load_comparison(comparison, expected_closure=comparison_pin)
+            result = (_policy_comparison(policy_comparison, policy_comparison_pin) if policy_comparison is not None
+                      else load_comparison(comparison, expected_closure=comparison_pin))
             for case in result['cases']:
                 for turns in case['prefix'].values():
                     for turn in turns:
                         if turn['role'] == 'tutor':
                             turn['display_html'] = _tutor_html(turn['text'])
+                for condition in case.get('conditions', []):
+                    if condition['tutor_reply'] is not None:
+                        condition['tutor_html'] = _tutor_html(condition['tutor_reply'])
             return result
-        except (OSError, ValueError, KeyError, TypeError) as exc:
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             raise HTTPException(409, 'The saved comparison could not be verified. Its evidence is not displayed.') from exc
 
     @app.get('/api/workspace')
@@ -372,7 +434,9 @@ def main():
     mode.add_argument('--chat', action='store_true', help='Open a chat-only session; notebook state remains unknown.')
     mode.add_argument('--chat-sessions', action='store_true', help='Choose among saved chat sessions directly inside the folder.')
     parser.add_argument('--port', type=int, default=8427)
-    parser.add_argument('--comparison', type=Path, help='Completed cached communication review folder for read-only Compare.')
+    compare = parser.add_mutually_exclusive_group()
+    compare.add_argument('--comparison', type=Path, help='Completed cached communication review folder for read-only Compare.')
+    compare.add_argument('--policy-comparison', type=Path, help='Saved one-decision tutor-policy pair for read-only Compare.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
@@ -384,7 +448,7 @@ def main():
         reference = notebook_tutor.LibraryReference.model_validate_json(
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
         app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat, comparison=args.comparison,
-                         send=args.send, policy=policy, reference=reference)
+                         policy_comparison=args.policy_comparison, send=args.send, policy=policy, reference=reference)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')
     uvicorn.run(app, host='127.0.0.1', port=args.port)

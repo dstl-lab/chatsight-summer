@@ -1,5 +1,18 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Policy labs integrated as saved browser comparisons (2026-09-22)
+
+PR #47 corrections verify saved/derived results, use structured receipt lifecycle,
+keep observation reads read-only and fix cached-start/context/request attribution.
+Browser --policy-comparison opens one saved one-decision pair in Compare; shared
+context appears once, fixed instructions and tutor/student outcomes in two columns.
+Original --comparison review format remains distinct. No generation or new labels.
+618 Python tests (three optional skips), seven Marimo and three Node checks pass;
+independent and desktop browser review complete. Authored read-only preview:8429.
+Memos: docs/2026-09-22-policy-lab-corrections.md and
+docs/2026-09-22-browser-policy-comparison.md. Next: explicit browser pair creation
+and generation; larger batches deferred. Main still requires independent review.
+
 ## Browser replay usability (2026-09-22)
 
 Conversation-only runs now have ONE chat view with Previous/Next attached. The
