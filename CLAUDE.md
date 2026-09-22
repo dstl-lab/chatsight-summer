@@ -2,6 +2,11 @@
 
 ## Browser policy creation and explicit runs (2026-09-22)
 
+UI direction: apply shadcn's code-ownership/composition philosophy through shared
+native components and semantic tokens. Reuse button variants, fields, neutral
+status badges and focus states; no frontend framework migration is required.
+Design contract: docs/prototypes/README.md.
+
 HCI audit fixes: literal question excerpts and policy text identify/search starts
 and pairs; the single chat opens at the tested question. Neutral Policy A/B and
 one-exchange scope clarify the evidence. Use this setup copies only an exact

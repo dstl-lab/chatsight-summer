@@ -116,3 +116,18 @@ was verified in the controller harness rather than claimed from that browser run
 All 105 original files and their working copies, plus three authored source files,
 remain unchanged. No new model calls or labels were required. The updated local
 workspace is served at port 8431.
+
+## Shared component styling
+
+The connected shell now applies shadcn's code-ownership and composition
+philosophy through native HTML/CSS: semantic surface/input tokens, consistent
+control sizes and radii, filled primary actions, outlined secondary actions, and
+quiet inspection controls. Policy cards use neutral saved-state badges; a reply
+or no-follow-up is not styled as policy success. Fields retain visible outlines
+and keyboard focus. The design contract is in `prototypes/README.md`.
+
+All three Node checks and 45 comparison/source backend tests pass. Desktop browser
+checks cover the saved comparison and setup at 1280×720; the question remains
+visible on entry. Input contrast is at least 3.33:1 on the tested surfaces and
+muted text is at least 5.49:1. No framework, dependency, provider call, labeling,
+or runner change was added.

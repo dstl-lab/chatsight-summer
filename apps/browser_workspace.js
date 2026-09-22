@@ -169,13 +169,14 @@ function policyStatus(c){
   return ready===c.conditions.length?'Ready to run':ready?'One condition remaining':'Results saved';
 }
 function policyColumns(c){
+  const labels={ready:'Ready to run','student-replied':'Reply saved','no-follow-up':'No follow-up',failed:'Failed',incomplete:'Incomplete'};
   const outcomes={ready:'This condition has not run. The shared question is the starting point.',
     'student-replied':'The simulated student sent a follow-up.',
     'no-follow-up':'The simulated student chose not to send a follow-up.',
     failed:'This condition stopped after a saved error. It has not been retried.',
     incomplete:'This condition has an unfinished saved request. No final student outcome is available.'};
   return '<div class="compare-grid saved-comparison policy-comparison">'+c.conditions.map(condition=>
-    `<article class="comparison"><header><h2>Policy ${esc(condition.id.toUpperCase())}</h2><div class="kind">${esc(excerpt(condition.policy,100))}</div></header><details class="policy-instructions"${condition.status==='ready'?' open':''}><summary>Full tutor instructions</summary><p class="saved-message">${esc(condition.policy)}</p></details><div class="entry"><h3 class="chat-section-label">Tutor response</h3>${condition.tutor_reply!==null?`<div class="message-body">${condition.tutor_html||block(condition.tutor_reply)}</div>`:'<p class="quiet">No completed tutor response saved.</p>'}<h3 class="chat-section-label">Student outcome</h3><p class="quiet">${esc(outcomes[condition.status]||'Outcome unavailable.')}</p>${condition.student_reply!==null?`<p class="saved-message">${esc(condition.student_reply)}</p>`:''}</div></article>`
+    `<article class="comparison"><header><h2>Policy ${esc(condition.id.toUpperCase())}</h2><span class="status-badge" data-status="${esc(condition.status)}">${esc(labels[condition.status]||'Outcome unavailable')}</span><div class="kind">${esc(excerpt(condition.policy,100))}</div></header><details class="policy-instructions"${condition.status==='ready'?' open':''}><summary>Full tutor instructions</summary><p class="saved-message">${esc(condition.policy)}</p></details><div class="entry"><h3 class="chat-section-label">Tutor response</h3>${condition.tutor_reply!==null?`<div class="message-body">${condition.tutor_html||block(condition.tutor_reply)}</div>`:'<p class="quiet">No completed tutor response saved.</p>'}<h3 class="chat-section-label">Student outcome</h3><p class="quiet">${esc(outcomes[condition.status]||'Outcome unavailable.')}</p>${condition.student_reply!==null?`<p class="saved-message">${esc(condition.student_reply)}</p>`:''}</div></article>`
   ).join('')+'</div><p class="note">Same starting question, different tutor instructions. These saved simulations do not establish student realism, learning, or which policy works better for real students.</p>';
 }
 function newComparison(sourceId=null){
@@ -578,15 +579,15 @@ document.title='Student lab · Simulation workspace';
 $('app').classList.toggle('connected-workspace',true);
 $('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel" id="conversation-panel" aria-label="Student and tutor conversation"><header><h2 id="chat-title">Student–tutor chat</h2><p id="chat-caption" class="small muted"></p><div class="chat-navigation"><span id="chat-count" class="small muted"></span><button data-chat-jump="first" aria-label="Go to first message" aria-controls="conversation-messages">First</button><button data-chat-jump="last" aria-label="Go to last message" aria-controls="conversation-messages">Last</button></div></header><div id="conversation-messages"></div></aside>');
 $('inspector-toggle').insertAdjacentHTML('beforebegin','<button id="chat-toggle" aria-controls="conversation-panel" aria-expanded="true">Hide chat</button>');
-$('instructions').insertAdjacentHTML('beforebegin','<button id="tutor-controls">Tutor controls</button>');
+$('instructions').insertAdjacentHTML('beforebegin','<button class="bare" id="tutor-controls">Tutor controls</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button id="saved-results">Saved results</button>');
-$('instructions').insertAdjacentHTML('beforebegin','<button id="new-comparison" hidden>New comparison</button><button id="reuse-comparison" aria-describedby="policy-reuse-note" hidden>Use this setup</button><button class="primary" id="run-comparison" hidden>Run both conditions</button>');
+$('instructions').insertAdjacentHTML('beforebegin','<button class="bare" id="new-comparison" hidden>New comparison</button><button id="reuse-comparison" aria-describedby="policy-reuse-note" hidden>Use this setup</button><button class="primary" id="run-comparison" hidden>Run both conditions</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button class="primary" id="continue-run" hidden>Continue run</button><details class="run-details" id="run-details"><summary id="run-details-toggle">Run details</summary><div class="run-details-actions" id="run-details-actions"></div></details>');
 $('run-details-actions').append($('instructions'));
 $('canvas').after($('inspector'));
 document.querySelector('.trail-label').insertAdjacentHTML('beforeend','<div class="playback-buttons" id="playback-buttons"><button id="previous-step">Previous</button></div>');
 $('playback-buttons').append($('next-step'));
-$('canvas').insertAdjacentHTML('beforebegin','<div id="operation-status" role="status" aria-live="polite" style="padding:12px 36px;border-bottom:1px solid var(--line);font-size:12px" hidden></div>');
+$('canvas').insertAdjacentHTML('beforebegin','<div id="operation-status" role="status" aria-live="polite" hidden></div>');
 $('case-title').tabIndex=-1;$('operation-status').tabIndex=-1;
 document.querySelector('.prototype-note').textContent='Saved simulation · Read only';
 document.querySelector('.breadcrumb').textContent='Notebook simulation';
