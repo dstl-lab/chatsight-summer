@@ -31,5 +31,8 @@ jobs:
         run: .venv/bin/python -m pytest -q
       - name: Check Marimo apps
         run: .venv/bin/marimo check apps/student_workspace.py apps/chat_policy_comparison.py
-      - name: Check review navigation
-        run: node tests/episode_review_navigation.cjs
+      - name: Check review and workspace navigation
+        run: |
+          node tests/episode_review_navigation.cjs
+          node tests/workspace_prototype.cjs
+          node tests/browser_workspace.cjs

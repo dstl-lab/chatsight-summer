@@ -4,8 +4,11 @@
 real AI-tutor interactions, then test whether grounding improves it. The educator
 decision walkthrough is paused. User selected a dedicated browser workspace and
 requested a desktop HTML prototype: [preview and instructions](docs/prototypes/README.md).
-Inspect/Simulate/Compare use authored examples only; backend integration is next
-after reviewing the layout. No new model run or labeling is queued.
+The authored preview is accepted. A connected read-only browser workspace now
+shows verified saved notebook sessions, linked tasks, chat, diffs and local check
+results. Next: add the existing state-bound tutor/student controls to this layout;
+matched baseline/grounded comparison remains separate. No new model run or
+labeling is queued.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached

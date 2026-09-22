@@ -1,5 +1,19 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser workspace reads verified saved notebook sessions (2026-09-22)
+
+User approved the simplified desktop layout and continuing. The new local server
+src.agents.browser_workspace serves that shell with apps/browser_workspace.js,
+using lineage validation/read-only locks to project initial and saved receipt
+states, including prior tasks. Notebook/chat, pending replies, net diffs, local
+feedback and source context are inspectable. Missing origins stay unspecified;
+structured task cells render as text. Unverified reloads clear previous content.
+No new provider/runtime calls, writes, labels or fidelity claims. Live controls
+and matched comparisons are not implemented here. Existing Marimo controls remain
+available. The public notebook example is open at localhost:8427; the disconnected
+preview remains at8426. 470 tests pass (three optional container skips), Marimo
+and Node checks pass. See docs/prototypes/README.md for launch and limits.
+
 ## Browser workspace prototype; simulator fidelity remains the goal (2026-09-22)
 
 User accepted: how accurately can an LLM simulate DSC10 AI-tutor interactions,
