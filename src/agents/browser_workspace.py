@@ -4,6 +4,7 @@ from contextlib import ExitStack, contextmanager
 import difflib
 import fcntl
 from hashlib import sha256
+import json
 from pathlib import Path
 import re
 from threading import Lock
@@ -16,7 +17,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, policy_comparison_setup, student_workspace, workspace_history
+from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_example, notebook_next_task, notebook_student as student, notebook_tutor, policy_comparison_setup, student_workspace, workspace_history
 from src.eval import fidelity_comparison as fidelity
 from src.eval.saved_comparison import load_comparison
 
@@ -103,6 +104,19 @@ class PolicyRun(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
     comparison_id: str = Field(min_length=1, max_length=128)
     comparison_sha256: str = Field(min_length=64, max_length=64, pattern=r'^[0-9a-f]{64}$')
+
+
+class NextExercise(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    binding: Binding
+    exercise_sha256: str = Field(min_length=64, max_length=64, pattern=r'^[0-9a-f]{64}$')
+
+
+def _exercise_path(path):
+    path = Path(path).absolute()
+    if any(part.is_symlink() for part in (path, *path.parents)):
+        raise ValueError('Exercise paths must not contain symlinks.')
+    return path.resolve()
 
 
 def _policy_prefix(state):
@@ -284,7 +298,31 @@ def _policy_comparison(folder, expected_pin, *, sources=None):
         'prefix':prefix, 'conditions':conditions}]}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+    if (next_exercise_file is None) != (next_exercise_output is None):
+        raise ValueError('Configure both the next exercise file and its output directory.')
+    exercise = None
+    if next_exercise_file is not None:
+        if folder is None or chat_mode or chat_sessions or any(value is not None for value in
+                (comparison, policy_comparison, policy_workspace, fidelity_comparison)):
+            raise ValueError('A next exercise requires one standalone notebook session.')
+        folder = _exercise_path(folder)
+        next_exercise_file = _exercise_path(next_exercise_file)
+        next_exercise_output = _exercise_path(next_exercise_output)
+        raw_exercise = next_exercise_file.read_bytes()
+        exercise_sha256 = sha256(raw_exercise).hexdigest()
+        exercise = json.loads(raw_exercise)
+        if (not isinstance(exercise, dict) or set(exercise) != {'task', 'activity', 'evaluation', 'policy'}
+                or not isinstance(exercise['task'], dict)
+                or not isinstance(exercise['task'].get('task'), str) or not exercise['task']['task'].strip()
+                or not isinstance(exercise['policy'], str) or not exercise['policy'].strip()):
+            raise ValueError('Supply a supported exercise with task text and tutor policy.')
+        with ExitStack() as stack:
+            ancestors = notebook_next_task.lineage(folder, stack)
+            if any(next_exercise_output.is_relative_to(entry[0]) or entry[0].is_relative_to(next_exercise_output)
+                   for entry in ancestors):
+                raise ValueError('Keep the next exercise outside every source session and its parent directories.')
+            source_manifest_pin = student.digest(ancestors[-1][1])
     if sum(value is not None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison)) > 1:
         raise ValueError('Choose one comparison: communication review, tutor policies or student fidelity.')
     if folder is None and (fidelity_comparison is None or chat_sessions or chat_mode or send
@@ -314,6 +352,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
     workspace_paths = (folder, comparison, policy_comparison, policy_workspace)
     if fidelity_comparison is not None:
         workspace_paths += (fidelity_comparison,)
+    if exercise is not None:
+        workspace_paths += (next_exercise_file, next_exercise_output)
     workspace_id = student.digest([str(path.resolve()) if path is not None else None
         for path in workspace_paths])
     if chat_sessions and chat_mode:
@@ -338,9 +378,58 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
     # ponytail: one serving process; use a shared job store if multiple writers are needed.
     running = Lock()
     operations = {key:{'status':'idle', 'message':''} for key in [None, *scenarios]}
+    if exercise is not None:
+        operations['next'] = {'status':'idle', 'message':''}
     comparison_operation = {'status':'idle', 'message':'', 'comparison_id':None}
     policy_sources, policy_runs = {}, {}
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+
+    def exercise_source(stack):
+        for path in (folder, next_exercise_file, next_exercise_output):
+            if _exercise_path(path) != path:
+                raise ValueError('The configured exercise path changed.')
+        if sha256(next_exercise_file.read_bytes()).hexdigest() != exercise_sha256:
+            raise ValueError('The configured exercise changed.')
+        entries = notebook_next_task.lineage(folder, stack)
+        if student.digest(entries[-1][1]) != source_manifest_pin:
+            raise ValueError('The source session changed.')
+        for source, *_ in entries:
+            _exercise_path(source)
+            if any(path.is_symlink() for path in source.rglob('*')):
+                raise ValueError('Source files must not be symlinks.')
+        return entries
+
+    def verify_next(entries, stack):
+        if not next_exercise_output.is_dir() or any(path.is_symlink() for path in next_exercise_output.rglob('*')):
+            raise ValueError('The saved next exercise is unavailable or changed.')
+        child = next_exercise_output / 'session'
+        lineage = notebook_next_task.lineage(child, stack)
+        receipt = student._read(next_exercise_output / 'next-exercise.json')
+        expected = {'version':1, 'exercise_sha256':exercise_sha256,
+                    'binding':{'session_sha256':student.digest(entries[-1][1]),
+                               'state_sha256':student.digest(entries[-1][2])},
+                    'session_sha256':student.digest(lineage[-1][1])}
+        if (receipt != expected or lineage[:-1] != entries
+                or (next_exercise_output / 'policy.txt').read_text(encoding='utf-8') != exercise['policy']):
+            raise ValueError('The saved next exercise does not match its source and configuration.')
+        return child
+
+    def next_control():
+        control = {'title':'Next exercise', 'task':exercise['task']['task'],
+                   'exercise_sha256':exercise_sha256, 'status':'blocked', 'reason':None}
+        try:
+            with ExitStack() as stack:
+                entries = exercise_source(stack)
+                if next_exercise_output.exists():
+                    verify_next(entries, stack)
+                    control['status'] = 'saved'
+                elif notebook_next_task._ended(entries[-1][2]):
+                    control['status'] = 'ready'
+                else:
+                    control['reason'] = 'The current task must end with a saved student no-reply before assigning another.'
+        except (OSError, ValueError, KeyError, TypeError):
+            control['reason'] = 'The next exercise could not be verified. Inspect its saved files before continuing.'
+        return control
 
     @contextmanager
     def policy_source(source_id):
@@ -415,6 +504,14 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             raise HTTPException(404, 'No replay session is configured for this saved benchmark.')
         params = list(request.query_params.multi_items())
         if not chat_sessions:
+            if exercise is not None and params == [('exercise', 'next')]:
+                try:
+                    child = next_exercise_output / 'session'
+                    if _exercise_path(child) != child:
+                        raise ValueError('The saved next exercise path changed.')
+                    return None, child
+                except (OSError, ValueError) as exc:
+                    raise HTTPException(409, 'The saved next exercise could not be verified. Reload the original task.') from exc
             if params:
                 raise HTTPException(400, 'This workspace uses only the session selected at launch.')
             return None, folder
@@ -439,6 +536,10 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         return None
 
     def packet(scenario_id, selected):
+        is_next = exercise is not None and selected == next_exercise_output / 'session'
+        if is_next:
+            with ExitStack() as stack:
+                verify_next(exercise_source(stack), stack)
         result = snapshot(selected, chat_mode=chat_mode)
         for encounter in result['encounters']:
             for saved_frame in encounter['frames']:
@@ -448,10 +549,16 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         if scenario_id is not None:
             result['encounters'][0]['title'] = titles[scenario_id]
         frame = result['encounters'][-1]['frames'][-1]
-        return result | {'scenario_id':scenario_id, 'controls':{'send_enabled':send is True, 'policy':policy,
+        result = result | {'scenario_id':scenario_id, 'controls':{'send_enabled':send is True,
+            'policy':exercise['policy'] if is_next else policy,
             'reference':{key:reference[key] for key in ('library', 'library_version', 'source')}
                         if reference is not None else None,
-            'blocked_reason':blocked(selected, frame)}, 'operation':dict(operations[scenario_id])}
+            'blocked_reason':blocked(selected, frame)}, 'operation':dict(operations['next' if is_next else scenario_id])}
+        if not chat_mode:
+            result['exercise'] = 'next' if is_next else 'current'
+        if exercise is not None and not is_next:
+            result['controls']['next_exercise'] = next_control()
+        return result
 
     def comparison_html(result):
         for case in [*result['cases'], *result.get('controls', {}).get('sources', [])]:
@@ -608,6 +715,39 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             finally:
                 running.release()
 
+    if exercise is not None:
+        @app.post('/api/next-exercise')
+        def create_next_exercise(body: NextExercise, request: Request):
+            if request.query_params:
+                raise HTTPException(400, 'Assign the configured exercise from the original task.')
+            if not running.acquire(blocking=False):
+                raise HTTPException(409, 'The workspace is busy. Reload to inspect saved progress.')
+            try:
+                with ExitStack() as stack:
+                    entries = exercise_source(stack)
+                    manifest, state = entries[-1][1:3]
+                    binding = {'session_sha256':student.digest(manifest), 'state_sha256':student.digest(state)}
+                    if body.binding.model_dump() != binding or body.exercise_sha256 != exercise_sha256:
+                        raise HTTPException(409, 'The displayed task or exercise is stale. Reload before saving.')
+                    if next_exercise_output.exists():
+                        raise HTTPException(409, 'A next exercise already exists. Open its saved result; it will not be recreated.')
+                    if not notebook_next_task._ended(state):
+                        raise HTTPException(409, 'The current task must end with a saved student no-reply.')
+                    child = notebook_example.create(next_exercise_output, previous=folder,
+                        image_id=state['activity']['image_id'], exercise=exercise)
+                    student._save(next_exercise_output / 'next-exercise.json', {
+                        'version':1, 'exercise_sha256':exercise_sha256, 'binding':binding,
+                        'session_sha256':student.digest(student._read(child / 'session.json'))}, exclusive=True)
+                    verify_next(entries, stack)
+                return packet(None, child)
+            except HTTPException:
+                raise
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                raise HTTPException(409, 'The next exercise could not be saved or verified. Reload to inspect saved progress; '
+                                    'an existing exercise will not be recreated.') from exc
+            finally:
+                running.release()
+
     @app.get('/api/workspace')
     def workspace(request: Request):
         scenario_id, selected = selection(request)
@@ -629,8 +769,12 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             raise HTTPException(403, 'This workspace was opened without sending enabled.')
         if not running.acquire(blocking=False):
             raise HTTPException(409, 'The workspace is busy. Reload to inspect its current state; do not resend.')
-        operation = operations[scenario_id]
+        is_next = exercise is not None and selected == next_exercise_output / 'session'
+        operation = operations['next' if is_next else scenario_id]
         try:
+            if is_next:
+                with ExitStack() as stack:
+                    verify_next(exercise_source(stack), stack)
             current = snapshot(selected, chat_mode=chat_mode)['encounters'][-1]['frames'][-1]
             binding = body.binding.model_dump()
             if binding != current['binding']:
@@ -687,6 +831,8 @@ def main():
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
+    parser.add_argument('--next-exercise-file', type=Path, help='One supported exercise JSON to assign after this notebook task ends.')
+    parser.add_argument('--next-exercise-output', type=Path, help='Separate directory for that one saved next exercise and policy.')
     args = parser.parse_args()
     try:
         if args.folder is None and (args.chat or args.chat_sessions or args.send or args.policy_file or args.reference_file):
@@ -699,6 +845,7 @@ def main():
         app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat, comparison=args.comparison,
                          policy_comparison=args.policy_comparison, policy_workspace=args.policy_workspace,
                          fidelity_comparison=args.fidelity_comparison,
+                         next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
                          send=args.send, policy=policy, reference=reference)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')
