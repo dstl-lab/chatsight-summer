@@ -77,6 +77,8 @@ The [custom exercise setup](docs/teammate-quickstart.md#supply-your-own-supporte
 combines a supplied task bundle with an optional saved conversation example.
 Start from the public [fictional fruit-count exercise](examples/fruit-count.json);
 creation is offline, and the default notebook example remains available.
+After a generated stop, [continue into another exercise](docs/teammate-quickstart.md#continue-into-another-exercise)
+with the same setup command, preserving verified context and starting fresh work.
 
 Use [tutor context](docs/2026-09-14-tutor-context.md) to inspect work and supply your
 own reply, or [the notebook tutor](docs/2026-09-14-notebook-tutor.md) to generate one

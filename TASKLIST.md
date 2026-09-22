@@ -79,6 +79,10 @@ new live run or additional labeling.
 as its editable draft. Reload preserves edits; submitted requests retain the
 actual draft. All 454 tests pass, without new model calls or labels.
 
+**Exercise continuation ready:** the same setup command now accepts `--previous`
+to [carry verified history into a supplied exercise](docs/2026-09-22-exercise-continuation-setup.md).
+The new session and policy are prepared together offline; 457 tests pass.
+
 ## North Star
 
 Build a tool where educators can try tutoring approaches with simulated students
@@ -277,6 +281,13 @@ milestones; the former does not establish the latter.
   stop instead of silently falling back. Defaults remain available when omitted.
   Real Marimo controls verify draft edits, reload/reset behavior and exact saved
   policy delivery with authored callbacks. The layout and sending rules are unchanged.
+
+- [x] **20. Use supplied exercise files for subsequent notebook tasks.**
+  Optional `--previous` reuses verified history and the original conversation
+  example with the new task/policy, inherited model and six fresh decisions.
+  Sources stay locked and unchanged through publication; unfinished, conflicting,
+  nested or changed inputs cannot publish a successor. CLI and replay verified
+  offline; no new live run or labels.
 
 ## Current difficulties
 

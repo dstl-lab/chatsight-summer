@@ -1,5 +1,17 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Supplied exercises connect to notebook history (2026-09-22)
+
+notebook_example --previous/API previous reuses notebook_next_task for a completed
+encounter, publishing its new session and policy together. Mutually exclusive with
+--chat-source; original context/model carry forward, new work/feedback/budget are
+fresh. Source locks span publication; all ancestor nesting and changed snapshots
+are rejected. No engine/prompt change. See docs/2026-09-22-exercise-continuation-setup.md.
+457 tests, Marimo checks and Node navigation pass; independent review found no
+issue. Real CLI/replay verified offline at data/custom-notebook-continuation-example
+from the authored closed notebook example; previous files and continuity59pins
+unchanged. No new model/runtime calls, labels or live run. Task20 complete.
+
 ## Workspace loads the prepared policy (2026-09-22)
 
 Fixed a handoff gap: custom exercise setup saved policy.txt but the documented

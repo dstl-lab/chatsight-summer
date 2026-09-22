@@ -195,6 +195,44 @@ in the supplied file and saved manifest. Keep private bundles under ignored
 `data/`, and leave saved sessions unchanged. This setup option does not validate
 student realism or behavior across courses.
 
+### Continue into another exercise
+
+Use `--previous` with a notebook session that ended in a generated `no-reply`
+action. A newly initialized, unfinished, failed or budget-exhausted session
+without that stop cannot advance. For an eligible `data/notebook-example/session`:
+
+```sh
+.venv/bin/python -m src.agents.notebook_example data/next-exercise \
+  --image-id "$NOTEBOOK_RUNTIME_IMAGE" \
+  --exercise-file examples/fruit-count.json \
+  --previous data/notebook-example/session
+.venv/bin/marimo run apps/student_workspace.py \
+  --host 127.0.0.1 --port 8429 --headless -- \
+  --session data/next-exercise/session \
+  --policy-file data/next-exercise/policy.txt
+```
+
+Open **http://127.0.0.1:8429/** to inspect the next task, or export its initial
+state and verified earlier encounters to a new replay file:
+
+```sh
+.venv/bin/python -m src.eval.notebook_replay data/next-exercise/session \
+  --output data/next-exercise/initial.html
+```
+
+Creation, viewing and replay make no model or execution calls. The new session
+inherits the previous session's model, verified simulated encounter history and
+any original communication example. It starts with the new exercise's work,
+table, evaluator and policy, six fresh decisions, and no current actions or
+check feedback. Earlier feedback stays attached to its earlier task.
+
+`--previous` and `--chat-source` cannot be combined: continuation retains the
+original example rather than adding another. Keep previous sessions unchanged
+and available at their recorded paths for lineage verification. Choose a new
+output directory outside those sessions; neither setup nor replay overwrites
+existing results. The researcher chooses this next task; an earlier stop does
+not demonstrate learning or willingness to continue.
+
 ## 3. Open private working sessions, when provided
 
 The real course scenarios are not in Git. Obtain a private bundle from the team

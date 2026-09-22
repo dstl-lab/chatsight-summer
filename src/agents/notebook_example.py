@@ -1,5 +1,6 @@
 """Create an authored notebook exercise for the existing student and tutor runners."""
 import argparse
+from contextlib import ExitStack
 from copy import deepcopy
 import json
 import os
@@ -7,14 +8,16 @@ from pathlib import Path
 import tempfile
 from uuid import uuid4
 
-from src.agents import chat_student as chat, notebook_student as student
+from src.agents import chat_student as chat, notebook_next_task, notebook_student as student
 
 
-def create(folder, *, image_id, chat_source=None, exercise=None):
+def create(folder, *, image_id, chat_source=None, exercise=None, previous=None):
     """Publish explicit task inputs and a hint policy without generating or executing."""
     folder = Path(folder)
     if folder.exists() or folder.is_symlink():
         raise FileExistsError(folder)
+    if chat_source is not None and previous is not None:
+        raise ValueError('Choose a chat source or a previous notebook session, not both.')
     task = {
         'initialization': 'Authored task, table, work and dialogue for a mechanism example; '
             'not a recovered student record or calibrated persona.',
@@ -71,12 +74,21 @@ def create(folder, *, image_id, chat_source=None, exercise=None):
                 'personality, ability or emotion is established. Generated continuations are excluded. '
                 'This initialization is visible to both student and tutor.',
             'conversation_example': prefix}
-    folder.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=folder.parent, prefix='.notebook-example-') as temporary:
+    with ExitStack() as stack:
+        if previous is not None:
+            ancestors = notebook_next_task.lineage(Path(previous), stack)
+            if any(folder.resolve().is_relative_to(entry[0]) for entry in ancestors):
+                raise ValueError('Keep the new exercise outside all previous notebook sessions.')
+        folder.parent.mkdir(parents=True, exist_ok=True)
+        temporary = stack.enter_context(tempfile.TemporaryDirectory(dir=folder.parent, prefix='.notebook-example-'))
         staged = Path(temporary) / 'example'
-        student.create(staged / 'session', task=task, activity=activity.model_dump(),
-            evaluation=evaluation, branch_id='synthetic/' + uuid4().hex,
-            model='gemini-2.5-pro', max_decisions=6)
+        if previous is None:
+            student.create(staged / 'session', task=task, activity=activity.model_dump(),
+                evaluation=evaluation, branch_id='synthetic/' + uuid4().hex,
+                model='gemini-2.5-pro', max_decisions=6)
+        else:
+            notebook_next_task.create(previous, staged / 'session', task=task,
+                activity=activity.model_dump(), evaluation=evaluation, max_decisions=6)
         if chat_source is not None:
             manifest = student._read(staged / 'session/session.json')
             manifest['provenance']['communication_source'] = {
@@ -87,6 +99,8 @@ def create(folder, *, image_id, chat_source=None, exercise=None):
         student.load(staged / 'session')
         if chat_source is not None and chat._load(chat_source) != source:
             raise ValueError('The chat source changed during preparation.')
+        if previous is not None and notebook_next_task.lineage(staged / 'session', stack)[:-1] != ancestors:
+            raise ValueError('Previous notebook sessions changed during preparation.')
         folder.mkdir(exist_ok=False)
         os.replace(staged, folder)
     return folder / 'session'
@@ -96,17 +110,22 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('folder', type=Path, help='New directory for the session and tutor policy.')
     parser.add_argument('--image-id', required=True, help='Immutable local notebook-runtime image ID (sha256:...).')
-    parser.add_argument('--chat-source', type=Path,
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--chat-source', type=Path,
                         help='Optional saved chat session; use only its original prefix as a communication example.')
+    source.add_argument('--previous', type=Path,
+                        help='Completed notebook session; inherit its verified history and original conversation example.')
     parser.add_argument('--exercise-file', type=Path,
                         help='Optional JSON object with task, activity (without image_id), evaluation and policy.')
     args = parser.parse_args()
     exercise = student._read(args.exercise_file) if args.exercise_file is not None else None
     if args.exercise_file is not None and not isinstance(exercise, dict):
         parser.error('The exercise file must contain an object, not null or a list.')
-    child = create(args.folder, image_id=args.image_id, chat_source=args.chat_source, exercise=exercise)
+    child = create(args.folder, image_id=args.image_id, chat_source=args.chat_source,
+                   exercise=exercise, previous=args.previous)
     print(f'Notebook exercise saved to {child}. '
           + ('Includes a separate conversation example; no validated persona. ' if args.chat_source else '')
+          + ('Includes verified prior activity; the new exercise is researcher-supplied. ' if args.previous else '')
           + 'No model calls or code execution.')
 
 

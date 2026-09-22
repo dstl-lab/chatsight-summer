@@ -273,6 +273,123 @@ def test_supplied_exercise_rejects_malformed_inputs_without_publication(tmp_path
     assert not path.exists()
 
 
+def test_exercise_continuation_cli_keeps_history_and_fresh_custom_inputs(tmp_path, monkeypatch, capsys):
+    from src.agents import chat_student as chat
+    from tests.test_chat_student import QUERY
+
+    def forbidden(*args, **kwargs):
+        pytest.fail('Continuation setup dispatched a provider or runtime')
+    monkeypatch.setattr(student.llm, 'make_generate', forbidden)
+    monkeypatch.setattr(student.notebook_runtime, 'check_work', forbidden)
+    chat_source = tmp_path / 'chat'
+    chat.create(chat_source, query=QUERY)
+    root = example().create(tmp_path / 'first', image_id=IMAGE, chat_source=chat_source)
+    manifest = student._read(root / 'session.json')
+    student._save(root / 'session.json', manifest | {'model': 'authored-model'})
+    student.step(root, max_actions=1, check=forbidden,
+                 generate=lambda _, schema: schema(decision='no-reply', text='', source=None))
+    before = files(root), files(chat_source)
+    exercise = deepcopy(EXERCISE)
+    second = example().create(tmp_path / 'second', image_id=IMAGE, exercise=exercise, previous=root)
+    state = student.load(second)
+    initial = state['initialization']
+    assert initial['conversation_example'] == QUERY['prefix'] and initial['earlier_encounters'] == []
+    assert initial['previous_encounter']['task'] == student.load(root)['task']
+    assert initial['previous_encounter']['status'] == 'no-reply'
+    assert state['task'] == exercise['task']['task'] and state['work'] == exercise['task']['work']
+    assert state['activity'] == exercise['activity'] | {'image_id': IMAGE}
+    assert state['evaluation'] == {'expected': 3} and state['observation'] is None
+    assert state['status'] == 'active' and state['history'] == [] and state['message'] is None
+    assert student._read(second / 'session.json')['model'] == 'authored-model'
+    assert student._read(second / 'session.json')['max_decisions'] == 6
+    assert (second.parent / 'policy.txt').read_text() == exercise['policy'] and exercise == EXERCISE
+    for prompt in (notebook_session.make_prompt(state), json.dumps(tutor_context.snapshot(second))):
+        assert all(secret not in prompt for secret in ('"evaluation"', '"expected"', 'PRIVATE_', str(root)))
+    student.step(second, max_actions=1, check=forbidden,
+                 generate=lambda _, schema: schema(decision='no-reply', text='', source=None))
+    second_before = files(second)
+    config = tmp_path / 'exercise.json'
+    config.write_text(json.dumps(exercise))
+    third = tmp_path / 'third'
+    monkeypatch.setattr(sys, 'argv', ['notebook_example', str(third), '--image-id', IMAGE,
+                                    '--exercise-file', str(config), '--previous', str(second)])
+    example().main()
+    assert 'No model calls or code execution' in capsys.readouterr().out
+    history = student.load(third / 'session')['initialization']
+    assert len(history['earlier_encounters']) == 1
+    assert history['earlier_encounters'][0] == initial['previous_encounter']
+    assert history['previous_encounter']['task'] == exercise['task']['task']
+    assert history['conversation_example'] == QUERY['prefix']
+    notebook_replay.export(third / 'session', tmp_path / 'replay.html')
+    assert (files(root), files(chat_source)) == before and files(second) == second_before
+
+
+def test_exercise_continuation_refuses_conflicting_unfinished_nested_and_interrupted_setup(tmp_path, monkeypatch):
+    setup = example()
+    root = setup.create(tmp_path / 'first', image_id=IMAGE)
+    before = files(root)
+    target = tmp_path / 'child'
+    with pytest.raises(ValueError, match='no-reply'):
+        setup.create(target, image_id=IMAGE, previous=root)
+    assert not target.exists() and files(root) == before
+    with pytest.raises(ValueError, match='[Cc]hoose'):
+        setup.create(target, image_id=IMAGE, previous=root, chat_source=root)
+    monkeypatch.setattr(sys, 'argv', ['notebook_example', str(target), '--image-id', IMAGE,
+                                    '--previous', str(root), '--chat-source', str(root)])
+    with pytest.raises(SystemExit):
+        setup.main()
+    assert not target.exists() and files(root) == before
+    student.step(root, max_actions=1, check=None,
+                 generate=lambda _, schema: schema(decision='no-reply', text='', source=None))
+    second = setup.create(tmp_path / 'second', image_id=IMAGE, previous=root)
+    student.step(second, max_actions=1, check=None,
+                 generate=lambda _, schema: schema(decision='no-reply', text='', source=None))
+    before = files(root), files(second)
+    for parent in (root, second):
+        with pytest.raises(ValueError, match='outside'):
+            setup.create(parent / 'nested', image_id=IMAGE, previous=second)
+    with pytest.raises(FileExistsError):
+        setup.create(second.parent, image_id=IMAGE, previous=root)
+    original = Path.write_text
+    def interrupt(path, *args, **kwargs):
+        if path.name == 'policy.txt':
+            raise KeyboardInterrupt('Authored policy-write interruption')
+        return original(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'write_text', interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        setup.create(target, image_id=IMAGE, previous=second)
+    assert not target.exists() and (files(root), files(second)) == before
+
+
+def test_exercise_continuation_holds_source_locks_and_rejects_changed_receipts(tmp_path, monkeypatch):
+    import fcntl
+    from src.agents import notebook_next_task
+
+    root = example().create(tmp_path / 'first', image_id=IMAGE)
+    student.step(root, max_actions=1, check=None,
+                 generate=lambda _, schema: schema(decision='no-reply', text='', source=None))
+    before = files(root)
+    receipt_path = root / 'step-0001.json'
+    original = notebook_next_task.create
+    def changed(previous, *args, **kwargs):
+        with (root / '.lock').open('rb') as lock:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        # Simulate an uncooperative writer: state still replays, but the saved source changed.
+        receipt = student._read(receipt_path)
+        student._save(receipt_path, receipt | {'started_at': 'authored altered timestamp'})
+        return original(previous, *args, **kwargs)
+    monkeypatch.setattr(notebook_next_task, 'create', changed)
+    target = tmp_path / 'child'
+    try:
+        with pytest.raises(ValueError, match='changed'):
+            example().create(target, image_id=IMAGE, previous=root)
+        assert not target.exists()
+    finally:
+        receipt_path.write_bytes(before['step-0001.json'])
+    assert files(root) == before
+
+
 @pytest.mark.skipif(not os.environ.get('NOTEBOOK_RUNTIME_IMAGE'), reason='Explicit local container image required')
 def test_authored_actions_get_real_feedback_and_saved_replay(tmp_path, monkeypatch):
     setup = example()
