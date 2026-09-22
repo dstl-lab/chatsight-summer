@@ -77,8 +77,10 @@ def run_both(destination, *, send=False, generate_tutor=None, generate_student=N
                 generate_tutor=generate_tutor, generate_student=generate_student,
             )
         except Exception:
-            # The underlying runners saved the failure. Continue only the untouched arm.
-            continue
+            # Continue only if an actual saved failure explains this exception.
+            receipt = chat_policy_pair._comparison(destination)
+            if chat_policy_pair._condition_lifecycle(destination, receipt, name) not in ('failed', 'incomplete'):
+                raise
     return reopen(destination)
 
 

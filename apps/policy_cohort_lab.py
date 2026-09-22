@@ -187,7 +187,7 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
 
     _heading = mo.md("# Tutor policy cohort lab")
     _scope = mo.callout(
-        "This development cohort uses eligible saved scenarios with a recorded prefix and a "
+        "This development cohort uses eligible saved scenarios with a starting conversation and a "
         "cached simulated starting question. It does not yet branch directly from a set of "
         "recorded student questions and cannot estimate a real-student policy effect.",
         kind="warn",
@@ -201,13 +201,14 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
         source_selector if source_selector is not None else mo.md("No eligible scenarios found."),
         policy_inputs["current"],
         mo.callout(mo.md(
-            "The current policy is prefilled from the packaged DSC 10 baseline at "
+            "The current policy is prefilled with a summary of the packaged DSC 10 baseline at "
             f"[`{policy_comparison_setup.PACKAGED_POLICY_COMMIT[:12]}`]"
             f"({policy_comparison_setup.PACKAGED_POLICY_URL}). Confirm deployment overrides before research use."
         ), kind="warn"),
         policy_inputs["proposed"],
-        mo.md(f"The current selection would freeze **{_request_count} total provider requests** "
-              "but freezing the plan itself sends none."),
+        mo.md(f"The current selection allows **up to {_request_count} logical requests**; "
+              "freezing the plan itself sends none. Each logical request permits up to four "
+              "adapter attempts; SDK retries are unmeasured."),
         mo.ui.button(
             label="Freeze cohort plan", on_change=_freeze, kind="success",
             disabled=source_selector is None or not source_selector.value,
@@ -273,7 +274,7 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
         )
         _run_control = (
             mo.ui.button(
-                label=f"Run all remaining conversations ({_ready_conditions * 2} requests)",
+                label=f"Run all remaining conversations (up to {_ready_conditions * 2} logical requests)",
                 on_change=_run,
                 kind="success",
                 disabled=not send_enabled,
@@ -284,24 +285,28 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
 
         def _case_view(case):
             _comparison = case["comparison"]
-            _base = _comparison["conditions"]["a"]["snapshot"]
-            _recorded = []
+            _base_name = next((name for name in ("a", "b")
+                               if _comparison["conditions"][name]["snapshot"] is not None
+                               and not _comparison["conditions"][name]["error"]), None)
+            _base = (_comparison["conditions"][_base_name]["snapshot"]
+                     if _base_name is not None else None)
+            _context_turns = []
             _starting_text = None
             if _base is not None:
                 for _message in _base["dialogue"]:
                     if _message.get("origin") == "source":
-                        _recorded.append(_turn(
-                            _message["role"], _message["text"], "Recorded context"
+                        _context_turns.append(_turn(
+                            _message["role"], _message["text"], "Starting context"
                         ))
                     elif _message["role"] == "student" and _message.get("origin") == "generated":
                         _starting_text = _message["text"]
-                if _starting_text is None and case["outcomes"]["a"] == "ready":
+                if _starting_text is None and case["outcomes"][_base_name] == "ready":
                     _starting_text = _base["pending_message"]
             _question = (_turn("student", _starting_text, "Shared simulated starting question")
                          if _starting_text else
                          mo.callout("No starting question was available.", kind="neutral"))
-            _context = (mo.vstack(_recorded, gap=0) if _recorded else
-                        mo.md("No earlier recorded context was saved."))
+            _context = (mo.vstack(_context_turns, gap=0) if _context_turns else
+                        mo.md("No earlier conversation was saved."))
 
             def _condition(name, title):
                 _item = _comparison["conditions"][name]
@@ -339,7 +344,7 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
             return mo.vstack([
                 mo.md("#### Student question"),
                 _question,
-                mo.accordion({f"Earlier recorded context ({len(_recorded)} messages)": _context}),
+                mo.accordion({f"Starting context ({len(_context_turns)} messages)": _context}),
                 mo.md("#### A/B simulated continuation"),
                 mo.ui.tabs({
                     "Condition A · Current": _condition("a", "Current policy"),
@@ -358,7 +363,7 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
             mo.md(
                 f'**{_summary["case_count"]} fixed cases** · '
                 f'**{_summary["different_reply_status"]} different reply statuses** · '
-                f'**{_summary["provider_requests_if_fully_run"]} requests in the complete plan**'
+                f'**up to {_summary["logical_requests_if_fully_run"]} logical requests in the complete plan**'
             ),
             mo.ui.table(
                 _summary_rows, selection=None, pagination=False,

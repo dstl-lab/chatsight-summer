@@ -78,7 +78,8 @@ def _(comparison, mo, tutor_context):
         mo.md("### Saved provenance"),
         mo.md(
             f'**Model:** `{_provenance["model"]}`  \n'
-            f'**Provider requests:** {_provenance["provider_requests"]}  \n'
+            f'**Logical requests:** {_provenance.get("logical_requests", _provenance.get("provider_requests"))}  \n'
+            '**Provider attempts (including retries):** Unmeasured  \n'
             f'**Source snapshot:** `{_provenance["source_snapshot"]}`  \n'
             f'**Prompt SHA-256:** `{_provenance["prompt_sha256"]}`  \n'
             f'**Comparison SHA-256:** `{comparison["sha256"]}`'

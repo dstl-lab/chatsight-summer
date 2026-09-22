@@ -130,8 +130,9 @@ def _(PACKAGED_POLICY_COMMIT, PACKAGED_POLICY_URL, get_result, html, mo, output_
 
     _heading = mo.md("# Set up tutor policy comparison")
     _scope = mo.callout(
-        ("Freeze and run saves the fixed plan, then makes four logical Gemini requests: "
-         "one tutor and one student response per condition." if send_enabled else
+        ("Freeze and run saves the fixed plan, then makes up to four logical Gemini requests: "
+         "one tutor and one student response per condition. Each logical request permits up to "
+         "four adapter attempts; SDK retries are unmeasured." if send_enabled else
          "Preparation only: freezing saves two independent conditions and makes no Gemini request."),
         kind="warn" if send_enabled else "neutral",
     )
@@ -143,7 +144,7 @@ def _(PACKAGED_POLICY_COMMIT, PACKAGED_POLICY_URL, get_result, html, mo, output_
             source_picker if source_picker is not None else mo.md("No eligible saved scenarios found."),
             policy_inputs["current"],
             mo.callout(mo.md(
-                "Prefilled from the packaged DSC 10 tutor policy at "
+                "Prefilled with a summary of the packaged DSC 10 tutor policy at "
                 f"[`{PACKAGED_POLICY_COMMIT[:12]}`]({PACKAGED_POLICY_URL}). "
                 "A deployment can override this configuration, so confirm it before freezing."
             ), kind="warn"),

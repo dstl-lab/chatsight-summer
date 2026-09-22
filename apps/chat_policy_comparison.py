@@ -86,7 +86,7 @@ def _(chat_policy_pair, folder, get_view, html, mo, send_enabled, set_view):
         _conversation = []
         if _snapshot is not None:
             for _turn in _snapshot["dialogue"]:
-                _origin = {"source": "Recorded", "generated": "Simulated",
+                _origin = {"source": "Starting context", "generated": "Simulated",
                            "scripted": "Tutor intervention", "supplied": "Tutor intervention"}.get(
                                _turn.get("origin"), "Supplied context")
                 _conversation.append(mo.vstack([

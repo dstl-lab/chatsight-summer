@@ -192,6 +192,7 @@ def test_failed_or_interrupted_arm_remains_visible_without_resend_or_hiding_othe
     except (KeyboardInterrupt, RuntimeError):
         pass
     saved = pair.show(folder)
+    assert saved['conditions']['a']['lifecycle'] == ('incomplete' if interrupted else 'failed')
     assert saved['conditions']['b'] == start['conditions']['b']
     history = saved['conditions']['a']['history']
     assert POLICIES['a'] in history and '7?' in history
@@ -212,6 +213,55 @@ def test_failed_or_interrupted_arm_remains_visible_without_resend_or_hiding_othe
         generate_student=lambda _, schema: schema(decision='no-reply', text=''))
     assert result['conditions']['b']['snapshot']['status'] == 'no-reply'
     assert result['conditions']['a'] == saved['conditions']['a']
+
+
+@pytest.mark.parametrize('stage,field', [('tutor', 'binding'), ('tutor', 'prompt'),
+                                        ('student', 'binding'), ('student', 'prompt')])
+def test_pending_requests_are_verified_before_reporting_incomplete(tmp_path, monkeypatch, stage, field):
+    pair = _pair(monkeypatch)
+    source, folder = tmp_path / 'source', tmp_path / 'pair'
+    _source(source)
+    start = pair.create(folder, source=source, policies=POLICIES)
+
+    def interrupted(*_):
+        raise KeyboardInterrupt('Authored interruption')
+
+    with pytest.raises(KeyboardInterrupt):
+        pair.respond(folder, 'a', binding=start['conditions']['a']['snapshot']['binding'], send=True,
+                     generate_tutor=interrupted if stage == 'tutor' else lambda _, schema: schema(text='Authored reply.'),
+                     generate_student=interrupted)
+    receipt = pair._comparison(folder)
+    assert pair._condition_lifecycle(folder, receipt, 'a') == 'incomplete'
+    child = folder / 'sessions' / 'a'
+    path = (next((child / 'tutor-exchanges').glob('*/receipt.json')) if stage == 'tutor'
+            else child / 'step-0002.json')
+    saved = store._read(path)
+    saved['request'][field] = {} if field == 'binding' else 'Altered pending prompt'
+    path.write_text(json.dumps(saved))
+    before = files(folder)
+    with pytest.raises(ValueError, match='does not reproduce'):
+        pair._condition_lifecycle(folder, receipt, 'a')
+    shown = pair.show(folder)
+    assert shown['conditions']['a']['lifecycle'] == 'failed'
+    assert shown['conditions']['a']['snapshot'] is None and shown['conditions']['a']['error']
+    assert shown['conditions']['b'] == start['conditions']['b'] and files(folder) == before
+
+
+def test_startup_replays_cached_request_even_if_its_local_pin_is_rewritten(tmp_path, monkeypatch):
+    pair = _pair(monkeypatch)
+    source, folder = tmp_path / 'source', tmp_path / 'pair'
+    _source(source)
+    pair.create(folder, source=source, policies=POLICIES)
+    receipt = pair._comparison(folder)
+    path = folder / 'sessions' / 'a' / 'step-0001.json'
+    first = store._read(path)
+    first['request']['prompt'] = 'Authored altered cached request'
+    path.write_text(json.dumps(first))
+    receipt['sessions']['a']['first_step_sha256'] = store.digest(first)
+    before = files(folder)
+    with pytest.raises(ValueError, match='does not reproduce'):
+        pair._startup(folder, receipt, 'a')
+    assert files(folder) == before
 
 
 @pytest.mark.parametrize('changed', ['policy', 'startup', 'missing-plan'])

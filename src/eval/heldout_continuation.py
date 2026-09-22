@@ -1,6 +1,7 @@
 """Prepare, run once, and replay one target-isolated historical continuation."""
 import argparse
 from datetime import datetime, timezone
+import fcntl
 from hashlib import sha256
 import json
 import os
@@ -14,6 +15,7 @@ from src.eval import student_continuation as continuation
 SEED = "heldout-continuation-walkthrough-v1"
 MODEL = "gemini-2.5-pro"
 MAX_PREFIX_TURNS = 8
+LEGACY_READER_SOURCE = "c34326095b2223273bed51eab9d7543daad19d5d29a6921cd2e4bbc9aff15829"  # 4d7c2a8
 
 
 def _source_hashes():
@@ -113,14 +115,18 @@ def prepare(snapshot, folder):
     return manifest
 
 
-def _preparation(folder):
+def _preparation(folder, *, reading=False):
     folder = Path(folder)
     manifest = store._read(folder / "manifest.json")
     reference = store._read(folder / "reference.json")
     session_manifest = store._read(folder / "session" / "session.json")
+    sources = _source_hashes()
+    supported_sources = [sources]
+    if reading:
+        supported_sources.append(sources | {"heldout_continuation.py": LEGACY_READER_SOURCE})
     if (manifest.get("version") != 1 or manifest.get("sha256") != store.digest(
             {key: value for key, value in manifest.items() if key != "sha256"})
-            or manifest.get("sources") != _source_hashes()
+            or manifest.get("sources") not in supported_sources
             or reference.get("version") != 1
             or reference.get("sha256") != store.digest(
                 {key: value for key, value in reference.items() if key != "sha256"})
@@ -133,34 +139,59 @@ def _preparation(folder):
     return manifest, reference, session_manifest
 
 
-def finalize(folder):
-    """Join one saved response with the separately held-out reference offline."""
-    folder = Path(folder)
-    manifest, reference, session_manifest = _preparation(folder)
-    receipt_path = folder / "session" / "step-0001.json"
-    receipt = store._read(receipt_path)
-    if receipt.get("status") != "complete":
-        raise ValueError("The saved continuation is incomplete.")
+def _saved_continuation(folder):
+    """Replay the saved request/result under its existing lock without writing."""
+    session = Path(folder) / "session"
+    try:
+        stream = (session / ".lock").open("rb")
+    except FileNotFoundError as exc:
+        raise ValueError("The completed continuation needs its saved session lock.") from exc
+    with stream:
+        try:
+            fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise ValueError("This student session is busy.") from exc
+        manifest, reference, session_manifest = _preparation(folder, reading=True)
+        verified, _, decisions = chat._load(session)
+        receipt = store._read(session / "step-0001.json")
+        if (verified != session_manifest or decisions != 1
+                or verified["model"] != manifest["model"] or verified["max_decisions"] != 1
+                or manifest["requests"] != 1 or receipt.get("status") != "complete"):
+            raise ValueError("The saved continuation must contain one completed prepared decision.")
+    return manifest, reference, session_manifest, receipt
+
+
+def _comparison_content(manifest, reference, session_manifest, receipt):
     response = continuation.Continuation.model_validate(receipt["response"])
     episode = _episode(session_manifest["query"], reference["target"])
     review = continuation.behavior_review(episode, response)
     if review["prompt_sha256"] != manifest["case"]["prompt_sha256"]:
         raise ValueError("Comparison prompt differs from the prepared request.")
-    comparison = {
-        "version": 1, "contains_private_content": True,
-        "manifest_sha256": manifest["sha256"],
-        "session_sha256": store.digest(session_manifest),
-        "receipt_sha256": store.digest(receipt),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+    return {
         "provenance": {
             "model": manifest["model"],
-            "provider_requests": manifest["requests"],
+            "logical_requests": manifest["requests"],
+            "provider_attempts": None,
             "prompt_sha256": manifest["case"]["prompt_sha256"],
             "selector": manifest["selector"],
             "source_snapshot": manifest["source"]["snapshot"],
             "source_conversations_sha256": manifest["source"]["conversations_sha256"],
         },
         "review": review,
+    }
+
+
+def finalize(folder):
+    """Join one saved response with the separately held-out reference offline."""
+    folder = Path(folder)
+    manifest, reference, session_manifest, receipt = _saved_continuation(folder)
+    comparison = {
+        "version": 1, "contains_private_content": True,
+        "manifest_sha256": manifest["sha256"],
+        "session_sha256": store.digest(session_manifest),
+        "receipt_sha256": store.digest(receipt),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        **_comparison_content(manifest, reference, session_manifest, receipt),
         "limits": [
             "One exposed development case is not an accuracy or fidelity estimate.",
             "The sample is conditioned on an immediate recorded student reply.",
@@ -191,15 +222,22 @@ def run(folder, *, generate):
 def load(folder):
     """Verify and load a completed comparison without provider calls."""
     folder = Path(folder)
-    manifest, _, session_manifest = _preparation(folder)
+    manifest, reference, session_manifest, receipt = _saved_continuation(folder)
     comparison = store._read(folder / "comparison.json")
-    receipt = store._read(folder / "session" / "step-0001.json")
+    expected = _comparison_content(manifest, reference, session_manifest, receipt)
+    provenance = [expected["provenance"]]
+    if manifest["sources"]["heldout_continuation.py"] == LEGACY_READER_SOURCE:
+        legacy = {key: value for key, value in expected["provenance"].items()
+                  if key not in ("logical_requests", "provider_attempts")}
+        provenance.append(legacy | {"provider_requests": manifest["requests"]})
     if (comparison.get("version") != 1 or comparison.get("contains_private_content") is not True
             or comparison.get("sha256") != store.digest(
                 {key: value for key, value in comparison.items() if key != "sha256"})
             or comparison.get("manifest_sha256") != manifest["sha256"]
             or comparison.get("session_sha256") != store.digest(session_manifest)
-            or comparison.get("receipt_sha256") != store.digest(receipt)):
+            or comparison.get("receipt_sha256") != store.digest(receipt)
+            or comparison.get("review") != expected["review"]
+            or comparison.get("provenance") not in provenance):
         raise ValueError("Held-out comparison changed.")
     return comparison
 

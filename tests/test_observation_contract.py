@@ -134,3 +134,38 @@ def test_packet_files_are_create_only_and_hash_checked(tmp_path):
     path.write_text(json.dumps(changed))
     with pytest.raises(ValueError, match="hash changed"):
         contract.read_packet(path)
+
+
+def test_fresh_simulation_inspection_does_not_create_a_lock(tmp_path):
+    from src.eval import observation_contract as contract
+
+    folder = tmp_path / "session"
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id="synthetic/fresh")
+    before = _files(folder)
+    packet = contract.simulation_packet(folder)
+    assert packet["session"]["decisions_used"] == 0
+    assert packet["check"]["status"] == "not-recorded"
+    assert _files(folder) == before
+
+
+def test_inspection_uses_shared_lock_and_rejects_missing_saved_lock(tmp_path):
+    import fcntl
+    from src.eval import observation_contract as contract
+
+    folder = tmp_path / "session"
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id="synthetic/locked")
+    student.step(folder, generate=lambda *_: Action(decision="no-reply", text="", source=None),
+                 check=lambda *_: pytest.fail("Unexpected notebook execution"))
+    lock = folder / ".lock"
+    before = _files(folder)
+    with lock.open("rb") as stream:
+        fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        assert contract.simulation_packet(folder)["session"]["decisions_used"] == 1
+    with student._locked(folder), pytest.raises(ValueError, match="busy"):
+        contract.simulation_packet(folder)
+    assert _files(folder) == before
+    lock.unlink()
+    before = _files(folder)
+    with pytest.raises(ValueError, match="saved lock is missing"):
+        contract.simulation_packet(folder)
+    assert _files(folder) == before

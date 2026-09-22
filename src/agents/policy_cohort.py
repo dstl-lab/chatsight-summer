@@ -29,6 +29,11 @@ def _prepared_sources(sources):
     hashes = [item[0]["session_sha256"] for item in prepared]
     if len(set(hashes)) != len(hashes):
         raise ValueError("A cohort cannot contain the same conversation scenario twice.")
+    manifests = [store._read(path / "session.json") for _, path in prepared]
+    if len({manifest["query"]["conversation_id"] for manifest in manifests}) != len(manifests):
+        raise ValueError("Use distinct source conversations in a cohort.")
+    if len({manifest["model"] for manifest in manifests}) != 1:
+        raise ValueError("All cohort sources must use the same model.")
     return sorted(prepared, key=lambda item: item[0]["session_sha256"])
 
 
@@ -43,6 +48,8 @@ def create(folder, *, sources, current_policy, proposed_policy):
     folder = Path(folder)
     if folder.exists() or folder.is_symlink():
         raise FileExistsError(folder)
+    if any(folder.resolve().is_relative_to(path) for _, path in prepared):
+        raise ValueError("Keep the cohort outside its frozen sources.")
 
     plan = {
         "version": 1,
@@ -82,7 +89,10 @@ def create(folder, *, sources, current_policy, proposed_policy):
 
 
 def _plan(folder):
-    receipt = store._read(Path(folder) / "cohort.json")
+    folder = Path(folder)
+    if folder.is_symlink() or any(path.is_symlink() for path in folder.rglob("*")):
+        raise ValueError("Cohort files and directories must not be symbolic links.")
+    receipt = store._read(folder / "cohort.json")
     try:
         plan = receipt["plan"]
         cases = plan["cases"]
@@ -122,18 +132,7 @@ def _plan(folder):
 
 
 def _outcome(condition):
-    if condition["error"]:
-        return "incomplete" if "incomplete" in condition["history"].lower() else "failed"
-    if condition["snapshot"] is None:
-        return "failed"
-    snapshot = condition["snapshot"]
-    if snapshot["status"] == "awaiting-tutor":
-        if snapshot["decisions_remaining"] > 0:
-            return "ready"
-        return "student-replied"
-    if snapshot["status"] == "no-reply":
-        return "no-follow-up"
-    return "failed"
+    return condition["lifecycle"]
 
 
 def _comparison_outcome(a, b):
@@ -166,12 +165,26 @@ def show(folder):
         "both-replied", "both-no-follow-up", "proposed-gained-follow-up",
         "proposed-lost-follow-up", "not-comparable",
     )}
+    conversations, models = set(), set()
     for case in plan["cases"]:
         pair_path = folder / "cases" / case["case_id"]
         pair_receipt = store._read(pair_path / "comparison.json")
         if pair_receipt.get("plan_sha256") != case["pair_plan_sha256"]:
             raise ValueError(f'{case["case_id"]} no longer matches the frozen cohort plan.')
         comparison = policy_comparison_setup.reopen(pair_path)
+        for name in ("a", "b"):
+            try:
+                _, manifest, _ = chat_policy_pair._startup(pair_path, pair_receipt, name)
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+            conversation = manifest["query"]["conversation_id"]
+            if conversation in conversations:
+                raise ValueError("Use distinct source conversations in a cohort.")
+            conversations.add(conversation)
+            models.add(manifest["model"])
+            if len(models) > 1:
+                raise ValueError("All cohort sources must use the same model.")
+            break
         if ({key: comparison["source"].get(key) for key in case["source"]} != case["source"]
                 or {name: comparison["conditions"][name]["policy"] for name in ("a", "b")}
                 != plan["policies"]):
@@ -195,7 +208,7 @@ def show(folder):
         "cases": cases,
         "summary": {
             "case_count": len(cases),
-            "provider_requests_if_fully_run": len(cases) * 4,
+            "logical_requests_if_fully_run": len(cases) * 4,
             "conditions": counts,
             "comparisons": comparison_counts,
             "different_reply_status": (

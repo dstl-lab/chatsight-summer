@@ -145,6 +145,24 @@ def test_run_requires_permission_and_preserves_failure_while_running_other_arm(t
     assert files(destination) == preserved
 
 
+def test_unsaved_runner_failure_surfaces_without_running_peer(tmp_path, monkeypatch):
+    from src.agents import policy_comparison_setup as setup
+
+    source, destination = tmp_path / "source", tmp_path / "comparison"
+    _eligible(source)
+    setup.freeze(destination, source=source, current_policy="Current.", proposed_policy="Proposed.")
+    before, calls = files(destination), []
+
+    def unwritten_failure(*args, **kwargs):
+        calls.append(args[1])
+        raise OSError("Authored disk failure before saving a receipt")
+
+    monkeypatch.setattr(setup.chat_policy_pair, "respond", unwritten_failure)
+    with pytest.raises(OSError, match="before saving"):
+        setup.run_both(destination, send=True)
+    assert calls == ["a"] and files(destination) == before
+
+
 def test_numbered_workspace_preserves_runs_and_rejects_exact_reroll(tmp_path):
     from src.agents import policy_comparison_setup as setup
 

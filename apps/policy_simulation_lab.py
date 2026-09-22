@@ -149,12 +149,13 @@ def _(get_result, history_error, history_picker, html, mo, policy_comparison_set
 
     _heading = mo.md("# Tutor policy simulation lab")
     _notice = mo.callout(
-        ("Each run saves a new immutable comparison and makes four logical Gemini requests."
+        ("Each run saves a new immutable comparison with up to four logical Gemini requests. "
+         "Each logical request permits up to four adapter attempts; SDK retries are unmeasured."
          if send_enabled else "Viewing only. Relaunch with --send=true to run a new comparison."),
         kind="warn" if send_enabled else "neutral",
     )
     _source_notice = mo.callout(mo.md(
-        "The current policy is prefilled from the packaged DSC 10 baseline at "
+        "The current policy is prefilled with a summary of the packaged DSC 10 baseline at "
         f"[`{policy_comparison_setup.PACKAGED_POLICY_COMMIT[:12]}`]"
         f"({policy_comparison_setup.PACKAGED_POLICY_URL}). Confirm deployment overrides before research use."
     ), kind="warn")
@@ -177,17 +178,21 @@ def _(get_result, history_error, history_picker, html, mo, policy_comparison_set
         def _condition_view(name, title):
             _condition = _saved["conditions"][name]
             _snapshot = _condition["snapshot"]
-            if _condition["error"]:
-                _outcome = mo.callout(mo.plain_text(_condition["error"]), kind="danger")
+            if _condition["error"] or _snapshot is None:
+                _outcome = mo.callout(mo.plain_text(
+                    _condition["error"] or "This condition could not be loaded."
+                ), kind="danger")
             else:
-                _recorded_context = []
+                _ready = (_snapshot["status"] == "awaiting-tutor"
+                          and _snapshot["decisions_remaining"] > 0)
+                _context_turns = []
                 _starting_question = None
                 _generated_tutor = None
                 for _message in _snapshot["dialogue"]:
                     _origin = _message.get("origin")
                     if _origin == "source":
-                        _recorded_context.append(_turn(
-                            _message["role"], _message["text"], "Recorded context"
+                        _context_turns.append(_turn(
+                            _message["role"], _message["text"], "Starting context"
                         ))
                     elif _message["role"] == "student" and _origin == "generated":
                         _starting_question = _turn(
@@ -198,19 +203,25 @@ def _(get_result, history_error, history_picker, html, mo, policy_comparison_set
                         _generated_tutor = _turn(
                             "tutor", _message["text"], "Generated under this policy"
                         )
+                if _ready and _snapshot["pending_message"]:
+                    _starting_question = _turn(
+                        "student", _snapshot["pending_message"], "Shared simulated starting question"
+                    )
                 _question_view = (_starting_question if _starting_question is not None else
                                   mo.callout("No simulated starting question was saved.", kind="neutral"))
-                _context_view = (mo.vstack(_recorded_context, gap=0) if _recorded_context else
-                                 mo.md("No earlier recorded conversation was saved."))
-                _continuation = [
+                _context_view = (mo.vstack(_context_turns, gap=0) if _context_turns else
+                                 mo.md("No earlier conversation was saved."))
+                _continuation = [mo.callout(
+                    "Frozen and ready; this condition has not been generated.", kind="neutral"
+                )] if _ready else [
                     _generated_tutor if _generated_tutor is not None else
                     mo.callout("No tutor response was saved.", kind="neutral")
                 ]
-                if _snapshot["pending_message"]:
+                if not _ready and _snapshot["pending_message"]:
                     _continuation.append(_turn(
                         "student", _snapshot["pending_message"], "Simulated follow-up"
                     ))
-                else:
+                elif _snapshot["status"] == "no-reply":
                     _continuation.append(mo.callout(
                         "The simulated student chose not to send a follow-up.",
                         kind="neutral",
@@ -219,7 +230,7 @@ def _(get_result, history_error, history_picker, html, mo, policy_comparison_set
                     mo.md("#### Student question used by this simulation"),
                     _question_view,
                     mo.accordion({
-                        f"Earlier recorded context ({len(_recorded_context)} messages)": _context_view,
+                        f"Starting context ({len(_context_turns)} messages)": _context_view,
                     }),
                     mo.md("#### Simulated continuation"),
                     mo.vstack(_continuation, gap=0),
@@ -233,7 +244,7 @@ def _(get_result, history_error, history_picker, html, mo, policy_comparison_set
         _results = mo.vstack([
             mo.md(f"## Saved simulation · `{_result_path.name}`"),
             mo.callout(
-                "Both conditions use the same recorded conversation and the same cached "
+                "Both conditions use the same starting conversation and the same cached "
                 "simulated starting question. The tutor policy, tutor reply, and simulated "
                 "student follow-up are what you compare.",
                 kind="neutral",

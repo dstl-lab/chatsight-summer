@@ -9,11 +9,11 @@ from src.eval.student_continuation import Continuation
 from tests.test_chat_student import QUERY, files
 
 
-def _source(folder, number):
+def _source(folder, number, *, model="authored-model"):
     query = deepcopy(QUERY)
     query["id"] = f"AUTHORED_QUERY_{number}"
     query["conversation_id"] = f"AUTHORED_CONVERSATION_{number}"
-    initial = chat_student.create(folder, query=query, model="authored-model")
+    initial = chat_student.create(folder, query=query, model=model)
     chat_student.step(
         folder,
         binding=initial["binding"],
@@ -40,7 +40,7 @@ def test_freezes_multiple_cases_offline_and_reopens_without_changes(tmp_path, mo
 
     assert saved["summary"] == {
         "case_count": 3,
-        "provider_requests_if_fully_run": 12,
+        "logical_requests_if_fully_run": 12,
         "conditions": {
             "a": {"ready": 3, "student-replied": 0, "no-follow-up": 0,
                   "incomplete": 0, "failed": 0},
@@ -284,3 +284,95 @@ def test_interrupted_request_is_incomplete_and_not_comparable(tmp_path):
     assert saved["cases"][0]["comparison_outcome"] == "not-comparable"
     assert saved["summary"]["conditions"]["a"]["incomplete"] == 1
     assert saved["summary"]["comparisons"]["not-comparable"] == 1
+
+
+def test_failed_request_is_not_misclassified_by_wording_in_saved_history(tmp_path):
+    from src.agents import policy_cohort
+
+    source, folder = tmp_path / "source", tmp_path / "cohort"
+    _source(source, 1)
+    policy_cohort.create(folder, sources=[source],
+                         current_policy="Current.", proposed_policy="Proposed.")
+
+    def tutor(prompt, schema):
+        if "Current." in prompt:
+            raise RuntimeError("Authored incomplete input failure")
+        return schema(text="Authored response.")
+
+    saved = policy_cohort.run(folder, send=True, generate_tutor=tutor,
+                              generate_student=lambda _, schema: schema(decision="no-reply", text=""))
+    assert saved["cases"][0]["outcomes"] == {"a": "failed", "b": "no-follow-up"}
+    assert saved["summary"]["conditions"]["a"]["failed"] == 1
+    assert saved["summary"]["conditions"]["a"]["incomplete"] == 0
+
+
+@pytest.mark.parametrize("mode", ["conversation", "model", "source-link", "nested-output"])
+def test_cohort_preserves_source_and_comparability_guards(tmp_path, mode):
+    from src.agents import policy_cohort
+
+    first, second, folder = tmp_path / "first", tmp_path / "second", tmp_path / "cohort"
+    _source(first, 1)
+    _source(second, 1 if mode == "conversation" else 2,
+            model="different-model" if mode == "model" else "authored-model")
+    if mode == "source-link":
+        original = second / "session.json"
+        moved = tmp_path / "external-session.json"
+        original.rename(moved)
+        original.symlink_to(moved)
+    if mode == "nested-output":
+        folder = first / "cohort"
+    before = files(tmp_path)
+    with pytest.raises(ValueError):
+        policy_cohort.create(folder, sources=[first, second],
+                             current_policy="Current.", proposed_policy="Proposed.")
+    assert not folder.exists() and files(tmp_path) == before
+
+
+def test_cohort_rejects_symlink_before_any_dispatch(tmp_path):
+    from src.agents import policy_cohort
+
+    source, folder = tmp_path / "source", tmp_path / "cohort"
+    _source(source, 1)
+    policy_cohort.create(folder, sources=[source],
+                         current_policy="Current.", proposed_policy="Proposed.")
+    receipt = folder / "cases" / "case-0001" / "comparison.json"
+    external = tmp_path / "external-comparison.json"
+    receipt.rename(external)
+    receipt.symlink_to(external)
+    before = files(tmp_path)
+    with pytest.raises(ValueError, match="symbolic"):
+        policy_cohort.run(folder, send=True,
+                          generate_tutor=lambda *_: pytest.fail("Provider called"))
+    assert files(tmp_path) == before
+
+
+@pytest.mark.parametrize("damage", ["missing-a", "corrupt-a", "both-missing"])
+def test_damaged_startup_keeps_valid_peer_or_unavailable_case_visible(tmp_path, damage):
+    from src.agents import policy_cohort
+
+    source, folder = tmp_path / "source", tmp_path / "cohort"
+    _source(source, 1)
+    policy_cohort.create(folder, sources=[source],
+                         current_policy="Current.", proposed_policy="Proposed.")
+    complete = policy_cohort.run(folder, send=True,
+                                 generate_tutor=lambda _, schema: schema(text="Authored tutor."),
+                                 generate_student=lambda _, schema: schema(decision="no-reply", text=""))
+    sessions = folder / "cases" / "case-0001" / "sessions"
+    if damage == "corrupt-a":
+        (sessions / "a" / "session.json").write_text("{")
+    else:
+        (sessions / "a" / "session.json").unlink()
+    if damage == "both-missing":
+        (sessions / "b" / "session.json").unlink()
+    before = files(folder)
+    saved = policy_cohort.show(folder)
+    assert len(saved["cases"]) == 1
+    case = saved["cases"][0]
+    assert case["outcomes"] == {"a": "failed", "b": "failed" if damage == "both-missing" else "no-follow-up"}
+    assert case["comparison_outcome"] == "not-comparable"
+    assert case["comparison"]["conditions"]["a"]["error"]
+    if damage == "both-missing":
+        assert case["comparison"]["conditions"]["b"]["error"]
+    else:
+        assert case["comparison"]["conditions"]["b"] == complete["cases"][0]["comparison"]["conditions"]["b"]
+    assert files(folder) == before

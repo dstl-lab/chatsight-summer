@@ -1,5 +1,7 @@
 """Build private, local-only observation packets without generation or execution."""
 import argparse
+from contextlib import ExitStack
+import fcntl
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -104,8 +106,21 @@ def recorded_packet(conversation, *, source_sha256, through_turn=None):
 def simulation_packet(folder):
     """Project one verified saved state; never invoke its model or notebook runtime."""
     folder = Path(folder)
-    with student._locked(folder):
-        manifest, state, _, decisions = student._load(folder)
+    with ExitStack() as stack:
+        lock = folder / ".lock"
+        try:
+            stream = stack.enter_context(lock.open("rb"))
+        except FileNotFoundError:
+            stream = None
+        if stream is not None:
+            try:
+                fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            except BlockingIOError as exc:
+                raise ValueError("This student session is busy.") from exc
+        manifest, state, paths, decisions = student._load(folder)
+        # A fresh session has no lock until its first writer opens it.
+        if stream is None and (paths or lock.exists()):
+            raise ValueError("The session changed during inspection or its saved lock is missing.")
         observation = state["observation"]
         if observation is not None:
             student.notebook_runtime.require_current(
