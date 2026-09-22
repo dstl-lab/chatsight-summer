@@ -34,8 +34,39 @@ the tutor reply when a student message is pending. **Write a reply** retains the
 manual intervention option. While the student is working quietly, the button
 continues only that student; it does not generate an unsolicited tutor reply.
 
+To start with a prepared policy, add `--policy-file PATH` after the Marimo `--`
+separator. For example, after creating the public notebook example:
+
+```sh
+.venv/bin/marimo run apps/student_workspace.py \
+  --host 127.0.0.1 --port 8427 --headless -- \
+  --session data/notebook-example/session \
+  --policy-file data/notebook-example/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json
+```
+
+This command opens in viewing mode. Add `--send=true` only when ready to enable
+the existing continuation controls. The policy-file option works with notebook
+sessions and chat scenario folders. It reads an explicit UTF-8 file once during
+app initialization and uses its contents as the editable starting draft. A
+missing, unreadable, invalid-encoding or blank file stops initialization; there
+is no silent fallback. Omitting the option retains the existing mode-specific
+default. Loading or editing a draft does not establish that a tutor received it.
+
+The optional `--reference-file` is for notebook sessions only. Its JSON is read
+and validated once at launch; unreadable or malformed files stop initialization.
+Before an explicit generated tutor submission, its library and version must match
+the activity exactly. The reference is supplied API evidence, not a replacement
+for the teaching policy. It is included in the tutor request and saved receipt,
+not added directly to the student's input. Reloading makes no request; manual
+replies and quiet student continuations do not send this reference directly.
+Omitting the option preserves existing behavior. Restart to reread a changed file.
+
 The two text drafts survive work/view changes and **Reload saved session** within
-the page. A new browser/kernel session starts new drafts. Submitted policies and
+the page. Switching conversation scenarios resets the policy draft to the
+initially loaded file content, or the default when no file was supplied. The app
+does not watch for file changes; restart it to reread the file. A new app session
+starts new drafts. Submitted policies and
 generated replies are retained in `SESSION/tutor-exchanges/STATE_HASH/receipt.json`;
 the existing saved student dialogue records the reply as a supplied intervention.
 The separate tutor receipt establishes its generated origin. An interrupted or

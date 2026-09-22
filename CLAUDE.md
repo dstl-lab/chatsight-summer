@@ -1,22 +1,403 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
-## Automatic continuation selection prepared (2026-09-21)
+## Workspace carries the tutor library reference (2026-09-22)
 
-Minchan approved the recommended automatic research comparison after PR #41
-merged as d645733. New branch codex/recorded-continuation-selection starts there.
-The selection module and authored tests implement one fixed 19-case comparison:
-Gemini identifies the actual recorded next message among four recorded options,
-with/without earlier dialogue. This is recognition, not generation fidelity.
-See docs/2026-09-21-recorded-continuation-selection.md; the ignored matching v1
-folder contains the exact prompts, source mappings, protocol, runner and pins.
-38 requests, at most 152 adapter attempts, one report and stop. No manual labels,
-prompt tuning, generator adoption or reopening the six-case pass. Preparation and
-independent review pass; 422 tests pass, two optional skips, Marimo/Node pass.
-Automatic approval review rejected send before process creation, requiring
-explicit permission to send this private historical dialogue and recorded option
-payload to Gemini despite the logged standing approval. No result ledger or
-provider requests exist. Keep the frozen preparation intact; obtain that specific
-authorization before dispatch. Do not bypass the rejection or imply model results.
+Optional notebook-only --reference-file now loads through the existing
+LibraryReference schema once at launch. Malformed files/chat use stop; exact
+activity library/version mismatch is rejected before generated tutor dispatch.
+student_workspace.respond forwards the optional reference to notebook_tutor;
+the existing request/receipt records delivery, and the raw reference is not
+injected into student input. Manual/quiet steps and reload retain their existing
+behavior. No generator/runtime change or new live calls/labels. Authored Marimo
+controls and backend regressions reproduce and verify the handoff; 466 tests,
+both Marimo checks and Node navigation pass. See
+docs/2026-09-22-workspace-library-reference.md. Task21 complete.
+
+## Supplied exercises connect to notebook history (2026-09-22)
+
+notebook_example --previous/API previous reuses notebook_next_task for a completed
+encounter, publishing its new session and policy together. Mutually exclusive with
+--chat-source; original context/model carry forward, new work/feedback/budget are
+fresh. Source locks span publication; all ancestor nesting and changed snapshots
+are rejected. No engine/prompt change. See docs/2026-09-22-exercise-continuation-setup.md.
+457 tests, Marimo checks and Node navigation pass; independent review found no
+issue. Real CLI/replay verified offline at data/custom-notebook-continuation-example
+from the authored closed notebook example; previous files and continuity59pins
+unchanged. No new model/runtime calls, labels or live run. Task20 complete.
+
+## Workspace loads the prepared policy (2026-09-22)
+
+Fixed a handoff gap: custom exercise setup saved policy.txt but the documented
+workspace opened with generic text. Optional --policy-file now reads UTF-8 once
+into the editable draft; malformed/missing/blank files stop without fallback.
+Omission keeps old defaults. Draft edits survive reload; scenario selection resets
+to the initial file content, and restart rereads disk. Existing explicit sending
+and saved policy receipts are unchanged. Both notebook and chat modes use it.
+The real Marimo-cell regression reproduced the gap before the fix and now checks
+edited-draft delivery, reload, disk changes, reset and invalid-file handling with
+authored callbacks. 454 tests, both Marimo checks and Node navigation pass;
+independent review found no issue. See docs/2026-09-22-workspace-policy-file.md and
+updated launch examples. No live calls, labeling, engine or prompt change.
+Task19 complete; combined PR43 still requires independent GitHub review.
+
+## Custom notebook exercise setup complete (2026-09-22)
+
+notebook_example now accepts an optional exercise mapping / --exercise-file with
+the existing task/activity/evaluation/policy structures, while retaining the
+default example and verified --chat-source bridge. The immutable image is a
+separate argument; malformed/unknown inputs fail without publishing, and supplied
+objects/sources remain unchanged. No engine, prompt, runtime or budget changes.
+See docs/2026-09-22-custom-notebook-exercise.md and examples/fruit-count.json.
+446 tests, both Marimo checks and Node navigation pass; independent review found
+no code blocker and corrected a stale continuity claim in the teammate guide.
+The actual public CLI/replay also verified offline at
+data/custom-notebook-exercise-example: expected2, no feedback/actions, six unused
+decisions. No provider/container calls, labels or new live run. The completed
+continuity run's59pins remain unchanged; older snapshots pinning the setup helper
+must use their recorded revision. Task18 complete; PR43 still needs GitHub review.
+
+## Second notebook exercise completed and closed (2026-09-22)
+
+Minchan explicitly answered Yes to the exact blocked private-payload Gemini scope.
+Saved approval precedes the one dispatch, 03:02:02–03:02:24 UTC. Quiet edit → real
+local check (float0.25/pass, revision1) → no-reply; three student requests, zero
+tutor requests/generated chat, one container execution, no recorded failures,
+three decisions unused. All59pins and exact two-task replay verify; prior0.5
+feedback stays in history and current feedback starts null. Both recorded example
+and prior simulated activity reach every actual student prompt. Follow-up tutor
+policy/reference were configured but never delivered. Private closure/replay are
+in data/notebook-communication-continuity/live-run; public result is
+docs/2026-09-22-live-notebook-continuity-status.md. No code/prompt change, resends,
+labels, automatic third exercise or fidelity/learning claim. This supersedes the
+blocked state below. Actual retries unmeasured; at most12adapter attempts.
+
+## Second notebook exercise prepared; dispatch blocked (2026-09-22)
+
+Latest Continue prepares one bounded live continuation using the unchanged lesson
+runner and copied create-only dispatcher. The advance protocol is frozen in
+docs/2026-09-22-live-notebook-continuity.md; private scope/preflight/approval-block
+are in data/notebook-communication-continuity/live-run. All 59 pins and both role
+payloads independently verify. The original 10-turn example and previous simulated
+activity persist; current work is fresh and current feedback null. Runtime image
+availability is verified. Six student decisions / two tutor replies, at most eight
+logical requests / 32 adapter attempts and six requested local checks.
+Automatic approval review rejected process creation because the new private
+payload needs specific Gemini approval despite the standing grant. Nothing was
+sent or executed; no dispatch, lesson or steps exist, and all predecessor files
+remain unchanged. Scope SHA aaf358850e9f3d63ae09d92b3b4ab1cbace36c8a70c30ff145a1b3163ad74c3c.
+Await exact approval, preserve it before one dispatch, then verify replay and close
+regardless of outcome. No bypass, automatic retries, new labels or fidelity claim.
+This supersedes the earlier no-live-run status; production code is unchanged.
+
+## Recorded example persists across notebook tasks (2026-09-22)
+
+notebook_next_task now carries only the root's explicitly sourced conversation
+example and scope, separately from simulated encounter history. Query validation,
+the saved prefix hash and predecessor manifest chain bind the source; a carried
+content hash rejects altered/missing examples in new successors. The prechange
+writer hash ccaa59b9…7476c21b alone permits historical omission. Replay shows the
+example only where actually delivered. Arbitrary initialization stays excluded;
+one copy counts toward the existing 64KB shared-context ceiling. Engines/prompts
+are unchanged. See docs/2026-09-22-communication-continuity.md.
+444 tests, both Marimo checks and Node navigation pass; independent review caught
+and verified the fix for complete-example deletion masquerading as legacy input.
+An offline green-proportion successor is saved at data/notebook-communication-continuity:
+exact 10-turn example, previous simulated activity, fresh task/work/evaluator,
+zero calls/executions/actions and six unused decisions. All34setup pins verify;
+source sessions remain unchanged. The failed forecast's69pins still verify.
+No live run, labeling or persona/fidelity claim is queued. Old audits pinning
+the changed next-task/replay sources require their historical revisions.
+
+## Work-presence forecast completed; failed screen closed (2026-09-22)
+
+Minchan answered Yes to the exact eight-prefix Gemini scope after the automatic
+approval block. payload-approval.json binds that approval to scope/jobs/rejection
+before dispatch. All eight forecasts completed 02:23:57–02:25:18 UTC, with no
+errors, missing results or adapter retry events (SDK transport retries unmeasured).
+Mean multiclass Brier .80625 vs LOCO .612245, constant-half .5, no-work .75;
+work-absent group1.081, work-present .348333, equal-group mean .714667.
+Four of five work-absent references received work probabilities .70–.90. The
+declared development screen fails: no wording component, prompt tuning/rerolls,
+new labels or default generator change. The run is complete and closed.
+Read-only replay/independent arithmetic verify all69pins and the result; preserve
+the exact advance protocol and all original review/source artifacts. See
+docs/2026-09-22-work-presence-forecast-status.md and private result/closure/events.
+This supersedes the blocked status below. It is a negative forecast result on
+eight exposed development cases, not generated-message fidelity, calibration,
+reply probability, grounding effect or real-student validation.
+
+## Work-presence forecast implemented; dispatch blocked (2026-09-22)
+
+Latest Continue adds only src/eval/work_presence_forecast.py, a strict probability
+schema and future-excluding, ID-free prefix projection. No default simulator or
+saved-engine change. Dated advance protocol and subsequent status are in
+docs/2026-09-22-work-presence-forecast{,-status}.md. Reuse the eight just-coded
+references for one exposed-development forecast screen, conditional on a next
+message being recorded; no new labels or message generation. Existing scorer
+supplies leave-one-conversation-out frequency baseline .612245 (multiclass Brier
+0–2); fixed .5 forecast scores .5, no-work scores .75. No model result yet.
+69 pins, 36 visible turns and all eight source/label joins independently verify;
+442 tests, both Marimo checks, Node navigation and authored arithmetic pass.
+The exact 8-request/32-attempt Gemini scope is saved in ignored
+data/episode-pilot/work-presence-forecast-v1. Automatic approval review rejected
+process creation: it requires specific approval for this private payload and
+destination despite the standing grant. Zero requests, no dispatch/event ledger.
+Preserve approval-block.json and scope SHA
+80573690b3e7e834fc132f233fe2ab8fae94fa7050e5f8628a9ccb8f6cfd7e16.
+Do not bypass/retry without required approval. After approval, run once, retain
+failures, score and close; no rerolls, automatic adoption or new review queue.
+The prior cached-review pass remains closed and its original pins unchanged.
+
+## Cached-message coding and report complete; pass closed (2026-09-22)
+
+The returned 23-message/46-flag form is complete with no missing/unclear values.
+Literal chat text and normalized JSON are both preserved; only HTML indentation,
+escaped key underscores and the Done heading were removed. Exposure=no remains
+a self-report; these are still previously exposed development cases. Independent
+transcription and arithmetic audits pass, including all 50 preparation pins.
+Recorded help 8/8 and work 3/8; generated help 13/16 and work 10/16. In five
+work-absent cases, 6/10 generated draws present work; in three work-present cases,
+2/6 omit it. Both groups now support the descriptive balanced work Brier, 5/12
+(constant-no-work rule .5); this is no adoption threshold or grounding benefit.
+See docs/2026-09-22-cached-communication-results.md and the matching private
+result/intake/closure artifacts. Preserve the frozen page, rules, mapping and
+received answers. Close item 14; no further review, new generation, prompt change
+or second-reviewer request. Original studies remain closed. This set has only
+one historical chat condition and does not validate the notebook agent.
+
+## Fixed cached-message review prepared; human export needed (2026-09-22)
+
+Minchan's Continue advances the inventoried scope to one help-work-v1 review.
+Eight cases, 23 distinct messages/46 flags, unchanged original prefixes and
+definitions; case 5's shared draw judgment retains both occurrence weights.
+The existing page is served only from cached-communication-review-v1/ui on
+127.0.0.1:8425. Opaque case/candidate IDs and order are frozen; origins, old labels
+and private mappings stay outside the page. All answers/reviewer details blank.
+50 pins, source joins, exact HTML/HTTP access and authored draft/report checks
+pass. Browser automation blocked a temporary authored file test; no bypass or
+live browser walkthrough. User opens the provided localhost link themselves.
+The private report helper supports missing/unclear flags and independent per-flag
+case exclusion; balanced work Brier needs both comparable reference groups.
+See docs/2026-09-22-cached-communication-review.md and ignored matching folder.
+Next input: one returned JSON export. Preserve its exact bytes and verify frozen
+files before scoring. If review stops early, preserve the partial form and close
+as incomplete; no forced adjudication. No model calls, source label conversion,
+second-reviewer dependency, replacement cases or automatic generator adoption.
+All old studies stay closed; this pass cannot estimate a grounding benefit.
+
+## Cached communication scope inventoried, no review launched (2026-09-22)
+
+The accepted step verified eight old recorded references and 16 cached replies:
+two identical-input draws from one historical chat generator, not two conditions.
+Case 5's draws have identical text/context, so a possible common help-work-v1 pass
+needs at most 23 distinct messages/46 flags, retaining both occurrence weights.
+Zero compatible prior judgments overlap; old v7 categories must not be converted.
+Case 1 retains only the first of eleven follow-up messages, per the original unit.
+Coverage of work-absent/work-present references remains unknown under this rubric;
+help is a separate flag, with help-only coverage reported separately.
+See docs/2026-09-22-cached-fidelity-scope.md and ignored cached-fidelity-scope-v1
+inventory/replay. This is a separate development-readiness diagnostic; earlier
+studies stay closed. No packet, review handoff, model calls or labels were created.
+The possible one-pass ceiling is specified, not launched. It cannot establish a
+grounding benefit, validate the notebook student or support generator adoption.
+
+## Conversation-conditioned notebook run completed and closed (2026-09-22)
+
+Minchan explicitly answered “Approve this single run” to the exact private prefix,
+derived-context and Gemini destination question. payload-approval.json binds it to
+the frozen scope and earlier rejection. One dispatch ran 00:26:14–00:26:50 UTC:
+quiet edit → real local check (float0.5/pass, revision1) → no-reply. Three student
+requests, one execution, zero tutor requests/chat/errors, three unused decisions;
+at most 12 adapter attempts, actual retries unknown. No rerolls or queued runs.
+Actions/code match the earlier separate unconditioned demonstration; this is not
+a controlled effect estimate. No generated communication exercised the claimed
+benefit of the historical example. Policy/reference configured but undelivered.
+All 84 pins and read-only replay verify. Preserve initial artifacts, source chat,
+older walkthrough and rejection/approval chronology. See
+docs/2026-09-22-live-notebook-communication.md and ignored matching live-run
+overview/replay/closure. This supersedes the blocked status below; the fidelity
+gate and paused labeling are unchanged. PR #43 still requires GitHub review.
+
+## Conversation-conditioned notebook run prepared, not sent (2026-09-22)
+
+The current Continue prepared one run of data/notebook-communication-example/session:
+six student decisions, at most two tutor replies, eight logical requests/32 adapter
+attempts, existing Gemini 2.5 Pro and local runtime. Both roles would receive the
+private original 10-turn prefix plus authored task/current work and later feedback.
+Independent preflight passed all 84 pins, exact inputs and mocked dispatch guards.
+Automatic approval review rejected process creation because this specific private
+payload/destination needs explicit authorization. No dispatch, model/check call or
+student step exists; initial session and source artifacts are unchanged. Preserve
+scope/protocol/preflight/approval-block files under live-run. Do not retry or
+bypass the rejection; await explicit user approval for this saved scope. See
+docs/2026-09-22-live-notebook-communication.md. No labels or rerolls are queued.
+
+## Conversation example for an authored notebook task (2026-09-22)
+
+On codex/notebook-communication-context, notebook_example accepts --chat-source.
+PR #45 merged into parent PR #43 at 1680abd with the tested tree unchanged;
+it is not yet on main. Continue from codex/selection-results.
+Reuse chat._load and the existing initialization path; copy only the original
+query.prefix, separately from current authored task/work/dialogue. Exclude
+simulated continuations and identifier metadata from model context; keep source
+path and hashes in private provenance. Both student and tutor see the example.
+See docs/2026-09-22-notebook-communication-context.md. This is an opt-in input
+bridge, not a validated persona or adopted fidelity fix; later next-task transfer
+does not preserve arbitrary initialization. Engines/prompts remain unchanged.
+441 tests pass (three optional container skips), Marimo/Node checks and independent
+review pass. Ignored data/notebook-communication-example contains one offline
+setup from existing case 1: 10 original turns, six student contributions, cached
+simulated reply excluded, six unused decisions, zero model or execution calls.
+Original sources/public walkthrough remain unchanged; preserve their old pins
+and use historical revisions for all-source audits. Task 12 complete. No labels,
+rerolls or live experiment queued. Parent PR #43 still requires GitHub review.
+
+## Lesson policy visibility repaired (2026-09-22)
+
+Saved results now discovers notebook lesson/tutor-* records as well as workspace
+tutor-exchanges/*, using the same context/reply/continuation validation. The lesson
+policy is shown as configured, separately from confirmed delivery. Failed,
+interrupted and malformed records remain visible. See
+docs/2026-09-22-lesson-saved-results.md. Full suite: 439 passed, three optional
+container skips; Marimo/Node checks and independent review pass. Existing notebook
+replay and all six saved chat cohort views verify without changing evidence.
+Only the display renderer's source hash changes among the public walkthrough's
+77 pins; use the recorded historical revision for that all-source audit. Student
+engines, prompts and old pins remain unchanged. No new model calls, execution or
+labels. Task 11 complete; PR #43 still requires independent GitHub review for main.
+
+## Public notebook live walkthrough closed (2026-09-21)
+
+After the next Continue, ran the prepared data/notebook-example/session once
+through the existing notebook_lesson runner. All initial task/table/work/dialogue
+were public authored content; no private historical student payload. The frozen
+live-run/scope.json records standing authorization, initial prompt/state, policy,
+reference, 77 source/setup pins and a six-student/two-tutor ceiling (eight logical
+requests, 32 adapter attempts).
+
+Actual sequence: quiet revision → requested container check → generated no-reply.
+Three Gemini 2.5 Pro student requests, one real check returning float 0.5/pass on
+revision 1, zero generated tutor replies or errors. Three decisions remain unused;
+no-reply closed the encounter. Actual retries are unknown, with at most 12 adapter
+attempts for the three recorded requests. No rerolls or new labels.
+
+The configured policy/reference were not delivered to a generated tutor; only the
+authored initial hint was present. No generated chat was emitted, and no initial
+failing check occurred in this live run. Do not claim tutor-policy effects or a
+fixed chat hallucination problem. audit.json and replay.html verify actual saved
+prompts, actions, bound check feedback, all 77 pins and unchanged read-only replay.
+Repeating the lesson is rejected. See docs/2026-09-21-live-notebook-example.md.
+Keep the old preparation verification and initial.html intact. Task 10 complete;
+all older studies and source pins remain unchanged, generator/UI work stays as
+previously scoped, and combined PR #43 still needs independent review for main.
+
+## Public notebook setup (2026-09-21)
+
+The existing notebook engine is now reachable without private experiment inputs:
+src.agents.notebook_example creates an explicitly authored four-row proportion
+task, initial count-as-proportion code, private expected float and concise hint
+policy. Require an immutable runtime image ID; creation validates and publishes
+session plus policy together, with no execution or model calls. Existing paths and
+dangling symlinks are refused. See docs/2026-09-21-notebook-example.md and the
+teammate quickstart section 2b for viewing, optional live lesson and HTML replay.
+
+The session has six student decisions; the documented lesson caps tutor replies
+at two, at most eight logical requests/32 adapter attempts if explicitly run.
+No such live run occurred in this packaging step. A fresh local example is saved
+at ignored data/notebook-example/session with initial.html for offline inspection.
+Keep it separate from all frozen historical and authored proof artifacts.
+
+432 tests pass (three optional container skips, one upstream warning), both Marimo
+checks and Node navigation pass. The new integration test separately passed two
+actual local container checks: wrong2 → quiet edit/feedback cleared → correct0.5,
+then unchanged saved replay. Actions were scripted test callbacks; legacy origin
+tags do not turn those into provider-generated behavior. Independent review found
+no substantive issue. Student/tutor engines, prompts, schemas and existing source
+pins stay unchanged; this does not repair or validate chat-only hallucinations.
+Task9 is complete; labeling and UI redesign remain paused. This setup joins the
+existing isolated branch and PR #43, still requiring independent main review.
+
+## Live cohort completed and closed (2026-09-21)
+
+PR #44 merged into codex/selection-results as 0ba649b. Combined PR #43 now includes
+the closed selection result and three-scenario coordinator; independent review
+against main is still required. Do not treat its old docs-only description or
+the older branch notes below as current scope.
+
+The bounded demonstration is frozen in ignored chat-cohort-live-v1:
+three existing historical-group cases, hint/direct policies, one new decision
+each, Gemini 2.5 Pro both roles, at most 12 logical requests / 48 adapter attempts.
+See docs/2026-09-21-live-cohort.md. Exact six tutor prompts, dynamic student-prompt
+templates, schemas and 106 file pins are saved; independent audit and 25 focused
+workflow tests pass. run.py reuses the coordinator with an exclusive dispatch
+receipt, preserving every outcome and stopping after one invocation.
+
+After automatic approval review blocked process creation, Minchan explicitly
+answered “Yes, approved” to this exact disclosed Gemini payload. The new
+payload-approval.json binds that reply to scope/disclosure/prior rejection before
+dispatch; preserve the earlier authorization and rejection records. One invocation
+completed: six tutor replies, six student replies, zero no-replies/errors/missing
+conditions; 12 logical requests, at most 48 adapter attempts (actual retries unknown).
+All child budgets are exhausted; no resends or further generation are queued.
+
+audit.json verifies all 106 source/startup pins, exact tutor and dynamic student
+prompts, receipt linkage and unchanged read-only replay. OVERVIEW.md shows all six
+actual exchanges. Distinct policy text did not consistently yield distinct tutor
+interventions; generated task details/output/error claims are not recovered
+notebook evidence. This confirms operation only, not fidelity or policy effects.
+Original sources, authored proof artifacts, closed studies, live workspace and
+paused labeling remain unchanged. Keep this demonstration closed; no new review
+batch or generator changes. PR #43 still needs independent review against main.
+
+## Three-scenario policy workflow (2026-09-21)
+
+codex/chat-cohort adds a thin coordinator around chat_policy_pair: exactly three
+distinct frozen source conversations, the same model and two policies, one new
+student decision per condition. Existing pairs keep their budgets, identities,
+bindings and receipts; there is no new generator, scheduler ledger or UI. Create
+and show are offline. Run requires explicit send, preserves failures and advances
+only untouched ready peers; completed or interrupted arms cannot resend. A changed
+group plan aborts; unrecorded errors propagate; comparison symlinks are rejected.
+See docs/2026-09-21-chat-cohort.md. Eight new tests pass; full suite 430 passed,
+two optional skips, one upstream warning. Marimo and Node checks pass.
+
+Ignored chat-cohort-v1 holds the historical-group prepared from frozen handoff
+cases 1–3, all six conditions untouched. Original source hashes still match.
+Its separate authored-group has three scripted replies, two no-replies and one
+saved provider failure; twelve injected callbacks, zero model calls. Reopen and
+completed rerun change no files or dispatches. OVERVIEW.md shows both groups.
+Independent review confirmed the source/containment and failure protections.
+Existing interactive model schemas already omit the field that broke the recent
+selection evaluation; no shared engine or provider repair was needed. Leave old
+source pins, live workspace, closed studies and paused labeling unchanged.
+PR #43 remains the separate results review; this feature branches from its commit
+0599523. No live cohort comparison or new labels ran, and no fidelity claim follows
+from this engineering check. Before later research use, fix its scope and stopping rule.
+
+## Automatic continuation selection closed (2026-09-21)
+
+PR #42 merged the offline diagnostic as b179876. Results follow-up is on
+codex/selection-results in the existing isolated episode-pilot worktree. Minchan
+explicitly approved sending the frozen private dialogue/options to Gemini after
+the initial automatic-review block; payload-approval.json binds that approval.
+The first dispatch failed on unsupported additional_properties: four errors and
+one interruption, no choices. Preserve original run.py/results.json/source pins.
+A frozen transport amendment removed only that wire-schema field, kept strict
+local validation, and sent only the 33 untouched jobs. All succeeded, zero resends;
+at most 53 adapter attempts across both phases, below the 152 ceiling. The original
+five missing choices remain missing in the combined report, not replaced.
+
+Result: history 8/16 and current 8/16 on the same complete pairs, zero accuracy
+difference and 16 ties (8 both-correct, 8 both-wrong). Actual choices agree 15/16.
+Paired lexical 7/16, shortest 4/16, longest 6/16; coverage history 16/19, current 17/19.
+All-19 missing-outcome delta bounds: -15.8 to +10.5 percentage points, not a CI.
+See docs/2026-09-21-recorded-continuation-selection.md and the ignored matching v1
+folder for protocol, amendment, sources and receipts. This is recognition of logged
+continuations, not generation fidelity; the cases have prior development exposure.
+Close the comparison and retain the generator. No labels, failed-case rerolls,
+option/prompt tuning, generator adoption or new comparison is queued. Keep the
+bulk audit, UI redesign and closed six-case pass unchanged. Public engines and
+dependencies did not change; private transport checks cover the compatibility fix.
 
 ## Joint instructor evaluation closed (2026-09-21)
 

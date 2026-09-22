@@ -56,7 +56,8 @@ def test_bound_intervention_saves_one_action_and_rejects_resubmission(tmp_path):
     assert len(calls) == 1
 
 
-def test_policy_reply_continues_once_and_retains_exact_policy(tmp_path):
+@pytest.mark.parametrize('with_reference', [False, True])
+def test_policy_reply_continues_once_and_retains_exact_policy(tmp_path, with_reference):
     from src.agents import student_workspace as workspace
     assert hasattr(workspace, 'respond'), 'Policy continuation is missing'
     folder = tmp_path / 'student'
@@ -65,16 +66,20 @@ def test_policy_reply_continues_once_and_retains_exact_policy(tmp_path):
                  check=None, max_actions=1)
     shown = tutor_context.snapshot(folder)
     policy = 'Answer the current question briefly.\nUse the visible work.'
+    reference = {'library': ACTIVITY['library'], 'library_version': ACTIVITY['library_version'],
+                 'text': 'Authored tutor-only reference marker.', 'source': 'Authored API example.'}
     calls = []
 
     def generate_tutor(prompt, schema):
         payload = json.loads(prompt.split('POLICY AND CONTEXT JSON:\n')[1])
         assert payload['policy'] == policy and payload['context']['pending_message'] == 'this?'
         assert payload['context']['work'] == shown['work']
+        assert payload.get('library_reference') == (reference if with_reference else None)
         calls.append('tutor')
         return schema(text='Count each distinct shade once.')
 
     def generate_student(prompt, schema):
+        assert reference['text'] not in prompt and 'library_reference' not in prompt
         state = json.loads(prompt.split('\nSTATE JSON:\n')[1])
         assert state['dialogue'][-1]['text'] == 'Count each distinct shade once.'
         calls.append('student')
@@ -82,6 +87,10 @@ def test_policy_reply_continues_once_and_retains_exact_policy(tmp_path):
 
     options = dict(binding=shown['binding'], policy=policy, send=True,
                    generate_tutor=generate_tutor, generate_student=generate_student, check=observation)
+    if with_reference:
+        options['reference'] = reference
+        with pytest.raises(ValueError, match='library and version'):
+            workspace.respond(folder, **(options | {'reference': reference | {'library_version': 'wrong'}}))
     for change in ({'send': False}, {'binding': {}}, {'policy': ' '}):
         with pytest.raises(ValueError):
             workspace.respond(folder, **(options | change))
@@ -91,6 +100,7 @@ def test_policy_reply_continues_once_and_retains_exact_policy(tmp_path):
     assert after['decisions_remaining'] == shown['decisions_remaining'] - 1
     receipt = student._read(folder/'tutor-exchanges'/shown['binding']['state_sha256']/'receipt.json')
     assert receipt['request']['policy'] == policy
+    assert receipt['request'].get('library_reference') == (reference if with_reference else None)
     assert receipt['continuation']['status'] == 'complete'
     assert tutor_context.snapshot(folder) == after
     with pytest.raises(ValueError, match='[Ss]tale'):

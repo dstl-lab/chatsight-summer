@@ -231,6 +231,7 @@ def test_multiple_tasks_keep_flat_verified_history_in_both_agents_and_replay(tmp
     assert 'FIRST_OBSERVED_VALUE' in page and 'PRIVATE_FIRST_EXPECTED' not in page
     assert 'FIRST_OBSERVED_VALUE' not in page.split('<section id="current">')[1]
     assert [files(path) for path in folders] == before
+
     with pytest.raises(ValueError, match='[Ii]nput session'):
         notebook_replay.export(folders[-1], first / 'should-not-write.html')
 
@@ -260,3 +261,129 @@ def test_multiple_tasks_keep_flat_verified_history_in_both_agents_and_replay(tmp
         next_task.create(second_large, tmp_path / 'too-large', task=TASK, activity=ACTIVITY)
     assert not (tmp_path / 'too-large').exists()
     assert [files(path) for path in folders] == before
+
+
+def test_recorded_example_survives_tasks_without_copying_arbitrary_initialization(tmp_path, monkeypatch):
+    from src.agents import chat_student as chat, notebook_example
+    from src.eval import notebook_replay
+    from tests.test_chat_student import QUERY
+
+    next_task = api()
+    source = tmp_path / 'PRIVATE_CHAT_PATH'
+    chat.create(source, query=QUERY)
+    first = notebook_example.create(tmp_path / 'first', image_id=ACTIVITY['image_id'], chat_source=source)
+    manifest = student._read(first / 'session.json')
+    manifest['initial']['initialization']['unrelated'] = 'ARBITRARY_CONTEXT'
+    student._save(first / 'session.json', manifest)
+    choose = lambda _, schema: schema(decision='no-reply', text='', source=None)
+    student.step(first, generate=choose, check=None, max_actions=1)
+    before = files(first)
+    source_before = files(source)
+    monkeypatch.setattr(student.llm, 'make_generate', lambda *a, **kw:pytest.fail('Unexpected provider'))
+    previous = first
+    for number in (2, 3):
+        folder = tmp_path / str(number)
+        initial = next_task.create(previous, folder, task=TASK, activity=ACTIVITY,
+                                   evaluation={'expected':'PRIVATE_EVALUATOR'})
+        context = initial['initialization']
+        assert context['conversation_example'] == QUERY['prefix']
+        assert context['communication_scope'] == manifest['initial']['initialization']['communication_scope']
+        assert json.dumps(context).count('how do i add them') == 1
+        assert initial['work'] == TASK['work'] and initial['history'] == [] and initial['observation'] is None
+        assert initial['evaluation'] == {'expected':'PRIVATE_EVALUATOR'}
+        assert len(context['earlier_encounters']) == number - 2
+        assert tutor_context.snapshot(folder)['initialization'] == context
+        prompts = [session.make_prompt(initial)]
+        student.step(folder, generate=lambda _, schema:schema(decision='reply', text='help', source=None),
+                     check=None, max_actions=1)
+        def capture_tutor(prompt, schema):
+            prompts.append(prompt)
+            return schema(text='Consider the denominator.')
+        tutor.respond(folder, tmp_path / f'tutor-{number}', policy='One hint.',
+                      generate_tutor=capture_tutor, generate_student=choose, check=None, max_actions=1)
+        for prompt in prompts:
+            assert 'how do i add them' in prompt
+            for secret in ('PRIVATE_', 'ARBITRARY_CONTEXT', 'prefix_sha256', 'session_sha256', '"evaluation"'):
+                assert secret not in prompt
+        previous = folder
+    page = tmp_path / 'replay.html'
+    notebook_replay.export(previous, page)
+    current_history = page.read_text().split('<section id="current-history">')[1].split('<section id="current">')[0]
+    assert 'how do i add them' in current_history
+    assert files(first) == before and files(source) == source_before
+
+    # The carried copy is bound to the root, even before any new model action.
+    child = tmp_path / 'tampered'
+    next_task.create(previous, child, task=TASK, activity=ACTIVITY)
+    path = child / 'session.json'
+    saved = student._read(path)
+    for mutation in ('text', 'scope', 'provenance', 'whole-example'):
+        damaged = deepcopy(saved)
+        if mutation == 'text':
+            damaged['initial']['initialization']['conversation_example'][0]['text'] = 'FORGED'
+        elif mutation == 'scope':
+            damaged['initial']['initialization']['communication_scope'] = 'FORGED'
+        else:
+            damaged['provenance']['previous_encounter'].pop('communication_sha256')
+            if mutation == 'whole-example':
+                for key in ('conversation_example', 'communication_scope'):
+                    damaged['initial']['initialization'].pop(key)
+        student._save(path, damaged)
+        with pytest.raises(ValueError, match='[Cc]ommunication'):
+            notebook_replay.export(child, tmp_path / (mutation + '.html'))
+    student._save(path, saved)
+
+    # Old successors omitted this context. Validate their actual input, then
+    # restore the declared root example only in a newly prepared successor.
+    old = tmp_path / 'legacy'
+    next_task.create(first, old, task=TASK, activity=ACTIVITY)
+    legacy = student._read(old / 'session.json')
+    for key in ('conversation_example', 'communication_scope'):
+        legacy['initial']['initialization'].pop(key)
+    legacy['provenance']['previous_encounter'].pop('communication_sha256')
+    legacy['provenance']['previous_encounter']['source_sha256'] = 'ccaa59b95bdd6c7fcdeade27039468ee58fcf15bf6c49006db8fc6bf7476c21b'
+    student._save(old / 'session.json', legacy)
+    student.step(old, generate=choose, check=None, max_actions=1)
+    notebook_replay.export(old, tmp_path / 'legacy.html')
+    restored = next_task.create(old, tmp_path / 'restored', task=TASK, activity=ACTIVITY)
+    assert restored['initialization']['conversation_example'] == QUERY['prefix']
+
+
+def test_only_declared_valid_bounded_communication_is_carried(tmp_path):
+    from src.agents import chat_student as chat, notebook_example
+    from tests.test_chat_student import QUERY
+
+    next_task = api()
+    source = tmp_path / 'chat'
+    chat.create(source, query=QUERY)
+    first = notebook_example.create(tmp_path / 'first', image_id=ACTIVITY['image_id'], chat_source=source)
+    path = first / 'session.json'
+    original = student._read(path)
+    for kind in ('unclaimed', 'hash', 'shape', 'too-large'):
+        manifest = deepcopy(original)
+        context = manifest['initial']['initialization']
+        if kind == 'unclaimed':
+            manifest['provenance'].pop('communication_source')
+        elif kind == 'hash':
+            manifest['provenance']['communication_source']['prefix_sha256'] = '0' * 64
+        else:
+            if kind == 'shape':
+                context['conversation_example'][0]['private_id'] = 'PRIVATE_ID'
+            else:
+                context['conversation_example'][0]['text'] = '가' * 21000
+                manifest['initial']['task'] = 'x' * 2000
+            manifest['provenance']['communication_source']['prefix_sha256'] = student.digest(context['conversation_example'])
+        root = tmp_path / kind
+        root.mkdir()
+        student._save(root / 'session.json', manifest)
+        student.step(root, generate=lambda _, schema:schema(decision='no-reply', text='', source=None), check=None, max_actions=1)
+        before = files(root)
+        destination = tmp_path / (kind + '-next')
+        if kind == 'unclaimed':
+            result = next_task.create(root, destination, task=TASK, activity=ACTIVITY)
+            assert 'conversation_example' not in result['initialization']
+        else:
+            with pytest.raises(ValueError):
+                next_task.create(root, destination, task=TASK, activity=ACTIVITY)
+            assert not destination.exists()
+        assert files(root) == before

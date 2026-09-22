@@ -8,13 +8,13 @@ app = marimo.App(width="medium", app_title="Student workspace")
 def _():
     from pathlib import Path
     import marimo as mo
-    from src.agents import chat_workspace, tutor_context, workspace_history
+    from src.agents import chat_workspace, notebook_tutor, tutor_context, workspace_history
     from src.agents.student_workspace import advance, respond
-    return Path, advance, chat_workspace, mo, respond, tutor_context, workspace_history
+    return Path, advance, chat_workspace, mo, notebook_tutor, respond, tutor_context, workspace_history
 
 
 @app.cell
-def _(chat_mode, folder, mo):
+def _(chat_mode, folder, initial_policy, mo):
     # Keep drafts through refresh, but reset them when selecting another scenario.
     _selected_folder = folder
     tutor_inputs = mo.ui.dictionary({
@@ -22,14 +22,15 @@ def _(chat_mode, folder, mo):
                             value="Tutor policy", inline=True),
         "reply": mo.ui.text_area(label="Your tutor reply", full_width=True, debounce=False),
         "policy": mo.ui.text_area(label="Tutor policy", full_width=True, debounce=False,
-            value="Respond concisely to the student's current request using the visible conversation." if chat_mode else
-                  "Respond concisely to the student's current request using the visible work and check feedback."),
+            value=initial_policy if initial_policy is not None else (
+                "Respond concisely to the student's current request using the visible conversation." if chat_mode else
+                "Respond concisely to the student's current request using the visible work and check feedback.")),
     })
     return (tutor_inputs,)
 
 
 @app.cell
-def _(Path, mo):
+def _(Path, mo, notebook_tutor):
     _args = mo.cli_args()
     _session = _args.get("session")
     _chats = _args.get("chat-sessions")
@@ -40,7 +41,28 @@ def _(Path, mo):
     session_folder = Path(_session).resolve() if _session is not None else None
     chat_root = Path(_chats).resolve() if _chats is not None else None
     send_enabled = _args.get("send") is True
-    return chat_root, send_enabled, session_folder
+    initial_policy = None
+    _policy_file = _args.get("policy-file")
+    if _policy_file is not None:
+        mo.stop(not isinstance(_policy_file, str) or not _policy_file.strip(),
+                mo.callout("Supply a file path with --policy-file.", kind="danger"))
+        try:
+            initial_policy = Path(_policy_file).read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as _exc:
+            mo.stop(True, mo.callout(mo.plain_text("Tutor policy could not be read: " + str(_exc)), kind="danger"))
+        mo.stop(not initial_policy.strip(), mo.callout("The tutor policy file is blank.", kind="danger"))
+    library_reference = None
+    _reference_file = _args.get("reference-file")
+    if _reference_file is not None:
+        mo.stop(chat_root is not None, mo.callout("--reference-file is only available for notebook sessions.", kind="danger"))
+        mo.stop(not isinstance(_reference_file, str) or not _reference_file.strip(),
+                mo.callout("Supply a file path with --reference-file.", kind="danger"))
+        try:
+            library_reference = notebook_tutor.LibraryReference.model_validate_json(
+                Path(_reference_file).read_text(encoding="utf-8")).model_dump()
+        except (OSError, ValueError) as _exc:
+            mo.stop(True, mo.callout(mo.plain_text("Library reference could not be loaded: " + str(_exc)), kind="danger"))
+    return chat_root, initial_policy, library_reference, send_enabled, session_folder
 
 
 @app.cell
@@ -81,7 +103,7 @@ def _(folder, mo, snapshot_session):
 
 
 @app.cell
-def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenario_picker,
+def _(advance_session, chat_mode, folder, get_view, library_reference, mo, respond_session, scenario_picker,
       send_enabled, set_view, snapshot_session, tutor_context, tutor_inputs, workspace_history):
     _packet, _error = get_view()
 
@@ -114,7 +136,8 @@ def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenari
                 selected_folder=folder):
         try:
             if waiting and mode == "policy":
-                _updated = respond_session(selected_folder, binding=binding, policy=tutor_inputs.value["policy"], send=send_enabled)
+                _updated = respond_session(selected_folder, binding=binding, policy=tutor_inputs.value["policy"], send=send_enabled,
+                    **({"reference": library_reference} if library_reference is not None else {}))
             else:
                 _updated = advance_session(selected_folder, binding=binding,
                     tutor_reply=tutor_inputs.value["reply"] if waiting else None, send=send_enabled)
@@ -177,10 +200,14 @@ def _(advance_session, chat_mode, folder, get_view, mo, respond_session, scenari
              "Tutor-policy mode replies to a pending student message before the next decision. "
              + ("" if chat_mode else "A local container runs a check only if the student requests one.")
              if send_enabled else "Viewing only. Sending is disabled for this workspace.")
+    _reference_notice = (mo.plain_text(
+        "Configured tutor reference: " + library_reference["library"] + " " + library_reference["library_version"] +
+        ". Sent only when generating a tutor reply; library and version must match the task.")
+        if library_reference is not None else mo.md(""))
     workspace_view = mo.vstack([
         _heading, _selector, mo.md("## Scenario" if chat_mode else "## Task"), mo.plain_text(_packet["task"]),
         mo.md(_status + f" **{_packet['decisions_remaining']} decisions remaining.**"),
-        _error_view, _tabs, _controls, mo.md(_send_notice), _reload,
+        _error_view, _tabs, _controls, mo.md(_send_notice), _reference_notice, _reload,
         mo.accordion({"Supplied context and scope": mo.vstack([
             mo.md(_block(_packet["initialization"])),
             mo.md("Only the recorded conversation prefix and subsequent simulated replies/interventions are available. "

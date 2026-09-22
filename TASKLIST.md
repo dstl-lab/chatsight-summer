@@ -1,21 +1,87 @@
 # Simulated students: task list
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
-The fidelity target is excess work/evidence presentation in chat, but the current
-help-only reference set cannot validate a fix. Generator-adoption experiments stay deferred.
+The fidelity target is when work/evidence is presented in chat. A separate cached
+review now covers five work-absent and three work-present references, but supplies
+no matched improvement comparison. Generator-adoption experiments stay deferred.
 The teammate quickstart and authored offline demo are on main via
 [PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30). Automated contributor
 checks are also merged via [PR #40](https://github.com/dstl-lab/chatsight-summer/pull/40).
 The six-case [joint evaluation](docs/2026-09-21-joint-fidelity-check.md) is closed:
 four recorded-message preferences and two both-possible judgments. It supplies
 qualitative feedback, not the missing binary labels. Keep bulk labeling and
-workspace redesign paused; no further review batch is queued. One automatic
+workspace redesign paused; the separate fixed pass below is now closed too.
+The automatic
 [recorded-continuation selection comparison](docs/2026-09-21-recorded-continuation-selection.md)
-is prepared: 19 cases, 38 requests, no manual labels. Sending the private dialogue
-and option texts to Gemini awaits the payload-specific approval required by
-automatic review; no model calls have been made.
+is closed: with and without history both scored 8/16 complete pairs; word overlap
+scored 7/16. Five of 38 requests remain missing after a schema failure; none were
+resent. No manual labels or generator change. PR #42 merged the diagnostic.
+The next engineering increment now coordinates three existing conversation
+scenarios under the same two policies, with one new decision per condition.
+The [cohort workflow](docs/2026-09-21-chat-cohort.md) is verified with scripted
+responses. After specific payload approval, its
+[one live round](docs/2026-09-21-live-cohort.md) completed all six conditions:
+six tutor replies and six simulated student replies, 12 recorded requests and
+no failures. All budgets are exhausted and the readable results are saved.
+PR #44 merged into the results branch; combined PR #43 awaits independent review
+against main. This verifies operation, not student realism or policy effects.
+The [public notebook example](docs/2026-09-21-notebook-example.md) now makes the
+existing task/work/execution path reproducible without private inputs. Its authored
+container check passes; no new model calls or labels were needed.
+Its [first generated walkthrough](docs/2026-09-21-live-notebook-example.md) then
+quietly edited code, requested one real passing check and chose no further reply.
+Three student requests, no additional tutor replies; that bounded run is closed.
 
-Updated: September 21, 2026. Unchecked items are proposed work, not completed results.
+The [Saved results repair](docs/2026-09-22-lesson-saved-results.md) also makes lesson
+tutor receipts visible and separates configured policy from confirmed delivery.
+The [optional conversation example](docs/2026-09-22-notebook-communication-context.md)
+now connects an existing chat prefix to a fresh authored notebook task, with one
+offline setup verified. PR #45 merged into #43; no new generations or labels.
+
+The [cached-message inventory](docs/2026-09-22-cached-fidelity-scope.md) now verifies
+eight references and 16 saved replies. One duplicate reduces any later common
+coding pass to 23 distinct messages / 46 flags. No compatible labels overlap.
+These are two draws of one condition, so this set cannot estimate a grounding
+benefit. The subsequent [fixed review result](docs/2026-09-22-cached-communication-results.md)
+is complete: generated work appears in 6/10 draws for work-absent references and
+is absent in 2/6 draws for work-present references. No missing judgments, new
+generations or further review rounds; preserve the existing simulator.
+
+Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
+
+**Latest fidelity diagnostic:** a separate [work-presence forecast](docs/2026-09-22-work-presence-forecast-status.md)
+is implemented and passes the 442-test suite. After specific approval, all eight
+requests completed with no errors or adapter retries, reusing completed labels.
+The screen **failed**: forecast error .80625 vs frequency .612245 and fixed 50/50
+.5 (multiclass Brier; lower is better). Close this increment and retain the
+simulator; no message-realization component, rerolls or new review form. The
+screen measures a conditional message-feature forecast, not generated-message
+fidelity. Earlier studies remain closed.
+
+**Current increment complete:** [preserve the recorded communication example](docs/2026-09-22-communication-continuity.md)
+when moving to later notebook tasks. Verified through Tasks 2 and 3 offline;
+444 tests pass. A successor to the completed notebook demonstration retains its
+10-turn example with fresh work and no actions/calls. This repairs context
+continuity without claiming improved realism.
+
+**Continuation complete:** after exact payload approval, the
+[second exercise](docs/2026-09-22-live-notebook-continuity-status.md) produced a
+quiet edit, passing local check (`0.25`) and no-reply. Three student requests,
+zero tutor requests; all 59 pins and two-task replay verify. No new labels or
+further run is queued. This demonstrates continuity, not learning or fidelity.
+
+**Custom task setup complete:** a [supplied exercise](docs/2026-09-22-custom-notebook-exercise.md)
+can now use the same verified conversation example without custom Python glue.
+The public fruit-count bundle works offline; 446 tests pass. No engine change,
+new live run or additional labeling.
+
+**Policy handoff repaired:** the workspace can [load the prepared tutor policy](docs/2026-09-22-workspace-policy-file.md)
+as its editable draft. Reload preserves edits; submitted requests retain the
+actual draft. All 454 tests pass, without new model calls or labels.
+
+**Exercise continuation ready:** the same setup command now accepts `--previous`
+to [carry verified history into a supplied exercise](docs/2026-09-22-exercise-continuation-setup.md).
+The new session and policy are prepared together offline; 457 tests pass.
 
 ## North Star
 
@@ -35,6 +101,8 @@ milestones; the former does not establish the latter.
 - [x] Support authored notebook tasks with work changes and isolated checks in the separate notebook mode.
 - [x] Pause bulk labeling; keep the current generator because the tested candidate did not establish sufficient improvement.
 - [x] Complete the requested six-case joint development evaluation, preserve the protocol amendment and instructor judgments, reveal origins, and close the pass without changing the generator.
+- [x] Complete one fixed automatic recorded-continuation choice comparison, report the tie and five missing choices, and close without new labels, rerolls or generator adoption.
+- [x] Coordinate three saved policy pairs as one bounded group, retain failures, and reopen all six outcomes without changing the student generator.
 
 ## Next, in order
 
@@ -79,8 +147,10 @@ milestones; the former does not establish the latter.
   fixed sample and no rolling review queue.
   **Done when:** report improvement, no improvement, or inconclusive evidence and
   close the comparison. Do not reroll until an appealing difference appears.
-  **Deferred:** the measurement gate in item 3 failed. No generation or review
-  batch is queued; this does not block simulator engineering.
+  **Deferred:** the original measurement gate in item 3 failed. Item 14 now fills
+  both work groups for a separate development slice, but supplies only one
+  generator condition; an improvement comparison is still undeclared. No new
+  generation or review batch is queued; simulator engineering can continue.
 
 - [ ] **5. Make the notebook and chat experience coherent.** Bring the existing
   authored notebook mode into the same scenario workflow, with notebook work and
@@ -112,13 +182,147 @@ milestones; the former does not establish the latter.
   passed all 419 tests (two optional skips), both Marimo checks and the Node check.
   PR #40 merged to main at `93904ef`.
 
+- [x] **8. Run the existing comparison workflow across a small group.** Reuse three
+  distinct frozen conversation sources and the same two policies, one new student
+  decision per condition. Prepare and view offline, continue only untouched ready
+  conditions, retain failures, and refuse resends or budget extensions.
+  **Verified:** 430 tests pass with two optional skips; both Marimo apps and the
+  Node check pass. The authored group exercised three replies, two no-replies and
+  one failure with zero model calls. The approved historical group then completed
+  six tutor/student exchanges in 12 requests, with no errors or missing conditions.
+  Its fixed budgets are exhausted, source pins and exact prompt linkage verify,
+  and a readable overview is saved. The [live round](docs/2026-09-21-live-cohort.md)
+  is closed; no rerolls or further labeling are queued.
+  See [workflow and limits](docs/2026-09-21-chat-cohort.md). This is simulator
+  engineering, not a new fidelity experiment or evidence of tutor-policy effects.
+
+- [x] **9. Make an explicit notebook task runnable from public files.** Package
+  the existing four-row proportion exercise, initial cell and local evaluator
+  through the existing notebook engine. Create a fresh session and editable tutor
+  policy offline; keep historical chat work unknown and the UI redesign deferred.
+  **Verified:** the [example command and guide](docs/2026-09-21-notebook-example.md)
+  prepare/view without calls. An authored two-execution container check verifies
+  wrong result, quiet edit, feedback clearing, correct result and exact replay.
+  Full suite: 432 passed, three optional skips; the new container check also passed
+  separately. No live generations or claims of improved student realism.
+
+- [x] **10. Run the public notebook example once with generated actions.** Use
+  the exact authored task/data and existing bounded lesson runner; allow checks
+  only when requested. Preserve the model's chosen actions and stop reason.
+  **Completed:** quiet revision → real local check (`0.5`, pass) → no-reply;
+  three student requests, one container execution, no errors or generated tutor
+  turns, three unused decisions. All 77 frozen files and exact saved replay verify.
+  The policy/reference were configured but never delivered to a new tutor turn.
+  See [walkthrough and limits](docs/2026-09-21-live-notebook-example.md). No new
+  labels, forced errors, replacement draws or fidelity claims.
+
+- [x] **11. Show lesson policies in Saved results.** Discover the lesson runner's
+  tutor receipts, retain failures and show configured policies separately from
+  confirmed delivery. Seven regression cases and the existing notebook/chat
+  replays pass without calls or evidence changes. See the
+  [repair note](docs/2026-09-22-lesson-saved-results.md).
+
+- [x] **12. Connect an existing conversation example to a fresh notebook task.**
+  The optional `--chat-source` setup copies only a verified source's original
+  prefix into separate initialization context. Current task/work and the private
+  evaluator stay unchanged; generated replies and identifier metadata are excluded.
+  Both agents see the example. One private setup with 10 original turns is ready,
+  with zero model calls or actions and six unused decisions. This is an optional
+  input path, not a validated persona or generator-adoption result. The existing
+  next-task path does not retain this initialization. See
+  [scope and verification](docs/2026-09-22-notebook-communication-context.md).
+
+- [x] **13. Establish the exact reusable evidence before requesting more review.**
+  Eight original first-follow-up references match their independent review and
+  all sixteen cached outputs. Preserve both weights for the one duplicate;
+  a possible common-rubric pass has a fixed ceiling of 23 messages / 46 flags.
+  No existing help/work judgments cover these messages. Original studies remain
+  closed and this inventory creates no review queue, labels or generations.
+  See [scope and stopping rule](docs/2026-09-22-cached-fidelity-scope.md).
+
+- [x] **14. Complete one common-rubric pass over the cached messages.**
+  All 23 messages/46 flags returned, with no uncertainty or missing values.
+  Independent intake and arithmetic checks verify 50 pins and exact replay.
+  Five reference cases lack work and three contain it. Generated replies include
+  work in 6/10 draws in the first group and omit it in 2/6 in the second.
+  Balanced work Brier is 5/12, descriptive only; there is no second condition.
+  The [report](docs/2026-09-22-cached-communication-results.md) closes this pass;
+  no replacement cases, second reviewer, additional labels or generator change.
+
+- [x] **15. Test work-presentation forecasting once using existing labels.**
+  Eight approved forecasts completed with no errors or adapter retries. The
+  [declared screen failed](docs/2026-09-22-work-presence-forecast-status.md):
+  error .80625 versus frequency .612245 and fixed 50/50 .5. Close without
+  adding a message-realization component, tuning the prompt or requesting labels.
+
+- [x] **16. Retain the recorded example across authored notebook tasks.**
+  The root's explicitly sourced example now survives separately from simulated
+  encounter history, with bounded context and verified provenance. New-session
+  tampering is rejected; old omissions retain their actual saved inputs. The
+  [offline successor and tests](docs/2026-09-22-communication-continuity.md) verify
+  both agent inputs and replay, without new model calls or changing prior records.
+
+- [x] **17. Run the prepared second notebook exercise once.**
+  After specific approval, [the run completed](docs/2026-09-22-live-notebook-continuity-status.md):
+  quiet edit → local check (`0.25`, pass) → no-reply. Three student requests,
+  one execution, zero generated tutor/chat turns or failures. Original example
+  and prior activity persist; both sessions replay and all 59 pins verify.
+  Closed with three decisions unused, no rerolls, new labels or fidelity claim.
+
+- [x] **18. Make conversation-conditioned setup work with a supplied exercise.**
+  The existing command now accepts task, activity, evaluator and tutor policy in
+  one [exercise file](examples/fruit-count.json), retaining its default example.
+  Both agent inputs, next-task context, malformed inputs and source preservation
+  are verified offline. The runtime still supports one selected cell, one string
+  column and one scalar result; this does not establish broader student fidelity.
+
+- [x] **19. Carry the prepared tutor policy into the workspace.**
+  Explicit `--policy-file` loads the starting draft; missing/invalid/blank files
+  stop instead of silently falling back. Defaults remain available when omitted.
+  Real Marimo controls verify draft edits, reload/reset behavior and exact saved
+  policy delivery with authored callbacks. The layout and sending rules are unchanged.
+
+- [x] **20. Use supplied exercise files for subsequent notebook tasks.**
+  Optional `--previous` reuses verified history and the original conversation
+  example with the new task/policy, inherited model and six fresh decisions.
+  Sources stay locked and unchanged through publication; unfinished, conflicting,
+  nested or changed inputs cannot publish a successor. CLI and replay verified
+  offline; no new live run or labels.
+
+- [x] **21. Pass library guidance through the notebook workspace.**
+  Optional `--reference-file` uses the existing tutor schema and exact
+  library/version check. The reference reaches only generated tutor requests
+  and their receipts; loading/reloading sends nothing. Authored control tests
+  verify delivery, unchanged defaults and invalid-input refusal. No new live
+  run, labels or generator change.
+
 ## Current difficulties
 
-The next authorized research step is the prepared selection comparison above.
-Its method, offline checks and exact inputs are complete. After dispatch approval,
-run those 38 requests once, report history-versus-current accuracy, baseline
-accuracy and failures, then close. It is a separate recognition diagnostic and
-does not satisfy or reopen item 4's generator-adoption gate.
+The second notebook exercise is complete and closed after specific approval.
+Both linked exercises ended without generated chat, so they demonstrate operation
+and preserved context but do not address the communication-fidelity gap.
+
+The [single notebook run with conversation context](docs/2026-09-22-live-notebook-communication.md)
+completed after explicit payload approval: three student requests produced a
+quiet edit, one passing local check and no-reply. Zero tutor requests or generated
+chat; three decisions unused. All 84 pins and saved replay verify. It matches the
+earlier demonstration's actions/code, but does not measure a context effect or
+improved communication. This run is closed, with no new labels or rerolls.
+
+The live demonstration is complete. Different policy instructions did not always
+produce different tutor behavior; single simulated outcomes cannot estimate policy
+effects. Generated task details and notebook-like output in that chat-only run
+remain synthetic chat; that run performed no execution or assignment verification.
+The separate authored notebook walkthrough did execute its supplied task once,
+but cannot validate historical student behavior. Combined PR #43 still
+needs independent review for main integration. Item 14's human measurement input
+has been received and its report is closed; no further labeling is queued.
+
+The automatic selection comparison above is complete. Earlier history showed no
+accuracy benefit on the 16 complete pairs; all-19 missing-outcome bounds range
+from -15.8 to +10.5 percentage points. This separate recognition diagnostic does
+not satisfy or reopen item 4's generator-adoption gate. No new labeling or
+replacement fidelity experiment is queued; retain the existing simulator.
 
 | Difficulty | What it means for the next work |
 | --- | --- |

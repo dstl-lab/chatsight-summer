@@ -64,6 +64,187 @@ To inspect the same completed branches one at a time in the generic workspace:
 Open **http://127.0.0.1:8426/** and select `a` or `b`. Both are finished and
 viewing only. The Notebook tab correctly shows that notebook activity is unknown.
 
+## 2b. Start with an explicit notebook task
+
+Use the revision containing this guide; this example is part of PR #43 until
+that branch merges. It requires the notebook runtime only for code execution.
+The example supplies an entirely authored task, four table rows and one editable
+cell. It does not reconstruct a student's missing notebook or replay real behavior.
+
+Build the existing runtime once with local Docker, then record its immutable ID:
+
+```sh
+docker build -t chatsight-notebook runtime/notebook
+NOTEBOOK_RUNTIME_IMAGE=$(docker image inspect chatsight-notebook --format '{{.Id}}')
+.venv/bin/python -m src.agents.notebook_example data/notebook-example \
+  --image-id "$NOTEBOOK_RUNTIME_IMAGE"
+.venv/bin/marimo run apps/student_workspace.py \
+  --host 127.0.0.1 --port 8427 --headless -- \
+  --session data/notebook-example/session \
+  --policy-file data/notebook-example/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json
+```
+
+Open **http://127.0.0.1:8427/**. Inspect the task, table and initial code. Creation
+and viewing make no model or execution calls; current check feedback is empty.
+The session starts before any generated action and permits six student decisions.
+The creator refuses an existing destination. Keep the saved session and runtime
+image available for replay; do not edit the session's JSON to change an experiment.
+
+To optionally run a bounded encounter, configure `GEMINI_API_KEY` as in step 4,
+edit `data/notebook-example/policy.txt`, and run once:
+
+```sh
+.venv/bin/python -m src.agents.notebook_lesson data/notebook-example/session \
+  --policy-file data/notebook-example/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json \
+  --max-tutor-turns 2 --send
+```
+
+This permits at most six student decisions and two tutor replies (eight logical
+model requests, at most 32 adapter attempts). A student decision may edit code,
+request a local check, send a message or stop; a check runs in the declared local
+container. Editing clears current feedback. Missing Docker or an unavailable
+image produces an environment error, not a failed student answer. The supplied
+expected answer is withheld from both agents and the worker; it remains readable
+in the saved manifest and is not a secret from the researcher.
+
+The lesson command refuses a second invocation. Inspect its saved result rather
+than extending the budget or rerunning failed requests. Refresh the viewing
+workspace or export an existing HTML replay to a new filename:
+
+```sh
+.venv/bin/python -m src.eval.notebook_replay data/notebook-example/session \
+  --output data/notebook-example/replay.html
+```
+
+Reopening makes no model or container calls. A local pass checks one scalar on
+the supplied table; it is not a course-autograder result or evidence of learning.
+Free-form generated chat still needs interpretation. See the
+[example scope and verification](2026-09-21-notebook-example.md).
+
+### Optionally supply a communication example
+
+If you have a saved chat session, use its original conversation prefix as a
+separate communication example for a new authored notebook task:
+
+```sh
+.venv/bin/python -m src.agents.notebook_example data/notebook-with-context \
+  --image-id "$NOTEBOOK_RUNTIME_IMAGE" \
+  --chat-source data/workspace/sessions/case-01
+```
+
+Use an actual source directory supplied by your team. PR #45 merged this option
+into PR #43; use `codex/selection-results` until that PR reaches main. Creation is
+offline and refuses existing destinations. It verifies the saved chat and copies
+only the original prefix, excluding simulated replies and identity metadata.
+The exercise, initial code, evaluator and six-decision limit stay unchanged.
+Open `data/notebook-with-context/session` with the same workspace command above,
+using `--policy-file data/notebook-with-context/policy.txt`.
+
+Both student and tutor receive the communication example. Its task/code do not
+replace the current exercise, and it does not establish the same learner,
+personality or historical notebook behavior. A fictional source remains fictional;
+quoted content is not automatically anonymized. Source hashes and path are saved
+outside model context. This optional setup does not establish improved realism
+or a validated persistent persona. The [next-task handoff](2026-09-22-communication-continuity.md)
+retains this example separately from simulated history. See the
+[scope and verification](2026-09-22-notebook-communication-context.md).
+
+### Supply your own supported exercise
+
+Pass `--exercise-file` to replace the default blue-proportion exercise. The public
+[fruit-count bundle](../examples/fruit-count.json) supplies a different fictional
+task, table, initial code, expected answer and tutor policy:
+
+```sh
+.venv/bin/python -m src.agents.notebook_example data/fruit-example \
+  --image-id "$NOTEBOOK_RUNTIME_IMAGE" \
+  --exercise-file examples/fruit-count.json
+.venv/bin/marimo run apps/student_workspace.py \
+  --host 127.0.0.1 --port 8428 --headless -- \
+  --session data/fruit-example/session \
+  --policy-file data/fruit-example/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json
+```
+
+Open **http://127.0.0.1:8428/** to inspect the prepared task. Setup and viewing
+make no model or execution calls. The session retains the six-decision limit;
+its supplied policy is saved as `data/fruit-example/policy.txt` for the existing
+lesson command and loaded into the workspace's editable policy draft by the
+launch command above. Without `--exercise-file`, the original example is unchanged.
+
+The optional `--policy-file` also works with chat workspaces. It reads a UTF-8
+file once when the app initializes; a missing, unreadable or blank file stops
+initialization instead of selecting a default. Without the argument, the usual
+defaults apply. Your draft edits survive **Reload saved session**. Selecting
+another scenario resets the draft to the initially loaded policy; restarting the
+app rereads the file. Editing the file while the app is running does not update
+the draft, and loading a policy does not send it to the tutor.
+
+Notebook workspaces also accept an optional `--reference-file` containing library
+API evidence, as shown above. The JSON is read and validated once at launch;
+unreadable or malformed files stop initialization. Its library and version must
+match the activity exactly before a generated tutor request is sent. The supplied
+reference enters that request and its saved receipt, not the student's input
+directly. Reloading sends nothing; manual replies and quiet student steps do not
+send the reference directly. Omit the option to keep the existing behavior; it
+cannot be used with chat-only workspaces. Restart to load a changed reference file.
+
+To include an existing communication example, add
+`--chat-source data/workspace/sessions/case-01` to the creation command, using an
+actual team-supplied source and a new destination. Only that session's original
+prefix is copied; it does not supply the new task's notebook state or answers.
+
+Copy the bundle to author another exercise before creating a session. It requires
+exactly four top-level fields: `task`, `activity`, `evaluation` and `policy`.
+Use the fixture's existing structures; keep the runtime image out of `activity`
+and supply it through `--image-id`. The runtime supports **one selected code cell,
+one string column and one scalar result**, not a general notebook kernel.
+`evaluation.expected` is withheld from both agents' prompts but remains readable
+in the supplied file and saved manifest. Keep private bundles under ignored
+`data/`, and leave saved sessions unchanged. This setup option does not validate
+student realism or behavior across courses.
+
+### Continue into another exercise
+
+Use `--previous` with a notebook session that ended in a generated `no-reply`
+action. A newly initialized, unfinished, failed or budget-exhausted session
+without that stop cannot advance. For an eligible `data/notebook-example/session`:
+
+```sh
+.venv/bin/python -m src.agents.notebook_example data/next-exercise \
+  --image-id "$NOTEBOOK_RUNTIME_IMAGE" \
+  --exercise-file examples/fruit-count.json \
+  --previous data/notebook-example/session
+.venv/bin/marimo run apps/student_workspace.py \
+  --host 127.0.0.1 --port 8429 --headless -- \
+  --session data/next-exercise/session \
+  --policy-file data/next-exercise/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json
+```
+
+Open **http://127.0.0.1:8429/** to inspect the next task, or export its initial
+state and verified earlier encounters to a new replay file:
+
+```sh
+.venv/bin/python -m src.eval.notebook_replay data/next-exercise/session \
+  --output data/next-exercise/initial.html
+```
+
+Creation, viewing and replay make no model or execution calls. The new session
+inherits the previous session's model, verified simulated encounter history and
+any original communication example. It starts with the new exercise's work,
+table, evaluator and policy, six fresh decisions, and no current actions or
+check feedback. Earlier feedback stays attached to its earlier task.
+
+`--previous` and `--chat-source` cannot be combined: continuation retains the
+original example rather than adding another. Keep previous sessions unchanged
+and available at their recorded paths for lineage verification. Choose a new
+output directory outside those sessions; neither setup nor replay overwrites
+existing results. The researcher chooses this next task; an earlier stop does
+not demonstrate learning or willingness to continue.
+
 ## 3. Open private working sessions, when provided
 
 The real course scenarios are not in Git. Obtain a private bundle from the team
@@ -128,5 +309,5 @@ node tests/episode_review_navigation.cjs
 ```
 
 Tests use authored fixtures and injected providers; no student-data bundle, API
-key or database connection is configured. Two optional container checks skip
+key or database connection is configured. Three optional container checks skip
 without `NOTEBOOK_RUNTIME_IMAGE`. Dependency installation needs network access.

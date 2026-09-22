@@ -126,7 +126,12 @@ def export(folder, output, *, previous=None):
                          f'<p>Origin: {len(records)} saved observed encounter(s), supplied to both agents. '
                          'Each record’s work and feedback belong to its earlier task.</p>'
                          '<details><summary>Inspect the exact shared observed records</summary>'
-                         + _block(records) + '</details></section>')
+                         + _block(records) + '</details>')
+                if 'conversation_example' in initialization:
+                    body += ('<details><summary>Recorded communication example supplied to this task</summary>'
+                             + _block(initialization['communication_scope'])
+                             + _block(initialization['conversation_example']) + '</details>')
+                body += '</section>'
             body += _encounter(manifest, state, receipts, decisions, prefix=prefix,
                                title=f'Task {i}' if len(entries) > 1 else 'Saved encounter')
         body += ('<footer>Only selected-cell work and recorded dialogue/actions are available. Checks apply to their '

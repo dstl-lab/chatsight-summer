@@ -1,0 +1,35 @@
+{
+  "task": {
+    "initialization": "Fictional fruit-count exercise with authored task, data, code and dialogue; not a recovered student record.",
+    "task": "Count the rows in fruit_box whose fruit is pear. Assign the count to pear_count.",
+    "work": {
+      "cell_index": 1,
+      "revision": 0,
+      "source": "pear_count = fruit_box.shape[0]"
+    },
+    "dialogue": [
+      {
+        "role": "student",
+        "text": "how do i count only pears",
+        "origin": "authored"
+      },
+      {
+        "role": "tutor",
+        "text": "Compare the fruit column with pear before counting the matching rows.",
+        "origin": "authored"
+      }
+    ]
+  },
+  "activity": {
+    "library": "babypandas",
+    "library_version": "1.0.0",
+    "table": "fruit_box",
+    "column": "fruit",
+    "result": "pear_count",
+    "values": ["pear", "apple", "pear", "plum", "apple"]
+  },
+  "evaluation": {
+    "expected": 2
+  },
+  "policy": "Give one concise hint based on the supplied task, work and current feedback. Ask at most one focused question; do not give a complete solution."
+}
