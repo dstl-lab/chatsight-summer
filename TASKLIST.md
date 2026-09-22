@@ -74,6 +74,15 @@ unused configuration. Chat has clearer roles and first/last-message navigation.
 This [inspection update](docs/2026-09-22-browser-saved-results.md) adds no generation
 or labels and does not change the simulator.
 
+**Earlier scope assessment (now paused):** PR #43 is merged; resolved branches are
+cleaned up and the working simulator is on main. The
+[research feasibility decision](docs/2026-09-22-educator-decision-feasibility.md)
+is complete: saved evidence supports a formative keep/revise/inspect-more task,
+not a policy-effectiveness comparison. Private first-case handouts and a blank
+facilitator note sheet are prepared and verified; participant availability is
+pending. No new labeling, model run, simulation-interface implementation or
+participant study has started.
+
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached
 review now covers five work-absent and three work-present references, but supplies
@@ -98,8 +107,8 @@ responses. After specific payload approval, its
 [one live round](docs/2026-09-21-live-cohort.md) completed all six conditions:
 six tutor replies and six simulated student replies, 12 recorded requests and
 no failures. All budgets are exhausted and the readable results are saved.
-PR #44 merged into the results branch; combined PR #43 awaits independent review
-against main. This verifies operation, not student realism or policy effects.
+PR #44 merged into the results branch; combined PR #43 is now merged into main.
+This verifies operation, not student realism or policy effects.
 The [public notebook example](docs/2026-09-21-notebook-example.md) now makes the
 existing task/work/execution path reproducible without private inputs. Its authored
 container check passes; no new model calls or labels were needed.
@@ -392,8 +401,8 @@ produce different tutor behavior; single simulated outcomes cannot estimate poli
 effects. Generated task details and notebook-like output in that chat-only run
 remain synthetic chat; that run performed no execution or assignment verification.
 The separate authored notebook walkthrough did execute its supplied task once,
-but cannot validate historical student behavior. Combined PR #43 still
-needs independent review for main integration. Item 14's human measurement input
+but cannot validate historical student behavior. Combined PR #43 is now
+merged into main. Item 14's human measurement input
 has been received and its report is closed; no further labeling is queued.
 
 The automatic selection comparison above is complete. Earlier history showed no
