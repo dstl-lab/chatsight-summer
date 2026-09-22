@@ -54,3 +54,18 @@ none have receipt warnings), and the notebook preview shows its three saved
 steps. All 20 comparison, 105 chat and five notebook evidence files are unchanged;
 local audit: ignored `data/browser-saved-results-verification/`. Both previews
 remain read-only. No provider calls, execution, labels or new fidelity evidence.
+
+## Teammate handoff
+
+The quickstart now leads with the existing fictional chat_demo and dedicated
+browser collection command. Both authored policy branches reopen with their saved
+instructions: A exhausts its budget and B chooses no reply. The walkthrough needs
+no credentials, private inputs, Docker or model calls. Direct endpoint checks
+verified both outcomes, disabled sending, unknown notebook work and unchanged
+files. The separate Marimo policy-pair comparison remains optional; its folder
+is not compatible with the browser's cached-research-review option.
+
+Consolidate browser PRs #49–56 into #48 under the user's standing merge approval,
+preserving all source commits and independent review requirements for main.
+The UI increment is complete; integration and teammate reproduction take priority
+over adding another screen or reopening closed labeling/generation studies.
