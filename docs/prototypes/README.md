@@ -140,5 +140,10 @@ continue → policy reply → manual reply flow with exactly three saved student
 decisions and one authored tutor response. Refresh during the first request
 recovered its result without duplication; edited policy/manual text matched their
 saved receipts. No Gemini calls or notebook execution occurred in this test.
-The local fresh example is prepared separately with zero generated actions;
-Gemini configuration was found, but provider availability was not tested live.
+The separate [live browser walkthrough](../2026-09-22-live-browser-workspace.md)
+then used real Gemini and local execution on the public authored example:
+quiet edit → requested passing check (`0.5`) → no-reply. Three student requests,
+one container check, no generated tutor turn or errors. Refresh and exact offline
+replay preserve the result; continuation is disabled. This example is now closed.
+The policy-generation and manual-reply browser paths remain covered by the
+authored test above; this live run did not exercise them or validate student realism.

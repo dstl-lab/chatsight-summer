@@ -1,5 +1,20 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Live browser walkthrough complete and closed (2026-09-22)
+
+The fresh public authored browser example was continued through three actual UI
+submissions: quiet revision -> requested container check (float0.5/pass) -> no-reply.
+Three Gemini student requests, one real execution, zero tutor requests/errors;
+three decisions unused. Exact offline replay, saved refresh, terminal disabled
+control and all18pre-result pins verified. Original protocol is preserved locally;
+remaining17input/source pins stay unchanged. No code/prompt/labels changed. The
+prepared policy was never delivered; this does not test live tutor generation,
+communication realism or grounding benefit. Scope/audit/replay are in ignored
+data/browser-workspace-example/live-run; public result is
+docs/2026-09-22-live-browser-workspace.md. Do not reroll this closed example.
+localhost:8427 displays the saved terminal outcome. This supersedes the fresh
+zero-action status below; fidelity comparison remains separate research work.
+
 ## Browser workspace supports explicit tutor/student submissions (2026-09-22)
 
 User continued after the saved viewer. browser_workspace now exposes strict bound

@@ -7,9 +7,11 @@ requested a desktop HTML prototype: [preview and instructions](docs/prototypes/R
 The authored preview is accepted. A connected read-only browser workspace now
 shows verified saved notebook sessions, linked tasks, chat, diffs and local check
 results. Explicit state-bound tutor/student controls are now connected, with
-read-only defaults, visible progress and no automatic resending. A fresh authored
-example is ready; no new model request or label has been produced. Matched
-baseline/grounded comparison remains separate from this engineering check.
+read-only defaults, visible progress and no automatic resending. The
+[live browser walkthrough](docs/2026-09-22-live-browser-workspace.md) is complete:
+three student requests produced a quiet edit, a real passing local check and
+no-reply. Saved replay and terminal controls verify; no tutor request or new label.
+Matched baseline/grounded comparison remains separate from this engineering check.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached
