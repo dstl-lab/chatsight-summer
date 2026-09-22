@@ -16,11 +16,13 @@ def _binding(request):
         key: request[key] for key in ('session_sha256', 'state_sha256')}
 
 
-def _error(value):
+def _error(value, diagnostics=True):
+    if not diagnostics:
+        return 'Diagnostic details are omitted from this view.'
     return tutor_context._block(value.get('message', 'No diagnostic saved.') if isinstance(value, dict) else value)
 
 
-def _actions(receipt, notebook):
+def _actions(receipt, notebook, diagnostics=True):
     calls = receipt['calls'] if notebook else [receipt | {'kind': 'model'}]
     sections = []
     for call in calls:
@@ -28,7 +30,7 @@ def _actions(receipt, notebook):
             sections.append('Request incomplete: no final result was saved. It is not automatically retried.')
         elif call['status'] == 'error':
             sections += [('Student generation failed.' if call['kind'] == 'model' else 'Local check failed.'),
-                         _error(call['error'])]
+                         _error(call['error'], diagnostics)]
         elif call['status'] == 'complete':
             response = call['response']
             if call['kind'] == 'check':
@@ -40,7 +42,7 @@ def _actions(receipt, notebook):
                 }[status]
                 sections.append('**Local check:** ' + outcome + '. This is not the course grader.')
                 if response.get('error'):
-                    sections.append(_error(response['error']))
+                    sections.append(_error(response['error'], diagnostics))
             else:
                 decision = response['decision']
                 sections.append({'reply': '**Simulated student reply**',
@@ -72,7 +74,7 @@ def _outcome(state, remaining):
     return '**Recorded outcome:** ' + outcome + (f' {remaining} decisions remaining.' if remaining is not None else '')
 
 
-def render(folder):
+def render(folder, *, diagnostics=True):
     """Display both successful and incomplete receipts; link only confirmed policy delivery."""
     folder = Path(folder)
     manifest = _record(folder / 'session.json')
@@ -105,9 +107,9 @@ def render(folder):
             if lesson['status'] == 'pending':
                 sections.append('Lesson incomplete. It is not automatically retried.')
             elif lesson['status'] == 'error':
-                sections += ['Lesson failed.', _error(lesson.get('error', {}))]
+                sections += ['Lesson failed.', _error(lesson.get('error', {}), diagnostics)]
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
-            errors += ['**The lesson record is unreadable or inconsistent.**', tutor_context._block(str(exc))]
+            errors += ['**The lesson record is unreadable or inconsistent.**', _error(str(exc), diagnostics)]
     for directory in directories:
         if not directory.is_dir():
             continue
@@ -139,7 +141,7 @@ def render(folder):
                 raise ValueError('Missing saved continuation state.')
             policies.append((binding, receipt))
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
-            errors += ['**A tutor record is unreadable or inconsistent.**', tutor_context._block(str(exc))]
+            errors += ['**A tutor record is unreadable or inconsistent.**', _error(str(exc), diagnostics)]
 
     used = set()
     decisions = 0
@@ -166,7 +168,7 @@ def render(folder):
                 body += ['**Supplied tutor reply** (no confirmed policy link)', tutor_context._block(request['tutor_reply'])]
             else:
                 body.append('No tutor intervention in this step; continuing the existing context.')
-            body += _actions(receipt, notebook)
+            body += _actions(receipt, notebook, diagnostics)
             if decisions is not None:
                 decisions += sum(call['kind'] == 'model' for call in receipt['calls']) if notebook else 1
                 if decisions > budget:
@@ -175,13 +177,13 @@ def render(folder):
                 state = receipt['result']['state'] if notebook else receipt['result']
                 body.append(_outcome(state, budget - decisions if decisions is not None else None))
                 if state.get('error'):
-                    body.append(_error(state['error']))
+                    body.append(_error(state['error'], diagnostics))
             if len(matches) == 1:
                 used.add(matches[0])
             sections += body
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             decisions = None
-            sections += ['**This student record is unreadable or inconsistent.**', tutor_context._block(str(exc))]
+            sections += ['**This student record is unreadable or inconsistent.**', _error(str(exc), diagnostics)]
 
     for i, (_, receipt) in enumerate(policies):
         if i in used:
@@ -191,12 +193,12 @@ def render(folder):
         reply = receipt.get('response', {}).get('text')
         sections += ['**Saved tutor reply**', tutor_context._block(reply)] if reply else ['No saved tutor reply.']
         if receipt.get('status') == 'error':
-            sections += ['Tutor generation failed.', _error(receipt.get('error', {}))]
+            sections += ['Tutor generation failed.', _error(receipt.get('error', {}), diagnostics)]
         elif receipt.get('status') == 'pending':
             sections.append('Tutor request incomplete. It is not automatically retried.')
         delivery = receipt.get('continuation', {})
         if delivery.get('status') == 'error':
-            sections += ['Delivery failed; this tutor reply has no confirmed linked student result.', _error(delivery.get('error', {}))]
+            sections += ['Delivery failed; this tutor reply has no confirmed linked student result.', _error(delivery.get('error', {}), diagnostics)]
         elif delivery.get('status') == 'pending':
             sections.append('Student continuation incomplete. It is not automatically retried.')
         elif delivery.get('status') == 'complete':

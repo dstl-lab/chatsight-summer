@@ -15,6 +15,8 @@ dependencies = [
     # labeling web UI (localhost-only instructor surface)
     "fastapi>=0.115",
     "uvicorn>=0.30",
+    # Saved tutor display; already used by the Marimo workspace.
+    "markdown==3.10.3",
 ]
 
 [dependency-groups]

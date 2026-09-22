@@ -1,6 +1,44 @@
 # Simulated students: task list
 
-**Current direction (September 22):** PR #43 is merged; resolved branches are
+The [replay usability pass](docs/2026-09-22-browser-replay-usability.md) is complete:
+conversation-only runs use one chat with Previous/Next; the duplicate activity
+list was removed. Notebook work and comparisons keep chat alongside. Details are
+grouped and inspection keeps the scenario heading/playback visible. No new labels or runs.
+
+**Current direction (September 22):** measure simulated-student fidelity against
+real AI-tutor interactions, then test whether grounding improves it. The educator
+decision walkthrough is paused. User selected a dedicated browser workspace and
+requested a desktop HTML prototype: [preview and instructions](docs/prototypes/README.md).
+The authored preview is accepted. A connected read-only browser workspace now
+shows verified saved notebook sessions, linked tasks, chat, diffs and local check
+results. Explicit state-bound tutor/student controls are now connected, with
+read-only defaults, visible progress and no automatic resending. The
+[live browser walkthrough](docs/2026-09-22-live-browser-workspace.md) is complete:
+three student requests produced a quiet edit, a real passing local check and
+no-reply. Saved replay and terminal controls verify; no tutor request or new label.
+Matched baseline/grounded comparison remains separate from this engineering check.
+The browser also opens [existing chat scenarios](docs/2026-09-22-browser-chat-scenarios.md)
+through explicit `--chat`, with no invented notebook state. All 29 saved scenarios
+reopen unchanged. The [scenario sidebar](docs/2026-09-22-browser-scenario-selection.md)
+now browses all 29 via `--chat-sessions` on port 8428; switching resets drafts and
+refresh retains selection. No new generation/labels.
+Tutor replies now have [readable prose and code](docs/2026-09-22-browser-message-readability.md);
+student text and original-source inspection remain literal. This display update
+does not change the simulator or add fidelity evidence.
+The [Compare tab](docs/2026-09-22-browser-saved-comparison.md) now opens the existing
+eight-case review beside replay: recorded messages, both cached draws, supplied
+context and completed help/work judgments. No new generation, labels or metrics;
+the missing matched improvement comparison remains a separate research step.
+The [chat sidebar](docs/2026-09-22-browser-chat-sidebar.md) now keeps conversation
+beside notebook work or comparison cards; details and tutor controls use the
+center. The separate Inspect tab is retired in the connected workspace.
+**Saved results** now exposes the existing per-task/conversation receipt history
+inside the browser, separating delivered instructions from current drafts and
+unused configuration. Chat has clearer roles and first/last-message navigation.
+This [inspection update](docs/2026-09-22-browser-saved-results.md) adds no generation
+or labels and does not change the simulator.
+
+**Earlier scope assessment (now paused):** PR #43 is merged; resolved branches are
 cleaned up and the working simulator is on main. The
 [research feasibility decision](docs/2026-09-22-educator-decision-feasibility.md)
 is complete: saved evidence supports a formative keep/revise/inspect-more task,
@@ -18,8 +56,9 @@ The teammate quickstart and authored offline demo are on main via
 checks are also merged via [PR #40](https://github.com/dstl-lab/chatsight-summer/pull/40).
 The six-case [joint evaluation](docs/2026-09-21-joint-fidelity-check.md) is closed:
 four recorded-message preferences and two both-possible judgments. It supplies
-qualitative feedback, not the missing binary labels. Keep bulk labeling and
-workspace redesign paused; the separate fixed pass below is now closed too.
+qualitative feedback, not the missing binary labels. Keep bulk labeling paused;
+workspace redesign is now authorized as the prototype above. The separate fixed
+pass below is now closed too.
 The automatic
 [recorded-continuation selection comparison](docs/2026-09-21-recorded-continuation-selection.md)
 is closed: with and without history both scored 8/16 complete pairs; word overlap
@@ -161,14 +200,17 @@ milestones; the former does not establish the latter.
   generator condition; an improvement comparison is still undeclared. No new
   generation or review batch is queued; simulator engineering can continue.
 
-- [ ] **5. Make the notebook and chat experience coherent.** Bring the existing
+- [x] **5. Make the notebook and chat experience coherent.** Bring the existing
   authored notebook mode into the same scenario workflow, with notebook work and
   diffs on the left and conversation on the right. Keep historical chat scenarios
-  explicit about unavailable work. Continue using Marimo and coordinate with the
-  teammate's viewer work before duplicating it.
+  explicit about unavailable work. The accepted dedicated browser replaces the
+  earlier Marimo-only direction and reuses the existing Python operations.
   **Done when:** an instructor can follow an existing notebook interaction and its
   work changes in one view. No historical notebook actions are invented.
-  **Deferred by Minchan:** leave the current layout for the later workspace redesign.
+  **Complete:** the accepted browser layout supports notebook sessions and explicit
+  chat mode, saved playback and bound controls. Historical chat has no reconstructed
+  notebook work. The collection sidebar now selects saved chat scenarios without
+  restarting. Matched comparisons remain separate; Marimo still works.
 
 - [x] **6. Package the prototype for a teammate to run.** Document startup, local
   private-data setup, scenario selection, policy controls and saved results. Resolve
