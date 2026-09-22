@@ -36,6 +36,12 @@ The [optional conversation example](docs/2026-09-22-notebook-communication-conte
 now connects an existing chat prefix to a fresh authored notebook task, with one
 offline setup verified. PR #45 merged into #43; no new generations or labels.
 
+The [cached-message inventory](docs/2026-09-22-cached-fidelity-scope.md) now verifies
+eight references and 16 saved replies. One duplicate reduces any later common
+coding pass to 23 distinct messages / 46 flags. No compatible labels overlap.
+These are two draws of one condition, so this set cannot estimate a grounding
+benefit. The inventory is complete; a review pass is specified but not launched.
+
 Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
 
 ## North Star
@@ -184,6 +190,14 @@ milestones; the former does not establish the latter.
   input path, not a validated persona or generator-adoption result. The existing
   next-task path does not retain this initialization. See
   [scope and verification](docs/2026-09-22-notebook-communication-context.md).
+
+- [x] **13. Establish the exact reusable evidence before requesting more review.**
+  Eight original first-follow-up references match their independent review and
+  all sixteen cached outputs. Preserve both weights for the one duplicate;
+  a possible common-rubric pass has a fixed ceiling of 23 messages / 46 flags.
+  No existing help/work judgments cover these messages. Original studies remain
+  closed and this inventory creates no review queue, labels or generations.
+  See [scope and stopping rule](docs/2026-09-22-cached-fidelity-scope.md).
 
 ## Current difficulties
 

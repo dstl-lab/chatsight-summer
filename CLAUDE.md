@@ -1,5 +1,21 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Cached communication scope inventoried, no review launched (2026-09-22)
+
+The accepted step verified eight old recorded references and 16 cached replies:
+two identical-input draws from one historical chat generator, not two conditions.
+Case 5's draws have identical text/context, so a possible common help-work-v1 pass
+needs at most 23 distinct messages/46 flags, retaining both occurrence weights.
+Zero compatible prior judgments overlap; old v7 categories must not be converted.
+Case 1 retains only the first of eleven follow-up messages, per the original unit.
+Coverage of work-absent/work-present references remains unknown under this rubric;
+help is a separate flag, with help-only coverage reported separately.
+See docs/2026-09-22-cached-fidelity-scope.md and ignored cached-fidelity-scope-v1
+inventory/replay. This is a separate development-readiness diagnostic; earlier
+studies stay closed. No packet, review handoff, model calls or labels were created.
+The possible one-pass ceiling is specified, not launched. It cannot establish a
+grounding benefit, validate the notebook student or support generator adoption.
+
 ## Conversation-conditioned notebook run completed and closed (2026-09-22)
 
 Minchan explicitly answered “Approve this single run” to the exact private prefix,
