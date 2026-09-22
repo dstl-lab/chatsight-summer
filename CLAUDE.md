@@ -1,5 +1,23 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Second notebook exercise prepared; dispatch blocked (2026-09-22)
+
+Latest Continue prepares one bounded live continuation using the unchanged lesson
+runner and copied create-only dispatcher. The advance protocol is frozen in
+docs/2026-09-22-live-notebook-continuity.md; private scope/preflight/approval-block
+are in data/notebook-communication-continuity/live-run. All 59 pins and both role
+payloads independently verify. The original 10-turn example and previous simulated
+activity persist; current work is fresh and current feedback null. Runtime image
+availability is verified. Six student decisions / two tutor replies, at most eight
+logical requests / 32 adapter attempts and six requested local checks.
+Automatic approval review rejected process creation because the new private
+payload needs specific Gemini approval despite the standing grant. Nothing was
+sent or executed; no dispatch, lesson or steps exist, and all predecessor files
+remain unchanged. Scope SHA aaf358850e9f3d63ae09d92b3b4ab1cbace36c8a70c30ff145a1b3163ad74c3c.
+Await exact approval, preserve it before one dispatch, then verify replay and close
+regardless of outcome. No bypass, automatic retries, new labels or fidelity claim.
+This supersedes the earlier no-live-run status; production code is unchanged.
+
 ## Recorded example persists across notebook tasks (2026-09-22)
 
 notebook_next_task now carries only the root's explicitly sourced conversation

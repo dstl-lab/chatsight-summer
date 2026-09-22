@@ -61,8 +61,13 @@ fidelity. Earlier studies remain closed.
 **Current increment complete:** [preserve the recorded communication example](docs/2026-09-22-communication-continuity.md)
 when moving to later notebook tasks. Verified through Tasks 2 and 3 offline;
 444 tests pass. A successor to the completed notebook demonstration retains its
-10-turn example with fresh work and no actions/calls. No further run or labeling
-is queued; this repairs context continuity without claiming improved realism.
+10-turn example with fresh work and no actions/calls. This repairs context
+continuity without claiming improved realism.
+
+**Prepared continuation:** one [bounded second exercise](docs/2026-09-22-live-notebook-continuity.md)
+is ready; all 59 pins and both agent inputs independently verify. Automatic
+approval review blocked sending the new private payload to Gemini pending
+specific approval. Nothing was sent or executed. No manual labeling is needed.
 
 ## North Star
 
@@ -243,7 +248,17 @@ milestones; the former does not establish the latter.
   [offline successor and tests](docs/2026-09-22-communication-continuity.md) verify
   both agent inputs and replay, without new model calls or changing prior records.
 
+- [ ] **17. Run the prepared second notebook exercise once.**
+  The [frozen scope](docs/2026-09-22-live-notebook-continuity.md) retains the original
+  example and prior activity, capped at six student decisions and two tutor replies.
+  Preparation passed; dispatch was blocked before any requests or execution.
+  Obtain the required exact payload approval, run once, verify the two-task replay
+  and close without rerolls or labeling. This demonstrates operation, not fidelity.
+
 ## Current difficulties
+
+Item 17 awaits specific approval for its private Gemini payload after an actual
+automatic approval rejection. The frozen run is ready; do not bypass the block.
 
 The [single notebook run with conversation context](docs/2026-09-22-live-notebook-communication.md)
 completed after explicit payload approval: three student requests produced a
