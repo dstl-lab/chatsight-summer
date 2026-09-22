@@ -162,6 +162,47 @@ Impeccable distill skills, verified with browser MCP and the Node smoke check.
 Keep this prototype separate from the research-scope PR46. See its README for
 launch and verification. Backend integration is a subsequent scoped change.
 
+## Earlier educator-scope work (paused)
+
+The following entries record earlier planning; the browser and fidelity direction above supersedes their proposed next actions.
+
+## Educator walkthrough materials prepared (2026-09-22)
+
+Private static stage-1/stage-2 HTML and blank facilitator notes are prepared under
+data/episode-pilot/educator-decision-walkthrough-v1. Source case1/packet ordinal1;
+two draws from one condition, zero earlier turns, recorded first-of11 reply added
+only in stage2. Exact escaped-text/order and source/result replay checks pass twice;
+create-only preparation refuses changed outputs. No prior labels or verdicts are
+shown. See the existing feasibility memo's facilitator handoff. At most two sessions,
+authorized viewers only, private notes, no new labels/generation or automatic
+recruitment. Availability remains unresolved and no session has occurred. Browser
+local-file preview was blocked, so no visual usability check is claimed.
+
+## Educator decision feasibility complete (2026-09-22)
+
+Existing mixed-eight evidence supports a formative keep/revise/inspect-more task
+about an exact tutor reply, not a policy-effectiveness comparison. Five cases have
+a work-flag disagreement and three have none; keep all cases/draws. Report replay,
+50 preparation/9 closure/37 inventory pins and cohort data/receipt linkage verify;
+private check/report are in data/episode-pilot/educator-decision-feasibility-v1.
+See docs/2026-09-22-educator-decision-feasibility.md for the concrete first-case
+walkthrough and stopping rule: at most two internal sessions, no extra cases to
+manufacture a reaction. Participant availability is asked and unresolved; no
+invitations, study, new calls, labels, execution or UI work occurred. Before/after
+judgment changes would not establish an interface benefit or learning effect.
+
+## Merged simulator; research scope next (2026-09-22)
+
+PR43 merged to main at 31142e3. User requested resolved-branch cleanup: 35 local
+and 36 remote branch names removed after ancestry/merged-PR verification and a
+local recovery bundle. Existing worktrees/data and dirty main files remain;
+four unmerged issue_* remote branches are preserved. Work continues from main
+in the existing isolated worktree on codex/simulation-research-scope.
+docs/2026-09-22-simulation-research-scope.md records the proposed HCI question
+about simulation errors affecting educator decisions. Pause extra infrastructure;
+next is one offline evidence-feasibility decision. No study, calls, labels or
+recruitment queued; closed experiments and the existing generator stay unchanged.
+
 ## Workspace carries the tutor library reference (2026-09-22)
 
 Optional notebook-only --reference-file now loads through the existing
