@@ -1,5 +1,23 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Work-presence forecast completed; failed screen closed (2026-09-22)
+
+Minchan answered Yes to the exact eight-prefix Gemini scope after the automatic
+approval block. payload-approval.json binds that approval to scope/jobs/rejection
+before dispatch. All eight forecasts completed 02:23:57–02:25:18 UTC, with no
+errors, missing results or adapter retry events (SDK transport retries unmeasured).
+Mean multiclass Brier .80625 vs LOCO .612245, constant-half .5, no-work .75;
+work-absent group1.081, work-present .348333, equal-group mean .714667.
+Four of five work-absent references received work probabilities .70–.90. The
+declared development screen fails: no wording component, prompt tuning/rerolls,
+new labels or default generator change. The run is complete and closed.
+Read-only replay/independent arithmetic verify all69pins and the result; preserve
+the exact advance protocol and all original review/source artifacts. See
+docs/2026-09-22-work-presence-forecast-status.md and private result/closure/events.
+This supersedes the blocked status below. It is a negative forecast result on
+eight exposed development cases, not generated-message fidelity, calibration,
+reply probability, grounding effect or real-student validation.
+
 ## Work-presence forecast implemented; dispatch blocked (2026-09-22)
 
 Latest Continue adds only src/eval/work_presence_forecast.py, a strict probability

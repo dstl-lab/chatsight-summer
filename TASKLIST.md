@@ -50,11 +50,13 @@ generations or further review rounds; preserve the existing simulator.
 Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
 
 **Current increment:** a separate [work-presence forecast](docs/2026-09-22-work-presence-forecast-status.md)
-is implemented and passes the 442-test suite. One fixed eight-case screen reuses
-completed labels; no new review form. Its prepared Gemini dispatch was blocked by
-automatic approval review pending specific payload approval. Zero requests sent;
-the simulator and all closed studies remain unchanged. The screen measures a
-conditional message-feature forecast, not generated-message fidelity.
+is implemented and passes the 442-test suite. After specific approval, all eight
+requests completed with no errors or adapter retries, reusing completed labels.
+The screen **failed**: forecast error .80625 vs frequency .612245 and fixed 50/50
+.5 (multiclass Brier; lower is better). Close this increment and retain the
+simulator; no message-realization component, rerolls or new review form. The
+screen measures a conditional message-feature forecast, not generated-message
+fidelity. Earlier studies remain closed.
 
 ## North Star
 
