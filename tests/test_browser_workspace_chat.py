@@ -51,7 +51,7 @@ def test_chat_frames_are_verified_private_and_read_only(tmp_path, monkeypatch):
     assert frames[1]['dialogue'] == frames[0]['dialogue']
     assert frames[2]['dialogue'][-2:] == [
         {'role': 'student', 'text': '<script>7?</script>', 'origin': 'generated'},
-        {'role': 'tutor', 'text': 'Yes.', 'origin': 'scripted'}]
+        {'role': 'tutor', 'text': 'Yes.', 'origin': 'scripted', 'display_html': '<p>Yes.</p>'}]
     assert frames[2]['binding'] == chat.show(folder)['binding']
     assert frames[2]['actions'] == [{'decision': 'no-reply', 'text': '', 'source': None}]
     assert all(frame[key] is None for frame in frames for key in ('work', 'feedback', 'changes'))

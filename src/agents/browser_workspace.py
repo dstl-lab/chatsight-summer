@@ -8,6 +8,8 @@ import re
 from threading import Lock
 from typing import Literal
 
+from markdown import Markdown
+from markdown.extensions.fenced_code import FencedBlockPreprocessor
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -17,6 +19,25 @@ from src.agents import chat_student, chat_workspace, notebook_next_task, noteboo
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_POLICY = "Respond concisely to the student's current request using the visible work and check feedback."
+
+
+class _PlainFences(FencedBlockPreprocessor):
+    def handle_attrs(self, attrs):
+        # Saved text must not assign app IDs, classes or other HTML attributes.
+        return '', [], {}
+
+
+def _tutor_html(text):
+    """Display-only Markdown: raw HTML, links, images and fence attributes stay inert."""
+    md = Markdown(extensions=['fenced_code', 'sane_lists'])
+    md.preprocessors.deregister('html_block')
+    md.parser.blockprocessors.deregister('reference')
+    for name in ('html', 'reference', 'link', 'image_link', 'image_reference',
+                 'short_reference', 'short_image_ref', 'autolink', 'automail'):
+        md.inlinePatterns.deregister(name)
+    md.preprocessors.register(_PlainFences(md, md.preprocessors['fenced_code_block'].config),
+                              'fenced_code_block', 25)
+    return md.convert(text)
 
 
 class Binding(BaseModel):
@@ -189,6 +210,11 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, send=False, poli
 
     def packet(scenario_id, selected):
         result = snapshot(selected, chat_mode=chat_mode)
+        for encounter in result['encounters']:
+            for saved_frame in encounter['frames']:
+                for turn in saved_frame['dialogue']:
+                    if turn['role'] == 'tutor':
+                        turn['display_html'] = _tutor_html(turn['text'])
         if scenario_id is not None:
             result['encounters'][0]['title'] = titles[scenario_id]
         frame = result['encounters'][-1]['frames'][-1]

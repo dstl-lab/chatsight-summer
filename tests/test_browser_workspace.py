@@ -1,5 +1,6 @@
 """Saved notebook evidence reaches the browser without dispatch or file access APIs."""
 from copy import deepcopy
+from html.parser import HTMLParser
 import importlib.util
 import json
 
@@ -21,6 +22,79 @@ def client(folder):
 
 def files(folder):
     return {str(path.relative_to(folder)): path.read_bytes() for path in folder.rglob('*') if path.is_file()}
+
+
+def test_tutor_formatting_is_inert_and_preserves_original_evidence(tmp_path):
+    from src.agents.browser_workspace import _tutor_html
+    source = '''### Try this
+
+Use **one value** and `x < 3`.
+
+1. Read the value.
+2. Check it.
+
+```python
+if x < 3:
+    print("<img src=x onerror=alert(1)>")
+```
+
+```{#inspector .hidden onclick="alert(1)"}
+unchanged code
+```
+
+<script>alert(1)</script>
+<img src="https://example.invalid/track" onerror="alert(1)">
+<svg><a href="javascript:alert(1)">bad</a></svg>
+[link](javascript:alert(1)) ![image](https://example.invalid/track)
+<https://example.invalid/> <user@example.invalid>
+[ref][target] ![ref][target] ![target] [target]
+
+[target]: https://example.invalid/track
+
+&lt;iframe src=x&gt; &#60;img src=x&#62;
+'''
+    rendered = _tutor_html(source)
+    assert '<strong>one value</strong>' in rendered
+    assert '<ol>' in rendered and '<li>Check it.</li>' in rendered
+    assert '<code>x &lt; 3</code>' in rendered
+    assert 'if x &lt; 3:\n    print(' in rendered
+    assert '<pre><code>unchanged code\n</code></pre>' in rendered
+    assert '&lt;script&gt;alert(1)&lt;/script&gt;' in rendered
+    assert 'https://example.invalid/track' in rendered
+
+    class Tags(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            assert tag in {'p', 'h3', 'strong', 'code', 'pre', 'ol', 'li'}
+            assert not attrs or (tag == 'code' and attrs == [('class', 'language-python')])
+
+    Tags().feed(rendered)
+    # Both API modes use the same presentation boundary; bindings still match the runner.
+    from src.agents import chat_student
+    from tests.test_chat_student import QUERY
+    query = deepcopy(QUERY)
+    query['prefix'][-1]['text'] = source
+    chat_folder = tmp_path / 'chat'
+    chat_student.create(chat_folder, query=query)
+    chat_student.show(chat_folder)
+    from src.agents.browser_workspace import create_app
+    chat_client = TestClient(create_app(chat_folder, chat_mode=True), base_url='http://127.0.0.1')
+    before = files(chat_folder)
+    frame = chat_client.get('/api/workspace').json()['encounters'][0]['frames'][0]
+    assert frame['binding'] == chat_student.show(chat_folder)['binding']
+    assert frame['dialogue'][-1]['text'] == source
+    assert frame['dialogue'][-1]['display_html'] == rendered
+    assert all('display_html' not in turn for turn in frame['dialogue'] if turn['role'] == 'student')
+    assert files(chat_folder) == before
+
+    folder = tmp_path / 'notebook'
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id='authored/formatting')
+    choose(folder, 'reply', text='help')
+    choose(folder, 'no-reply', tutor_reply=source)
+    before = files(folder)
+    frame = client(folder).get('/api/workspace').json()['encounters'][0]['frames'][-1]
+    assert frame['dialogue'][-1]['text'] == source
+    assert frame['dialogue'][-1]['display_html'] == rendered
+    assert files(folder) == before
 
 
 def test_saved_frames_replay_chain_and_keep_feedback_pending_chat_and_budget(tmp_path, monkeypatch):

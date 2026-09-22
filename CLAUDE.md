@@ -1,5 +1,17 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Saved tutor replies have readable formatting (2026-09-22)
+
+The connected browser renders restricted Markdown only for tutor display, with
+original text retained in Inspect source and literal student messages. Raw HTML,
+links/images and fence attributes remain inert. Existing Markdown dependency is
+now direct/locked; no engine, prompt, binding or receipt changes. 509 tests pass
+(three optional skips), plus Marimo/Node checks and independent security review.
+Browser checks verified formatted code/lists, raw source and keyboard code focus;
+all 29 scenarios load and 105 chat/five notebook files remain unchanged. Both
+8428/8427 previews remain read-only. No calls/execution/labels. Memo:
+docs/2026-09-22-browser-message-readability.md.
+
 ## Saved scenarios can be selected in the browser (2026-09-22)
 
 browser_workspace --chat-sessions freezes direct-child chat folders at startup,

@@ -17,6 +17,9 @@ through explicit `--chat`, with no invented notebook state. All 29 saved scenari
 reopen unchanged. The [scenario sidebar](docs/2026-09-22-browser-scenario-selection.md)
 now browses all 29 via `--chat-sessions` on port 8428; switching resets drafts and
 refresh retains selection. No new generation/labels.
+Tutor replies now have [readable prose and code](docs/2026-09-22-browser-message-readability.md);
+student text and original-source inspection remain literal. This display update
+does not change the simulator or add fidelity evidence.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached

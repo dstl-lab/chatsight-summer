@@ -211,3 +211,11 @@ Verification: 508 Python tests, Marimo and all Node checks pass. All 29 scenario
 reopen with 105 files unchanged; actual browser switching, filtering, draft reset,
 focus and refresh were checked. No new model requests or labels. See
 [scope and result](../2026-09-22-browser-scenario-selection.md).
+
+Tutor replies display basic Markdown paragraphs, lists, emphasis and code blocks.
+Code retains indentation and scrolls horizontally with keyboard focus. Student
+messages stay literal; **Inspect source** always shows the original text. Embedded
+HTML, links and images are inert. Formatting changes no saved message, prompt or
+state binding; no math renderer or syntax highlighting is included. The
+[readability check](../2026-09-22-browser-message-readability.md) passes 509 Python
+tests plus Marimo/Node checks and confirms the existing files remain unchanged.

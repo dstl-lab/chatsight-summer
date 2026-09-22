@@ -57,7 +57,7 @@ function renderCases(){
 }
 function conversation(){
   const rows=turns();
-  return rows.length?rows.map((turn,i)=>`<article class="chat-turn"><header>${esc(turn.role==='student'?'Student':'Tutor')} <span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></header><p style="white-space:pre-wrap">${esc(turn.text)}</p><button data-evidence="turn:${i}">Inspect source</button></article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
+  return rows.length?rows.map((turn,i)=>`<article class="chat-turn"><header>${esc(turn.role==='student'?'Student':'Tutor')} <span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p style="white-space:pre-wrap">${esc(turn.text)}</p>`}</div><button data-evidence="turn:${i}">Inspect source</button></article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
 function checkLabel(feedback){
   if(!feedback)return 'No check feedback for this revision.';
@@ -115,6 +115,7 @@ function render(){
   if(state.showInspector)renderInspector();else $('inspector').innerHTML='';
   renderTrail();renderOperationStatus();
   document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
+  document.querySelectorAll('.message-body pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Tutor code block')});
   if(attr)document.querySelector(`[${attr}="${value}"]`)?.focus({preventScroll:true});
 }
 function continuationReason(){
