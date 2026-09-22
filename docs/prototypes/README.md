@@ -219,3 +219,32 @@ HTML, links and images are inert. Formatting changes no saved message, prompt or
 state binding; no math renderer or syntax highlighting is included. The
 [readability check](../2026-09-22-browser-message-readability.md) passes 509 Python
 tests plus Marimo/Node checks and confirms the existing files remain unchanged.
+
+## Compare existing evaluation messages
+
+```sh
+.venv/bin/python -m src.agents.browser_workspace \
+  data/episode-pilot/chat-workspace-v1/sessions --chat-sessions \
+  --comparison data/episode-pilot/cached-communication-review-v1 --port 8428
+```
+
+Select **Compare** to see the eight completed review cases. Each shows the first
+recorded next message and both saved simulated replies, with existing help/work
+judgments. **View context** opens the supplied earlier messages and current
+exchange; **Review details** explains the rubric and limitations. These two
+simulated replies share one historical configuration, so this is not a matched
+baseline/grounded experiment. Identical draws stay visible as separate occurrences
+with one shared-review notice. Missing/unclear flags are not treated as no.
+
+Reviewed case numbers are local display order and do not identify the 29 replay
+scenarios. Switching back retains the previous replay selection and tutor draft.
+Compare is read-only even when replay sending is enabled. Its reload verifies the
+fixed evidence again; a changed or invalid bundle clears the displayed comparison.
+The optional folder must contain the completed cached-review format (closure,
+preparation, packet, mapping, received review, report source and result), not an
+arbitrary evaluation export. Only fixed filenames are read, paths in provenance
+are metadata, and report code is never executed. No raw evidence is shipped with
+the repository. Without the option, Compare remains hidden.
+
+The [scope and verification](../2026-09-22-browser-saved-comparison.md) records
+534 passing Python tests, Marimo/Node checks and the actual browser walkthrough.

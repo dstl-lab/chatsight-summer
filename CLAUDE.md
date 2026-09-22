@@ -1,5 +1,20 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Existing communication review is visible in Compare (2026-09-22)
+
+browser_workspace --comparison points to the completed cached communication
+bundle alongside a notebook/chat launch. Fixed files, closure/provenance hashes,
+exact joins and one declared condition are checked before projection; saved
+scripts/path metadata are never executed/followed. Closure is pinned at startup.
+Compare has separate eight-case navigation, recorded reference + both draws,
+existing help/work flags, supplied context and review details. Preserve duplicate
+draws/shared judgments and distinguish missing/unclear from no. No generation or
+new coding in Compare; replay selection/drafts survive switching. 534 tests,
+Marimo/Node checks and independent review pass. Browser cases 1/3/8 verified;
+20 review, 105 chat and five notebook files unchanged. Port8428 now serves the
+combined read-only workspace. No new scores/calls/labels or fidelity claims.
+Memo: docs/2026-09-22-browser-saved-comparison.md.
+
 ## Saved tutor replies have readable formatting (2026-09-22)
 
 The connected browser renders restricted Markdown only for tutor display, with

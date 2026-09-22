@@ -3,6 +3,7 @@ import argparse
 from contextlib import ExitStack
 import difflib
 import fcntl
+from hashlib import sha256
 from pathlib import Path
 import re
 from threading import Lock
@@ -16,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from src.agents import chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace
+from src.eval.saved_comparison import load_comparison
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_POLICY = "Respond concisely to the student's current request using the visible work and check feedback."
@@ -156,8 +158,12 @@ def _page():
     return page
 
 
-def create_app(folder, *, chat_sessions=False, chat_mode=False, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
     folder = Path(folder).resolve()
+    if comparison is not None and Path(comparison).is_symlink():
+        raise ValueError('The comparison folder must not be a symlink.')
+    comparison = Path(comparison).resolve() if comparison is not None else None
+    comparison_pin = sha256((comparison / 'closure.json').read_bytes()).hexdigest() if comparison else None
     if chat_sessions and chat_mode:
         raise ValueError('Choose one chat session or a chat collection, not both.')
     scenarios = {}
@@ -255,7 +261,19 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, send=False, poli
     def catalog(request: Request):
         if request.query_params:
             raise HTTPException(400, 'The scenario catalog does not accept query parameters.')
-        return {'version':1, 'scenarios':[{'id':key, 'title':titles[key]} for key in scenarios]}
+        return {'version':1, 'scenarios':[{'id':key, 'title':titles[key]} for key in scenarios],
+                **({'comparison_available':True} if comparison is not None else {})}
+
+    @app.get('/api/comparison')
+    def comparison_view(request: Request):
+        if request.query_params:
+            raise HTTPException(400, 'The comparison uses only the review selected at launch.')
+        if comparison is None:
+            raise HTTPException(404, 'No saved comparison is configured.')
+        try:
+            return load_comparison(comparison, expected_closure=comparison_pin)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise HTTPException(409, 'The saved comparison could not be verified. Its evidence is not displayed.') from exc
 
     @app.get('/api/workspace')
     def workspace(request: Request):
@@ -328,6 +346,7 @@ def main():
     mode.add_argument('--chat', action='store_true', help='Open a chat-only session; notebook state remains unknown.')
     mode.add_argument('--chat-sessions', action='store_true', help='Choose among saved chat sessions directly inside the folder.')
     parser.add_argument('--port', type=int, default=8427)
+    parser.add_argument('--comparison', type=Path, help='Completed cached communication review folder for read-only Compare.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
@@ -338,7 +357,7 @@ def main():
         policy = args.policy_file.read_text(encoding='utf-8') if args.policy_file else None
         reference = notebook_tutor.LibraryReference.model_validate_json(
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
-        app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat,
+        app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat, comparison=args.comparison,
                          send=args.send, policy=policy, reference=reference)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')

@@ -30,13 +30,23 @@ const packet = {version:1,encounters:[{id:'1',title:'Task 1',task:[{index:0,sour
   initialization:'Authored example',activity:{library:'babypandas'},frames:[initial,finished]}]};
 let fail=false, requests=[], finishPost, readBusy=false, pollCallbacks=[], postFailure=false;
 let catalog=[], savedUrl=new URL('http://127.0.0.1/');
+let comparisonAvailable=false, comparisonFail=false;
+const review={help_request:'yes',work_present:'no',note:null};
+const comparison={version:1,kind:'saved-communication-comparison',rubric_id:'help-work-v1',status:'complete-review',
+  definitions:{help_request:'Requests assistance.',work_present:'Shows work or diagnostics.'},
+  cases:[{id:'1',title:'Reviewed case 01',context_status:'Earlier activity is unknown.',
+    prefix:{context:[],turns:[{role:'tutor',text:'A saved tutor turn.'}]},
+    reference:{text:'<img src=x>help',review},draws:[
+      {draw:1,text:'7?',review:{...review,work_present:null},shared_review_with:2},
+      {draw:2,text:'7?',review:{...review,work_present:null},shared_review_with:1}]}]};
 packet.controls={send_enabled:false,policy:'One concise hint.',reference:null,blocked_reason:null};
 packet.operation={status:'idle',message:''};
 const context=vm.createContext({document, window:{matchMedia:()=>({matches:true}),
   get location(){return savedUrl},history:{replaceState:(_a,_b,url)=>{savedUrl=new URL(url,savedUrl)}}},
   URL,URLSearchParams,AbortController,setTimeout:(fn,ms)=>ms===1500?(pollCallbacks.push(fn),0):setTimeout(fn,ms),clearTimeout,fetch:async(url,options)=>{
     requests.push({url,options});
-    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog})};
+    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,comparison_available:comparisonAvailable})};
+    if(url==='/api/comparison')return {ok:!comparisonFail,status:comparisonFail?409:200,json:async()=>comparisonFail?{detail:'Comparison could not be verified.'}:comparison};
     if(options.method==='POST')return new Promise(resolve=>{finishPost=()=>resolve({ok:!postFailure,status:postFailure?409:200,json:async()=>postFailure?{detail:'A request is already saved.'}:packet})});
     return {ok:!fail,status:readBusy?202:fail?409:200,json:async()=>readBusy?{version:1,operation:{status:'running',message:'Request running.'}}:fail?{detail:'Cannot verify saved run.'}:packet};
   }});
@@ -206,5 +216,43 @@ const run=code=>vm.runInContext(code,context);
   packet.scenario_id='a';await run('reloadWorkspace()');
   assert.match(node('canvas').innerHTML,/selected scenario/i);
   assert.equal(run('canSubmit()'),false);
+  comparisonAvailable=true;packet.scenario_id='b';
+  run('state.scenarios=null');await run('reloadWorkspace()');
+  const replaySelection=run('state.scenarioId');
+  run("state.replyDraft='Keep this draft'");
+  const postsBeforeCompare=requests.filter(r=>r.options.method==='POST').length;
+  await run("selectMode('compare')");
+  assert.equal(run('canSubmit()'),false);
+  assert.equal(requests.at(-1).url,'/api/comparison');
+  assert.match(node('cases').innerHTML,/Reviewed case 01/);
+  assert.doesNotMatch(node('cases').innerHTML,/Scenario 02/);
+  assert.match(node('canvas').innerHTML,/Recorded student/);
+  assert.match(node('canvas').innerHTML,/Simulated reply 1/);
+  assert.match(node('canvas').innerHTML,/Simulated reply 2/);
+  assert.match(node('canvas').innerHTML,/&lt;img src=x&gt;help/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<img src=x>/);
+  assert.match(node('canvas').innerHTML,/Not reviewed/);
+  assert.match(node('canvas').innerHTML,/one review covers both/);
+  assert.equal(node('playback').hidden,true);
+  assert.equal(node('next-step').hidden,true);
+  run("selectEvidence('context')");
+  assert.match(node('inspector').innerHTML,/No earlier messages supplied/);
+  assert.match(node('inspector').innerHTML,/A saved tutor turn/);
+  run("selectEvidence('review')");
+  assert.match(node('inspector').innerHTML,/Requests assistance/);
+  assert.match(node('inspector').innerHTML,/One reviewer/);
+  await run('submitOperation()');
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,postsBeforeCompare);
+  comparisonFail=true;await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/Comparison could not be verified/);
+  assert.doesNotMatch(node('canvas').innerHTML,/&lt;img src=x&gt;help/);
+  assert.equal(node('cases').innerHTML.includes('Reviewed case'),false);
+  comparisonFail=false;await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/Simulated reply 2/);
+  run("selectMode('simulate')");
+  assert.equal(run('state.scenarioId'),replaySelection);
+  assert.equal(run('state.replyDraft'),'Keep this draft');
+  assert.match(node('cases').innerHTML,/Scenario 02/);
+  assert.doesNotMatch(node('canvas').innerHTML,/Simulated reply 2/);
   console.log('Saved workspace: playback, escaping, evidence, status, and failed reload recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

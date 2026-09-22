@@ -20,6 +20,10 @@ refresh retains selection. No new generation/labels.
 Tutor replies now have [readable prose and code](docs/2026-09-22-browser-message-readability.md);
 student text and original-source inspection remain literal. This display update
 does not change the simulator or add fidelity evidence.
+The [Compare tab](docs/2026-09-22-browser-saved-comparison.md) now opens the existing
+eight-case review beside replay: recorded messages, both cached draws, supplied
+context and completed help/work judgments. No new generation, labels or metrics;
+the missing matched improvement comparison remains a separate research step.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached
