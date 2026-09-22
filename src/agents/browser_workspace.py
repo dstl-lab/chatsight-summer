@@ -3,6 +3,7 @@ import argparse
 from contextlib import ExitStack
 import difflib
 import fcntl
+from hashlib import sha256
 from pathlib import Path
 import re
 from threading import Lock
@@ -15,7 +16,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from src.agents import chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace
+from src.agents import chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace, workspace_history
+from src.eval.saved_comparison import load_comparison
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_POLICY = "Respond concisely to the student's current request using the visible work and check feedback."
@@ -38,6 +40,25 @@ def _tutor_html(text):
     md.preprocessors.register(_PlainFences(md, md.preprocessors['fenced_code_block'].config),
                               'fenced_code_block', 25)
     return md.convert(text)
+
+
+def _saved_results(folder):
+    """Reuse receipt interpretation without following links or exposing diagnostics."""
+    folder = Path(folder)
+    paths = [folder / 'session.json', *folder.glob('step-*.json')]
+    for name, pattern in (('tutor-exchanges', '*'), ('lesson', 'tutor-*')):
+        directory = folder / name
+        if directory.is_symlink():
+            raise ValueError('Saved exchange folders must not be symlinks.')
+        paths.append(directory / 'receipt.json')
+        for exchange in directory.glob(pattern):
+            if exchange.is_symlink():
+                raise ValueError('Saved exchanges must not be symlinks.')
+            if exchange.is_dir():
+                paths.extend(exchange / name for name in ('receipt.json', 'context.json'))
+    if any(path.is_symlink() for path in paths):
+        raise ValueError('Saved exchange files must not be symlinks.')
+    return _tutor_html(workspace_history.render(folder, diagnostics=False))
 
 
 class Binding(BaseModel):
@@ -103,12 +124,13 @@ def _chat_snapshot(folder):
                 'work':None, 'feedback':None, 'changes':None,
                 'actions':[{key:receipt['response'][key] for key in ('decision', 'text')} | {'source':None}]
                     if receipt is not None and receipt['status'] == 'complete' else []})
+        saved_results = _saved_results(folder)
     return {'version':1, 'kind':'chat', 'encounters':[{
         'id':'1', 'title':'Conversation', 'task':'Conversation scenario',
         'initialization':'Supplied conversation prefix followed by saved simulated continuation. '
             'The prefix may be recorded or authored; its saved origin alone does not establish this. '
             'Notebook activity and outcomes are unknown. Code in a message is text only.',
-        'activity':None, 'frames':frames}]}
+        'activity':None, 'frames':frames, 'saved_results_html':saved_results}]}
 
 
 def snapshot(folder, *, chat_mode=False):
@@ -117,7 +139,7 @@ def snapshot(folder, *, chat_mode=False):
         return _chat_snapshot(folder)
     encounters = []
     with ExitStack() as stack:
-        for number, (_, manifest, _, receipts, _) in enumerate(notebook_next_task.lineage(folder, stack), 1):
+        for number, (encounter_folder, manifest, _, receipts, _) in enumerate(notebook_next_task.lineage(folder, stack), 1):
             initial = manifest['initial']
             frames = [_frame(manifest, initial, None, 0, 0)]
             previous, decisions = initial, 0
@@ -129,7 +151,7 @@ def snapshot(folder, *, chat_mode=False):
             encounters.append({'id':str(number), 'title':f'Task {number}', 'task':initial['task'],
                 'initialization':initial['initialization'],
                 'activity':{key:value for key,value in initial['activity'].items() if key != 'image_id'},
-                'frames':frames})
+                'frames':frames, 'saved_results_html':_saved_results(encounter_folder)})
     return {'version':1, 'kind':'notebook', 'encounters':encounters}
 
 
@@ -156,8 +178,12 @@ def _page():
     return page
 
 
-def create_app(folder, *, chat_sessions=False, chat_mode=False, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
     folder = Path(folder).resolve()
+    if comparison is not None and Path(comparison).is_symlink():
+        raise ValueError('The comparison folder must not be a symlink.')
+    comparison = Path(comparison).resolve() if comparison is not None else None
+    comparison_pin = sha256((comparison / 'closure.json').read_bytes()).hexdigest() if comparison else None
     if chat_sessions and chat_mode:
         raise ValueError('Choose one chat session or a chat collection, not both.')
     scenarios = {}
@@ -255,7 +281,25 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, send=False, poli
     def catalog(request: Request):
         if request.query_params:
             raise HTTPException(400, 'The scenario catalog does not accept query parameters.')
-        return {'version':1, 'scenarios':[{'id':key, 'title':titles[key]} for key in scenarios]}
+        return {'version':1, 'scenarios':[{'id':key, 'title':titles[key]} for key in scenarios],
+                **({'comparison_available':True} if comparison is not None else {})}
+
+    @app.get('/api/comparison')
+    def comparison_view(request: Request):
+        if request.query_params:
+            raise HTTPException(400, 'The comparison uses only the review selected at launch.')
+        if comparison is None:
+            raise HTTPException(404, 'No saved comparison is configured.')
+        try:
+            result = load_comparison(comparison, expected_closure=comparison_pin)
+            for case in result['cases']:
+                for turns in case['prefix'].values():
+                    for turn in turns:
+                        if turn['role'] == 'tutor':
+                            turn['display_html'] = _tutor_html(turn['text'])
+            return result
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise HTTPException(409, 'The saved comparison could not be verified. Its evidence is not displayed.') from exc
 
     @app.get('/api/workspace')
     def workspace(request: Request):
@@ -328,6 +372,7 @@ def main():
     mode.add_argument('--chat', action='store_true', help='Open a chat-only session; notebook state remains unknown.')
     mode.add_argument('--chat-sessions', action='store_true', help='Choose among saved chat sessions directly inside the folder.')
     parser.add_argument('--port', type=int, default=8427)
+    parser.add_argument('--comparison', type=Path, help='Completed cached communication review folder for read-only Compare.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
@@ -338,7 +383,7 @@ def main():
         policy = args.policy_file.read_text(encoding='utf-8') if args.policy_file else None
         reference = notebook_tutor.LibraryReference.model_validate_json(
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
-        app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat,
+        app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat, comparison=args.comparison,
                          send=args.send, policy=policy, reference=reference)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')

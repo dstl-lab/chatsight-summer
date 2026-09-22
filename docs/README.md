@@ -5,6 +5,9 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-22 | [Browser saved results](2026-09-22-browser-saved-results.md) — inspect delivered instructions and improve chat reading | Existing receipt interpretation reused; compact chat source access and first/last navigation |
+| 2026-09-22 | [Browser chat sidebar](2026-09-22-browser-chat-sidebar.md) — conversation beside work and comparisons | Persistent right panel, exact source/details retained; no new generation or labels |
+| 2026-09-22 | [Saved browser comparison](2026-09-22-browser-saved-comparison.md) — recorded and simulated messages together | Eight cases, two draws each, existing review/context; no new generation, labels or scores |
 | 2026-09-22 | [Browser message readability](2026-09-22-browser-message-readability.md) — readable tutor code and prose | Restricted display formatting, exact source retained; saved evidence unchanged |
 | 2026-09-22 | [Browser scenario selection](2026-09-22-browser-scenario-selection.md) — browse existing conversations | Frozen catalog and independent selections; 29 scenarios/105 files unchanged, no new requests |
 | 2026-09-22 | [Browser chat scenarios](2026-09-22-browser-chat-scenarios.md) — reuse saved conversation evidence | Explicit chat mode, verified playback and bound controls; 29 existing scenarios reopen without mutation or new generation |
