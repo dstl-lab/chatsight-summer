@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-22 | [Browser workspace concept](prototypes/README.md) — desktop HTML preview | Authored interactive prototype; backend disconnected, no new research result |
 | 2026-09-15 | `2026-09-15-grounded-chat-result.md` — completed local-task continuation | Complete: one reply adds the visible name assignment to existing code; exact replay and 224 pins verified; initial saved-chat demonstration closed |
 | 2026-09-15 | `2026-09-15-grounded-chat.md` — continue an explicit local task from the saved prefix | Frozen protocol; case-6 exact scope approved, one-request run complete and closed |
 | 2026-09-15 | `2026-09-15-chat-clarification-result.md` — one actual saved-chat continuation | Complete: one new reply, one adapter attempt, exact replay; generated question text is scenario content, not recovered assignment evidence |

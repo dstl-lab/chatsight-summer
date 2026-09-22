@@ -1,5 +1,12 @@
 # Simulated students: task list
 
+**Current direction (September 22):** measure simulated-student fidelity against
+real AI-tutor interactions, then test whether grounding improves it. The educator
+decision walkthrough is paused. User selected a dedicated browser workspace and
+requested a desktop HTML prototype: [preview and instructions](docs/prototypes/README.md).
+Inspect/Simulate/Compare use authored examples only; backend integration is next
+after reviewing the layout. No new model run or labeling is queued.
+
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached
 review now covers five work-absent and three work-present references, but supplies
@@ -9,8 +16,9 @@ The teammate quickstart and authored offline demo are on main via
 checks are also merged via [PR #40](https://github.com/dstl-lab/chatsight-summer/pull/40).
 The six-case [joint evaluation](docs/2026-09-21-joint-fidelity-check.md) is closed:
 four recorded-message preferences and two both-possible judgments. It supplies
-qualitative feedback, not the missing binary labels. Keep bulk labeling and
-workspace redesign paused; the separate fixed pass below is now closed too.
+qualitative feedback, not the missing binary labels. Keep bulk labeling paused;
+workspace redesign is now authorized as the prototype above. The separate fixed
+pass below is now closed too.
 The automatic
 [recorded-continuation selection comparison](docs/2026-09-21-recorded-continuation-selection.md)
 is closed: with and without history both scored 8/16 complete pairs; word overlap

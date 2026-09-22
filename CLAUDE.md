@@ -1,5 +1,19 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser workspace prototype; simulator fidelity remains the goal (2026-09-22)
+
+User accepted: how accurately can an LLM simulate DSC10 AI-tutor interactions,
+and can grounding in real interactions improve accuracy? Instructor tutor-policy
+testing is the eventual application. The educator-decision walkthrough was paused
+before any judgment; do not resume it or infer answers. User selected a dedicated
+browser workspace over the existing Python backend and requested a simple HTML
+preview. docs/prototypes/student-workspace.html is standalone, entirely authored,
+with Inspect/Simulate/Compare, evidence inspection, step playback and temporary
+tutor drafts. No backend, model call, private data or measured fidelity result.
+Desktop is the target; user explicitly said mobile support is unnecessary.
+Keep this prototype separate from the research-scope PR46. See its README for
+launch and verification. Backend integration is a subsequent scoped change.
+
 ## Workspace carries the tutor library reference (2026-09-22)
 
 Optional notebook-only --reference-file now loads through the existing
