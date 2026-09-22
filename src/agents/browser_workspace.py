@@ -1,17 +1,42 @@
-"""Serve a verified saved notebook session in the browser; never continue the run."""
+"""Inspect a saved notebook session; optionally continue through explicit submissions."""
 import argparse
 from contextlib import ExitStack
 import difflib
 from pathlib import Path
 import re
+from threading import Lock
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from src.agents import notebook_next_task, notebook_student as student
+from src.agents import notebook_next_task, notebook_student as student, notebook_tutor, student_workspace
 
 ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_POLICY = "Respond concisely to the student's current request using the visible work and check feedback."
+
+
+class Binding(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    session_sha256: str = Field(min_length=64, max_length=64, pattern=r'^[0-9a-f]{64}$')
+    state_sha256: str = Field(min_length=64, max_length=64, pattern=r'^[0-9a-f]{64}$')
+
+
+class Submission(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    binding: Binding
+    mode: Literal['advance', 'reply', 'policy']
+    text: str | None = Field(default=None, max_length=64000)
+
+    @model_validator(mode='after')
+    def mode_text(self):
+        if self.mode == 'advance' and 'text' in self.model_fields_set:
+            raise ValueError('Quiet continuation does not accept tutor text.')
+        if self.mode != 'advance' and (self.text is None or not self.text.strip()):
+            raise ValueError('Supply nonblank tutor instructions or a reply.')
+        return self
 
 
 def _frame(manifest, state, previous, decisions, index):
@@ -80,9 +105,30 @@ def _page():
     return page
 
 
-def create_app(folder):
+def create_app(folder, *, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
     folder = Path(folder).resolve()
+    if policy is not None and (not isinstance(policy, str) or not policy.strip()):
+        raise ValueError('The tutor policy must contain nonblank text.')
+    policy = DEFAULT_POLICY if policy is None else policy
+    reference = notebook_tutor.LibraryReference.model_validate(reference).model_dump() if reference is not None else None
+    # ponytail: one serving process; use a shared job store if multiple writers are needed.
+    running = Lock()
+    operation = {'status':'idle', 'message':''}
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+
+    def blocked(frame):
+        if (folder / 'tutor-exchanges' / frame['binding']['state_sha256']).exists():
+            return ('A tutor exchange already exists for this saved state. It will not be resent; '
+                    'inspect its saved receipt before continuing.')
+        return None
+
+    def packet():
+        result = snapshot(folder)
+        frame = result['encounters'][-1]['frames'][-1]
+        return result | {'controls':{'send_enabled':send is True, 'policy':policy,
+            'reference':{key:reference[key] for key in ('library', 'library_version', 'source')}
+                        if reference is not None else None,
+            'blocked_reason':blocked(frame)}, 'operation':dict(operation)}
 
     @app.middleware('http')
     async def local_requests(request: Request, call_next):
@@ -116,11 +162,58 @@ def create_app(folder):
     def workspace(request: Request):
         if request.query_params:
             raise HTTPException(400, 'This workspace uses only the session selected at launch.')
+        if not running.acquire(blocking=False):
+            return JSONResponse({'version':1, 'operation':{'status':'running',
+                'message':'Generation is running. Reloading will not resend this request.'}}, status_code=202)
         try:
-            return snapshot(folder)
+            return packet()
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             raise HTTPException(409, 'Saved evidence could not be verified. Check the configured session '
-                                'and its original environment; no simulation was run.') from exc
+                                'and its original environment; continuation is disabled.') from exc
+        finally:
+            running.release()
+
+    @app.post('/api/continue')
+    def continue_session(body: Submission, request: Request):
+        if request.query_params:
+            raise HTTPException(400, 'This workspace uses only the session selected at launch.')
+        if send is not True:
+            raise HTTPException(403, 'This workspace was opened without sending enabled.')
+        if not running.acquire(blocking=False):
+            raise HTTPException(409, 'The workspace is busy. Reload to inspect its current state; do not resend.')
+        try:
+            current = snapshot(folder)['encounters'][-1]['frames'][-1]
+            binding = body.binding.model_dump()
+            if binding != current['binding']:
+                raise HTTPException(409, 'The displayed state is stale. Reload before continuing.')
+            if reason := blocked(current):
+                raise HTTPException(409, reason)
+            if current['status'] not in ('active', 'awaiting-tutor') or current['decisions_remaining'] <= 0:
+                raise HTTPException(409, 'This encounter has stopped or used its decision budget.')
+            if (body.mode == 'advance') != (current['status'] == 'active'):
+                raise HTTPException(409, 'Tutor guidance requires a pending student message; quiet work does not accept it.')
+            if body.mode == 'policy':
+                student_workspace.respond(folder, binding=binding, policy=body.text, send=True,
+                    generate_tutor=generate_tutor, generate_student=generate, check=check, reference=reference)
+            else:
+                student_workspace.advance(folder, binding=binding,
+                    tutor_reply=body.text if body.mode == 'reply' else None,
+                    send=True, generate=generate, check=check)
+            result = packet()
+            failed = result['encounters'][-1]['frames'][-1]['status'] in ('error', 'environment-error', 'execution-limit')
+            operation.update(status='error' if failed else 'complete', message=(
+                'The simulation stopped after an error or unavailable local check. Inspect the saved result.'
+                if failed else 'One student decision was saved.'))
+            result['operation'] = dict(operation)
+            return result
+        except HTTPException:
+            raise
+        except Exception as exc:
+            operation.update(status='error', message=(
+                'The request could not complete. Reload to inspect saved evidence; it will not be automatically resent.'))
+            raise HTTPException(409, operation['message']) from exc
+        finally:
+            running.release()
 
     return app
 
@@ -129,10 +222,20 @@ def main():
     import uvicorn
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('folder', type=Path, help='Saved notebook session to inspect read-only.')
+    parser.add_argument('folder', type=Path, help='Saved notebook session to inspect.')
     parser.add_argument('--port', type=int, default=8427)
+    parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
+    parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
+    parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
     args = parser.parse_args()
-    uvicorn.run(create_app(args.folder), host='127.0.0.1', port=args.port)
+    try:
+        policy = args.policy_file.read_text(encoding='utf-8') if args.policy_file else None
+        reference = notebook_tutor.LibraryReference.model_validate_json(
+            args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
+        app = create_app(args.folder, send=args.send, policy=policy, reference=reference)
+    except (OSError, ValueError) as exc:
+        parser.error(f'Workspace configuration could not be loaded: {exc}')
+    uvicorn.run(app, host='127.0.0.1', port=args.port)
 
 
 if __name__ == '__main__':

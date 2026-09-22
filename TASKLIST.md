@@ -6,9 +6,10 @@ decision walkthrough is paused. User selected a dedicated browser workspace and
 requested a desktop HTML prototype: [preview and instructions](docs/prototypes/README.md).
 The authored preview is accepted. A connected read-only browser workspace now
 shows verified saved notebook sessions, linked tasks, chat, diffs and local check
-results. Next: add the existing state-bound tutor/student controls to this layout;
-matched baseline/grounded comparison remains separate. No new model run or
-labeling is queued.
+results. Explicit state-bound tutor/student controls are now connected, with
+read-only defaults, visible progress and no automatic resending. A fresh authored
+example is ready; no new model request or label has been produced. Matched
+baseline/grounded comparison remains separate from this engineering check.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached

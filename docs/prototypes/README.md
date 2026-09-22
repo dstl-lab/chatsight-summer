@@ -36,9 +36,8 @@ it did not evaluate computed contrast and is not an accessibility audit.
 The notebook preview illustrates a future editable surface. Runtime, notebook
 editing, arbitrary run branching, data import, and baseline/grounded dispatch are
 outside this mockup. The connected saved viewer below reuses the same visual shell.
-Generation controls using existing advance/respond operations remain the next
-integration step; this mockup does not replace their saved-state checks or
-execution boundaries.
+The connected workspace also supports the existing advance/respond operations
+through explicit submissions; the design preview itself remains disconnected.
 
 Run the lightweight state/render smoke check with:
 
@@ -73,8 +72,9 @@ prototype on port 8426 remains an authored design preview.
 The server accepts one notebook session folder at launch and includes its verified
 predecessors. It uses the existing `notebook_next_task.lineage` validation and
 read-only locks, with one JSON endpoint and explicit page/script routes. No
-repository-directory mount, browser-selected filesystem path, write endpoint,
-provider request, notebook execution, or new dependency is added. Malformed,
+repository-directory mount, browser-selected filesystem path,
+automatic provider request or notebook execution, or new dependency is added.
+Explicit generation is available only with the opt-in controls below. Malformed,
 incomplete, busy, or incompatible saved sessions fail visibly; the page clears
 previous content rather than presenting stale results as current. Use the saved
 run's original environment if its engine is incompatible.
@@ -96,3 +96,49 @@ Marimo checks and all three Node checks pass. Browser verification covers saved
 playback, current-revision feedback, code diffs, stop status, context and returning
 focus. Independent review caught and fixed structured task-cell rendering and
 unspecified-origin attribution. No private session files are committed.
+
+
+## Tutor and student controls
+
+Sending is disabled by default. To enable controls for an **active** notebook
+session, add `--send`. Optional `--policy-file` (UTF-8) and `--reference-file`
+(library reference JSON) load once at startup, matching the Marimo workspace.
+For example, after creating the authored example with the
+[existing setup command](../teammate-quickstart.md#2b-start-with-an-explicit-notebook-task):
+
+```sh
+.venv/bin/python -m src.agents.browser_workspace data/browser-workspace-example/session \
+  --policy-file data/browser-workspace-example/policy.txt --send --port 8427
+```
+
+Open **Tutor controls**. Continue one decision while the student is working; when
+it asks for help, choose either a generated tutor reply from your instructions or
+a manual reply. Either reply is followed by one student decision. Each explicit
+submission uses the displayed latest-state binding and the existing saved runner.
+Historical playback and completed/budget-exhausted encounters cannot submit.
+Tutor instructions and manual drafts remain in page memory across Reload saved
+run; a browser refresh resets them to the server configuration. Edited instructions
+are sent exactly as entered and retained in the existing tutor receipt. The
+configured reference goes only to generated tutor replies.
+
+A running request disables duplicate submission and displays progress. Refreshing
+the page polls saved status with GET requests; it never repeats the POST. Finishing
+returns to the result view. A lost connection does not cancel backend work; reload
+to inspect it. Failed or incomplete operations are preserved. An existing bound
+tutor exchange blocks every continuation mode for that state after restart, so a
+manual reply cannot silently bypass an interrupted generated reply.
+
+The server supports one process per session. Do not edit the same session from a
+second server or CLI while it is running. In-memory progress coordinates browser
+tabs; existing on-disk receipts enforce replay and prevent automatic resends.
+Raw provider diagnostics remain in local receipts rather than browser responses.
+No automatic experiment loop, queue, or retry was added.
+
+Controls verification: **491 Python tests pass**, with three optional container
+skips; Marimo and Node checks pass. The browser completed an authored offline
+continue → policy reply → manual reply flow with exactly three saved student
+decisions and one authored tutor response. Refresh during the first request
+recovered its result without duplication; edited policy/manual text matched their
+saved receipts. No Gemini calls or notebook execution occurred in this test.
+The local fresh example is prepared separately with zero generated actions;
+Gemini configuration was found, but provider availability was not tested live.

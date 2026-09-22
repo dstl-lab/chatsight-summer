@@ -1,5 +1,21 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser workspace supports explicit tutor/student submissions (2026-09-22)
+
+User continued after the saved viewer. browser_workspace now exposes strict bound
+POST /api/continue behind --send (default off), reusing student_workspace advance/
+respond for one decision. Policy/reference files load once. A single-process lock
+blocks parallel submissions; pending reads return202 and UI polls reads only.
+Durable pending/failed receipts block restart bypass, including manual replies
+against an existing tutor exchange. Drafts survive Reload saved run; completion
+closes the editor and displays saved results. No runner/prompt/schema changes.
+491 tests, Marimo/Node checks and authored browser flow pass. Exactly3 scripted
+student decisions and1 scripted tutor response in a temporary test session; no
+Gemini/runtime calls. localhost:8427 now opens data/browser-workspace-example/session
+with --send and its policy file: fresh authored task, zero generated actions, key
+configuration present. Do not confuse the temporary UI test with a model result.
+The old completed examples are unchanged. Docs: docs/prototypes/README.md.
+
 ## Browser workspace reads verified saved notebook sessions (2026-09-22)
 
 User approved the simplified desktop layout and continuing. The new local server

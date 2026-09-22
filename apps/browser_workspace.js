@@ -4,7 +4,8 @@ const $ = id => document.getElementById(id);
 const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const block = value => `<pre>${esc(typeof value==='string'?value:JSON.stringify(value,null,2))}</pre>`;
 const taskText = task => typeof task==='string'?task:Array.isArray(task)&&task.every(cell=>typeof cell?.source==='string')?task.map(cell=>cell.source).join('\n\n'):JSON.stringify(task,null,2);
-const state = {encounters:[],caseIndex:0,step:0,mode:'simulate',selected:'step',showInspector:false};
+const state = {encounters:[],caseIndex:0,step:0,mode:'simulate',selected:'step',showInspector:false,controls:{send_enabled:false},operation:{status:'idle',message:''},policyDraft:null,replyDraft:'',replyMode:'policy',submitting:false,monitoring:false,refreshing:false,clientError:''};
+let pollTimer;
 const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
 const notify = text => {$('status').textContent=text};
@@ -25,7 +26,7 @@ function selectEvidence(key){state.selected=key;state.showInspector=true;render(
 function renderCases(){
   const query=$('search').value.toLowerCase();
   $('cases').innerHTML=state.encounters.map((c,i)=>({c,i})).filter(({c})=>(c.title+' '+taskText(c.task)).toLowerCase().includes(query))
-    .map(({c,i})=>`<button class="case-button" data-case="${i}" aria-pressed="${state.caseIndex===i}"><span><b>${esc(c.title)}</b><small>${c.frames.length} saved states</small></span></button>`).join('')||'<p class="empty">No matching tasks.</p>';
+    .map(({c,i})=>`<button class="case-button" data-case="${i}" aria-pressed="${state.caseIndex===i}"><span><b>${esc(c.title)}</b><small>${c.frames.length} saved state${c.frames.length===1?'':'s'}</small></span></button>`).join('')||'<p class="empty">No matching tasks.</p>';
   document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>selectCase(Number(b.dataset.case)));
 }
 function conversation(){
@@ -44,6 +45,7 @@ function notebook(){
 }
 function renderInspector(){
   const f=frame(),key=state.selected;
+  if(key==='controls'){renderControls();return}
   let title,body;
   if(key==='work'){
     title='Notebook changes';body=`<p>${f.changes.baseline_kind==='initial-work'?'Initial selected-cell work.':`Net change from the previous saved state, revision ${esc(f.changes.baseline_revision)}. A saved step can contain several decisions.`}</p>`+(f.changes.unified_diff?block(f.changes.unified_diff):'<p>No source change.</p>');
@@ -79,40 +81,111 @@ function render(){
   $('next-step').hidden=state.mode!=='simulate';
   $('next-step').disabled=state.step===c.frames.length-1;
   $('next-step').textContent=$('next-step').disabled?'Latest saved state':'Next saved step';
-  $('instructions').disabled=false;
+  $('instructions').disabled=false;$('tutor-controls').disabled=false;
   $('body-grid').classList.toggle('no-inspector',!state.showInspector);
   $('body-grid').classList.toggle('inspector-open',state.showInspector);
   $('inspector-toggle').hidden=!state.showInspector;
   if(state.showInspector)renderInspector();else $('inspector').innerHTML='';
-  renderTrail();
+  renderTrail();renderOperationStatus();
   document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
   if(attr)document.querySelector(`[${attr}="${value}"]`)?.focus({preventScroll:true});
 }
-async function reloadWorkspace(){
+function continuationReason(){
+  if(!state.encounters.length)return 'Load a saved session first.';
+  if(!state.controls.send_enabled)return 'Sending is disabled in this workspace.';
+  if(state.submitting||state.monitoring||state.refreshing)return 'Waiting for the current request.';
+  if(state.caseIndex!==state.encounters.length-1||state.step!==current().frames.length-1)return 'Select the latest saved state of the current task to continue.';
+  if(state.controls.blocked_reason)return state.controls.blocked_reason;
+  if(!['active','awaiting-tutor'].includes(frame().status))return 'This encounter has stopped. Its saved results remain available.';
+  if(frame().decisions_remaining<=0)return 'The decision budget is exhausted.';
+  return '';
+}
+function canSubmit(){
+  return !continuationReason()&&(frame().status==='active'||Boolean((state.replyMode==='policy'?state.policyDraft:state.replyDraft)?.trim()));
+}
+function submitLabel(){
+  return frame().status==='awaiting-tutor'?(state.replyMode==='policy'?'Generate tutor reply + one decision':'Send reply + one decision'):'Continue one student decision';
+}
+function updateSubmitButton(){
+  if(state.showInspector&&state.selected==='controls'){
+    $('continuation-reason').textContent=continuationReason();$('submit-operation').disabled=!canSubmit();$('submit-operation').textContent=state.submitting||state.monitoring?'Request running…':submitLabel();
+  }
+}
+function renderControls(){
+  const waiting=frame().status==='awaiting-tutor';
+  const manual=waiting&&state.replyMode==='reply';
+  $('inspector').innerHTML=`<div class="inspector-title">Tutor and student controls</div><h2>${waiting?'Reply to the student':'Continue the student'}</h2><p>${waiting?'The reply will be followed by one student decision.':'Continue one decision using the current task and conversation. Tutor instructions are used only when replying to a student message.'}</p>${waiting?'<label for="tutor-mode">Reply mode</label><select id="tutor-mode"><option value="policy">Generate from instructions</option><option value="reply">Write a reply</option></select>':''}<div${manual?' hidden':''}><label for="policy">Tutor instructions</label><textarea id="policy" maxlength="64000">${esc(state.policyDraft||'')}</textarea></div><div${manual?'':' hidden'}><label for="manual-reply">Your tutor reply</label><textarea id="manual-reply" maxlength="64000">${esc(state.replyDraft)}</textarea></div><p class="draft-status">Drafts stay in this page. Reload saved run preserves them; refreshing the browser resets them.</p>${state.controls.reference?`<p>Configured tutor reference: ${esc(state.controls.reference.library)} ${esc(state.controls.reference.library_version)}. Used only for generated tutor replies.</p>`:''}<div class="divider"></div><p id="continuation-reason">${esc(continuationReason())}</p><button class="primary" id="submit-operation">${esc(submitLabel())}</button><p class="tiny" style="margin-top:12px">${state.controls.send_enabled?'Sends the visible task, work and conversation to Gemini. A local check runs only if the student requests it. Playback sends nothing.':'Viewing only. No request can be sent from this workspace.'}</p>`;
+  $('policy').oninput=e=>{state.policyDraft=e.target.value;updateSubmitButton()};
+  $('manual-reply').oninput=e=>{state.replyDraft=e.target.value;updateSubmitButton()};
+  if(waiting){$('tutor-mode').value=state.replyMode;$('tutor-mode').onchange=e=>{state.replyMode=e.target.value;renderControls();$('tutor-mode').focus()}}
+  $('submit-operation').onclick=submitOperation;updateSubmitButton();
+}
+function renderOperationStatus(){
+  const message=state.submitting||state.monitoring?'Request running'+(state.encounters.length?' · showing the last saved state.':'.')+' Reloading checks progress without resending.':state.clientError||state.controls.blocked_reason||state.operation.message||'';
+  $('operation-status').textContent=message;$('operation-status').hidden=!message;
+  document.querySelector('.prototype-note').textContent=state.submitting||state.monitoring?'Simulation · Request running':state.controls.send_enabled?'Simulation · Sending enabled':'Saved simulation · Read only';
+  updateSubmitButton();
+}
+function applyWorkspace(packet){
+  if(packet.version!==1||!Array.isArray(packet.encounters)||!packet.encounters.length||packet.encounters.some(c=>!Array.isArray(c.frames)||!c.frames.length))throw new Error('Unsupported saved workspace response.');
   const previousId=current()?.id;
-  state.encounters=[];state.showInspector=false;
-  $('reset').disabled=true;$('instructions').disabled=true;$('next-step').hidden=true;$('playback').hidden=true;
-  $('inspector-toggle').hidden=true;$('body-grid').classList.toggle('no-inspector',true);$('body-grid').classList.toggle('inspector-open',false);
-  $('inspector').innerHTML='';$('cases').innerHTML='';$('case-title').textContent='Loading saved run';$('view-description').textContent='Verifying saved states and linked history…';
-  $('canvas').innerHTML='<p class="quiet" role="status">Loading…</p>';
+  state.encounters=packet.encounters;state.controls=packet.controls||{send_enabled:false};state.operation=packet.operation||{status:'idle',message:''};state.monitoring=false;
+  if(state.policyDraft===null)state.policyDraft=state.controls.policy||'';
+  const found=state.encounters.findIndex(c=>c.id===previousId);
+  state.caseIndex=found>=0?found:state.encounters.length-1;state.step=current().frames.length-1;
+  clearTimeout(pollTimer);render();
+}
+function clearWorkspaceView(message){
+  state.encounters=[];state.showInspector=false;$('cases').innerHTML='';$('inspector').innerHTML='';$('playback').hidden=true;
+  $('instructions').disabled=true;$('tutor-controls').disabled=true;$('next-step').hidden=true;$('inspector-toggle').hidden=true;
+  $('body-grid').classList.toggle('no-inspector',true);$('body-grid').classList.toggle('inspector-open',false);
   document.querySelectorAll('[data-mode]').forEach(b=>b.disabled=true);
+  $('canvas').innerHTML=message;
+}
+async function reloadWorkspace(){
+  if(state.refreshing)return;
+  clearTimeout(pollTimer);state.refreshing=true;$('reset').disabled=true;updateSubmitButton();
+  if(!state.encounters.length){clearWorkspaceView('<p class="quiet" role="status">Loading saved evidence…</p>');$('case-title').textContent='Loading saved run';$('view-description').textContent='Verifying saved states and linked history…'}
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
   try{
     const response=await fetch('/api/workspace',{cache:'no-store',signal:controller.signal});
     const packet=await response.json();
-    if(!response.ok)throw new Error(packet.detail||'The saved run could not be verified.');
-    if(packet.version!==1||!Array.isArray(packet.encounters)||!packet.encounters.length||packet.encounters.some(c=>!Array.isArray(c.frames)||!c.frames.length))throw new Error('Unsupported saved workspace response.');
-    state.encounters=packet.encounters;
-    const found=state.encounters.findIndex(c=>c.id===previousId);
-    state.caseIndex=found>=0?found:state.encounters.length-1;state.step=current().frames.length-1;
-    render();notify('Saved run loaded. Viewing only.');
+    if(response.status===202){
+      state.monitoring=true;renderOperationStatus();notify('Request running; checking saved status without resending.');
+      if(!state.encounters.length){$('case-title').textContent='Request running';$('view-description').textContent='Waiting for the next saved state. No request will be resent.'}
+      pollTimer=setTimeout(()=>reloadWorkspace(),1500);return;
+    }
+    if(!response.ok)throw new Error(typeof packet.detail==='string'?packet.detail:'The saved run could not be verified.');
+    applyWorkspace(packet);notify('Saved run loaded.');
   }catch(error){
-    state.encounters=[];$('cases').innerHTML='';$('case-title').textContent='Saved run unavailable';$('view-description').textContent='No saved content is displayed.';
-    $('canvas').innerHTML=`<div role="alert"><h2>Could not load saved results</h2><p>${esc(error.name==='AbortError'?'The local backend did not respond in time.':error.message)}</p><p class="quiet">Check that the local workspace server is running, then choose Reload saved run.</p></div>`;
-    notify('Saved run unavailable. Reload to try again.');
-  }finally{clearTimeout(timeout);$('reset').disabled=false}
+    state.monitoring=false;$('case-title').textContent='Saved run unavailable';$('view-description').textContent='No saved content is displayed.';
+    clearWorkspaceView(`<div role="alert"><h2>Could not load saved results</h2><p>${esc(error.name==='AbortError'?'The local backend did not respond in time.':error.message)}</p><p class="quiet">Reload saved run to check again. An in-progress request may still finish; nothing will be resent.</p></div>`);
+    notify('Saved run unavailable. Reload to check its status.');
+  }finally{clearTimeout(timeout);state.refreshing=false;$('reset').disabled=false;renderOperationStatus()}
 }
-document.title='Student lab · Saved simulation';
+async function submitOperation(){
+  if(!canSubmit())return;
+  const mode=frame().status==='active'?'advance':state.replyMode;
+  const payload={binding:{...frame().binding},mode,...(mode==='advance'?{}:{text:mode==='policy'?state.policyDraft:state.replyDraft})};
+  state.submitting=true;state.clientError='';renderOperationStatus();
+  try{
+    // No timeout/retry: aborting an HTTP request would not cancel a saved backend operation.
+    const response=await fetch('/api/continue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const packet=await response.json();
+    if(!response.ok)throw new Error(typeof packet.detail==='string'?packet.detail:'The request was rejected. Reload the saved run before trying again.');
+    state.showInspector=false;state.mode='simulate';state.selected='step';
+    applyWorkspace(packet);
+    if(frame().actions.some(action=>action.text))document.querySelector('.chat-turn:last-child')?.scrollIntoView({block:'nearest'});
+    else $('canvas').scrollTop=0;
+    notify(state.operation.message||'New result saved.');
+  }catch(error){
+    state.clientError=error.message||'Request outcome is unknown. Checking saved status; it will not be resent.';
+    await reloadWorkspace();
+  }finally{state.submitting=false;renderOperationStatus()}
+}
+document.title='Student lab · Simulation workspace';
+$('instructions').insertAdjacentHTML('beforebegin','<button id="tutor-controls">Tutor controls</button>');
+$('canvas').insertAdjacentHTML('beforebegin','<div id="operation-status" role="status" aria-live="polite" style="padding:12px 36px;border-bottom:1px solid var(--line);font-size:12px" hidden></div>');
 document.querySelector('.prototype-note').textContent='Saved simulation · Read only';
 document.querySelector('.breadcrumb').textContent='Notebook simulation';
 document.querySelector('.explorer-heading').textContent='Tasks';
@@ -124,8 +197,9 @@ $('inspector-toggle').textContent='Close details';
 document.querySelectorAll('[data-mode]').forEach(b=>{if(b.dataset.mode==='compare')b.hidden=true;if(b.dataset.mode==='simulate')b.textContent='Replay';b.onclick=()=>selectMode(b.dataset.mode)});
 $('search').oninput=()=>{if(state.encounters.length)renderCases()};
 $('instructions').onclick=()=>selectEvidence('context');
+$('tutor-controls').onclick=()=>selectEvidence('controls');
 $('next-step').onclick=()=>{if(state.step<current().frames.length-1)selectFrame(state.step+1)};
-$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected==='context'?$('instructions'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
+$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected==='context'?$('instructions'):state.selected==='controls'?$('tutor-controls'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
 $('explorer-toggle').onclick=()=>{const shown=$('app').classList.toggle('show-explorer');$('explorer-toggle').setAttribute('aria-expanded',String(shown))};
 $('reset').onclick=reloadWorkspace;
 const ready=reloadWorkspace();

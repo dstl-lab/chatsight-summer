@@ -9,7 +9,7 @@ const elements = new Map();
 const node = id => {
   if (!elements.has(id)) elements.set(id, {innerHTML:'', textContent:'', value:'', hidden:false,
     dataset:{}, classList:{toggle(){},remove(){}}, setAttribute(){},
-    hasAttribute(){return false}, focus(){document.activeElement=this}});
+    insertAdjacentHTML(){}, scrollIntoView(){}, hasAttribute(){return false}, focus(){document.activeElement=this}});
   return elements.get(id);
 };
 const modes = ['inspect','simulate','compare'].map(mode=>Object.assign(node(mode),{dataset:{mode}}));
@@ -27,10 +27,14 @@ const finished = {...initial,label:'Saved step 1',status:'no-reply',decisions_re
   changes:{baseline_revision:0,baseline_kind:'previous-saved-step',unified_diff:'-count = 0\n+count = 2'}};
 const packet = {version:1,encounters:[{id:'1',title:'Task 1',task:[{index:0,source:'Find the fraction of blue rows.'}],
   initialization:'Authored example',activity:{library:'babypandas'},frames:[initial,finished]}]};
-let fail=false, requests=[];
+let fail=false, requests=[], finishPost, readBusy=false, pollCallbacks=[], postFailure=false;
+packet.controls={send_enabled:false,policy:'One concise hint.',reference:null,blocked_reason:null};
+packet.operation={status:'idle',message:''};
 const context=vm.createContext({document, window:{matchMedia:()=>({matches:true})},
-  AbortController,setTimeout,clearTimeout,fetch:async(url,options)=>{
-    requests.push({url,options});return {ok:!fail,json:async()=>fail?{detail:'Cannot verify saved run.'}:packet};
+  AbortController,setTimeout:(fn,ms)=>ms===1500?(pollCallbacks.push(fn),0):setTimeout(fn,ms),clearTimeout,fetch:async(url,options)=>{
+    requests.push({url,options});
+    if(options.method==='POST')return new Promise(resolve=>{finishPost=()=>resolve({ok:!postFailure,status:postFailure?409:200,json:async()=>postFailure?{detail:'A request is already saved.'}:packet})});
+    return {ok:!fail,status:readBusy?202:fail?409:200,json:async()=>readBusy?{version:1,operation:{status:'running',message:'Request running.'}}:fail?{detail:'Cannot verify saved run.'}:packet};
   }});
 const run=code=>vm.runInContext(code,context);
 (async()=>{
@@ -66,5 +70,52 @@ const run=code=>vm.runInContext(code,context);
   run("selectMode('simulate')");
   assert.match(node('canvas').innerHTML,/&lt;script&gt;never execute/);
   assert.ok(requests.every(r=>r.url==='/api/workspace'&&!r.options.method));
+  assert.equal(run('typeof canSubmit'),'function','Bound browser controls are missing');
+  assert.equal(run('canSubmit()'),false);
+  packet.controls.send_enabled=true;
+  packet.encounters[0].frames=[initial];
+  await run('reloadWorkspace()');
+  assert.equal(run('canSubmit()'),true);
+  run("selectEvidence('controls')");
+  assert.match(node('inspector').innerHTML,/Continue one student decision/);
+  const sent=run('submitOperation()');
+  await run('submitOperation()');
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,1);
+  assert.equal(run('canSubmit()'),false);
+  assert.match(node('operation-status').textContent,/running|Generating/i);
+  packet.encounters[0].frames.push({...initial,label:'Saved step 1',status:'awaiting-tutor',pending_message:'help'});
+  finishPost();await sent;
+  assert.equal(run('canSubmit()'),true);
+  run("selectEvidence('controls')");
+  node('policy').oninput({target:{value:'My edited tutor instructions.'}});
+  await run('reloadWorkspace()');
+  assert.equal(run('state.policyDraft'),'My edited tutor instructions.');
+  run("selectEvidence('controls')");
+  const response=run('submitOperation()');
+  const request=JSON.parse(requests.filter(r=>r.options.method==='POST').at(-1).options.body);
+  assert.equal(request.mode,'policy');assert.equal(request.text,'My edited tutor instructions.');
+  finishPost();await response;
+  assert.equal(run('state.showInspector'),false);
+  run("selectEvidence('controls')");
+  assert.equal(node('continuation-reason').textContent,'');
+  node('policy').oninput({target:{value:'   '}});assert.equal(run('canSubmit()'),false);
+  node('tutor-mode').onchange({target:{value:'reply'}});assert.equal(run('canSubmit()'),false);
+  node('manual-reply').oninput({target:{value:'My manual hint.'}});assert.equal(run('canSubmit()'),true);
+  postFailure=true;
+  const rejected=run('submitOperation()');finishPost();await rejected;
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,3);
+  assert.equal(JSON.parse(requests.filter(r=>r.options.method==='POST').at(-1).options.body).text,'My manual hint.');
+  assert.match(node('operation-status').textContent,/already saved/);
+  assert.equal(run('state.replyDraft'),'My manual hint.');
+  run("state.clientError=''");
+  run('selectFrame(0)');assert.equal(run('canSubmit()'),false);
+  const count=requests.filter(r=>r.options.method==='POST').length;
+  readBusy=true;await run('reloadWorkspace()');
+  assert.equal(run('canSubmit()'),false);assert.equal(pollCallbacks.length,1);
+  readBusy=false;await pollCallbacks.shift()();
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,count);
+  packet.controls.blocked_reason='An earlier tutor request is saved; it will not be resent.';
+  await run('reloadWorkspace()');assert.equal(run('canSubmit()'),false);
+  assert.match(node('operation-status').textContent,/not be resent/);
   console.log('Saved workspace: playback, escaping, evidence, status, and failed reload recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});
