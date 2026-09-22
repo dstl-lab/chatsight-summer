@@ -1,5 +1,22 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Conversation-conditioned notebook run completed and closed (2026-09-22)
+
+Minchan explicitly answered “Approve this single run” to the exact private prefix,
+derived-context and Gemini destination question. payload-approval.json binds it to
+the frozen scope and earlier rejection. One dispatch ran 00:26:14–00:26:50 UTC:
+quiet edit → real local check (float0.5/pass, revision1) → no-reply. Three student
+requests, one execution, zero tutor requests/chat/errors, three unused decisions;
+at most 12 adapter attempts, actual retries unknown. No rerolls or queued runs.
+Actions/code match the earlier separate unconditioned demonstration; this is not
+a controlled effect estimate. No generated communication exercised the claimed
+benefit of the historical example. Policy/reference configured but undelivered.
+All 84 pins and read-only replay verify. Preserve initial artifacts, source chat,
+older walkthrough and rejection/approval chronology. See
+docs/2026-09-22-live-notebook-communication.md and ignored matching live-run
+overview/replay/closure. This supersedes the blocked status below; the fidelity
+gate and paused labeling are unchanged. PR #43 still requires GitHub review.
+
 ## Conversation-conditioned notebook run prepared, not sent (2026-09-22)
 
 The current Continue prepared one run of data/notebook-communication-example/session:

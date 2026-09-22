@@ -188,9 +188,11 @@ milestones; the former does not establish the latter.
 ## Current difficulties
 
 The [single notebook run with conversation context](docs/2026-09-22-live-notebook-communication.md)
-is prepared, but automatic approval review blocked sending its private prefix to
-Gemini pending exact-payload authorization. Zero requests or actions occurred;
-all inputs remain unchanged. No labeling is needed for this step.
+completed after explicit payload approval: three student requests produced a
+quiet edit, one passing local check and no-reply. Zero tutor requests or generated
+chat; three decisions unused. All 84 pins and saved replay verify. It matches the
+earlier demonstration's actions/code, but does not measure a context effect or
+improved communication. This run is closed, with no new labels or rerolls.
 
 The live demonstration is complete. Different policy instructions did not always
 produce different tutor behavior; single simulated outcomes cannot estimate policy
