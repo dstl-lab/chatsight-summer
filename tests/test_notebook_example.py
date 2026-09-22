@@ -1,5 +1,6 @@
 """The public notebook setup has explicit facts and no implicit dispatch."""
 import importlib.util
+from copy import deepcopy
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,18 @@ from src.eval import notebook_replay, notebook_session
 
 
 IMAGE = 'sha256:' + 'a' * 64
+EXERCISE = {
+    'task': {'initialization': 'A fictional fruit exercise, not a student record.',
+             'task': 'Count pear rows in shipments and assign pear_count.',
+             'work': {'cell_index': 2, 'revision': 0, 'source': "pear_count = len(shipments.get('fruit'))"},
+             'dialogue': [{'role': 'student', 'text': 'count pears?', 'origin': 'authored'},
+                          {'role': 'tutor', 'text': 'Count only matching rows.', 'origin': 'authored'}],
+             'captured_at': 'PRIVATE_AUTHORED_PROVENANCE'},
+    'activity': {'library': 'babypandas', 'library_version': '1.0.0', 'table': 'shipments',
+                 'column': 'fruit', 'result': 'pear_count', 'values': ['pear', 'apple', 'pear', 'pear']},
+    'evaluation': {'expected': 3},
+    'policy': 'Give one short hint about filtering the supplied fruit column.\n',
+}
 
 
 def files(folder):
@@ -175,6 +188,89 @@ def test_chat_source_invalid_changed_and_nested_inputs_never_publish(tmp_path, m
     with pytest.raises(ValueError, match='changed'):
         setup.create(tmp_path / 'changed', image_id=IMAGE, chat_source=source)
     assert not (tmp_path / 'changed').exists()
+
+
+def test_supplied_exercise_keeps_custom_facts_and_conversation_through_both_agents(tmp_path, monkeypatch, capsys):
+    from src.agents import chat_student as chat, notebook_next_task
+    from tests.test_chat_student import QUERY
+
+    def forbidden(*args, **kwargs):
+        pytest.fail('Exercise setup/replay called a provider or runtime')
+    monkeypatch.setattr(student.llm, 'make_generate', forbidden)
+    monkeypatch.setattr(student.notebook_runtime, 'check_work', forbidden)
+    source = tmp_path / 'PRIVATE_CHAT_PATH'
+    first = chat.create(source, query=QUERY)
+    chat.step(source, binding=first['binding'],
+              generate=lambda _, schema: schema(decision='reply', text='GENERATED_NOT_SOURCE'))
+    before = files(source)
+    exercise = deepcopy(EXERCISE)
+    folder = tmp_path / 'custom'
+    child = example().create(folder, image_id=IMAGE, exercise=exercise, chat_source=source)
+    state = student.load(child)
+    assert exercise == EXERCISE and files(source) == before
+    assert state['task'] == EXERCISE['task']['task'] and state['work'] == EXERCISE['task']['work']
+    assert state['activity'] == EXERCISE['activity'] | {'image_id': IMAGE}
+    assert state['evaluation'] == {'expected': 3} and state['observation'] is None
+    assert state['initialization']['current_task'] == EXERCISE['task']['initialization']
+    assert state['initialization']['conversation_example'] == QUERY['prefix']
+    manifest = student._read(child / 'session.json')
+    assert manifest['provenance']['captured_at'] == 'PRIVATE_AUTHORED_PROVENANCE'
+    assert manifest['max_decisions'] == 6 and (folder / 'policy.txt').read_text() == EXERCISE['policy']
+    prompts = [notebook_session.make_prompt(state)]
+    student.step(child, generate=lambda _, schema: schema(decision='reply', text='pear?', source=None),
+                 check=forbidden, max_actions=1)
+    def reply(prompt, schema):
+        prompts.append(prompt)
+        return schema(text='Use equality to select the matching rows.')
+    tutor.respond(child, tmp_path / 'exchange', policy=(folder / 'policy.txt').read_text(),
+        generate_tutor=reply, generate_student=lambda _, schema: schema(decision='no-reply', text='', source=None),
+        check=forbidden, max_actions=1)
+    for prompt in prompts:
+        assert 'shipments' in prompt and 'count pears?' in prompt and 'how do i add them' in prompt
+        assert all(s not in prompt for s in ('PRIVATE_', 'GENERATED_NOT_SOURCE', 'fraction_blue',
+                                           '"evaluation"', '"expected"', 'prefix_sha256'))
+    successor = tmp_path / 'successor'
+    notebook_next_task.create(child, successor, task=exercise['task'], activity=state['activity'],
+                              evaluation=exercise['evaluation'])
+    assert student.load(successor)['initialization']['conversation_example'] == QUERY['prefix']
+    saved = files(folder)
+    notebook_replay.export(successor, tmp_path / 'replay.html')
+    with pytest.raises(FileExistsError):
+        example().create(folder, image_id=IMAGE, exercise=exercise, chat_source=source)
+    assert files(folder) == saved and files(source) == before and exercise == EXERCISE
+    input_file = tmp_path / 'exercise.json'
+    input_file.write_text(json.dumps(exercise))
+    cli = tmp_path / 'cli-custom'
+    monkeypatch.setattr(sys, 'argv', ['notebook_example', str(cli), '--image-id', IMAGE,
+                                    '--exercise-file', str(input_file), '--chat-source', str(source)])
+    example().main()
+    assert 'No model calls or code execution' in capsys.readouterr().out
+    assert student.load(cli / 'session')['work'] == EXERCISE['task']['work']
+    assert json.loads(input_file.read_text()) == EXERCISE
+
+
+def test_supplied_exercise_rejects_malformed_inputs_without_publication(tmp_path, monkeypatch):
+    bad = [[], {}, EXERCISE | {'extra': 'ignored?'}, EXERCISE | {'policy': '  '},
+           EXERCISE | {'activity': EXERCISE['activity'] | {'image_id': IMAGE}},
+           EXERCISE | {'activity': EXERCISE['activity'] | {'values': [1, 2]}},
+           EXERCISE | {'evaluation': None}, EXERCISE | {'evaluation': {'expected': []}},
+           EXERCISE | {'task': EXERCISE['task'] | {'task': ''}},
+           EXERCISE | {'task': EXERCISE['task'] | {'history': []}},
+           EXERCISE | {'task': EXERCISE['task'] | {'dialogue': [None]}},
+           EXERCISE | {'task': EXERCISE['task'] | {'work': {'source': 'x', 'revision': -1}}}]
+    for i, exercise in enumerate(bad):
+        path = tmp_path / f'invalid-{i}'
+        with pytest.raises(ValueError):
+            example().create(path, image_id=IMAGE, exercise=exercise)
+        assert not path.exists()
+    input_file = tmp_path / 'null.json'
+    input_file.write_text('null')
+    path = tmp_path / 'null-exercise'
+    monkeypatch.setattr(sys, 'argv', ['notebook_example', str(path), '--image-id', IMAGE,
+                                    '--exercise-file', str(input_file)])
+    with pytest.raises(SystemExit):
+        example().main()
+    assert not path.exists()
 
 
 @pytest.mark.skipif(not os.environ.get('NOTEBOOK_RUNTIME_IMAGE'), reason='Explicit local container image required')

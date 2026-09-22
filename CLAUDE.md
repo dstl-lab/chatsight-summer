@@ -1,5 +1,21 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Custom notebook exercise setup complete (2026-09-22)
+
+notebook_example now accepts an optional exercise mapping / --exercise-file with
+the existing task/activity/evaluation/policy structures, while retaining the
+default example and verified --chat-source bridge. The immutable image is a
+separate argument; malformed/unknown inputs fail without publishing, and supplied
+objects/sources remain unchanged. No engine, prompt, runtime or budget changes.
+See docs/2026-09-22-custom-notebook-exercise.md and examples/fruit-count.json.
+446 tests, both Marimo checks and Node navigation pass; independent review found
+no code blocker and corrected a stale continuity claim in the teammate guide.
+The actual public CLI/replay also verified offline at
+data/custom-notebook-exercise-example: expected2, no feedback/actions, six unused
+decisions. No provider/container calls, labels or new live run. The completed
+continuity run's59pins remain unchanged; older snapshots pinning the setup helper
+must use their recorded revision. Task18 complete; PR43 still needs GitHub review.
+
 ## Second notebook exercise completed and closed (2026-09-22)
 
 Minchan explicitly answered Yes to the exact blocked private-payload Gemini scope.

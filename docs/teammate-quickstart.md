@@ -144,8 +144,44 @@ replace the current exercise, and it does not establish the same learner,
 personality or historical notebook behavior. A fictional source remains fictional;
 quoted content is not automatically anonymized. Source hashes and path are saved
 outside model context. This optional setup does not establish improved realism
-or persistent conditioning across later tasks. See the
+or a validated persistent persona. The [next-task handoff](2026-09-22-communication-continuity.md)
+retains this example separately from simulated history. See the
 [scope and verification](2026-09-22-notebook-communication-context.md).
+
+### Supply your own supported exercise
+
+Pass `--exercise-file` to replace the default blue-proportion exercise. The public
+[fruit-count bundle](../examples/fruit-count.json) supplies a different fictional
+task, table, initial code, expected answer and tutor policy:
+
+```sh
+.venv/bin/python -m src.agents.notebook_example data/fruit-example \
+  --image-id "$NOTEBOOK_RUNTIME_IMAGE" \
+  --exercise-file examples/fruit-count.json
+.venv/bin/marimo run apps/student_workspace.py \
+  --host 127.0.0.1 --port 8428 --headless -- \
+  --session data/fruit-example/session
+```
+
+Open **http://127.0.0.1:8428/** to inspect the prepared task. Setup and viewing
+make no model or execution calls. The session retains the six-decision limit;
+its supplied policy is saved as `data/fruit-example/policy.txt` for the existing
+lesson command. Without `--exercise-file`, the original example is unchanged.
+
+To include an existing communication example, add
+`--chat-source data/workspace/sessions/case-01` to the creation command, using an
+actual team-supplied source and a new destination. Only that session's original
+prefix is copied; it does not supply the new task's notebook state or answers.
+
+Copy the bundle to author another exercise before creating a session. It requires
+exactly four top-level fields: `task`, `activity`, `evaluation` and `policy`.
+Use the fixture's existing structures; keep the runtime image out of `activity`
+and supply it through `--image-id`. The runtime supports **one selected code cell,
+one string column and one scalar result**, not a general notebook kernel.
+`evaluation.expected` is withheld from both agents' prompts but remains readable
+in the supplied file and saved manifest. Keep private bundles under ignored
+`data/`, and leave saved sessions unchanged. This setup option does not validate
+student realism or behavior across courses.
 
 ## 3. Open private working sessions, when provided
 

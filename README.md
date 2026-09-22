@@ -73,6 +73,11 @@ without adding it to either agent's prompt. Counting and category proportion use
 the same action engine. This is limited task portability, not a general notebook
 kernel or evidence that student behavior transfers across courses.
 
+The [custom exercise setup](docs/teammate-quickstart.md#supply-your-own-supported-exercise)
+combines a supplied task bundle with an optional saved conversation example.
+Start from the public [fictional fruit-count exercise](examples/fruit-count.json);
+creation is offline, and the default notebook example remains available.
+
 Use [tutor context](docs/2026-09-14-tutor-context.md) to inspect work and supply your
 own reply, or [the notebook tutor](docs/2026-09-14-notebook-tutor.md) to generate one
 reply under a supplied teaching policy and continue the same student. Both paths

@@ -70,6 +70,11 @@ quiet edit, passing local check (`0.25`) and no-reply. Three student requests,
 zero tutor requests; all 59 pins and two-task replay verify. No new labels or
 further run is queued. This demonstrates continuity, not learning or fidelity.
 
+**Custom task setup complete:** a [supplied exercise](docs/2026-09-22-custom-notebook-exercise.md)
+can now use the same verified conversation example without custom Python glue.
+The public fruit-count bundle works offline; 446 tests pass. No engine change,
+new live run or additional labeling.
+
 ## North Star
 
 Build a tool where educators can try tutoring approaches with simulated students
@@ -255,6 +260,13 @@ milestones; the former does not establish the latter.
   one execution, zero generated tutor/chat turns or failures. Original example
   and prior activity persist; both sessions replay and all 59 pins verify.
   Closed with three decisions unused, no rerolls, new labels or fidelity claim.
+
+- [x] **18. Make conversation-conditioned setup work with a supplied exercise.**
+  The existing command now accepts task, activity, evaluator and tutor policy in
+  one [exercise file](examples/fruit-count.json), retaining its default example.
+  Both agent inputs, next-task context, malformed inputs and source preservation
+  are verified offline. The runtime still supports one selected cell, one string
+  column and one scalar result; this does not establish broader student fidelity.
 
 ## Current difficulties
 
