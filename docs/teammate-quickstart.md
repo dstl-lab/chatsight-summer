@@ -259,6 +259,81 @@ manifest, student steps and any tutor exchanges. Keep the original frozen
 research files separate and unchanged. For policy comparisons, transfer the
 whole comparison directory, including `comparison.json` and both child sessions.
 
+To inspect one saved notebook simulation as a read-only action timeline:
+
+```sh
+.venv/bin/marimo run apps/notebook_replay.py \
+  --host 127.0.0.1 --port 8427 --headless -- \
+  --session data/workspace/sessions/SESSION
+```
+
+Open **http://127.0.0.1:8427/**. The replay shows saved tutor interventions,
+student actions, selected-cell changes and recorded checks. It makes no provider
+calls, runs no notebook code and does not change the session. The display contains
+saved conversation text and code, so keep it local. A linked session finds its
+recorded predecessor automatically when the original path remains available; use
+`--previous /moved/predecessor/session` only when that predecessor was moved.
+
+To inspect a completed one-case recorded-versus-simulated continuation:
+
+```sh
+.venv/bin/marimo run apps/continuation_comparison.py \
+  --host 127.0.0.1 --port 8430 --headless -- \
+  --comparison data/workspace/COMPLETED_CASE
+```
+
+This page is read-only. It shows the shared recorded history, the held-out real
+next message, one saved simulated next message, and request provenance. It does
+not make a model request, modify the saved case, or report an accuracy score.
+
+To freeze a new one-scenario policy comparison without generating:
+
+```sh
+.venv/bin/marimo run apps/policy_comparison_setup.py \
+  --host 127.0.0.1 --port 8432 --headless -- \
+  --sources data/workspace/SOURCE_ROOT \
+  --output data/workspace/NEW_COMPARISON
+```
+
+Select an eligible source, enter the confirmed current policy and proposed policy,
+then freeze the plan. Setup makes no provider request and refuses to overwrite an
+existing comparison. The source currently includes one saved simulated student
+reply after recorded history; it is a mechanism setup, not a real policy outcome.
+Launch with `--send=true` to replace the freeze-only button with **Freeze and run
+comparison**. That action saves the plan first, then makes one tutor and one student
+request per condition and displays both outcomes. Reopening skips every completed
+or failed condition instead of generating a replacement.
+
+For an iterative workspace that keeps policy drafts and simulation results together:
+
+```sh
+.venv/bin/marimo run apps/policy_simulation_lab.py \
+  --host 127.0.0.1 --port 8432 --headless -- \
+  --sources data/workspace/SOURCE_ROOT \
+  --workspace data/workspace/POLICY_LAB --send=true
+```
+
+Each click creates a new numbered run. Exact duplicate scenario/policy pairs are
+refused rather than rerolled; edited policies produce a new immutable result below
+the still-editable controls. Refresh the page to include new runs in its history picker.
+
+To freeze and inspect a fixed set of eligible scenarios together:
+
+```sh
+.venv/bin/marimo run apps/policy_cohort_lab.py \
+  --host 127.0.0.1 --port 8434 --headless -- \
+  --sources data/workspace/SOURCE_ROOT \
+  --workspace data/workspace/POLICY_COHORTS --send=true
+```
+
+Freezing a cohort makes no model request. The overview reports only saved lifecycle
+outcomes and each case expands into the same A/B conversation view. One click runs
+up to four independent cases concurrently; student conversations are never combined
+inside one request. Completed pairs are grouped by objective follow-up status, while
+ready, incomplete and failed pairs remain explicitly not comparable. The development
+source contract still starts from a cached simulated student question after recorded
+history; it is not a real-student policy-effect estimate.
+
 ```sh
 .venv/bin/marimo run apps/student_workspace.py \
   --host 127.0.0.1 --port 8426 --headless -- \
@@ -304,7 +379,7 @@ Node 22 in addition to the setup above, then run:
 
 ```sh
 .venv/bin/python -m pytest -q
-.venv/bin/marimo check apps/student_workspace.py apps/chat_policy_comparison.py
+.venv/bin/marimo check apps/student_workspace.py apps/chat_policy_comparison.py apps/notebook_replay.py apps/continuation_comparison.py apps/policy_comparison_setup.py apps/policy_simulation_lab.py apps/policy_cohort_lab.py
 node tests/episode_review_navigation.cjs
 ```
 

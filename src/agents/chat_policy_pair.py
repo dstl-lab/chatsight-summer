@@ -9,6 +9,8 @@ from src.agents import chat_student as chat, chat_workspace, notebook_student as
 
 
 def _source(folder):
+    if folder.is_symlink() or any(path.is_symlink() for path in folder.rglob('*')):
+        raise ValueError('Source files and directories must not be symbolic links.')
     if sorted(p.name for p in folder.glob('step-*.json')) != ['step-0001.json'] or (folder / 'tutor-exchanges').exists():
         raise ValueError('Use a frozen source with exactly one cached reply and no tutor interventions.')
     # Read frozen evidence without creating or touching its lock file.
@@ -89,7 +91,8 @@ def _comparison(folder):
     return receipt
 
 
-def _condition(folder, receipt, name):
+def _startup(folder, receipt, name):
+    """Verify the imported first reply even when a later request is unfinished."""
     if name not in ('a', 'b'):
         raise ValueError('Choose condition a or b.')
     child = folder / 'sessions' / name
@@ -100,20 +103,108 @@ def _condition(folder, receipt, name):
             manifest['max_decisions'] != plan['max_new_decisions'] + 1 or manifest['model'] != plan['model'] or
             store.digest(first['result']) != plan['source']['state_sha256']):
         raise ValueError('The comparison startup files changed.')
+    initial = chat._initial(manifest['query'])
+    if (manifest.get('version') != 1 or manifest.get('engine') != chat._engine()
+            or not isinstance(manifest.get('session_id'), str) or not manifest['session_id']
+            or first['status'] != 'complete'
+            or first['request']['binding'] != chat._snapshot(manifest, initial, 0)['binding']
+            or first['request']['tutor_reply'] is not None
+            or first['request']['prompt'] != chat.continuation.make_prompt(initial['episode'])
+            or first['result'] != chat._result(initial, first)
+            or first['result']['status'] != 'awaiting-tutor'):
+        raise ValueError('The imported comparison start does not reproduce.')
+    return child, manifest, first
+
+
+def _condition_lifecycle(folder, receipt, name):
+    """Validate saved requests, including a pending final request, without taking a lock."""
+    child, manifest, first = _startup(folder, receipt, name)
+    state, steps, states = first['result'], {}, {}
+    paths = sorted(child.glob('step-*.json'))
+    if (len(paths) > manifest['max_decisions'] or
+            [path.name for path in paths] != [f'step-{index:04d}.json' for index in range(1, len(paths) + 1)]):
+        raise ValueError('The comparison operation sequence changed.')
+    lifecycle = None
+    for index, path in enumerate(paths[1:], 2):
+        step = store._read(path)
+        binding = chat._snapshot(manifest, state, index - 1)['binding']
+        states[binding['state_sha256']] = state
+        prepared = chat._prepare(state, step['request']['tutor_reply'])
+        if (step['request']['binding'] != binding or
+                step['request']['prompt'] != chat.continuation.make_prompt(prepared['episode'])):
+            raise ValueError('A comparison student request does not reproduce.')
+        steps[binding['state_sha256']] = (index, step)
+        if step['status'] == 'pending' and index == len(paths):
+            lifecycle = 'incomplete'
+        else:
+            state = chat._result(prepared, step)
+            if step['result'] != state:
+                raise ValueError('A comparison student result does not reproduce.')
+    if lifecycle is None:
+        states[store.digest(state)] = state
+    seen = set()
     for directory in (child / 'tutor-exchanges').glob('*'):
         tutor = store._read(directory / 'receipt.json')
-        if tutor['request']['policy'] != plan['policies'][name]:
-            raise ValueError('A saved tutor exchange used a different policy.')
-        if tutor['status'] != 'complete' or tutor['continuation']['status'] != 'complete':
-            raise ValueError('A tutor exchange failed or is incomplete. Inspect saved results; it will not be resent.')
-    for path in sorted(child.glob('step-*.json'))[1:]:
-        step = store._read(path)
-        binding = step['request']['binding']
-        tutor = store._read(child / 'tutor-exchanges' / binding['state_sha256'] / 'receipt.json')
-        if (tutor['request']['binding'] != binding or tutor['request']['policy'] != plan['policies'][name] or
-                tutor['response']['text'] != step['request']['tutor_reply'] or
-                tutor['continuation']['result']['state'] != step['result']):
-            raise ValueError('A student step is not linked to the fixed tutor policy.')
+        request, continuation = tutor['request'], tutor['continuation']
+        before = states[directory.name]
+        binding = {'session_sha256': store.digest(manifest), 'state_sha256': store.digest(before)}
+        visible = {
+            'dialogue': [{key: turn[key] for key in ('role', 'text', 'origin')}
+                         for turn in [*before['episode']['context'], *before['episode']['turns']]],
+            'pending_message': before['message'],
+        }
+        context = store._read(directory / 'context.json')
+        prompt = chat_workspace.PROMPT + json.dumps(
+            {'policy': receipt['plan']['policies'][name], 'context': visible}, ensure_ascii=False, sort_keys=True)
+        if (before['status'] != 'awaiting-tutor' or request['binding'] != binding
+                or context['binding'] != binding or any(context[key] != value for key, value in visible.items())
+                or request['policy'] != receipt['plan']['policies'][name]
+                or request['model'] != manifest['model'] or request['prompt'] != prompt
+                or request['schema'] != chat_workspace.Reply.model_json_schema()):
+            raise ValueError('A saved tutor request does not reproduce the fixed policy and context.')
+        linked = steps.get(directory.name)
+        if tutor['status'] in ('pending', 'error'):
+            if linked or continuation['status'] != 'not-started':
+                raise ValueError('An unfinished tutor request cannot have a student result.')
+            lifecycle = 'incomplete' if tutor['status'] == 'pending' else 'failed'
+        elif tutor['status'] == 'complete':
+            reply = chat_workspace.Reply.model_validate(tutor['response']).text
+            if linked and linked[1]['request']['tutor_reply'] != reply:
+                raise ValueError('A student step used a different tutor response.')
+            if continuation['status'] == 'complete':
+                if (not linked or linked[1]['status'] not in ('complete', 'error')
+                        or continuation['result'] != chat._snapshot(manifest, linked[1]['result'], linked[0])):
+                    raise ValueError('A saved tutor continuation does not match its student result.')
+            elif continuation['status'] in ('pending', 'error'):
+                # The final receipt write can be interrupted after a student step is saved.
+                lifecycle = 'incomplete' if continuation['status'] == 'pending' else 'failed'
+            else:
+                raise ValueError('Unknown saved continuation status.')
+        else:
+            raise ValueError('Unknown saved tutor status.')
+        for record in (tutor, continuation):
+            if record['status'] == 'error':
+                error = record['error']
+                if (not isinstance(error, dict) or set(error) != {'type', 'message'}
+                        or any(not isinstance(value, str) for value in error.values())):
+                    raise ValueError('Invalid saved tutor error.')
+        seen.add(directory.name)
+    if not set(steps) <= seen:
+        raise ValueError('A student step has no linked fixed-policy tutor request.')
+    if lifecycle:
+        return lifecycle
+    if state['status'] == 'error':
+        return 'failed'
+    if state['status'] == 'no-reply':
+        return 'no-follow-up'
+    return 'ready' if len(paths) < manifest['max_decisions'] else 'student-replied'
+
+
+def _condition(folder, receipt, name):
+    lifecycle = _condition_lifecycle(folder, receipt, name)
+    child = folder / 'sessions' / name
+    if lifecycle == 'incomplete' or (lifecycle == 'failed' and chat._load(child)[1]['status'] != 'error'):
+        raise ValueError('A tutor exchange failed or is incomplete. Inspect saved results; it will not be resent.')
     return child
 
 
@@ -125,8 +216,10 @@ def show(folder):
     result = {key: plan[key] for key in ('comparison_id', 'max_new_decisions', 'source')}
     result['conditions'] = {}
     for name in ('a', 'b'):
-        item = {'policy': plan['policies'][name], 'snapshot': None, 'error': '', 'history': ''}
+        item = {'policy': plan['policies'][name], 'snapshot': None, 'error': '', 'history': '',
+                'lifecycle': 'failed'}
         try:
+            item['lifecycle'] = _condition_lifecycle(folder, receipt, name)
             child = _condition(folder, receipt, name)
             item['snapshot'] = chat_workspace.snapshot(child)
         except (OSError, ValueError, KeyError, TypeError) as exc:
