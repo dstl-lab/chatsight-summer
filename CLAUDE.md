@@ -1,5 +1,15 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser replay usability (2026-09-22)
+
+Chat replay leads with actual saved activity and literal previews. Selecting a
+step reveals its relevant chat; Previous/Next stay together. Run details groups
+research views, while the heading and playback remain visible during inspection.
+No API/engine/evidence changes or new requests/labels. 544 Python tests pass (three
+optional skips), three Node checks and both Marimo checks pass; desktop browser
+and independent JS review complete. Scope: docs/2026-09-22-browser-replay-usability.md.
+Included in browser PR #48; main still requires independent review.
+
 ## Browser Saved results and chat reading (2026-09-22)
 
 Each verified encounter now includes saved_results_html from workspace_history,
