@@ -26,6 +26,9 @@ def test_fixed_comparison_endpoint_is_read_only_pinned_and_separate_from_replay(
     assert len(response.json()['cases']) == 2
     assert 'PRIVATE REVIEWER' not in response.text and str(review) not in response.text
     assert response.json()['cases'][1]['draws'][0]['shared_review_with'] == 2
+    tutor = response.json()['cases'][0]['prefix']['turns'][0]
+    assert tutor['text'] == 'Try the next step.' and tutor['display_html'] == '<p>Try the next step.</p>'
+    assert 'display_html' not in response.json()['cases'][0]['prefix']['context'][0]
     assert viewer.get('/api/workspace').json() == replay
     assert viewer.post('/api/comparison', json={}).status_code == 405
     assert viewer.get('/api/comparison?folder=elsewhere').status_code == 400

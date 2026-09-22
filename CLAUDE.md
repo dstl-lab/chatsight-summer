@@ -1,5 +1,31 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser Saved results and chat reading (2026-09-22)
+
+Each verified encounter now includes saved_results_html from workspace_history,
+under existing shared locks. Browser hides raw diagnostics and refuses symlinks
+in newly read receipt paths; default Marimo rendering is unchanged. Saved results
+opens the entire selected encounter's history in center details, explicitly
+including later exchanges while chat stays at the selected playback state.
+Policy attribution still uses the existing exact delivery matcher, independent
+of current drafts. Chat adds compact source headers, clearer role styling, count
+and First/Last navigation. 544 Python tests (three optional skips), Marimo/Node
+checks pass. All 29 scenarios load, two have confirmed policies, zero receipt
+warnings; all 130 evidence files unchanged. No calls/execution/labels. Memo:
+docs/2026-09-22-browser-saved-results.md.
+
+## Conversation stays beside the work (2026-09-22)
+
+Connected browser chat now lives in a persistent right sidebar. Replay follows
+the selected state; Compare uses only the selected review's shared prefix, never
+an unrelated replay or a concatenation of alternatives. Inspect tab is retired;
+source/details and tutor controls use the center. Hide/show retains drafts and
+selection. Failed/loading reads clear stale chat. Reuse restricted tutor display
+formatting and exact source; no engine change. 534 Python tests (three optional
+skips), Marimo and Node checks pass; desktop browser and independent review pass.
+All 130 evidence files unchanged; no calls/execution/labels. Both previews remain
+read-only. Memo: docs/2026-09-22-browser-chat-sidebar.md.
+
 ## Existing communication review is visible in Compare (2026-09-22)
 
 browser_workspace --comparison points to the completed cached communication
