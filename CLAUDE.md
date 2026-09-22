@@ -1,5 +1,58 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser Saved results and chat reading (2026-09-22)
+
+Each verified encounter now includes saved_results_html from workspace_history,
+under existing shared locks. Browser hides raw diagnostics and refuses symlinks
+in newly read receipt paths; default Marimo rendering is unchanged. Saved results
+opens the entire selected encounter's history in center details, explicitly
+including later exchanges while chat stays at the selected playback state.
+Policy attribution still uses the existing exact delivery matcher, independent
+of current drafts. Chat adds compact source headers, clearer role styling, count
+and First/Last navigation. 544 Python tests (three optional skips), Marimo/Node
+checks pass. All 29 scenarios load, two have confirmed policies, zero receipt
+warnings; all 130 evidence files unchanged. No calls/execution/labels. Memo:
+docs/2026-09-22-browser-saved-results.md.
+
+## Conversation stays beside the work (2026-09-22)
+
+Connected browser chat now lives in a persistent right sidebar. Replay follows
+the selected state; Compare uses only the selected review's shared prefix, never
+an unrelated replay or a concatenation of alternatives. Inspect tab is retired;
+source/details and tutor controls use the center. Hide/show retains drafts and
+selection. Failed/loading reads clear stale chat. Reuse restricted tutor display
+formatting and exact source; no engine change. 534 Python tests (three optional
+skips), Marimo and Node checks pass; desktop browser and independent review pass.
+All 130 evidence files unchanged; no calls/execution/labels. Both previews remain
+read-only. Memo: docs/2026-09-22-browser-chat-sidebar.md.
+
+## Existing communication review is visible in Compare (2026-09-22)
+
+browser_workspace --comparison points to the completed cached communication
+bundle alongside a notebook/chat launch. Fixed files, closure/provenance hashes,
+exact joins and one declared condition are checked before projection; saved
+scripts/path metadata are never executed/followed. Closure is pinned at startup.
+Compare has separate eight-case navigation, recorded reference + both draws,
+existing help/work flags, supplied context and review details. Preserve duplicate
+draws/shared judgments and distinguish missing/unclear from no. No generation or
+new coding in Compare; replay selection/drafts survive switching. 534 tests,
+Marimo/Node checks and independent review pass. Browser cases 1/3/8 verified;
+20 review, 105 chat and five notebook files unchanged. Port8428 now serves the
+combined read-only workspace. No new scores/calls/labels or fidelity claims.
+Memo: docs/2026-09-22-browser-saved-comparison.md.
+
+## Saved tutor replies have readable formatting (2026-09-22)
+
+The connected browser renders restricted Markdown only for tutor display, with
+original text retained in Inspect source and literal student messages. Raw HTML,
+links/images and fence attributes remain inert. Existing Markdown dependency is
+now direct/locked; no engine, prompt, binding or receipt changes. 509 tests pass
+(three optional skips), plus Marimo/Node checks and independent security review.
+Browser checks verified formatted code/lists, raw source and keyboard code focus;
+all 29 scenarios load and 105 chat/five notebook files remain unchanged. Both
+8428/8427 previews remain read-only. No calls/execution/labels. Memo:
+docs/2026-09-22-browser-message-readability.md.
+
 ## Saved scenarios can be selected in the browser (2026-09-22)
 
 browser_workspace --chat-sessions freezes direct-child chat folders at startup,
