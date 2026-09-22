@@ -121,6 +121,32 @@ the supplied table; it is not a course-autograder result or evidence of learning
 Free-form generated chat still needs interpretation. See the
 [example scope and verification](2026-09-21-notebook-example.md).
 
+### Optionally supply a communication example
+
+If you have a saved chat session, use its original conversation prefix as a
+separate communication example for a new authored notebook task:
+
+```sh
+.venv/bin/python -m src.agents.notebook_example data/notebook-with-context \
+  --image-id "$NOTEBOOK_RUNTIME_IMAGE" \
+  --chat-source data/workspace/sessions/case-01
+```
+
+Use an actual source directory supplied by your team. This option is on the
+`codex/notebook-communication-context` branch until integrated. Creation is
+offline and refuses existing destinations. It verifies the saved chat and copies
+only the original prefix, excluding simulated replies and identity metadata.
+The exercise, initial code, evaluator and six-decision limit stay unchanged.
+Open `data/notebook-with-context/session` with the same workspace command above.
+
+Both student and tutor receive the communication example. Its task/code do not
+replace the current exercise, and it does not establish the same learner,
+personality or historical notebook behavior. A fictional source remains fictional;
+quoted content is not automatically anonymized. Source hashes and path are saved
+outside model context. This optional setup does not establish improved realism
+or persistent conditioning across later tasks. See the
+[scope and verification](2026-09-22-notebook-communication-context.md).
+
 ## 3. Open private working sessions, when provided
 
 The real course scenarios are not in Git. Obtain a private bundle from the team
