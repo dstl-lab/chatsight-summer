@@ -35,7 +35,8 @@ def advance(folder, *, binding, tutor_reply=None, send=False, generate=None, che
     return tutor_context.snapshot(folder)
 
 
-def respond(folder, *, binding, policy, send=False, generate_tutor=None, generate_student=None, check=None):
+def respond(folder, *, binding, policy, send=False, generate_tutor=None, generate_student=None, check=None,
+            reference=None):
     """Generate one bound tutor reply and one student decision; never retry a saved exchange."""
     _require_binding(binding, send)
     if not isinstance(policy, str) or not policy.strip():
@@ -53,7 +54,7 @@ def respond(folder, *, binding, policy, send=False, generate_tutor=None, generat
             raise ValueError('Stale tutor context: the student changed before tutor generation.')
         return (generate_tutor or partial(_generate, folder))(prompt, schema)
 
-    notebook_tutor.respond(folder, output, policy=policy,
+    notebook_tutor.respond(folder, output, policy=policy, reference=reference,
         model=student._read(folder / 'session.json')['model'], max_actions=1,
         generate_tutor=bound_tutor, generate_student=generate_student or partial(_generate, folder),
         check=check or student.notebook_runtime.check_work)

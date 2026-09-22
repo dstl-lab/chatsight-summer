@@ -81,7 +81,8 @@ NOTEBOOK_RUNTIME_IMAGE=$(docker image inspect chatsight-notebook --format '{{.Id
 .venv/bin/marimo run apps/student_workspace.py \
   --host 127.0.0.1 --port 8427 --headless -- \
   --session data/notebook-example/session \
-  --policy-file data/notebook-example/policy.txt
+  --policy-file data/notebook-example/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json
 ```
 
 Open **http://127.0.0.1:8427/**. Inspect the task, table and initial code. Creation
@@ -163,7 +164,8 @@ task, table, initial code, expected answer and tutor policy:
 .venv/bin/marimo run apps/student_workspace.py \
   --host 127.0.0.1 --port 8428 --headless -- \
   --session data/fruit-example/session \
-  --policy-file data/fruit-example/policy.txt
+  --policy-file data/fruit-example/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json
 ```
 
 Open **http://127.0.0.1:8428/** to inspect the prepared task. Setup and viewing
@@ -179,6 +181,15 @@ defaults apply. Your draft edits survive **Reload saved session**. Selecting
 another scenario resets the draft to the initially loaded policy; restarting the
 app rereads the file. Editing the file while the app is running does not update
 the draft, and loading a policy does not send it to the tutor.
+
+Notebook workspaces also accept an optional `--reference-file` containing library
+API evidence, as shown above. The JSON is read and validated once at launch;
+unreadable or malformed files stop initialization. Its library and version must
+match the activity exactly before a generated tutor request is sent. The supplied
+reference enters that request and its saved receipt, not the student's input
+directly. Reloading sends nothing; manual replies and quiet student steps do not
+send the reference directly. Omit the option to keep the existing behavior; it
+cannot be used with chat-only workspaces. Restart to load a changed reference file.
 
 To include an existing communication example, add
 `--chat-source data/workspace/sessions/case-01` to the creation command, using an
@@ -209,7 +220,8 @@ without that stop cannot advance. For an eligible `data/notebook-example/session
 .venv/bin/marimo run apps/student_workspace.py \
   --host 127.0.0.1 --port 8429 --headless -- \
   --session data/next-exercise/session \
-  --policy-file data/next-exercise/policy.txt
+  --policy-file data/next-exercise/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json
 ```
 
 Open **http://127.0.0.1:8429/** to inspect the next task, or export its initial

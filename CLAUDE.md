@@ -1,5 +1,18 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Workspace carries the tutor library reference (2026-09-22)
+
+Optional notebook-only --reference-file now loads through the existing
+LibraryReference schema once at launch. Malformed files/chat use stop; exact
+activity library/version mismatch is rejected before generated tutor dispatch.
+student_workspace.respond forwards the optional reference to notebook_tutor;
+the existing request/receipt records delivery, and the raw reference is not
+injected into student input. Manual/quiet steps and reload retain their existing
+behavior. No generator/runtime change or new live calls/labels. Authored Marimo
+controls and backend regressions reproduce and verify the handoff; 466 tests,
+both Marimo checks and Node navigation pass. See
+docs/2026-09-22-workspace-library-reference.md. Task21 complete.
+
 ## Supplied exercises connect to notebook history (2026-09-22)
 
 notebook_example --previous/API previous reuses notebook_next_task for a completed

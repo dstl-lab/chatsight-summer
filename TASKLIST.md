@@ -289,6 +289,13 @@ milestones; the former does not establish the latter.
   nested or changed inputs cannot publish a successor. CLI and replay verified
   offline; no new live run or labels.
 
+- [x] **21. Pass library guidance through the notebook workspace.**
+  Optional `--reference-file` uses the existing tutor schema and exact
+  library/version check. The reference reaches only generated tutor requests
+  and their receipts; loading/reloading sends nothing. Authored control tests
+  verify delivery, unchanged defaults and invalid-input refusal. No new live
+  run, labels or generator change.
+
 ## Current difficulties
 
 The second notebook exercise is complete and closed after specific approval.

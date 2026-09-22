@@ -41,7 +41,8 @@ separator. For example, after creating the public notebook example:
 .venv/bin/marimo run apps/student_workspace.py \
   --host 127.0.0.1 --port 8427 --headless -- \
   --session data/notebook-example/session \
-  --policy-file data/notebook-example/policy.txt
+  --policy-file data/notebook-example/policy.txt \
+  --reference-file runtime/notebook/babypandas-1.0.0-reference.json
 ```
 
 This command opens in viewing mode. Add `--send=true` only when ready to enable
@@ -51,6 +52,15 @@ app initialization and uses its contents as the editable starting draft. A
 missing, unreadable, invalid-encoding or blank file stops initialization; there
 is no silent fallback. Omitting the option retains the existing mode-specific
 default. Loading or editing a draft does not establish that a tutor received it.
+
+The optional `--reference-file` is for notebook sessions only. Its JSON is read
+and validated once at launch; unreadable or malformed files stop initialization.
+Before an explicit generated tutor submission, its library and version must match
+the activity exactly. The reference is supplied API evidence, not a replacement
+for the teaching policy. It is included in the tutor request and saved receipt,
+not added directly to the student's input. Reloading makes no request; manual
+replies and quiet student continuations do not send this reference directly.
+Omitting the option preserves existing behavior. Restart to reread a changed file.
 
 The two text drafts survive work/view changes and **Reload saved session** within
 the page. Switching conversation scenarios resets the policy draft to the

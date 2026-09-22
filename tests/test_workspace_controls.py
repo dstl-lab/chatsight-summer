@@ -1,5 +1,6 @@
 """Standalone cleanup must leave the workspace's visible controls callable."""
 import gc
+import json
 from pathlib import Path
 import weakref
 from types import SimpleNamespace
@@ -21,7 +22,7 @@ from marimo._runtime.exceptions import MarimoRuntimeException, unwrap_user_excep
 from marimo._runtime.runner.hooks_post_execution import (
     _delete_local_variables, _store_reference_to_output,
 )
-from src.agents import tutor_context
+from src.agents import notebook_tutor, tutor_context
 
 
 def _buttons(output):
@@ -74,7 +75,7 @@ def test_visible_controls_survive_standalone_cleanup(tmp_path, missing_packet):
             mo=mo, chat_mode=True, folder=tmp_path, get_view=get_view, set_view=set_view,
             advance_session=lambda *a, **k: pytest.fail('Unexpected advance'),
             respond_session=respond, snapshot_session=snapshot, scenario_picker=mo.md('Authored case'),
-            send_enabled=True, tutor_inputs=inputs, tutor_context=tutor_context,
+            send_enabled=True, tutor_inputs=inputs, tutor_context=tutor_context, library_reference=None,
             workspace_history=SimpleNamespace(render=lambda _: 'Authored saved result'))
         with runtime.with_cell_id('view'):
             result = Evaluator(executor=resolve_executor(), lifecycles=[]).evaluate_sync(cell, globals_)
@@ -169,7 +170,8 @@ def test_damaged_receipt_keeps_saved_results_and_reload_available(tmp_path, monk
         teardown_context()
 
 
-def test_policy_file_draft_survives_reload_and_reaches_saved_request(tmp_path, monkeypatch):
+@pytest.mark.parametrize('with_reference', [False, True])
+def test_policy_file_draft_survives_reload_and_reaches_saved_request(tmp_path, monkeypatch, with_reference):
     from src.agents import notebook_student as student, student_workspace as workspace, workspace_history
     from tests.test_notebook_session import ACTIVITY, TASK
 
@@ -179,8 +181,14 @@ def test_policy_file_draft_survives_reload_and_reaches_saved_request(tmp_path, m
                  generate=lambda _, schema: schema(decision='reply', text='this?', source=None))
     policy_file = tmp_path / 'policy.txt'
     policy_file.write_text('Loaded instructions.\nUse one short hint.\n')
-    monkeypatch.setattr(mo, 'cli_args', lambda: {
-        'session': str(folder), 'policy-file': str(policy_file), 'send': True})
+    reference = {'library': ACTIVITY['library'], 'library_version': ACTIVITY['library_version'],
+                 'text': 'Authored tutor-only reference marker.', 'source': 'Authored API example.'}
+    reference_file = tmp_path / 'reference.json'
+    reference_file.write_text(json.dumps(reference))
+    args = {'session': str(folder), 'policy-file': str(policy_file), 'send': True}
+    if with_reference:
+        args['reference-file'] = str(reference_file)
+    monkeypatch.setattr(mo, 'cli_args', lambda: args)
     monkeypatch.setattr(student.llm, 'make_generate', lambda *a, **kw: pytest.fail('Unexpected provider'))
     app._maybe_initialize()
     internal = InternalApp(app)
@@ -188,7 +196,7 @@ def test_policy_file_draft_survives_reload_and_reaches_saved_request(tmp_path, m
     evaluator = Evaluator(executor=resolve_executor(), lifecycles=[])
     initialize_script_context(internal, NoopStream(), None)
     runtime = get_context()
-    globals_ = dict(mo=mo, Path=Path, chat_mode=False, folder=folder)
+    globals_ = dict(mo=mo, Path=Path, notebook_tutor=notebook_tutor, chat_mode=False, folder=folder)
     def evaluate(definition):
         cell = compile_cell(next(c.code for c in cells if definition in c.defs), cell_id=definition)
         with runtime.with_cell_id(definition):
@@ -198,9 +206,12 @@ def test_policy_file_draft_survives_reload_and_reaches_saved_request(tmp_path, m
     calls = []
     edited = 'Edited instructions.\nAsk one focused question.'
     def tutor(prompt, schema):
+        payload = json.loads(prompt.split('POLICY AND CONTEXT JSON:\n')[1])
+        assert payload.get('library_reference') == (reference if with_reference else None)
         calls.append('tutor')
         return schema(text='Which values should match?')
     def learner(prompt, schema):
+        assert reference['text'] not in prompt and 'library_reference' not in prompt
         calls.append('student')
         return schema(decision='no-reply', text='', source=None)
     try:
@@ -220,6 +231,7 @@ def test_policy_file_draft_survives_reload_and_reaches_saved_request(tmp_path, m
         output = evaluate('workspace_view')
         assert calls == [] and not (folder / 'tutor-exchanges').exists()
         policy_file.write_text('Later file content; restart to load it.')
+        reference_file.write_text('Later invalid content; restart to load it.')
         reload = next(b for b in _buttons(output) if 'Reload saved session' in b.text)
         with runtime.with_cell_id('event'):
             reload._update(1)
@@ -231,11 +243,45 @@ def test_policy_file_draft_survives_reload_and_reaches_saved_request(tmp_path, m
         assert calls == ['tutor', 'student'] and get_view()[0]['status'] == 'no-reply'
         receipt = student._read(next((folder / 'tutor-exchanges').glob('*/receipt.json')))
         assert receipt['request']['policy'] == edited
+        assert receipt['request'].get('library_reference') == (reference if with_reference else None)
         assert policy_file.read_text() == 'Later file content; restart to load it.'
         globals_.update(folder=tmp_path / 'another-scenario', chat_mode=True)
         evaluate('tutor_inputs')
         assert globals_['tutor_inputs'].value['policy'] == 'Loaded instructions.\nUse one short hint.\n'
         assert calls == ['tutor', 'student']
+    finally:
+        teardown_context()
+
+
+@pytest.mark.parametrize('kind', ['missing', 'encoding', 'invalid-json', 'invalid-schema', 'flag', 'empty-path', 'chat'])
+def test_reference_file_invalid_inputs_stop_without_fallback(tmp_path, monkeypatch, kind):
+    path = tmp_path / 'reference.json'
+    if kind == 'encoding':
+        path.write_bytes(b'\xff')
+    elif kind == 'invalid-json':
+        path.write_text('not JSON')
+    elif kind == 'invalid-schema':
+        path.write_text('{"library": "babypandas"}')
+    elif kind == 'chat':
+        path.write_text(json.dumps({'library': 'babypandas', 'library_version': '1.0.0',
+                                    'text': 'Authored API facts.', 'source': 'Authored example.'}))
+    args = {'chat-sessions' if kind == 'chat' else 'session': str(tmp_path / 'session'),
+            'reference-file': True if kind == 'flag' else ' ' if kind == 'empty-path' else str(path)}
+    monkeypatch.setattr(mo, 'cli_args', lambda: args)
+    app._maybe_initialize()
+    internal = InternalApp(app)
+    cell = compile_cell(next(c._cell.code for _, c in internal.cell_manager.valid_cells()
+                             if 'chat_root' in c._cell.defs), cell_id='launch')
+    initialize_script_context(internal, NoopStream(), None)
+    try:
+        with get_context().with_cell_id('launch'):
+            result = Evaluator(executor=resolve_executor(), lifecycles=[]).evaluate_sync(
+                cell, dict(mo=mo, Path=Path, notebook_tutor=notebook_tutor))
+        error = result.exception
+        if isinstance(error, MarimoRuntimeException):
+            error = unwrap_user_exception(error)
+        assert isinstance(error, MarimoStopError), error
+        assert 'reference' in error.output.text.lower()
     finally:
         teardown_context()
 
