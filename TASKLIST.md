@@ -10,6 +10,9 @@ Marimo and independent checks. Port8431 has separate working copies of 29 saved
 conversations (27 eligible). No new provider calls or labels were needed.
 Next: independent PR review and integration; batch controls remain deferred.
 This is workflow integration, not new fidelity evidence.
+Navigation is now direct: policy workspaces open on Tutor policies, empty ones
+show setup immediately, and conversations expose policy comparison, tutor
+instructions and saved results. The single chat and explicit Save/Run steps remain.
 
 The [replay usability pass](docs/2026-09-22-browser-replay-usability.md) is complete:
 conversation-only runs use one chat with Previous/Next; the duplicate activity

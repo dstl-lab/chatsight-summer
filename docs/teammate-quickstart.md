@@ -102,7 +102,8 @@ The authored source also works with the browser's comparison workspace:
   --policy-workspace data/teammate-policy-runs --port 8431
 ```
 
-Open **Compare → New comparison**, select the saved starting conversation, and
+The policy workspace opens directly on **Tutor policies** and shows setup when
+there are no saved comparisons. Select the saved starting conversation and
 enter different current/proposed tutor instructions. **Save comparison** copies
 the same cached starting question into two independent arms without model calls.
 The shared conversation appears once beside the form and saved results. Saved
@@ -343,8 +344,11 @@ For browser policy experiments over eligible supplied working conversations:
   --policy-workspace data/workspace/policy-runs --port 8431
 ```
 
-In **Compare**, choose **New comparison**, select a starting conversation, and
-save the two tutor policies. Eligible starts have exactly one cached simulated
+In **Tutor policies**, use the setup form (or **New comparison** when results
+already exist), select a starting conversation, and save the two tutor policies.
+From Conversation, **Compare tutor policies** opens setup directly; **Tutor
+instructions** and **Saved results** are also visible without opening a menu.
+Eligible starts have exactly one cached simulated
 student reply and no subsequent tutor intervention. Later-progressed conversations
 remain available for replay but cannot be silently reset into a new start.
 

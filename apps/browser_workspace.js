@@ -5,7 +5,7 @@ const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 const block = value => `<pre>${esc(typeof value==='string'?value:JSON.stringify(value,null,2))}</pre>`;
 const taskText = task => typeof task==='string'?task:Array.isArray(task)&&task.every(cell=>typeof cell?.source==='string')?task.map(cell=>cell.source).join('\n\n'):JSON.stringify(task,null,2);
 const state = {kind:'notebook',scenarios:null,scenarioId:null,encounters:[],caseIndex:0,step:0,mode:'simulate',selected:'step',showInspector:false,controls:{send_enabled:false},operation:{status:'idle',message:''},policyDraft:null,replyDraft:'',replyMode:'policy',submitting:false,monitoring:false,refreshing:false,clientError:''};
-Object.assign(state,{comparisonAvailable:false,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:'',chatOpen:true,chatKey:null});
+Object.assign(state,{comparisonAvailable:false,policyWorkspaceAvailable:false,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:'',comparisonEntryNote:'',chatOpen:true,chatKey:null});
 Object.assign(state,{comparisonDraft:null,comparisonEditing:false,comparisonSubmitting:false,comparisonMonitoring:false,comparisonOperation:{status:'idle',message:''}});
 let pollTimer,comparisonPollTimer;
 const current = () => state.encounters[state.caseIndex];
@@ -32,12 +32,14 @@ function selectMode(mode){
   if(state.submitting||state.monitoring||state.refreshing||comparisonBusy()||mode==='compare'&&!state.comparisonAvailable)return;
   mode=mode==='inspect'?'simulate':mode;
   state.mode=mode;state.showInspector=false;$('search').value='';$('run-details').open=false;
+  const url=new URL(window.location.href);url.searchParams.set('view',mode==='compare'?'compare':'replay');window.history.replaceState(null,'',url);
   if(mode==='compare')return reloadComparison();
   if(state.encounters.length)render();else return reloadWorkspace();
 }
 function renderModeButtons(){
   document.querySelectorAll('[data-mode]').forEach(b=>{
     if(b.dataset.mode==='simulate')b.textContent=state.kind==='chat'?'Conversation':'Notebook';
+    if(b.dataset.mode==='compare')b.textContent=state.policyWorkspaceAvailable||isPolicyComparison()?'Tutor policies':state.comparison?.kind==='saved-communication-comparison'?'Reviewed replies':'Compare';
     b.hidden=b.dataset.mode==='inspect'||b.dataset.mode==='compare'&&!state.comparisonAvailable;
     b.disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy()||(!state.encounters.length&&state.mode!=='compare'&&b.dataset.mode!=='compare');
     b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode));
@@ -63,14 +65,14 @@ function selectEvidence(key){state.selected=key;state.showInspector=true;$('run-
 function renderCases(){
   const query=$('search').value.toLowerCase();
   if(state.mode==='compare'){
-    document.querySelector('.breadcrumb').textContent='Saved comparison';
-    document.querySelector('.explorer-heading').textContent=isPolicyComparison()?'Policy comparison':'Reviewed cases';
+    document.querySelector('.breadcrumb').textContent=state.policyWorkspaceAvailable||isPolicyComparison()?'Tutor policies':'Reviewed replies';
+    document.querySelector('.explorer-heading').textContent=isPolicyComparison()?'Saved comparisons':'Reviewed cases';
     $('conversation-guide').hidden=true;
     const label=isPolicyComparison()?'Filter policy comparisons':'Filter reviewed cases';
     $('search').placeholder=label+'…';$('search').setAttribute('aria-label',label);
     document.querySelector('label[for="search"]').textContent=label;
     $('cases').innerHTML=(state.comparison?.cases||[]).map((c,i)=>({c,i})).filter(({c})=>c.title.toLowerCase().includes(query)).map(({c,i})=>
-      `<button class="case-button" data-review-case="${i}" aria-pressed="${!state.comparisonEditing&&state.reviewIndex===i}"><span><b>${esc(c.title)}</b><small>${isPolicyComparison()?'Current + proposed instructions':'Recorded + 2 simulated replies'}</small></span></button>`).join('')||'<p class="empty">'+(state.comparison?'No saved comparisons.':'No comparison loaded.')+'</p>';
+      `<button class="case-button" data-review-case="${i}" aria-pressed="${!state.comparisonEditing&&state.reviewIndex===i}"><span><b>${esc(c.title)}</b><small>${isPolicyComparison()?policyStatus(c):'Recorded + 2 simulated replies'}</small></span></button>`).join('')||'<p class="empty">'+(state.comparison?'Your saved comparisons will appear here.':'No comparison loaded.')+'</p>';
     document.querySelectorAll('[data-review-case]').forEach(b=>{b.disabled=comparisonBusy();b.onclick=()=>{if(comparisonBusy())return;state.reviewIndex=Number(b.dataset.reviewCase);state.comparisonEditing=false;state.showInspector=false;render();$('canvas').scrollTop=0;notify('Opened '+state.comparison.cases[state.reviewIndex].title)}});
     return;
   }
@@ -93,7 +95,7 @@ function renderCases(){
 function pendingReplyNote(){
   if(state.step<current().frames.length-1)return 'This saved result ends before a tutor reply. Use Next to see later saved activity.';
   const next=state.submitting||state.monitoring?'A request is running; this is the last saved conversation.':
-    state.controls.blocked_reason?'Open Run details → Saved results to inspect the saved request.':
+    state.controls.blocked_reason?'Open Saved results to inspect the saved request.':
     frame().decisions_remaining===0?'This run has reached its decision limit.':
     state.controls.send_enabled?'Use Reply to student to continue.':'This workspace is a saved replay; replies do not run automatically.';
   return 'No tutor reply follows this student message in the saved conversation. '+next;
@@ -132,6 +134,11 @@ function renderChat(){
   document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
   document.querySelectorAll('.message-body pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Tutor code block')});
 }
+function policyStatus(c){
+  if(c.conditions.some(condition=>['failed','incomplete'].includes(condition.status)))return 'Needs attention';
+  const ready=c.conditions.filter(condition=>condition.status==='ready').length;
+  return ready===c.conditions.length?'Ready to run':ready?'One condition remaining':'Results saved';
+}
 function policyColumns(c){
   const outcomes={ready:'This condition has not run. The shared question is the starting point.',
     'student-replied':'The simulated student sent a follow-up.',
@@ -139,15 +146,19 @@ function policyColumns(c){
     failed:'This condition stopped after a saved error. It has not been retried.',
     incomplete:'This condition has an unfinished saved request. No final student outcome is available.'};
   return '<div class="compare-grid saved-comparison policy-comparison">'+c.conditions.map(condition=>
-    `<article class="comparison"><header><h2>${esc(condition.title)}</h2><div class="kind">Condition ${esc(condition.id.toUpperCase())}</div></header><details class="policy-instructions"><summary>Tutor instructions</summary><p class="saved-message">${esc(condition.policy)}</p></details><div class="entry"><h3 class="chat-section-label">Tutor response</h3>${condition.tutor_reply!==null?`<div class="message-body">${condition.tutor_html||block(condition.tutor_reply)}</div>`:'<p class="quiet">No completed tutor response saved.</p>'}<h3 class="chat-section-label">Student outcome</h3><p class="quiet">${esc(outcomes[condition.status]||'Outcome unavailable.')}</p>${condition.student_reply!==null?`<p class="saved-message">${esc(condition.student_reply)}</p>`:''}</div></article>`
+    `<article class="comparison"><header><h2>${esc(condition.title)}</h2><div class="kind">Condition ${esc(condition.id.toUpperCase())}</div></header><details class="policy-instructions"${condition.status==='ready'?' open':''}><summary>Tutor instructions</summary><p class="saved-message">${esc(condition.policy)}</p></details><div class="entry"><h3 class="chat-section-label">Tutor response</h3>${condition.tutor_reply!==null?`<div class="message-body">${condition.tutor_html||block(condition.tutor_reply)}</div>`:'<p class="quiet">No completed tutor response saved.</p>'}<h3 class="chat-section-label">Student outcome</h3><p class="quiet">${esc(outcomes[condition.status]||'Outcome unavailable.')}</p>${condition.student_reply!==null?`<p class="saved-message">${esc(condition.student_reply)}</p>`:''}</div></article>`
   ).join('')+'</div><p class="note">Same starting question, different tutor instructions. These saved simulations do not establish student realism, learning, or which policy works better for real students.</p>';
 }
-function newComparison(){
+function newComparison(sourceId=null){
   if(comparisonBusy()||!state.comparison?.controls?.create_enabled)return;
   const sources=state.comparison.controls.sources;
+  state.comparisonEntryNote='';
   if(!state.comparisonDraft){
-    const source=sources.find(s=>s.id===state.scenarioId)||sources[0];
+    const source=sourceId===null?sources[0]:sources.find(s=>s.id===sourceId);
     state.comparisonDraft={source_id:source?.id||'',binding:source?.binding,current_policy:state.policyDraft||'',proposed_policy:''};
+    if(sourceId!==null&&!source)state.comparisonEntryNote='This conversation has already continued or is no longer eligible. Choose a saved starting conversation below.';
+  }else if(sourceId!==null&&state.comparisonDraft.source_id!==sourceId){
+    state.comparisonEntryNote='Your unsaved comparison is still open. Choose another starting conversation below if needed.';
   }
   state.comparisonEditing=true;state.showInspector=false;state.comparisonError='';state.chatOpen=true;
   render();$('comparison-source').focus();
@@ -158,11 +169,11 @@ function canSaveComparison(){
 }
 function renderComparisonForm(){
   const draft=state.comparisonDraft,sources=state.comparison?.controls?.sources||[];
-  $('canvas').innerHTML=`<form class="policy-setup" id="comparison-form"><label for="comparison-source">Starting conversation</label><select id="comparison-source">${sources.length?'<option value="" disabled>Choose a saved starting conversation</option>'+sources.map(s=>`<option value="${esc(s.id)}">${esc(s.title)}</option>`).join(''):'<option value="">No eligible starting conversations</option>'}</select><p class="quiet">Both policies start from the same conversation and cached simulated question, shown in the chat.</p><div class="policy-editors"><div><label for="current-policy">Current tutor instructions</label><textarea id="current-policy" maxlength="64000" required>${esc(draft.current_policy)}</textarea></div><div><label for="proposed-policy">Proposed tutor instructions</label><textarea id="proposed-policy" maxlength="64000" required>${esc(draft.proposed_policy)}</textarea></div></div><p class="quiet">Enter the instructions you want to compare. These fields are not connected to a deployed tutor.</p><div class="draft-actions"><button class="primary" id="save-comparison" type="submit">Save comparison</button><button id="cancel-comparison" type="button">Back to saved comparisons</button></div><p class="draft-status">Saving makes no model requests. Drafts stay in this page until saved; refreshing the browser clears them.</p></form>`;
+  $('canvas').innerHTML=`<form class="policy-setup" id="comparison-form">${state.comparisonEntryNote?`<p class="entry-note" role="status">${esc(state.comparisonEntryNote)}</p>`:''}<label for="comparison-source">1. Choose a starting conversation</label><select id="comparison-source">${sources.length?'<option value="" disabled>Choose a saved starting conversation</option>'+sources.map(s=>`<option value="${esc(s.id)}">${esc(s.title)}</option>`).join(''):'<option value="">No eligible starting conversations</option>'}</select><p class="quiet">Both policies start from the same conversation and cached simulated question, shown in the chat.</p><h2 class="setup-step">2. Write the tutor instructions</h2><div class="policy-editors"><div><label for="current-policy">Current tutor instructions</label><textarea id="current-policy" maxlength="64000" required>${esc(draft.current_policy)}</textarea></div><div><label for="proposed-policy">Proposed tutor instructions</label><textarea id="proposed-policy" maxlength="64000" required>${esc(draft.proposed_policy)}</textarea></div></div><p class="quiet">Enter the instructions you want to compare. These fields are not connected to a deployed tutor.</p><div class="draft-actions"><button class="primary" id="save-comparison" type="submit">Save comparison</button><button id="cancel-comparison" type="button">Saved comparisons</button></div><p class="draft-status">Next: review the saved instructions, then run both policies. Saving sends nothing; refreshing this page clears unsaved drafts.</p></form>`;
   $('comparison-source').value=sources.some(s=>s.id===draft.source_id)?draft.source_id:'';
   $('comparison-source').onchange=e=>{
     const source=sources.find(s=>s.id===e.target.value);if(!source||comparisonBusy())return;
-    draft.source_id=source.id;draft.binding={...source.binding};state.showInspector=false;render();$('comparison-source').focus();
+    draft.source_id=source.id;draft.binding={...source.binding};state.comparisonEntryNote='';state.showInspector=false;render();$('comparison-source').focus();
   };
   for(const [id,key]of [['current-policy','current_policy'],['proposed-policy','proposed_policy']]){
     $(id).disabled=comparisonBusy();$(id).oninput=e=>{draft[key]=e.target.value;$('save-comparison').disabled=!canSaveComparison()};
@@ -188,13 +199,16 @@ function renderComparison(){
   $('saved-results').hidden=true;$('continue-run').hidden=true;
   $('instructions').hidden=true;$('tutor-controls').textContent=isPolicyComparison()?'Comparison details':'Review details';
   $('instructions').disabled=!c;$('tutor-controls').disabled=!c||state.comparisonEditing;
+  $('tutor-controls').hidden=!c||state.comparisonEditing;
+  $('run-details').hidden=true;
   $('new-comparison').hidden=!editable||state.comparisonEditing;
+  $('new-comparison').textContent='New comparison';
   $('new-comparison').disabled=comparisonBusy();
   $('run-comparison').hidden=!editable||state.comparisonEditing||!c;
   $('run-comparison').disabled=Boolean(comparisonRunReason(c));
   $('run-comparison').textContent=c?.conditions?.filter(condition=>condition.status==='ready').length===1?'Run remaining condition':'Run both conditions';
   $('case-title').textContent=state.comparisonEditing?'New policy comparison':c?.title||(state.comparisonLoading?'Loading comparison…':editable?'Compare tutor instructions':'Comparison unavailable');
-  $('view-description').textContent=state.comparisonEditing?'Choose a starting conversation, then save two different instruction sets.':c?(isPolicyComparison()?'One shared starting question. Two fixed tutor policies.':'Recorded next message and two saved simulated replies.'):'Create a saved comparison before generating any replies.';
+  $('view-description').textContent=state.comparisonEditing?'Set up → Save → Run → Compare responses':c?(isPolicyComparison()?policyStatus(c)+(c.conditions.some(condition=>condition.status==='ready')?' · Review the instructions, then run the comparison.':' · Compare the tutor replies and student outcomes below.'):'Recorded next message and two saved simulated replies.'):'Create a saved comparison before generating any replies.';
   $('body-grid').classList.toggle('no-inspector',!state.showInspector);
   $('body-grid').classList.toggle('inspector-open',state.showInspector);
   $('inspector-toggle').hidden=!state.showInspector;
@@ -339,10 +353,13 @@ function render(){
     return;
   }
   const c=current(),f=frame();
-  $('new-comparison').hidden=true;$('run-comparison').hidden=true;
+  $('new-comparison').hidden=!state.policyWorkspaceAvailable;$('run-comparison').hidden=true;
+  $('new-comparison').textContent='Compare tutor policies';
+  $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
   renderCases();
   renderModeButtons();
-  $('instructions').hidden=false;$('instructions').textContent='Run context';$('tutor-controls').textContent='Tutor setup';
+  $('instructions').hidden=false;$('instructions').textContent='Run context';$('tutor-controls').textContent='Tutor instructions';
+  $('tutor-controls').hidden=false;$('run-details').hidden=false;
   $('continue-run').hidden=!state.controls.send_enabled;
   $('continue-run').textContent=f.status==='awaiting-tutor'?'Reply to student':'Continue run';
   $('continue-run').disabled=Boolean(continuationReason());
@@ -394,6 +411,7 @@ function renderControls(){
 }
 function renderOperationStatus(){
   document.querySelector('.reset-label').textContent=state.mode==='compare'?'Reload saved comparison':'Reload saved run';
+  $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
   renderModeButtons();
   if(state.mode==='compare'){
     const editable=state.comparison?.controls?.create_enabled;
@@ -441,6 +459,7 @@ async function reloadWorkspace(){
       if(!response.ok||catalog.version!==1||!Array.isArray(catalog.scenarios)||catalog.scenarios.some(s=>typeof s.id!=='string'||!s.id||typeof s.title!=='string')||new Set(catalog.scenarios.map(s=>s.id)).size!==catalog.scenarios.length)throw new Error('The saved scenario list could not be loaded.');
       state.scenarios=catalog.scenarios;
       state.comparisonAvailable=catalog.comparison_available===true;
+      state.policyWorkspaceAvailable=catalog.policy_workspace_available===true;
       if(state.scenarios.length){
         state.kind='chat';state.scenarioId=new URLSearchParams(window.location.search).get('scenario')||state.scenarios[0].id;
         renderCases();
@@ -489,7 +508,7 @@ $('instructions').insertAdjacentHTML('beforebegin','<button id="tutor-controls">
 $('instructions').insertAdjacentHTML('beforebegin','<button id="saved-results">Saved results</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button id="new-comparison" hidden>New comparison</button><button class="primary" id="run-comparison" hidden>Run both conditions</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button class="primary" id="continue-run" hidden>Continue run</button><details class="run-details" id="run-details"><summary id="run-details-toggle">Run details</summary><div class="run-details-actions" id="run-details-actions"></div></details>');
-$('run-details-actions').append($('saved-results'),$('instructions'),$('tutor-controls'));
+$('run-details-actions').append($('instructions'));
 $('canvas').after($('inspector'));
 document.querySelector('.trail-label').insertAdjacentHTML('beforeend','<div class="playback-buttons" id="playback-buttons"><button id="previous-step">Previous</button></div>');
 $('playback-buttons').append($('next-step'));
@@ -508,7 +527,12 @@ $('search').oninput=()=>{if(state.mode==='compare'||state.encounters.length||sta
 $('run-details').onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();$('run-details').open=false;$('run-details-toggle').focus()}};
 $('instructions').onclick=()=>selectEvidence('context');
 $('continue-run').onclick=()=>selectEvidence('controls');
-$('new-comparison').onclick=newComparison;
+$('new-comparison').onclick=async()=>{
+  if(state.submitting||state.monitoring||state.refreshing||comparisonBusy())return;
+  const sourceId=state.mode==='compare'?null:state.scenarioId;
+  if(state.mode!=='compare')await selectMode('compare');
+  newComparison(sourceId);
+};
 $('run-comparison').onclick=()=>submitComparison('run');
 $('previous-step').onclick=()=>{if(state.step>0)selectFrame(state.step-1)};
 $('tutor-controls').onclick=()=>selectEvidence(state.mode==='compare'?'review':'controls');
@@ -516,7 +540,15 @@ $('saved-results').onclick=()=>selectEvidence('results');
 $('chat-toggle').onclick=()=>{state.chatOpen=!state.chatOpen;if(state.chatOpen)state.chatKey=null;renderChat();if(!state.chatOpen&&state.selected.startsWith('turn:'))$('chat-toggle').focus()};
 document.querySelectorAll('[data-chat-jump]').forEach(b=>b.onclick=()=>{const messages=$('conversation-messages'),first=b.dataset.chatJump==='first';messages.scrollTop=first?0:messages.scrollHeight;messages.querySelector(first?'.chat-turn':'.chat-turn:last-of-type')?.focus({preventScroll:true})});
 $('next-step').onclick=()=>{if(state.step<current().frames.length-1)selectFrame(state.step+1)};
-$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen&&(state.kind!=='chat'||state.mode==='compare')?$('chat-toggle'):['results','context','controls','review'].includes(state.selected)?$('run-details-toggle'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
+$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen&&(state.kind!=='chat'||state.mode==='compare')?$('chat-toggle'):state.selected==='results'?$('saved-results'):['controls','review'].includes(state.selected)?$('tutor-controls'):state.selected==='context'?$('run-details-toggle'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
 $('explorer-toggle').onclick=()=>{const shown=$('app').classList.toggle('show-explorer');$('explorer-toggle').setAttribute('aria-expanded',String(shown))};
 $('reset').onclick=()=>state.mode==='compare'?reloadComparison({monitor:state.comparisonSubmitting||state.comparisonMonitoring}):reloadWorkspace();
-const ready=reloadWorkspace();
+const ready=(async()=>{
+  await reloadWorkspace();
+  const params=new URLSearchParams(window.location.search);
+  if(state.comparisonAvailable&&(params.get('view')==='compare'||
+      state.policyWorkspaceAvailable&&!params.has('view')&&!params.has('scenario'))){
+    await selectMode('compare');
+    if(state.mode==='compare'&&state.comparison?.controls?.create_enabled&&!state.comparison.cases.length)newComparison();
+  }
+})();

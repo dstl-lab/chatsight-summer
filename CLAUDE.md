@@ -2,6 +2,13 @@
 
 ## Browser policy creation and explicit runs (2026-09-22)
 
+Wayfinding follow-up: configured policy workspaces land on Tutor policies (empty
+ones show setup). Explicit view/legacy conversation URLs preserve replay. Direct
+comparison, instructions and saved-results controls replace nested access; ready
+policies expand and saved comparison statuses are visible. Drafts and ineligible
+sources stay explicit. UI-only change; three Node checks and desktop/independent
+review pass. No new calls, labels or comparison data.
+
 Compare now creates frozen policy pairs from eligible saved chat starts through
 --policy-workspace, then runs untouched arms only with --send and an explicit
 button. Reuses freeze_next/run_both; shared context appears once. Source/run pins,

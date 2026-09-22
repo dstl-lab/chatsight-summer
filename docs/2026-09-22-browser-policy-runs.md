@@ -57,3 +57,25 @@ startup; adding numbered runs externally requires reopening it. Drafts last only
 for the current page. Multi-scenario batches and new fidelity experiments remain
 deferred. This increment integrates the existing runner; it does not establish
 simulator realism or a real-student policy effect.
+
+## Navigation follow-up
+
+After feedback that the integrations were too buried, a policy workspace now
+opens directly on Tutor policies. An empty workspace shows setup immediately;
+existing comparisons show their saved results. Explicit view URLs and older
+conversation links retain the requested view. Conversations expose Compare tutor
+policies, Tutor instructions and Saved results directly. Only infrequent run
+context stays under Run details; the empty menu is hidden during setup.
+
+Setup labels the conversation and instruction steps and keeps Save visible in the
+desktop viewport. Saved policies expand before running; the comparison list shows
+Ready to run, One condition remaining, Results saved or Needs attention. A shortcut
+from an ineligible conversation asks for another start rather than silently
+substituting one. Existing drafts remain visible when returning from a conversation.
+Save and Run remain separate, with one shared chat and no backend changes.
+
+Validation: 85 browser backend tests and all three Node checks pass, including direct entry, initial landing,
+explicit/legacy URLs, unavailable starts, draft preservation, focus return and
+navigation making no POST requests. Desktop setup and conversation controls were
+inspected, and independent review found no remaining blockers. No provider calls,
+new comparisons or labels were needed for this navigation change.
