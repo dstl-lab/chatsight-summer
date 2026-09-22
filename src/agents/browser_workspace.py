@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, policy_comparison_setup, student_workspace, workspace_history
+from src.eval import fidelity_comparison as fidelity
 from src.eval.saved_comparison import load_comparison
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -283,10 +284,13 @@ def _policy_comparison(folder, expected_pin, *, sources=None):
         'prefix':prefix, 'conditions':conditions}]}
 
 
-def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
-    folder = Path(folder).resolve()
-    if sum(value is not None for value in (comparison, policy_comparison, policy_workspace)) > 1:
-        raise ValueError('Choose one comparison: a communication review or a tutor-policy pair.')
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+    if sum(value is not None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison)) > 1:
+        raise ValueError('Choose one comparison: communication review, tutor policies or student fidelity.')
+    if folder is None and (fidelity_comparison is None or chat_sessions or chat_mode or send
+                           or policy is not None or reference is not None):
+        raise ValueError('A session folder is required unless only a read-only fidelity comparison is configured.')
+    folder = Path(folder).resolve() if folder is not None else None
     if policy_workspace is not None:
         if not (chat_mode or chat_sessions):
             raise ValueError('A policy workspace requires a chat session or collection.')
@@ -305,8 +309,13 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
         raise ValueError('The comparison folder must not be a symlink.')
     comparison = Path(comparison).resolve() if comparison is not None else None
     comparison_pin = sha256((comparison / 'closure.json').read_bytes()).hexdigest() if comparison else None
+    fidelity_comparison = Path(fidelity_comparison).absolute() if fidelity_comparison is not None else None
+    fidelity_pins = fidelity.evidence_hashes(fidelity_comparison) if fidelity_comparison is not None else None
+    workspace_paths = (folder, comparison, policy_comparison, policy_workspace)
+    if fidelity_comparison is not None:
+        workspace_paths += (fidelity_comparison,)
     workspace_id = student.digest([str(path.resolve()) if path is not None else None
-        for path in (folder, comparison, policy_comparison, policy_workspace)])
+        for path in workspace_paths])
     if chat_sessions and chat_mode:
         raise ValueError('Choose one chat session or a chat collection, not both.')
     scenarios = {}
@@ -402,6 +411,8 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
             register_run(path)
 
     def selection(request):
+        if folder is None:
+            raise HTTPException(404, 'No replay session is configured for this saved benchmark.')
         params = list(request.query_params.multi_items())
         if not chat_sessions:
             if params:
@@ -449,7 +460,7 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
                     if turn['role'] == 'tutor':
                         turn['display_html'] = _tutor_html(turn['text'])
             for condition in case.get('conditions', []):
-                if condition['tutor_reply'] is not None:
+                if condition.get('tutor_reply') is not None:
                     condition['tutor_html'] = _tutor_html(condition['tutor_reply'])
         return result
 
@@ -494,14 +505,16 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
             entries.append({'id':key, 'title':titles[key], 'summary':summary})
         return {'version':1, 'workspace_id':workspace_id, 'scenarios':entries,
                 **({'comparison_available':True} if any(value is not None for value in
-                   (comparison, policy_comparison, policy_workspace)) else {}),
+                   (comparison, policy_comparison, policy_workspace, fidelity_comparison)) else {}),
+                **({'fidelity_comparison_available':True, 'replay_available':folder is not None}
+                   if fidelity_comparison is not None else {}),
                 **({'policy_workspace_available':True} if policy_workspace is not None else {})}
 
     @app.get('/api/comparison')
     def comparison_view(request: Request):
         if request.query_params:
             raise HTTPException(400, 'The comparison uses only the saved evidence selected at launch.')
-        if comparison is None and policy_comparison is None and policy_workspace is None:
+        if all(value is None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison)):
             raise HTTPException(404, 'No saved comparison is configured.')
         if policy_workspace is not None and not running.acquire(blocking=False):
             operation = (dict(comparison_operation) if comparison_operation['status'] == 'running' else
@@ -512,6 +525,7 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
         try:
             result = (policy_packet() if policy_workspace is not None else
                       _policy_comparison(policy_comparison, policy_comparison_pin) if policy_comparison is not None
+                      else fidelity.load_comparison(fidelity_comparison, expected_files=fidelity_pins) if fidelity_comparison is not None
                       else load_comparison(comparison, expected_closure=comparison_pin))
             return comparison_html(result)
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
@@ -660,7 +674,7 @@ def main():
     import uvicorn
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('folder', type=Path, help='Saved session or direct-child conversation collection to inspect.')
+    parser.add_argument('folder', type=Path, nargs='?', help='Saved session or conversation collection; omit for a fidelity benchmark only.')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--chat', action='store_true', help='Open a chat-only session; notebook state remains unknown.')
     mode.add_argument('--chat-sessions', action='store_true', help='Choose among saved chat sessions directly inside the folder.')
@@ -669,11 +683,14 @@ def main():
     compare.add_argument('--comparison', type=Path, help='Completed cached communication review folder for read-only Compare.')
     compare.add_argument('--policy-comparison', type=Path, help='Saved one-decision tutor-policy pair for read-only Compare.')
     compare.add_argument('--policy-workspace', type=Path, help='Directory for creating saved policy pairs from eligible chat starts.')
+    compare.add_argument('--fidelity-comparison', type=Path, help='Completed fixed help/work benchmark for read-only student fidelity comparison.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
     args = parser.parse_args()
     try:
+        if args.folder is None and (args.chat or args.chat_sessions or args.send or args.policy_file or args.reference_file):
+            raise ValueError('Chat, sending and tutor configuration options require a session folder.')
         if (args.chat or args.chat_sessions) and args.reference_file:
             raise ValueError('A library reference is only available for notebook sessions.')
         policy = args.policy_file.read_text(encoding='utf-8') if args.policy_file else None
@@ -681,6 +698,7 @@ def main():
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
         app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat, comparison=args.comparison,
                          policy_comparison=args.policy_comparison, policy_workspace=args.policy_workspace,
+                         fidelity_comparison=args.fidelity_comparison,
                          send=args.send, policy=policy, reference=reference)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')

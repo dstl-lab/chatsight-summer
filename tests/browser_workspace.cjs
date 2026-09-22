@@ -34,7 +34,7 @@ let fail=false, requests=[], finishPost, readBusy=false, pollCallbacks=[], postF
 let catalog=[], savedUrl=new URL('http://127.0.0.1/');
 let workspaceId='test-workspace';
 const draftStorage=new Map();
-let comparisonAvailable=false, policyWorkspaceAvailable=false, comparisonFail=false;
+let comparisonAvailable=false, policyWorkspaceAvailable=false, fidelityComparisonAvailable=false, replayAvailable=true, comparisonFail=false;
 let comparisonReadBusy=false,comparisonPostError='',comparisonPostThrow=false,finishComparisonPost;
 const review={help_request:'yes',work_present:'no',note:null};
 const comparison={version:1,kind:'saved-communication-comparison',rubric_id:'help-work-v1',status:'complete-review',
@@ -54,7 +54,7 @@ const makeContext=()=>{
   get location(){return savedUrl},history:{replaceState:(_a,_b,url)=>{savedUrl=new URL(url,savedUrl)}}},
   URL,URLSearchParams,AbortController,setTimeout:(fn,ms)=>ms===1500?(pollCallbacks.push(fn),0):setTimeout(fn,ms),clearTimeout,fetch:async(url,options)=>{
     requests.push({url,options});
-    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,workspace_id:workspaceId,comparison_available:comparisonAvailable,policy_workspace_available:policyWorkspaceAvailable})};
+    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,workspace_id:workspaceId,comparison_available:comparisonAvailable,policy_workspace_available:policyWorkspaceAvailable,fidelity_comparison_available:fidelityComparisonAvailable,replay_available:replayAvailable})};
     if(url.startsWith('/api/comparison')&&options.method==='POST'){
       if(comparisonPostThrow){comparisonPostThrow=false;throw new Error('Connection lost')}
       return new Promise(resolve=>{finishComparisonPost=()=>resolve({ok:!comparisonPostError,status:comparisonPostError?409:200,json:async()=>comparisonPostError?{detail:comparisonPostError}:comparison})});
@@ -704,5 +704,43 @@ const run=code=>vm.runInContext(code,context);
   other(fs.readFileSync(script,'utf8'));await other('ready');
   assert.equal(other('state.comparisonDraft'),null,'Drafts never cross workspace identities');
   assert.equal(requests.filter(r=>r.options.method==='POST').length,postsBeforeEntry,'Reuse and draft recovery make no generation or save requests');
-  console.log('Saved workspace: sidebar separation, playback, escaping, evidence, drafts, and failed reload recovery pass.');
+  comparison.kind='saved-student-fidelity-comparison';delete comparison.controls;
+  comparison.cases=[{id:'1',title:'Fidelity case 01',summary:'Authored current question',context_status:'Saved starting dialogue.',
+    prefix:{context:[{role:'student',text:'Earlier <context>.'}],turns:[{role:'student',text:'Current question?'},{role:'tutor',text:'A recorded tutor reply.'}]},
+    reference:{text:'Recorded <reference>',review},
+    conditions:['current-exchange','grounded'].map((id,i)=>({id,title:i?'With earlier dialogue':'Current exchange only',draws:[
+      {draw:1,status:'reply',text:'Saved <draw>',review},
+      {draw:2,status:'reply',text:'Another reply',review:{...review,work_present:'unclear'}},
+      {draw:3,status:'no-reply',text:null,review:null},{draw:4,status:'error',text:null,review:null}]}))}];
+  comparison.study={model:'Authored model',counts:{cases:8,scheduled_draws:64,excluded_cases:0,missing_judgments:0,unclear_flags:0},
+    paired:{cases:8,'current-exchange':{mean_brier:.29296875,help_request:.015625,work_present:.5703125},grounded:{mean_brier:.359375,help_request:0,work_present:.71875},grounded_minus_current_exchange:.06640625},
+    reference_counts:{help_request:{yes:8},work_present:{yes:0}},metric:'Saved metric.',limits:['No overall realism claim.'],
+    dispositions:{'current-exchange':{reply:32,'no-reply':0,error:0},grounded:{reply:32,'no-reply':0,error:0}}};
+  policyWorkspaceAvailable=false;fidelityComparisonAvailable=true;replayAvailable=false;catalog=[];
+  savedUrl=new URL('http://127.0.0.1/?view=replay');requests=[];
+  const fidelityContext=makeContext(),fidelity=code=>vm.runInContext(code,fidelityContext);
+  fidelity(fs.readFileSync(script,'utf8'));await fidelity('ready');
+  assert.equal(fidelity('state.mode'),'compare');
+  assert.deepEqual(requests.map(r=>r.url),['/api/scenarios','/api/comparison']);
+  assert.equal(node('simulate').hidden,true);assert.equal(node('compare').textContent,'Student fidelity');
+  assert.equal(node('new-comparison').hidden,true);assert.equal(node('run-comparison').hidden,true);
+  assert.match(node('canvas').innerHTML,/higher error in this sample/);
+  assert.match(node('canvas').innerHTML,/0\.293/);assert.match(node('canvas').innerHTML,/0\.359/);assert.match(node('canvas').innerHTML,/\+0\.0664/);
+  assert.match(node('canvas').innerHTML,/0\/8 show work/);assert.match(node('canvas').innerHTML,/One reviewer/);
+  assert.match(node('canvas').innerHTML,/Recorded &lt;reference&gt;/);assert.match(node('canvas').innerHTML,/Saved &lt;draw&gt;/);
+  assert.equal((node('canvas').innerHTML.match(/class="entry fidelity-draw"/g)||[]).length,8);
+  assert.match(node('canvas').innerHTML,/Simulator chose no reply/);assert.match(node('canvas').innerHTML,/Generation failed; this is not student silence/);
+  assert.match(node('canvas').innerHTML,/Unclear/);assert.match(node('canvas').innerHTML,/flags not applicable/);assert.doesNotMatch(node('canvas').innerHTML,/Not reviewed/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<reference>|<draw>/);
+  assert.match(node('conversation-messages').innerHTML,/Earlier dialogue · history condition only/);
+  assert.match(node('conversation-messages').innerHTML,/Current exchange · both conditions/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/Recorded &lt;reference|Saved &lt;draw/);
+  fidelity("selectEvidence('turn:0')");assert.match(node('inspector').innerHTML,/only to the history condition/);
+  node('search').value='authored current';node('search').oninput();assert.match(node('cases').innerHTML,/Fidelity case 01/);
+  await fidelity("selectMode('simulate')");assert.equal(fidelity('state.mode'),'compare');
+  comparisonFail=true;await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/could not be verified/);assert.doesNotMatch(node('canvas').innerHTML,/0\.359|Saved &lt;draw/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/Earlier &lt;context/);
+  assert.ok(requests.every(r=>!r.options.method&&r.url!=='/api/workspace'));
+  console.log('Saved workspace: playback, evidence, drafts, fidelity comparison, and failed reload recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});
