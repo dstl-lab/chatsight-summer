@@ -28,7 +28,12 @@ are never compared or mixed.
 **Read `CLAUDE.md` first** — it carries the rules (classifier parity, snapshot immutability,
 blind measurement, no student data in git) that every claim in this project depends on.
 
-The [Marimo workspace](docs/2026-09-19-saved-student-workspace.md) opens one saved
+The [dedicated browser workspace](docs/prototypes/README.md) now brings notebook
+work or saved activity, the chat sidebar, playback, and saved tutor instructions
+into one desktop view. It also opens completed message reviews in Compare.
+The browser changes are consolidated in [PR #48](https://github.com/dstl-lab/chatsight-summer/pull/48).
+
+The earlier [Marimo workspace](docs/2026-09-19-saved-student-workspace.md) opens one saved
 notebook student, shows work/diffs and dialogue, and lets a researcher supply tutor
 guidance or [use a tutor policy](docs/2026-09-20-workspace-tutor-policy.md) and continue
 one decision. Viewing is offline; sending requires an
@@ -49,7 +54,7 @@ and equal budgets, and shows both saved outcomes together.
 ## Start here: teammate walkthrough
 
 Follow the [teammate quickstart](docs/teammate-quickstart.md) to install the optional
-workspace and open an authored offline example in Marimo. It uses the existing
+workspace and open an authored offline example in the dedicated browser. It uses the existing
 saved-chat runner and comparison view with scripted replies: no student data,
 credentials or model calls. The guide also covers private working sessions,
 policy controls, saved results and matching the session's code revision.

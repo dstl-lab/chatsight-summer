@@ -5,7 +5,14 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-22 | [Browser workspace concept](prototypes/README.md) — desktop HTML preview | Authored interactive prototype; backend disconnected, no new research result |
+| 2026-09-22 | [Browser saved results](2026-09-22-browser-saved-results.md) — inspect delivered instructions and improve chat reading | Existing receipt interpretation reused; compact chat source access and first/last navigation |
+| 2026-09-22 | [Browser chat sidebar](2026-09-22-browser-chat-sidebar.md) — conversation beside work and comparisons | Persistent right panel, exact source/details retained; no new generation or labels |
+| 2026-09-22 | [Saved browser comparison](2026-09-22-browser-saved-comparison.md) — recorded and simulated messages together | Eight cases, two draws each, existing review/context; no new generation, labels or scores |
+| 2026-09-22 | [Browser message readability](2026-09-22-browser-message-readability.md) — readable tutor code and prose | Restricted display formatting, exact source retained; saved evidence unchanged |
+| 2026-09-22 | [Browser scenario selection](2026-09-22-browser-scenario-selection.md) — browse existing conversations | Frozen catalog and independent selections; 29 scenarios/105 files unchanged, no new requests |
+| 2026-09-22 | [Browser chat scenarios](2026-09-22-browser-chat-scenarios.md) — reuse saved conversation evidence | Explicit chat mode, verified playback and bound controls; 29 existing scenarios reopen without mutation or new generation |
+| 2026-09-22 | [Live browser walkthrough](2026-09-22-live-browser-workspace.md) — actual browser controls, Gemini and local runtime | Closed: quiet edit, requested pass, no-reply; three student requests, no tutor; exact replay verified |
+| 2026-09-22 | [Browser workspace](prototypes/README.md) — desktop preview and connected saved viewer | Verified notebook replay and explicit bound controls; offline browser test, no new research result |
 | 2026-09-15 | `2026-09-15-grounded-chat-result.md` — completed local-task continuation | Complete: one reply adds the visible name assignment to existing code; exact replay and 224 pins verified; initial saved-chat demonstration closed |
 | 2026-09-15 | `2026-09-15-grounded-chat.md` — continue an explicit local task from the saved prefix | Frozen protocol; case-6 exact scope approved, one-request run complete and closed |
 | 2026-09-15 | `2026-09-15-chat-clarification-result.md` — one actual saved-chat continuation | Complete: one new reply, one adapter attempt, exact replay; generated question text is scenario content, not recovered assignment evidence |
