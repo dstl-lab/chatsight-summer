@@ -1,5 +1,17 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Educator walkthrough materials prepared (2026-09-22)
+
+Private static stage-1/stage-2 HTML and blank facilitator notes are prepared under
+data/episode-pilot/educator-decision-walkthrough-v1. Source case1/packet ordinal1;
+two draws from one condition, zero earlier turns, recorded first-of11 reply added
+only in stage2. Exact escaped-text/order and source/result replay checks pass twice;
+create-only preparation refuses changed outputs. No prior labels or verdicts are
+shown. See the existing feasibility memo's facilitator handoff. At most two sessions,
+authorized viewers only, private notes, no new labels/generation or automatic
+recruitment. Availability remains unresolved and no session has occurred. Browser
+local-file preview was blocked, so no visual usability check is claimed.
+
 ## Educator decision feasibility complete (2026-09-22)
 
 Existing mixed-eight evidence supports a formative keep/revise/inspect-more task

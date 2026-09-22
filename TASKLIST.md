@@ -4,9 +4,10 @@
 cleaned up and the working simulator is on main. The
 [research feasibility decision](docs/2026-09-22-educator-decision-feasibility.md)
 is complete: saved evidence supports a formative keep/revise/inspect-more task,
-not a policy-effectiveness comparison. A first-case walkthrough is drafted;
-participant availability is pending. No new labeling, model run, interface
-implementation or participant study has started.
+not a policy-effectiveness comparison. Private first-case handouts and a blank
+facilitator note sheet are prepared and verified; participant availability is
+pending. No new labeling, model run, simulation-interface implementation or
+participant study has started.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached

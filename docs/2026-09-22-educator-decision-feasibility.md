@@ -36,7 +36,7 @@ notebook state. Case 1's reference is only the first of eleven recorded follow-u
 messages. Neither silence nor the entire follow-up contribution is measured.
 One recorded outcome does not make a different generated reply implausible.
 
-## Proposed walkthrough, ready for participant availability
+## Prepared walkthrough, awaiting participant availability
 
 Use the first case in the existing packet order (source case 1) for at most two
 internal walkthroughs, roughly 15 minutes each. This administrative selection is
@@ -84,3 +84,45 @@ it creates none. The remaining input is who can try the task: instructors/TAs,
 research-team members, or no available participants. No invitations were sent and
 no walkthrough has occurred. No new generation, manual student labeling or
 infrastructure work is queued by this report.
+
+## Facilitator handoff
+
+The concrete materials are prepared locally under ignored
+`data/episode-pilot/educator-decision-walkthrough-v1/`:
+
+- `stage-1.html`: exact common prefix and two simulated continuations, with
+  missing-context information and the keep/revise/inspect-more question.
+- `stage-2.html`: repeats those materials and adds the first recorded continuation
+  with its first-of-eleven limitation, then repeats the question.
+- `notes-template.md`: blank facilitator notes and a 2/5/5/3-minute script for
+  setup, the two stages and closing. Copy to `session-1.md` or `session-2.md`.
+- `manifest.json`: source and output hashes, the original case mapping, the
+  two-session limit and preparation status; it is not a participant result.
+
+Use only with someone already authorized to view these course records. Open only
+Stage 1 initially and finish recording its response before opening Stage 2. The
+recorded text is absent from Stage 1's file, rather than hidden in the page. The
+pages are static handouts: they make no requests, contain no response form and
+save no answers. Keep session notes private. Do not share the old labeling page
+on port 8425 for this task.
+
+No existing judgment, mismatch count or expected decision appears in the handouts.
+The facilitator records choices and reasoning without scoring them, correcting
+them or treating confidence as accuracy. Both draws remain visible as alternatives
+from one condition, not as two learners or sequential messages.
+
+To verify the prepared files again from this worktree:
+
+```sh
+PYTHONPATH=. .venv/bin/python data/episode-pilot/educator-decision-walkthrough-v1/prepare.py
+```
+
+The preparation check replays the frozen evidence check, validates the packet,
+joins the recorded/generated origins, checks exact HTML-decoded text and ordering,
+and verifies saved outputs without overwriting them. Two consecutive runs passed.
+Independent read-only review confirmed the source mapping, exact text, stage
+separation, neutral prompts and blank notes; no material blockers were found.
+Automatic browser preview was blocked by the browser's local-file policy; no
+visual browser check or human usability result is claimed. Participant availability
+is still unresolved. Stop after at most two sessions, including no-change or
+unworkable outcomes; do not recruit or generate additional cases automatically.
