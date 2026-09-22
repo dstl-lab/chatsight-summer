@@ -230,7 +230,7 @@ tests plus Marimo/Node checks and confirms the existing files remain unchanged.
 
 Select **Compare** to see the eight completed review cases. Each shows the first
 recorded next message and both saved simulated replies, with existing help/work
-judgments. **View context** opens the supplied earlier messages and current
+judgments. The right chat sidebar shows the supplied earlier messages and current
 exchange; **Review details** explains the rubric and limitations. These two
 simulated replies share one historical configuration, so this is not a matched
 baseline/grounded experiment. Identical draws stay visible as separate occurrences
@@ -248,3 +248,11 @@ the repository. Without the option, Compare remains hidden.
 
 The [scope and verification](../2026-09-22-browser-saved-comparison.md) records
 534 passing Python tests, Marimo/Node checks and the actual browser walkthrough.
+
+The connected workspace now keeps conversation in a right sidebar instead of
+the Inspect tab. Chat follows the selected saved state or reviewed case and
+scrolls independently. **Inspect source**, other details, and tutor controls
+open in the center while chat stays visible. **Hide chat** makes more room;
+**Show chat** restores it without changing drafts or selection. Compare keeps
+the three alternative next replies in the center and only their shared context
+in chat. See the [sidebar verification](../2026-09-22-browser-chat-sidebar.md).

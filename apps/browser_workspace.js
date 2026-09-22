@@ -5,7 +5,7 @@ const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 const block = value => `<pre>${esc(typeof value==='string'?value:JSON.stringify(value,null,2))}</pre>`;
 const taskText = task => typeof task==='string'?task:Array.isArray(task)&&task.every(cell=>typeof cell?.source==='string')?task.map(cell=>cell.source).join('\n\n'):JSON.stringify(task,null,2);
 const state = {kind:'notebook',scenarios:null,scenarioId:null,encounters:[],caseIndex:0,step:0,mode:'simulate',selected:'step',showInspector:false,controls:{send_enabled:false},operation:{status:'idle',message:''},policyDraft:null,replyDraft:'',replyMode:'policy',submitting:false,monitoring:false,refreshing:false,clientError:''};
-Object.assign(state,{comparisonAvailable:false,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:''});
+Object.assign(state,{comparisonAvailable:false,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:'',chatOpen:true,chatKey:null});
 let pollTimer;
 const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
@@ -18,18 +18,23 @@ function statusText(f){
   return ({active:'Paused · student can continue', ready:'Paused · student can continue', 'awaiting-tutor':'Waiting for a tutor reply', 'no-reply':'Student chose no reply',error:'Simulation stopped after an error','environment-error':'Execution unavailable · ungraded','execution-limit':'Execution limit reached · ungraded'})[f.status]||'Saved status: '+f.status;
 }
 function turns(){
+  if(state.mode==='compare'){
+    const c=state.comparison?.cases[state.reviewIndex];
+    return c?[...c.prefix.context,...c.prefix.turns].map(t=>({...t,origin:'source'})):[];
+  }
   const f=frame();
   return [...f.dialogue,...(f.pending_message!==null?[{role:'student',origin:'generated',text:f.pending_message,pending:true}]:[])];
 }
 function selectMode(mode){
   if(state.submitting||state.monitoring||state.refreshing||state.comparisonLoading||mode==='compare'&&!state.comparisonAvailable)return;
+  mode=mode==='inspect'?'simulate':mode;
   state.mode=mode;state.showInspector=false;$('search').value='';
   if(mode==='compare')return reloadComparison();
   if(state.encounters.length)render();else return reloadWorkspace();
 }
 function renderModeButtons(){
   document.querySelectorAll('[data-mode]').forEach(b=>{
-    b.hidden=b.dataset.mode==='compare'&&!state.comparisonAvailable;
+    b.hidden=b.dataset.mode==='inspect'||b.dataset.mode==='compare'&&!state.comparisonAvailable;
     b.disabled=state.submitting||state.monitoring||state.refreshing||state.comparisonLoading||(!state.encounters.length&&state.mode!=='compare'&&b.dataset.mode!=='compare');
     b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode));
   });
@@ -50,7 +55,7 @@ async function selectScenario(id){
   if(restoreFocus&&(document.activeElement===document.body||document.activeElement===focused))
     [...document.querySelectorAll('[data-scenario]')].find(b=>b.dataset.scenario===id)?.focus({preventScroll:true});
 }
-function selectEvidence(key){state.selected=key;state.showInspector=true;render();if(!window.matchMedia('(min-width:1001px)').matches)$('inspector-toggle').focus()}
+function selectEvidence(key){state.selected=key;state.showInspector=true;render();$('inspector-toggle').focus()}
 function renderCases(){
   const query=$('search').value.toLowerCase();
   if(state.mode==='compare'){
@@ -78,15 +83,31 @@ function renderCases(){
     .map(({c,i})=>`<button class="case-button" data-case="${i}" aria-pressed="${state.caseIndex===i}"><span><b>${esc(c.title)}</b><small>${c.frames.length} saved state${c.frames.length===1?'':'s'}</small></span></button>`).join('')||'<p class="empty">No matching '+(state.kind==='chat'?'conversation':'tasks')+'.</p>';
   document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>selectCase(Number(b.dataset.case)));
 }
-function conversation(){
+function conversation(rows=turns(),offset=0){
+  return rows.length?rows.map((turn,i)=>`<article class="chat-turn"><header>${esc(turn.role==='student'?'Student':'Tutor')} <span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p style="white-space:pre-wrap">${esc(turn.text)}</p>`}</div><button data-evidence="turn:${i+offset}">Inspect source</button></article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
+}
+function renderChat(){
+  const comparing=state.mode==='compare',c=state.comparison?.cases[state.reviewIndex];
+  const available=comparing?Boolean(c):Boolean(state.encounters.length);
+  $('conversation-panel').hidden=!state.chatOpen;
+  $('body-grid').classList.toggle('no-chat',!state.chatOpen);
+  $('chat-toggle').textContent=state.chatOpen?'Hide chat':'Show chat';
+  $('chat-toggle').setAttribute('aria-expanded',String(state.chatOpen));
+  $('chat-title').textContent=comparing?'Shared conversation':'Student–tutor chat';
+  $('chat-caption').textContent=comparing?(c?`${c.title} · before the replies`:'No saved context loaded'):available?`${current().title} · ${frame().label}`:'No saved conversation loaded';
+  const key=comparing?'compare:'+c?.id:`${state.scenarioId}:${current()?.id}:${state.step}`;
+  if(state.chatKey!==key){$('conversation-messages').scrollTop=0;state.chatKey=key}
+  if(!available){$('conversation-messages').innerHTML='<p class="quiet">'+(state.comparisonLoading||state.refreshing||state.monitoring?'Loading saved conversation…':'No verified conversation to display.')+'</p>';return}
   const rows=turns();
-  return rows.length?rows.map((turn,i)=>`<article class="chat-turn"><header>${esc(turn.role==='student'?'Student':'Tutor')} <span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p style="white-space:pre-wrap">${esc(turn.text)}</p>`}</div><button data-evidence="turn:${i}">Inspect source</button></article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
+  $('conversation-messages').innerHTML=comparing?`<p class="quiet">${esc(c.context_status)}</p><h3>Earlier messages supplied</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3>Current exchange</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
+  document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
+  document.querySelectorAll('.message-body pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Tutor code block')});
 }
 function renderComparison(){
   const data=state.comparison,c=data?.cases[state.reviewIndex];
   renderCases();renderModeButtons();
   $('playback').hidden=true;$('next-step').hidden=true;
-  $('instructions').textContent='View context';$('tutor-controls').textContent='Review details';
+  $('instructions').hidden=true;$('tutor-controls').textContent='Review details';
   $('instructions').disabled=!c;$('tutor-controls').disabled=!c;
   $('case-title').textContent=c?.title||(state.comparisonLoading?'Loading comparison…':'Comparison unavailable');
   $('view-description').textContent=c?'Recorded next message and two saved simulated replies.':'Reading saved evidence only.';
@@ -104,12 +125,12 @@ function renderComparison(){
     $('canvas').innerHTML=state.comparisonError?`<div role="alert"><p>${esc(state.comparisonError)}</p><p class="quiet">Reload saved comparison to check again. Replay remains available.</p></div>`:'<p class="quiet" role="status">Verifying the saved review and message links…</p>';
     $('inspector').innerHTML='';
   }
-  renderOperationStatus();
+  renderChat();renderOperationStatus();
 }
 function renderComparisonInspector(c,data){
-  if(state.selected==='context'){
-    const turns=rows=>rows.map(t=>`<div class="chat-turn"><header>${t.role==='student'?'Student':'Tutor'}</header><p class="saved-message">${esc(t.text)}</p></div>`).join('');
-    $('inspector').innerHTML=`<div class="inspector-title">Shared conversation</div><h2>Context for all three replies</h2><p>${esc(c.context_status)}</p><div class="divider"></div><h3>Earlier messages supplied</h3>${turns(c.prefix.context)||'<p>No earlier messages supplied.</p>'}<div class="divider"></div><h3>Current exchange</h3>${turns(c.prefix.turns)}<p>The recorded next message is a reference, outside the generation inputs.</p>`;
+  if(state.selected.startsWith('turn:')){
+    const turn=turns()[Number(state.selected.split(':')[1])];
+    $('inspector').innerHTML='<div class="inspector-title">Conversation source</div><h2>Original message</h2>'+block(turn.text)+'<p>Exact text from the shared review context. The recorded next message stays outside the generation inputs.</p>';
   }else{
     $('inspector').innerHTML=`<div class="inspector-title">Existing human review</div><h2>How to read this comparison</h2><h3>Requests help / check</h3><p>${esc(data.definitions.help_request)}</p><div class="divider"></div><h3>Shows work / evidence</h3><p>${esc(data.definitions.work_present)}</p><div class="divider"></div><p>Both flags can be yes. Unclear and not reviewed remain separate from no.</p><p>One reviewer supplied these judgments. The cases had prior development exposure; coding reliability is unmeasured.</p><div class="divider"></div><p>Two replies from the same historical configuration do not compare baseline and grounded simulators. Notebook actions, correctness and learning remain unknown.</p><p>This view reads completed evidence and does not collect new labels or change the simulator.</p>`;
   }
@@ -177,10 +198,10 @@ function render(){
   const c=current(),f=frame();
   renderCases();
   renderModeButtons();
-  $('instructions').textContent='Run context';$('tutor-controls').textContent='Tutor controls';
+  $('instructions').hidden=false;$('instructions').textContent='Run context';$('tutor-controls').textContent='Tutor controls';
   $('case-title').textContent=c.title;
   $('view-description').textContent=`${f.label} · ${statusText(f)}`;
-  $('canvas').innerHTML=state.kind==='chat'?`<div class="inspect-content">${missingNotebook}<section aria-label="Student and tutor conversation"><h2>Conversation at this state</h2>${conversation()}</section><p class="note">Playback reads saved messages only. It makes no model requests. A no-reply decision does not establish learning or abandonment.</p></div>`:state.mode==='simulate'?`<div class="split-view">${notebook()}<section aria-label="Student and tutor conversation"><div class="chat-title">Conversation</div>${conversation()}</section></div><p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`:`<div class="inspect-content"><div class="context-box"><h2>Task</h2><p style="white-space:pre-wrap">${esc(taskText(c.task))}</p></div><h2>Conversation at this state</h2>${conversation()}<p class="note">Notebook state and recorded checks are available in Replay. Student silence does not establish learning or abandonment.</p></div>`;
+  $('canvas').innerHTML=state.kind==='chat'?`<div class="inspect-content">${missingNotebook}<h2>Saved activity</h2><p class="quiet">${esc(statusText(f))}. ${esc(f.decisions_remaining)} decisions remaining.</p>${f.actions.map(a=>`<p>${esc(decisionNames[a.decision]||a.decision)}</p>`).join('')||'<p class="quiet">No simulated student decision at this state.</p>'}<p class="note">The conversation is in the chat sidebar. Use saved playback to follow its progress. A no-reply decision does not establish learning or abandonment.</p></div>`:`${notebook()}<p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`;
   $('next-step').hidden=state.mode!=='simulate';
   $('next-step').disabled=state.step===c.frames.length-1;
   $('next-step').textContent=$('next-step').disabled?'Latest saved state':'Next saved step';
@@ -189,9 +210,7 @@ function render(){
   $('body-grid').classList.toggle('inspector-open',state.showInspector);
   $('inspector-toggle').hidden=!state.showInspector;
   if(state.showInspector)renderInspector();else $('inspector').innerHTML='';
-  renderTrail();renderOperationStatus();
-  document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
-  document.querySelectorAll('.message-body pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Tutor code block')});
+  renderTrail();renderChat();renderOperationStatus();
   if(attr)document.querySelector(`[${attr}="${value}"]`)?.focus({preventScroll:true});
 }
 function continuationReason(){
@@ -254,6 +273,7 @@ function clearWorkspaceView(message){
   $('body-grid').classList.toggle('no-inspector',true);$('body-grid').classList.toggle('inspector-open',false);
   renderModeButtons();
   $('canvas').innerHTML=message;
+  renderChat();
   if(state.scenarios?.length)renderCases();
 }
 async function reloadWorkspace(){
@@ -286,7 +306,7 @@ async function reloadWorkspace(){
     state.monitoring=false;$('case-title').textContent='Saved run unavailable';$('view-description').textContent='No saved content is displayed.';
     clearWorkspaceView(`<div role="alert"><h2>Could not load saved results</h2><p>${esc(error.name==='AbortError'?'The local backend did not respond in time.':error.message)}</p><p class="quiet">Reload saved run to check again. An in-progress request may still finish; nothing will be resent.</p></div>`);
     notify('Saved run unavailable. Reload to check its status.');
-  }finally{clearTimeout(timeout);state.refreshing=false;$('reset').disabled=false;renderOperationStatus()}
+  }finally{clearTimeout(timeout);state.refreshing=false;$('reset').disabled=false;renderOperationStatus();if(!state.encounters.length)renderChat()}
 }
 async function submitOperation(){
   if(!canSubmit())return;
@@ -300,7 +320,7 @@ async function submitOperation(){
     if(!response.ok)throw new Error(typeof packet.detail==='string'?packet.detail:'The request was rejected. Reload the saved run before trying again.');
     state.showInspector=false;state.mode='simulate';state.selected='step';
     applyWorkspace(packet);
-    if(frame().actions.some(action=>action.text))document.querySelector('.chat-turn:last-child')?.scrollIntoView({block:'nearest'});
+    if(frame().actions.some(action=>action.text))document.querySelector('#conversation-messages .chat-turn:last-child')?.scrollIntoView({block:'nearest'});
     else $('canvas').scrollTop=0;
     notify(state.operation.message||'New result saved.');
   }catch(error){
@@ -309,6 +329,9 @@ async function submitOperation(){
   }finally{state.submitting=false;renderOperationStatus()}
 }
 document.title='Student lab · Simulation workspace';
+$('app').classList.toggle('connected-workspace',true);
+$('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel" id="conversation-panel" aria-label="Student and tutor conversation"><header><h2 id="chat-title">Student–tutor chat</h2><p id="chat-caption" class="small muted"></p></header><div id="conversation-messages"></div></aside>');
+$('inspector-toggle').insertAdjacentHTML('beforebegin','<button id="chat-toggle" aria-controls="conversation-panel" aria-expanded="true">Hide chat</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button id="tutor-controls">Tutor controls</button>');
 $('canvas').insertAdjacentHTML('beforebegin','<div id="operation-status" role="status" aria-live="polite" style="padding:12px 36px;border-bottom:1px solid var(--line);font-size:12px" hidden></div>');
 document.querySelector('.prototype-note').textContent='Saved simulation · Read only';
@@ -323,8 +346,9 @@ document.querySelectorAll('[data-mode]').forEach(b=>{if(b.dataset.mode==='compar
 $('search').oninput=()=>{if(state.mode==='compare'||state.encounters.length||state.scenarios?.length)renderCases()};
 $('instructions').onclick=()=>selectEvidence('context');
 $('tutor-controls').onclick=()=>selectEvidence(state.mode==='compare'?'review':'controls');
+$('chat-toggle').onclick=()=>{state.chatOpen=!state.chatOpen;renderChat();if(!state.chatOpen&&state.selected.startsWith('turn:'))$('chat-toggle').focus()};
 $('next-step').onclick=()=>{if(state.step<current().frames.length-1)selectFrame(state.step+1)};
-$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected==='context'?$('instructions'):['controls','review'].includes(state.selected)?$('tutor-controls'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
+$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen?$('chat-toggle'):state.selected==='context'?$('instructions'):['controls','review'].includes(state.selected)?$('tutor-controls'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
 $('explorer-toggle').onclick=()=>{const shown=$('app').classList.toggle('show-explorer');$('explorer-toggle').setAttribute('aria-expanded',String(shown))};
 $('reset').onclick=()=>state.mode==='compare'?reloadComparison():reloadWorkspace();
 const ready=reloadWorkspace();

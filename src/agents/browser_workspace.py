@@ -271,7 +271,13 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
         if comparison is None:
             raise HTTPException(404, 'No saved comparison is configured.')
         try:
-            return load_comparison(comparison, expected_closure=comparison_pin)
+            result = load_comparison(comparison, expected_closure=comparison_pin)
+            for case in result['cases']:
+                for turns in case['prefix'].values():
+                    for turn in turns:
+                        if turn['role'] == 'tutor':
+                            turn['display_html'] = _tutor_html(turn['text'])
+            return result
         except (OSError, ValueError, KeyError, TypeError) as exc:
             raise HTTPException(409, 'The saved comparison could not be verified. Its evidence is not displayed.') from exc
 

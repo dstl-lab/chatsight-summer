@@ -1,5 +1,17 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Conversation stays beside the work (2026-09-22)
+
+Connected browser chat now lives in a persistent right sidebar. Replay follows
+the selected state; Compare uses only the selected review's shared prefix, never
+an unrelated replay or a concatenation of alternatives. Inspect tab is retired;
+source/details and tutor controls use the center. Hide/show retains drafts and
+selection. Failed/loading reads clear stale chat. Reuse restricted tutor display
+formatting and exact source; no engine change. 534 Python tests (three optional
+skips), Marimo and Node checks pass; desktop browser and independent review pass.
+All 130 evidence files unchanged; no calls/execution/labels. Both previews remain
+read-only. Memo: docs/2026-09-22-browser-chat-sidebar.md.
+
 ## Existing communication review is visible in Compare (2026-09-22)
 
 browser_workspace --comparison points to the completed cached communication
