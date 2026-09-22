@@ -80,3 +80,28 @@ neutral recorded-absence notes. The 34 browser Python tests and Node controller
 check pass; the browser confirmed both earlier/latest explanations and a typical
 single-result conversation. Independent semantic review found no unsupported
 claim or functional blocker. No request was sent and the preview remains read-only.
+
+## Correction: one conversation view
+
+The user correctly identified that the added activity list duplicates chat and
+creates confusion. Remove it rather than explain a redundant representation.
+For conversation-only runs, the existing chat becomes the main content, with
+Previous/Next operating directly on it. Mark the boundary between the supplied
+starting conversation and simulated continuation. Keep exact source access,
+pending-reply explanations, current status and the read-only boundary.
+
+When notebook work or comparisons are available, retain chat beside that distinct
+content. Opening details can place the same chat beside the inspector; never
+clone the conversation. No new navigation framework, data or generation. Delete
+the activity renderer/styles and verify playback, focus, mode changes and errors.
+
+Implemented: removed the activity renderer, previews, selection state and styles.
+Conversation-only mode now reuses the one chat element inside the main area;
+Previous/Next operate on it, with the supplied/simulated boundary marked in place.
+Details move that same element beside the inspector, and notebook/Compare retain
+the sidebar. Source focus remains correct even after hiding chat in Compare.
+Regression checks cover this transition, a single escaped message rendering,
+no-request playback and return to notebook layout. Actual browser checks confirmed
+one chat element, zero activity rows, full available width and no page overflow.
+The 34 browser Python tests, controller and prototype checks pass; independent
+review found and verified the source-focus correction. No data/API/engine changes.

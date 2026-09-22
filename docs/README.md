@@ -5,7 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-22 | [Browser replay usability](2026-09-22-browser-replay-usability.md) — follow saved activity with fewer competing controls | Selectable activity, relevant chat position, persistent orientation and grouped details; no new simulation |
+| 2026-09-22 | [Browser replay usability](2026-09-22-browser-replay-usability.md) — follow saved activity with fewer competing controls | One chat view with playback controls; duplicate activity removed, details grouped; no new simulation |
 | 2026-09-22 | [Browser saved results](2026-09-22-browser-saved-results.md) — inspect delivered instructions and improve chat reading | Existing receipt interpretation reused; compact chat source access and first/last navigation |
 | 2026-09-22 | [Browser chat sidebar](2026-09-22-browser-chat-sidebar.md) — conversation beside work and comparisons | Persistent right panel, exact source/details retained; no new generation or labels |
 | 2026-09-22 | [Saved browser comparison](2026-09-22-browser-saved-comparison.md) — recorded and simulated messages together | Eight cases, two draws each, existing review/context; no new generation, labels or scores |

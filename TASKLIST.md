@@ -1,8 +1,9 @@
 # Simulated students: task list
 
 The [replay usability pass](docs/2026-09-22-browser-replay-usability.md) is complete:
-saved activity is selectable, chat follows the chosen step, details are grouped,
-and inspection keeps the scenario heading/playback visible. No new labels or runs.
+conversation-only runs use one chat with Previous/Next; the duplicate activity
+list was removed. Notebook work and comparisons keep chat alongside. Details are
+grouped and inspection keeps the scenario heading/playback visible. No new labels or runs.
 
 **Current direction (September 22):** measure simulated-student fidelity against
 real AI-tutor interactions, then test whether grounding improves it. The educator
