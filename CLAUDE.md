@@ -11,6 +11,9 @@ preview. docs/prototypes/student-workspace.html is standalone, entirely authored
 with Inspect/Simulate/Compare, evidence inspection, step playback and temporary
 tutor drafts. No backend, model call, private data or measured fidelity result.
 Desktop is the target; user explicitly said mobile support is unnecessary.
+The declutter pass removes duplicate navigation, keeps the inspector closed until
+requested, and shows playback only in Simulate. Guidance: cognitive-load and
+Impeccable distill skills, verified with browser MCP and the Node smoke check.
 Keep this prototype separate from the research-scope PR46. See its README for
 launch and verification. Backend integration is a subsequent scoped change.
 
