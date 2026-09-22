@@ -9,7 +9,7 @@ const elements = new Map();
 const node = id => {
   if (!elements.has(id)) elements.set(id, {innerHTML:'', textContent:'', value:'', hidden:false,
     dataset:{}, attributes:{}, classList:{toggle(){},remove(){}}, setAttribute(name,value){this.attributes[name]=value},
-    insertAdjacentHTML(){}, append(child){child.parentElement=this}, before(child){child.parentElement=node('.main')}, after(){}, querySelector(){return null}, scrollIntoView(){}, hasAttribute(){return false}, focus(){document.activeElement=this}});
+    insertAdjacentHTML(){}, append(child){child.parentElement=this}, before(child){child.parentElement=node('.main')}, after(){}, querySelector(){return null}, scrollIntoView(options){this.scrolled=options}, hasAttribute(){return false}, focus(){document.activeElement=this}});
   return elements.get(id);
 };
 const modes = ['inspect','simulate','compare'].map(mode=>Object.assign(node(mode),{dataset:{mode}}));
@@ -32,7 +32,10 @@ const packet = {version:1,encounters:[{id:'1',title:'Task 1',task:[{index:0,sour
   saved_results_html:'<h2>Saved results</h2><p>Tutor policy used: saved instructions.</p>'}]};
 let fail=false, requests=[], finishPost, readBusy=false, pollCallbacks=[], postFailure=false;
 let catalog=[], savedUrl=new URL('http://127.0.0.1/');
-let comparisonAvailable=false, comparisonFail=false;
+let workspaceId='test-workspace';
+const draftStorage=new Map();
+let comparisonAvailable=false, policyWorkspaceAvailable=false, comparisonFail=false;
+let comparisonReadBusy=false,comparisonPostError='',comparisonPostThrow=false,finishComparisonPost;
 const review={help_request:'yes',work_present:'no',note:null};
 const comparison={version:1,kind:'saved-communication-comparison',rubric_id:'help-work-v1',status:'complete-review',
   definitions:{help_request:'Requests assistance.',work_present:'Shows work or diagnostics.'},
@@ -43,15 +46,25 @@ const comparison={version:1,kind:'saved-communication-comparison',rubric_id:'hel
       {draw:2,text:'7?',review:{...review,work_present:null},shared_review_with:1}]}]};
 packet.controls={send_enabled:false,policy:'One concise hint.',reference:null,blocked_reason:null};
 packet.operation={status:'idle',message:''};
-const context=vm.createContext({document, window:{matchMedia:()=>({matches:true}),
+const makeContext=()=>{
+  const listeners={};
+  return vm.createContext({document, listeners, window:{matchMedia:()=>({matches:true}),
+  addEventListener:(event,listener)=>{listeners[event]=listener},
+  sessionStorage:{getItem:key=>draftStorage.get(key)??null,setItem:(key,value)=>draftStorage.set(key,value),removeItem:key=>draftStorage.delete(key)},
   get location(){return savedUrl},history:{replaceState:(_a,_b,url)=>{savedUrl=new URL(url,savedUrl)}}},
   URL,URLSearchParams,AbortController,setTimeout:(fn,ms)=>ms===1500?(pollCallbacks.push(fn),0):setTimeout(fn,ms),clearTimeout,fetch:async(url,options)=>{
     requests.push({url,options});
-    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,comparison_available:comparisonAvailable})};
-    if(url==='/api/comparison')return {ok:!comparisonFail,status:comparisonFail?409:200,json:async()=>comparisonFail?{detail:'Comparison could not be verified.'}:comparison};
+    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,workspace_id:workspaceId,comparison_available:comparisonAvailable,policy_workspace_available:policyWorkspaceAvailable})};
+    if(url.startsWith('/api/comparison')&&options.method==='POST'){
+      if(comparisonPostThrow){comparisonPostThrow=false;throw new Error('Connection lost')}
+      return new Promise(resolve=>{finishComparisonPost=()=>resolve({ok:!comparisonPostError,status:comparisonPostError?409:200,json:async()=>comparisonPostError?{detail:comparisonPostError}:comparison})});
+    }
+    if(url==='/api/comparison')return {ok:!comparisonFail,status:comparisonReadBusy?202:comparisonFail?409:200,json:async()=>comparisonReadBusy?{version:1,operation:{status:'running',message:'Request running.'}}:comparisonFail?{detail:'Comparison could not be verified.'}:comparison};
     if(options.method==='POST')return new Promise(resolve=>{finishPost=()=>resolve({ok:!postFailure,status:postFailure?409:200,json:async()=>postFailure?{detail:'A request is already saved.'}:packet})});
     return {ok:!fail,status:readBusy?202:fail?409:200,json:async()=>readBusy?{version:1,operation:{status:'running',message:'Request running.'}}:fail?{detail:'Cannot verify saved run.'}:packet};
   }});
+};
+const context=makeContext();
 const run=code=>vm.runInContext(code,context);
 (async()=>{
   run(fs.readFileSync(script,'utf8'));await run('ready');
@@ -73,7 +86,7 @@ const run=code=>vm.runInContext(code,context);
   assert.doesNotMatch(node('inspector').innerHTML,/One concise hint/);
   assert.match(node('conversation-messages').innerHTML,/&lt;img src=x/);
   node('inspector-toggle').onclick();
-  assert.equal(document.activeElement,node('run-details-toggle'));
+  assert.equal(document.activeElement,node('saved-results'));
   finished.dialogue.push({role:'tutor',origin:'supplied',text:'**Try** `x < 3`',display_html:'<p><strong>Try</strong> <code>x &lt; 3</code></p>'});
   run('render()');
   assert.equal(node('chat-count').textContent,'2 messages');
@@ -255,6 +268,9 @@ const run=code=>vm.runInContext(code,context);
   node('next-step').onclick();
   assert.equal(run('state.step'),1);
   assert.equal(node('continue-run').disabled,false);
+  assert.equal(node('tutor-controls').hidden,true,'The primary reply action replaces the duplicate tutor control');
+  run("selectEvidence('controls')");node('inspector-toggle').onclick();
+  assert.equal(document.activeElement,node('continue-run'),'Closing reply controls returns focus to a visible action');
   assert.equal(requests.length,readsBeforePlayback+1,'Playback performs no fetch or generation');
   packet.encounters[0].frames=[chatStart];
   await run('reloadWorkspace()');
@@ -277,7 +293,7 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(run('canSubmit()'),false);
   assert.match(node('view-description').textContent,/budget exhausted/);
   assert.equal(run('typeof selectScenario'),'function','Conversation navigation is missing');
-  catalog=[{id:'a',title:'Conversation 01'},{id:'b',title:'Conversation 02'}];
+  catalog=[{id:'a',title:'Conversation 01',summary:'How do I filter blue rows?'},{id:'b',title:'Conversation 02',summary:'Why does count("teal") return two?'}];
   sidebarButtons=catalog.map(s=>Object.assign(node('scenario-'+s.id),{dataset:{scenario:s.id}}));
   run('state.scenarios=null');packet.scenario_id='a';
   packet.encounters[0].frames[0].decisions_remaining=2;
@@ -285,6 +301,11 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(run('state.scenarioId'),'a');
   assert.match(node('cases').innerHTML,/Conversation 01/);
   assert.match(node('cases').innerHTML,/Conversation 02/);
+  assert.match(node('cases').innerHTML,/How do I filter blue rows/);
+  node('search').value='blue rows';node('search').oninput();
+  assert.match(node('cases').innerHTML,/Conversation 01/);
+  assert.doesNotMatch(node('cases').innerHTML,/Conversation 02/);
+  node('search').value='';node('search').oninput();
   run("state.policyDraft='Edited for A';state.replyDraft='Private draft A'");
   packet.scenario_id='b';
   node('scenario-b').focus();
@@ -341,6 +362,8 @@ const run=code=>vm.runInContext(code,context);
   assert.match(node('conversation-messages').innerHTML,/Loading saved conversation/);
   assert.doesNotMatch(node('conversation-messages').innerHTML,/what went wrong|A saved tutor turn|chat-turn/);
   await loadingComparison;
+  assert.equal(node('compare').textContent,'Reviewed replies');
+  assert.equal(savedUrl.searchParams.get('view'),'compare');
   assert.equal(run('canSubmit()'),false);
   assert.equal(requests.at(-1).url,'/api/comparison');
   assert.match(node('cases').innerHTML,/Reviewed case 01/);
@@ -382,7 +405,187 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(node('cases').innerHTML.includes('Reviewed case'),false);
   comparisonFail=false;await node('reset').onclick();
   assert.match(node('canvas').innerHTML,/Simulated reply 2/);
+  const communicationComparison={...comparison};
+  Object.assign(comparison,{kind:'saved-policy-comparison',cases:[{id:'pair',title:'Tutor policy comparison',model:'authored-demo',
+    summary:'cached <question>',
+    context_status:'Same saved start for both policies.',
+    prefix:{context:[{role:'tutor',origin:'source',text:'Earlier tutor context.'}],
+      turns:[{role:'student',origin:'generated',text:'cached <question>'}]},
+    conditions:[{id:'a',title:'Current policy',policy:'hint <only>',status:'student-replied',
+      tutor_reply:'Try **count**.',tutor_html:'<p>Try <strong>count</strong>.</p>',student_reply:'<script>count?</script>'},
+      {id:'b',title:'Proposed policy',policy:'direct answer',status:'no-follow-up',tutor_reply:'Two.',tutor_html:'<p>Two.</p>',student_reply:null}]}]});
+  await node('reset').onclick();
+  assert.equal(node('compare').textContent,'Tutor policies');
+  assert.match(node('canvas').innerHTML,/Policy A/);
+  assert.match(node('canvas').innerHTML,/Policy B/);
+  assert.match(node('canvas').innerHTML,/class="status-badge" data-status="student-replied">Reply saved/);
+  assert.match(node('canvas').innerHTML,/class="status-badge" data-status="no-follow-up">No follow-up/);
+  assert.doesNotMatch(node('canvas').innerHTML,/Current policy|Proposed policy/);
+  assert.match(node('canvas').innerHTML,/One simulated exchange per policy/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<details class="policy-instructions" open/,'Completed instructions stay collapsible');
+  assert.match(node('canvas').innerHTML,/hint &lt;only&gt;/);
+  assert.match(node('canvas').innerHTML,/<strong>count<\/strong>/);
+  assert.match(node('canvas').innerHTML,/&lt;script&gt;count\?&lt;\/script&gt;/);
+  assert.doesNotMatch(node('canvas').innerHTML,/cached &lt;question&gt;|<script>|Requests help|Recorded student/);
+  assert.match(node('canvas').innerHTML,/chose not to send/);
+  assert.match(node('conversation-messages').innerHTML,/Question being tested/);
+  assert.match(node('conversation-messages').innerHTML,/id="tested-question"/);
+  assert.equal(node('message-#tested-question').scrolled?.block,'start','Comparison opens at the question being tested');
+  node('conversation-messages').scrollTop=320;run('render()');
+  assert.equal(node('conversation-messages').scrollTop,320,'Rendering the same context preserves the reading position');
+  assert.equal((node('conversation-messages').innerHTML.match(/cached &lt;question&gt;/g)||[]).length,1);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/Try <strong>|count\?/);
+  assert.equal(run('turns().at(-1).origin'),'generated');
+  for(const query of ['cached <question>','hint <only>','direct answer']){
+    node('search').value=query;node('search').oninput();
+    assert.match(node('cases').innerHTML,/Tutor policy comparison/,'Search matches the question or either policy');
+  }
+  node('search').value='no such policy';node('search').oninput();
+  assert.doesNotMatch(node('cases').innerHTML,/Tutor policy comparison/);
+  node('search').value='';node('search').oninput();
+  run("selectEvidence('review')");
+  assert.match(node('inspector').innerHTML,/fixed tutor instructions/);
+  assert.doesNotMatch(node('inspector').innerHTML,/One reviewer|Requests assistance/);
+  comparison.cases[0].conditions[0]={...comparison.cases[0].conditions[0],status:'ready',tutor_reply:null,tutor_html:null,student_reply:null};
+  await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/has not run/);
+  assert.match(node('canvas').innerHTML,/class="status-badge" data-status="ready">Ready to run/);
+  assert.equal((node('canvas').innerHTML.match(/<details class="policy-instructions" open/g)||[]).length,1,'Only a ready condition opens its instructions');
+  assert.doesNotMatch(node('canvas').innerHTML,/count\?/);
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,postsBeforeCompare);
+  assert.equal(node('new-comparison').hidden,true,'Fixed comparisons remain read only');
+  assert.equal(node('run-comparison').hidden,true);
+  const savedPolicyCase=JSON.parse(JSON.stringify(comparison.cases[0]));
+  savedPolicyCase.id='run-1';savedPolicyCase.title='Policy comparison 01';savedPolicyCase.comparison_sha256='pair-digest';
+  savedPolicyCase.conditions=savedPolicyCase.conditions.map(c=>({...c,status:'ready',tutor_reply:null,tutor_html:null,student_reply:null}));
+  const sources=[{id:'source-one',title:'Conversation 01',summary:'First source question.',binding:{session_sha256:'source-digest',state_sha256:'state-one'},context_status:'Saved start, notebook activity unknown.',prefix:{context:[{role:'tutor',origin:'source',text:'First source context.'}],turns:[{role:'student',origin:'generated',text:'First source question.'}]}},
+    {id:'source-two',title:'Conversation 02',summary:'Second <question>.',binding:{session_sha256:'other-digest',state_sha256:'state-two'},context_status:'A different saved start.',prefix:{context:[{role:'tutor',origin:'authored',text:'Second authored context.'}],turns:[{role:'student',origin:'generated',text:'Second <question>.'}]}}];
+  Object.assign(comparison,{cases:[],controls:{create_enabled:true,send_enabled:false,sources},operation:{status:'idle',message:''}});
+  await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/No comparisons saved yet/);
+  assert.equal(node('new-comparison').hidden,false);
+  node('new-comparison').onclick();
+  assert.equal(node('case-title').textContent,'New policy comparison');
+  assert.match(node('canvas').innerHTML,/not connected to a deployed tutor/);
+  assert.match(node('canvas').innerHTML,/Policy A — draft/);
+  assert.match(node('canvas').innerHTML,/Policy B — draft/);
+  assert.match(node('comparison-feedback').textContent,/Policy B|both policies|instructions/i,'The initial disabled Save has a visible reason');
+  assert.match(node('conversation-messages').innerHTML,/First source question/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/cached &lt;question&gt;/);
+  node('comparison-source').onchange({target:{value:'source-two'}});
+  assert.match(node('conversation-messages').innerHTML,/Second &lt;question&gt;/);
+  assert.equal((node('conversation-messages').innerHTML.match(/Second &lt;question&gt;/g)||[]).length,1);
+  assert.doesNotMatch(node('canvas').innerHTML,/First source context|class="chat-turn"|id="tested-question"/,'Setup reuses the sidebar conversation');
+  run("selectEvidence('turn:0')");
+  assert.match(node('inspector').innerHTML,/Second authored context/);
+  assert.doesNotMatch(node('inspector').innerHTML,/Earlier tutor context/);
+  node('inspector-toggle').onclick();
+  node('current-policy').oninput({target:{value:'Give one <hint>.'}});
+  node('proposed-policy').oninput({target:{value:'Give one <hint>.'}});
+  assert.equal(run('canSaveComparison()'),false,'Identical instructions cannot be frozen');
+  assert.match(node('comparison-feedback').textContent,/different|identical/i);
+  node('proposed-policy').oninput({target:{value:'   '}});
+  assert.equal(run('canSaveComparison()'),false,'Blank instructions cannot be frozen');
+  assert.match(node('comparison-feedback').textContent,/Policy B|both policies|instructions/i);
+  node('proposed-policy').oninput({target:{value:'Show a worked answer.'}});
+  assert.equal(run('canSaveComparison()'),true);
+  const beforeSave=requests.filter(r=>r.options.method==='POST').length;
+  const rejectedSave=run("submitComparison('save')");
+  assert.equal(node('comparison-source').disabled,true);
+  assert.equal(node('current-policy').disabled,true);
+  assert.equal(node('save-comparison').disabled,true);
+  await run("submitComparison('save')");
+  await run("selectMode('simulate')");
+  assert.equal(run('state.mode'),'compare');
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,beforeSave+1);
+  const saveRequest=requests.at(-1);
+  assert.equal(saveRequest.url,'/api/comparison');
+  assert.deepEqual(JSON.parse(saveRequest.options.body),{source_id:'source-two',binding:{session_sha256:'other-digest',state_sha256:'state-two'},current_policy:'Give one <hint>.',proposed_policy:'Show a worked answer.'});
+  comparisonPostError='Starting conversation changed. Reload before saving.';
+  finishComparisonPost();await rejectedSave;
+  assert.match(node('operation-status').textContent,/Starting conversation changed/);
+  assert.equal(document.activeElement,node('comparison-feedback'),'A rejected save focuses its explanation');
+  assert.equal(run('state.comparisonEditing'),true);
+  assert.equal(run('state.comparisonDraft.proposed_policy'),'Show a worked answer.');
+  assert.match(node('canvas').innerHTML,/Give one &lt;hint&gt;/);
+  comparison.controls.sources[1]={...sources[1],binding:{...sources[1].binding,state_sha256:'changed-state'}};
+  await node('reset').onclick();
+  assert.equal(run('state.comparisonDraft.binding.state_sha256'),'state-two','Reload must not silently bind a draft to changed source data');
+  assert.equal(run('canSaveComparison()'),false,'A stale binding disables Save before another request');
+  assert.match(node('comparison-feedback').textContent,/changed|stale|select.*again/i);
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,beforeSave+1);
+  node('comparison-source').onchange({target:{value:'source-two'}});
+  assert.equal(run('state.comparisonDraft.binding.state_sha256'),'changed-state');
+  comparisonPostError='';
+  const saved=run("submitComparison('save')");
+  comparison.cases=[savedPolicyCase];comparison.selected_id='run-1';comparison.operation={status:'complete',message:'Comparison saved. No requests sent.',comparison_id:'run-1'};
+  finishComparisonPost();await saved;
+  delete comparison.selected_id;
+  assert.equal(run('state.comparisonEditing'),false);
+  assert.equal(run('state.comparisonDraft'),null);
+  assert.equal(document.activeElement,node('case-title'),'A successful save focuses the saved comparison heading');
+  assert.equal(draftStorage.has('student-lab:policy-draft:test-workspace'),false,'Saving clears the persisted draft');
+  assert.match(node('canvas').innerHTML,/Sending is disabled/);
+  assert.equal(node('run-comparison').disabled,true);
+  assert.match(node('canvas').innerHTML,/has not run/);
+  assert.equal(node('case-title').textContent,'Policy comparison 01');
+  await run("submitComparison('run')");
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,beforeSave+2,'Save-only workspace cannot run models');
+  comparison.controls.send_enabled=true;
+  await node('reset').onclick();
+  assert.equal(node('run-comparison').disabled,false);
+  assert.match(node('canvas').innerHTML,/up to 4 logical requests/);
+  assert.match(node('canvas').innerHTML,/up to 4 adapter attempts/);
+  const startedRun=run("submitComparison('run')");
+  assert.equal(node('run-comparison').disabled,true);
+  assert.equal(node('new-comparison').disabled,true);
+  await run("submitComparison('run')");
+  assert.deepEqual(JSON.parse(requests.at(-1).options.body),{comparison_id:'run-1',comparison_sha256:'pair-digest'});
+  assert.equal(requests.at(-1).url,'/api/comparison/run');
+  comparison.cases[0].conditions[0]={...comparison.cases[0].conditions[0],status:'student-replied',tutor_reply:'A saved hint.',tutor_html:null,student_reply:'help'};
+  comparison.operation={status:'complete',message:'One condition saved.',comparison_id:'run-1'};
+  finishComparisonPost();await startedRun;
+  assert.equal(node('run-comparison').textContent,'Run remaining condition');
+  assert.match(node('canvas').innerHTML,/up to 2 logical requests/);
+  const beforeUnknown=requests.filter(r=>r.options.method==='POST').length;
+  comparisonPostThrow=true;comparisonReadBusy=true;
+  await run("submitComparison('run')");
+  assert.equal(run('state.comparisonMonitoring'),true);
+  assert.equal(node('run-comparison').disabled,true);
+  assert.match(node('canvas').innerHTML,/A saved hint/,'Last verified result remains while the request is checked');
+  assert.match(node('operation-status').textContent,/without resending/);
+  comparisonReadBusy=false;comparison.cases[0].conditions[1].status='incomplete';
+  await pollCallbacks.shift()();
+  assert.equal(run('state.comparisonMonitoring'),false);
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,beforeUnknown+1,'Unknown outcomes recover with GET only');
+  assert.match(node('canvas').innerHTML,/unfinished saved request/);
+  assert.equal(node('run-comparison').disabled,true,'Incomplete requests are not rerun');
+  node('new-comparison').onclick();
+  node('current-policy').oninput({target:{value:'Current draft'}});
+  node('proposed-policy').oninput({target:{value:'Proposed draft'}});
+  const postsBeforeLostSave=requests.filter(r=>r.options.method==='POST').length;
+  comparisonPostThrow=true;
+  await run("submitComparison('save')");
+  assert.equal(run('state.comparisonEditing'),true,'An earlier operation completion does not prove this save succeeded');
+  assert.equal(run('state.comparisonDraft.proposed_policy'),'Proposed draft');
+  assert.equal(node('case-title').textContent,'New policy comparison');
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,postsBeforeLostSave+1);
+  comparisonPostThrow=true;comparisonFail=true;
+  await run("submitComparison('save')");
+  assert.equal(run('state.comparisonDraft.proposed_policy'),'Proposed draft');
+  assert.equal(run('canSaveComparison()'),false,'An unreadable server outcome cannot be resubmitted');
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/First source question|cached &lt;question&gt;/);
+  comparisonFail=false;await node('reset').onclick();
+  assert.equal(run('state.comparisonDraft.proposed_policy'),'Proposed draft');
+  assert.equal(run('canSaveComparison()'),true);
+  const postCountBeforeReload=requests.filter(r=>r.options.method==='POST').length;
+  await node('reset').onclick();
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,postCountBeforeReload);
+  run('state.comparisonEditing=false');
+  delete comparison.controls;delete comparison.operation;
+  Object.assign(comparison,communicationComparison);
   run("selectMode('simulate')");
+  assert.equal(savedUrl.searchParams.get('view'),'replay');
   assert.equal(run('state.scenarioId'),replaySelection);
   assert.equal(node('saved-results').hidden,false);
   assert.equal(run('state.replyDraft'),'Keep this draft');
@@ -396,5 +599,110 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(node('conversation-panel').parentElement,node('body-grid'));
   assert.equal(node('chat-toggle').hidden,false);
   assert.equal(node('simulate').textContent,'Notebook');
+  // A configured policy workspace is a direct entry point; old conversation URLs still work.
+  policyWorkspaceAvailable=true;
+  catalog=[...sources.map(({id,title})=>({id,title})),{id:'continued',title:'Continued conversation'}];
+  sidebarButtons=catalog.map(s=>Object.assign(node('scenario-'+s.id),{dataset:{scenario:s.id}}));
+  Object.assign(comparison,{kind:'saved-policy-comparison',cases:[],controls:{create_enabled:true,send_enabled:false,sources},operation:{status:'idle',message:''}});
+  packet.kind='chat';packet.encounters=[{id:'1',title:'Conversation',task:'Conversation scenario',frames:[chatStart]}];
+  const postsBeforeEntry=requests.filter(r=>r.options.method==='POST').length;
+  for(const [query,mode,source] of [['','compare','source-one'],['?view=compare','compare','source-one'],['?view=replay&scenario=source-two','simulate','source-two'],['?scenario=continued','simulate','continued']]){
+    draftStorage.clear();
+    savedUrl=new URL('http://127.0.0.1/'+query);packet.scenario_id=source;
+    const entryContext=makeContext(),entry=code=>vm.runInContext(code,entryContext);
+    entry(fs.readFileSync(script,'utf8'));await entry('ready');
+    assert.equal(entry('state.mode'),mode,query||'Default landing');
+    assert.equal(node('compare').textContent,'Tutor policies');
+    if(mode==='simulate'){
+      assert.equal(node('new-comparison').hidden,false);
+      assert.equal(node('new-comparison').disabled,false);
+      assert.equal(node('new-comparison').textContent,'Compare tutor policies');
+      await node('new-comparison').onclick();
+    }
+    assert.equal(entry('state.comparisonEditing'),true);
+    assert.equal(entry('state.comparisonDraft.source_id'),source==='continued'?'':source,'Direct entry must not substitute another conversation');
+    assert.equal(savedUrl.searchParams.get('view'),'compare');
+    if(source==='continued'){
+      assert.equal(entry('canSaveComparison()'),false);
+      assert.match(node('canvas').innerHTML,/no longer eligible|already continued/i);
+    }else{
+      node('proposed-policy').oninput({target:{value:'Preserve these draft instructions.'}});
+      await entry("selectMode('simulate')");
+      if(source==='source-one'){
+        packet.scenario_id='source-two';await entry("selectScenario('source-two')");
+      }
+      await node('new-comparison').onclick();
+      assert.equal(entry('state.comparisonDraft.proposed_policy'),'Preserve these draft instructions.');
+      assert.equal(entry('state.comparisonDraft.source_id'),source);
+    }
+  }
+  draftStorage.clear();
+  comparison.cases=[savedPolicyCase];savedUrl=new URL('http://127.0.0.1/');packet.scenario_id='source-one';
+  const savedEntryContext=makeContext(),savedEntry=code=>vm.runInContext(code,savedEntryContext);
+  savedEntry(fs.readFileSync(script,'utf8'));await savedEntry('ready');
+  assert.equal(savedEntry('state.mode'),'compare');
+  assert.equal(savedEntry('state.comparisonEditing'),false,'Existing policy results remain the initial view');
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,postsBeforeEntry,'Navigation and draft opening never send requests');
+
+  // Reuse, refresh, and navigation retain only the local policy draft, never the chat.
+  workspaceId='draft-flow';
+  savedPolicyCase.source=JSON.parse(JSON.stringify((({id,title,summary,binding})=>({id,title,summary,binding}))(sources[1])));
+  Object.assign(comparison,{kind:'saved-policy-comparison',cases:[savedPolicyCase],controls:{create_enabled:true,send_enabled:false,sources},operation:{status:'complete',message:'The policy comparison is saved.'}});
+  savedUrl=new URL('http://127.0.0.1/?view=compare');packet.scenario_id='source-one';
+  const reuseContext=makeContext(),reuse=code=>vm.runInContext(code,reuseContext);
+  reuse(fs.readFileSync(script,'utf8'));await reuse('ready');
+  assert.equal(node('reuse-comparison').hidden,false);
+  assert.equal(node('reuse-comparison').disabled,false);
+  await node('reuse-comparison').onclick();
+  assert.equal(node('operation-status').hidden,true,'A previous saved status must not describe an unsaved reused draft');
+  assert.deepEqual(JSON.parse(reuse('JSON.stringify(state.comparisonDraft)')),{source_id:'source-two',binding:sources[1].binding,current_policy:savedPolicyCase.conditions[0].policy,proposed_policy:savedPolicyCase.conditions[1].policy});
+  assert.match(node('conversation-messages').innerHTML,/Second &lt;question&gt;/,'Reuse follows the exact saved source');
+  node('proposed-policy').oninput({target:{value:'My revised policy B.'}});
+  assert.equal(reuse('state.comparisonDirty'),true);
+  assert.match(node('draft-indicator').textContent,/Unsaved draft/);
+  const storageKey='student-lab:policy-draft:draft-flow';
+  assert.deepEqual(JSON.parse(draftStorage.get(storageKey)),{source_id:'source-two',binding:sources[1].binding,current_policy:savedPolicyCase.conditions[0].policy,proposed_policy:'My revised policy B.'});
+  assert.doesNotMatch(draftStorage.get(storageKey),/Second authored context|Second <question>|prefix|turns|source_title/);
+  node('cancel-comparison').onclick();
+  assert.equal(reuse('state.comparisonEditing'),false);
+  assert.match(node('new-comparison').textContent,/Resume draft/);
+  assert.equal(node('reuse-comparison').disabled,true,'Reuse cannot overwrite an existing dirty draft');
+  assert.match(node('canvas').innerHTML,/Resume or discard your unsaved draft/);
+  const dirtyDraft=reuse('JSON.stringify(state.comparisonDraft)');
+  reuse('reuseComparison()');
+  assert.equal(reuse('JSON.stringify(state.comparisonDraft)'),dirtyDraft);
+  assert.equal(reuse("(()=>{let prevented=false;listeners.beforeunload({preventDefault(){prevented=true},returnValue:null});return prevented})()"),true,'Leaving also warns while results are open');
+  await node('new-comparison').onclick();
+  assert.equal(reuse('state.comparisonDraft.proposed_policy'),'My revised policy B.');
+
+  const restoredContext=makeContext(),restored=code=>vm.runInContext(code,restoredContext);
+  restored(fs.readFileSync(script,'utf8'));await restored('ready');
+  assert.equal(restored('state.comparisonDraft.proposed_policy'),'My revised policy B.','Refresh restores the edited policy');
+  assert.equal(restored('state.comparisonDraft.source_id'),'source-two');
+  assert.equal(restored('state.comparisonDirty'),true);
+  if(!restored('state.comparisonEditing'))await node('new-comparison').onclick();
+  comparison.controls.sources[1]={...sources[1],binding:{...sources[1].binding,state_sha256:'newer-state'}};
+  await node('reset').onclick();
+  assert.equal(restored('state.comparisonDraft.binding.state_sha256'),'changed-state','Reload preserves the original draft binding');
+  assert.equal(restored('canSaveComparison()'),false);
+  assert.match(node('comparison-feedback').textContent,/changed|stale|select.*again/i);
+  comparison.controls.sources=sources.filter(s=>s.id!=='source-two');
+  await node('reset').onclick();
+  assert.equal(restored('canSaveComparison()'),false);
+  assert.match(node('comparison-feedback').textContent,/eligible|available|starting conversation/i);
+  node('discard-comparison').onclick();
+  assert.equal(restored('state.comparisonDraft.proposed_policy'),'','Discard starts with empty replacement instructions');
+  assert.equal(restored('state.comparisonDirty'),false);
+  assert.equal(draftStorage.has(storageKey),false);
+  assert.equal(restored("(()=>{let prevented=false;listeners.beforeunload({preventDefault(){prevented=true},returnValue:null});return prevented})()"),false);
+  node('cancel-comparison').onclick();
+  assert.equal(node('reuse-comparison').disabled,true,'A missing original source cannot silently use another conversation');
+  assert.match(node('canvas').innerHTML,/starting conversation changed or is no longer available/i);
+
+  draftStorage.set(storageKey,dirtyDraft);workspaceId='another-workspace';
+  const otherContext=makeContext(),other=code=>vm.runInContext(code,otherContext);
+  other(fs.readFileSync(script,'utf8'));await other('ready');
+  assert.equal(other('state.comparisonDraft'),null,'Drafts never cross workspace identities');
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,postsBeforeEntry,'Reuse and draft recovery make no generation or save requests');
   console.log('Saved workspace: sidebar separation, playback, escaping, evidence, drafts, and failed reload recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

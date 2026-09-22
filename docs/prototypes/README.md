@@ -2,6 +2,16 @@
 
 September 22, 2026. Desktop is the target; mobile support is not required.
 
+The connected workspace follows [shadcn/ui's design philosophy](https://ui.shadcn.com/docs):
+own the component code, compose familiar controls, and keep defaults consistent.
+Its native HTML/CSS components share semantic color tokens, a spacing scale,
+control sizes and focus states. Primary actions are filled, secondary actions
+outlined, and inspection actions quiet. Policy status badges describe saved
+states; they never rank a policy or imply learning. New UI should reuse these
+patterns in the shared shell instead of adding one-off styles.
+This applies the philosophy to the existing Python-served workspace; it does not
+install shadcn components or add a JavaScript framework/build pipeline.
+
 For the design preview, open `student-workspace.html` directly, or serve this
 directory on localhost. The preview is one self-contained HTML file with authored examples, no external assets,
 no model requests, and no connection to private course data or the Python backend.

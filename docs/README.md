@@ -5,6 +5,10 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-22 | [Browser policy runs](2026-09-22-browser-policy-runs.md) | Implemented: freeze offline, explicitly run untouched arms; 637 tests and authored browser check pass |
+| 2026-09-22 | [Saved browser policy comparison](2026-09-22-browser-policy-comparison.md) | Implemented: PR #47 behind existing Compare, shared context once, saved results only; 618 tests pass |
+| 2026-09-22 | [Policy lab corrections](2026-09-22-policy-lab-corrections.md) | Implemented: receipt verification, read-only inspection, lifecycle counts and attribution; 529 tests pass |
+| 2026-09-22 | [Policy labs integration review](2026-09-22-policy-labs-integration-review.md) — PR #47 alongside the browser workspace | Compatible in temporary merge; backend reuse recommended after verification, lifecycle and attribution fixes; no merge or new experiment |
 | 2026-09-22 | [Browser replay usability](2026-09-22-browser-replay-usability.md) — follow saved activity with fewer competing controls | One chat view with playback controls; duplicate activity removed, details grouped; no new simulation |
 | 2026-09-22 | [Browser saved results](2026-09-22-browser-saved-results.md) — inspect delivered instructions and improve chat reading | Existing receipt interpretation reused; compact chat source access and first/last navigation |
 | 2026-09-22 | [Browser chat sidebar](2026-09-22-browser-chat-sidebar.md) — conversation beside work and comparisons | Persistent right panel, exact source/details retained; no new generation or labels |
@@ -14,7 +18,6 @@ the code. Register of memos, newest first:
 | 2026-09-22 | [Browser chat scenarios](2026-09-22-browser-chat-scenarios.md) — reuse saved conversation evidence | Explicit chat mode, verified playback and bound controls; 29 existing scenarios reopen without mutation or new generation |
 | 2026-09-22 | [Live browser walkthrough](2026-09-22-live-browser-workspace.md) — actual browser controls, Gemini and local runtime | Closed: quiet edit, requested pass, no-reply; three student requests, no tutor; exact replay verified |
 | 2026-09-22 | [Browser workspace](prototypes/README.md) — desktop preview and connected saved viewer | Verified notebook replay and explicit bound controls; offline browser test, no new research result |
-| 2026-09-22 | [Policy lab corrections](2026-09-22-policy-lab-corrections.md) | Implemented: receipt verification, read-only inspection, lifecycle counts and attribution; 529 tests pass |
 | 2026-09-22 | `2026-09-22-educator-decision-feasibility.md` — existing evidence and educator decision task | Assessment complete; private handouts and facilitator notes prepared, participants pending; no policy-effectiveness claim |
 | 2026-09-22 | `2026-09-22-simulation-research-scope.md` — simulation errors and educator decisions | Proposed HCI direction; offline feasibility assessed, no participant study or new labeling started |
 | 2026-09-15 | `2026-09-15-grounded-chat-result.md` — completed local-task continuation | Complete: one reply adds the visible name assignment to existing code; exact replay and 224 pins verified; initial saved-chat demonstration closed |

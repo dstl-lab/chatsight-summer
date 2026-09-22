@@ -1,5 +1,52 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser policy creation and explicit runs (2026-09-22)
+
+UI direction: apply shadcn's code-ownership/composition philosophy through shared
+native components and semantic tokens. Reuse button variants, fields, neutral
+status badges and focus states; no frontend framework migration is required.
+Design contract: docs/prototypes/README.md.
+
+HCI audit fixes: literal question excerpts and policy text identify/search starts
+and pairs; the single chat opens at the tested question. Neutral Policy A/B and
+one-exchange scope clarify the evidence. Use this setup copies only an exact
+eligible source and its policies. Unsaved comparison drafts recover per browser
+tab/workspace, with resume/discard, inline validation and save/error focus.
+Duplicate action controls are reduced and input outlines strengthened. 639 Python
+tests pass (three optional skips), seven Marimo and three Node checks pass;
+independent review and authored desktop checks complete. No new provider calls.
+
+Wayfinding follow-up: configured policy workspaces land on Tutor policies (empty
+ones show setup). Explicit view/legacy conversation URLs preserve replay. Direct
+comparison, instructions and saved-results controls replace nested access; ready
+policies expand and saved comparison statuses are visible. Drafts and ineligible
+sources stay explicit. UI-only change; three Node checks and desktop/independent
+review pass. No new calls, labels or comparison data.
+
+Compare now creates frozen policy pairs from eligible saved chat starts through
+--policy-workspace, then runs untouched arms only with --send and an explicit
+button. Reuses freeze_next/run_both; shared context appears once. Source/run pins,
+serialized mutations and GET-only lost-response recovery preserve evidence and
+drafts. Failed/interrupted/completed arms are never resent. One serving process;
+external additions require reopening. 637 Python tests (three optional skips),
+seven Marimo and three Node checks pass; independent and authored browser review
+complete. Port8431 uses working copies of 29 conversations (27 eligible), sending
+enabled for user actions. All 105 original files unchanged; no new provider calls,
+labels or fidelity evidence. Memo: docs/2026-09-22-browser-policy-runs.md. PR #57.
+
+## Policy labs integrated as saved browser comparisons (2026-09-22)
+
+PR #47 corrections verify saved/derived results, use structured receipt lifecycle,
+keep observation reads read-only and fix cached-start/context/request attribution.
+Browser --policy-comparison opens one saved one-decision pair in Compare; shared
+context appears once, fixed instructions and tutor/student outcomes in two columns.
+Original --comparison review format remains distinct. No generation or new labels.
+618 Python tests (three optional skips), seven Marimo and three Node checks pass;
+independent and desktop browser review complete. Authored read-only preview:8429.
+Memos: docs/2026-09-22-policy-lab-corrections.md and
+docs/2026-09-22-browser-policy-comparison.md. Next: explicit browser pair creation
+and generation; larger batches deferred. Main still requires independent review.
+
 ## Browser replay usability (2026-09-22)
 
 Conversation-only runs now have ONE chat view with Previous/Next attached. The
