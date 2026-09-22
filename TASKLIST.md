@@ -1,5 +1,20 @@
 # Simulated students: task list
 
+**Integration update (2026-09-23):** PRs #47, #48 and #57–#59 are merged;
+#60 completes the browser workspace integration. Start from `main` using the
+[teammate quickstart](docs/teammate-quickstart.md). The implementation and independent
+reviews below are complete; pending-integration notes record earlier stages.
+Closed studies remain closed; no new labeling or experiment is queued.
+
+**Saved notebook comparison complete:** the existing
+[teaching pair](docs/2026-09-15-teaching-pair.md#browser-comparison-september-22)
+now opens in one browser workspace. Shared task/code, both supplied tutor replies,
+saved actions, local results and stop reasons are visible together; one chat
+sidebar switches between the shared start and either condition. Preparation and
+current outcomes are verified separately. 686 Python tests, three Node and seven
+Marimo checks pass; independent review and desktop checks complete. No new calls
+or labels. Next: independent PR review and integration; no new experiment queued.
+
 **Next-exercise workflow complete:** a completed notebook encounter can now
 [preview and save one configured successor](docs/2026-09-22-browser-next-exercise.md)
 from the browser. The same verified history and conversation example continue;

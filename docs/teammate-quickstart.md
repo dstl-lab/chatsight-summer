@@ -12,15 +12,13 @@ POSIX. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if
 needed. Run every command below from the repository root containing
 `pyproject.toml`, `src/` and `apps/`.
 
-The offline demo is on `main`; the dedicated browser is in
-[PR #48](https://github.com/dstl-lab/chatsight-summer/pull/48). The saved policy-pair
-view below is on `codex/policy-labs-integration`, which includes that browser and
-the corrected PR #47 helpers. Until integration merges, use that branch:
+The offline demo, dedicated browser and saved comparison tools are on `main`.
+A fresh checkout can use:
 
 ```sh
 git clone https://github.com/dstl-lab/chatsight-summer.git
 cd chatsight-summer
-git switch codex/policy-labs-integration
+git switch main
 uv sync --locked --extra workspace
 ```
 
@@ -192,9 +190,14 @@ Free-form generated chat still needs interpretation. See the
 For a completed notebook encounter, the
 [browser next-exercise workflow](2026-09-22-browser-next-exercise.md) can now save
 one configured successor and open it in the same workspace. This feature is on
-`codex/browser-next-exercise` until its PR is integrated. It reuses the existing
+`main`. It reuses the existing
 `--previous` setup, preserves history, and makes no model or execution requests
 while saving or reopening.
+
+An existing A/B notebook teaching pair can also open together with
+`--teaching-comparison <pair-directory>/sessions`; see the
+[saved notebook comparison](2026-09-15-teaching-pair.md#browser-comparison-september-22).
+It shows both completed outcomes and one selectable chat without new requests.
 
 ### Optionally supply a communication example
 
@@ -207,8 +210,7 @@ separate communication example for a new authored notebook task:
   --chat-source data/workspace/sessions/case-01
 ```
 
-Use an actual source directory supplied by your team. PR #45 merged this option
-into PR #43; use `codex/selection-results` until that PR reaches main. Creation is
+Use an actual source directory supplied by your team. This option is on `main`. Creation is
 offline and refuses existing destinations. It verifies the saved chat and copies
 only the original prefix, excluding simulated replies and identity metadata.
 The exercise, initial code, evaluator and six-decision limit stay unchanged.

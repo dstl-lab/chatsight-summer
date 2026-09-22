@@ -1,5 +1,30 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser workspace integration (2026-09-23)
+
+PRs #47, #48, #57, #58 and #59 are merged; PR #60 completes this integration.
+The user explicitly authorized individual admin squash merges for this set.
+Native stack #61 was unstacked to use that workflow; repository rules are unchanged.
+Reconciliation preserves the newer browser code and main's research-scope notes.
+The teammate quickstart now targets main. Earlier pending-review notes below
+record prior stages, not an outstanding approval request for this integration.
+Closed studies remain closed; this integration adds no model calls or labels.
+
+## Saved notebook teaching comparison (2026-09-22)
+
+`browser_workspace --teaching-comparison <sessions>` reads the existing pair's
+`a`, `b` and `comparison.json` without a replay folder or sending. Verify pinned
+preparation, child inputs/provenance and current receipts under read locks; never
+report preparation's zero model calls as the completed run's usage. Shared task
+and work appear once, outcomes in two columns, selected-condition conversation
+in one sidebar with exact source lookup. Missing origins remain unspecified.
+Pending replay notes now update through shared status rendering, preserving chat
+focus/scroll and clearing stale running text after opening an exercise.
+686 Python tests, three Node and seven Marimo checks pass; independent review and
+desktop verification complete. Existing 13 pair files unchanged; no provider
+calls, executions or labels. Details: docs/2026-09-15-teaching-pair.md. Closed
+studies remain closed; PR integration requires independent GitHub review.
+
 ## Browser next exercise (2026-09-22)
 
 Standalone notebook workspaces accept paired `--next-exercise-file` and

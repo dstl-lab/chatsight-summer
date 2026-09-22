@@ -17,7 +17,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_example, notebook_next_task, notebook_student as student, notebook_tutor, policy_comparison_setup, student_workspace, workspace_history
+from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_example, notebook_next_task, notebook_student as student, notebook_teaching_pair, notebook_tutor, policy_comparison_setup, student_workspace, workspace_history
 from src.eval import fidelity_comparison as fidelity
 from src.eval.saved_comparison import load_comparison
 
@@ -298,13 +298,79 @@ def _policy_comparison(folder, expected_pin, *, sources=None):
         'prefix':prefix, 'conditions':conditions}]}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+def _teaching_comparison(folder, expected_pin):
+    """Join a pinned notebook preparation with each arm's verified current replay."""
+    if _exercise_path(folder) != folder or any(path.is_symlink() for path in folder.rglob('*')):
+        raise ValueError('Teaching comparison paths must not be symlinks.')
+    path = folder / 'comparison.json'
+    if sha256(path.read_bytes()).hexdigest() != expected_pin:
+        raise ValueError('The teaching comparison changed after opening this workspace.')
+    receipt = student._read(path)
+    if (receipt.get('version') != 1 or receipt.get('status') != 'prepared'
+            or receipt.get('source_sha256') != student.digest(Path(notebook_teaching_pair.__file__).read_text())
+            or not re.fullmatch(r'[0-9a-f]{32}', receipt.get('comparison_id', ''))
+            or not re.fullmatch(r'[0-9a-f]{64}', receipt.get('common_input_sha256', ''))
+            or set(receipt.get('sessions', {})) != {'a', 'b'}):
+        raise ValueError('The saved teaching-pair preparation is unsupported.')
+    conditions, starts, branches = [], [], []
+    with ExitStack() as stack:
+        for name in ('a', 'b'):
+            child = folder / name
+            manifest = student._read(child / 'session.json')
+            if 'previous_encounter' in manifest['provenance']:
+                raise ValueError('Teaching comparisons require fresh initial encounters.')
+            lineage = notebook_next_task.lineage(child, stack)
+            if len(lineage) != 1 or lineage[0][1] != manifest:
+                raise ValueError('The teaching-pair session changed or contains linked tasks.')
+            initial = manifest['initial']
+            dialogue = initial['dialogue']
+            if (len(dialogue) < 2 or [turn['role'] for turn in dialogue[-2:]] != ['student', 'tutor']
+                    or any(turn['role'] not in ('student', 'tutor') or not isinstance(turn['text'], str)
+                           or not turn['text'].strip() for turn in dialogue)
+                    or dialogue[-1] != {'role':'tutor', 'text':dialogue[-1]['text'], 'origin':'supplied'}):
+                raise ValueError('The teaching-pair initial dialogue is invalid.')
+            recreated = student.notebook_session.initial_state(
+                {key:initial[key] for key in ('initialization', 'task', 'work', 'dialogue')},
+                activity=initial['activity'], branch_id=initial['branch_id'], timeout=initial['timeout'],
+                evaluation=initial.get('evaluation'))
+            saved = receipt['sessions'][name]
+            if (initial != recreated or student.digest(manifest) != saved['manifest_sha256']
+                    or student.digest(dialogue[-1]['text']) != saved['tutor_reply_sha256']
+                    or manifest['provenance']['teaching_pair'] != {
+                        'comparison_id':receipt['comparison_id'], 'condition':name,
+                        'common_input_sha256':receipt['common_input_sha256']}
+                    or receipt['max_student_decisions_total'] != 2 * manifest['max_decisions']):
+                raise ValueError('The teaching-pair session does not match its preparation.')
+            # The original replaced tutor text is not retained, so compare actual shared inputs.
+            starts.append({key:manifest[key] for key in ('model', 'max_decisions', 'engine')} | {
+                'initial':{key:value for key, value in initial.items() if key not in ('branch_id', 'dialogue')}
+                          | {'dialogue':dialogue[:-1]},
+                'provenance':{key:value for key, value in manifest['provenance'].items() if key != 'teaching_pair'}})
+            branches.append(initial['branch_id'])
+            conditions.append({'id':name, 'tutor_reply':dialogue[-1]['text'],
+                               'encounter':snapshot(child)['encounters'][0]})
+        if starts[0] != starts[1] or branches[0] == branches[1]:
+            raise ValueError('Teaching conditions must share initial inputs and have separate execution identities.')
+        if sha256(path.read_bytes()).hexdigest() != expected_pin:
+            raise ValueError('The teaching comparison changed during inspection.')
+    shared = starts[0]['initial']
+    return {'version':1, 'kind':'saved-notebook-teaching-comparison', 'cases':[{
+        'id':receipt['comparison_id'], 'title':'Notebook teaching comparison',
+        'context_status':'Both conditions share this initial task and work, with different supplied tutor replies. '
+                         'Saved simulated outcomes do not establish learning or tutor effects.',
+        'task':shared['task'], 'initial_work':shared['work'],
+        'prefix':{'context':[], 'turns':[{key:turn[key] for key in ('role', 'text', 'origin') if key in turn}
+                                       for turn in shared['dialogue']]},
+        'conditions':conditions}]}
+
+
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
     if (next_exercise_file is None) != (next_exercise_output is None):
         raise ValueError('Configure both the next exercise file and its output directory.')
     exercise = None
     if next_exercise_file is not None:
         if folder is None or chat_mode or chat_sessions or any(value is not None for value in
-                (comparison, policy_comparison, policy_workspace, fidelity_comparison)):
+                (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)):
             raise ValueError('A next exercise requires one standalone notebook session.')
         folder = _exercise_path(folder)
         next_exercise_file = _exercise_path(next_exercise_file)
@@ -323,11 +389,11 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
                    for entry in ancestors):
                 raise ValueError('Keep the next exercise outside every source session and its parent directories.')
             source_manifest_pin = student.digest(ancestors[-1][1])
-    if sum(value is not None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison)) > 1:
-        raise ValueError('Choose one comparison: communication review, tutor policies or student fidelity.')
-    if folder is None and (fidelity_comparison is None or chat_sessions or chat_mode or send
+    if sum(value is not None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)) > 1:
+        raise ValueError('Choose one comparison: communication review, tutor policies, student fidelity or notebook teaching.')
+    if folder is None and ((fidelity_comparison is None and teaching_comparison is None) or chat_sessions or chat_mode or send
                            or policy is not None or reference is not None):
-        raise ValueError('A session folder is required unless only a read-only fidelity comparison is configured.')
+        raise ValueError('A session folder is required unless only a read-only fidelity or teaching comparison is configured.')
     folder = Path(folder).resolve() if folder is not None else None
     if policy_workspace is not None:
         if not (chat_mode or chat_sessions):
@@ -349,9 +415,13 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
     comparison_pin = sha256((comparison / 'closure.json').read_bytes()).hexdigest() if comparison else None
     fidelity_comparison = Path(fidelity_comparison).absolute() if fidelity_comparison is not None else None
     fidelity_pins = fidelity.evidence_hashes(fidelity_comparison) if fidelity_comparison is not None else None
+    teaching_comparison = _exercise_path(teaching_comparison) if teaching_comparison is not None else None
+    teaching_pin = sha256((teaching_comparison / 'comparison.json').read_bytes()).hexdigest() if teaching_comparison is not None else None
     workspace_paths = (folder, comparison, policy_comparison, policy_workspace)
     if fidelity_comparison is not None:
         workspace_paths += (fidelity_comparison,)
+    if teaching_comparison is not None:
+        workspace_paths += (teaching_comparison,)
     if exercise is not None:
         workspace_paths += (next_exercise_file, next_exercise_output)
     workspace_id = student.digest([str(path.resolve()) if path is not None else None
@@ -569,6 +639,10 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             for condition in case.get('conditions', []):
                 if condition.get('tutor_reply') is not None:
                     condition['tutor_html'] = _tutor_html(condition['tutor_reply'])
+                for frame in condition.get('encounter', {}).get('frames', []):
+                    for turn in frame['dialogue']:
+                        if turn['role'] == 'tutor':
+                            turn['display_html'] = _tutor_html(turn['text'])
         return result
 
     @app.middleware('http')
@@ -612,16 +686,18 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             entries.append({'id':key, 'title':titles[key], 'summary':summary})
         return {'version':1, 'workspace_id':workspace_id, 'scenarios':entries,
                 **({'comparison_available':True} if any(value is not None for value in
-                   (comparison, policy_comparison, policy_workspace, fidelity_comparison)) else {}),
+                   (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)) else {}),
                 **({'fidelity_comparison_available':True, 'replay_available':folder is not None}
                    if fidelity_comparison is not None else {}),
+                **({'teaching_comparison_available':True, 'replay_available':folder is not None}
+                   if teaching_comparison is not None else {}),
                 **({'policy_workspace_available':True} if policy_workspace is not None else {})}
 
     @app.get('/api/comparison')
     def comparison_view(request: Request):
         if request.query_params:
             raise HTTPException(400, 'The comparison uses only the saved evidence selected at launch.')
-        if all(value is None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison)):
+        if all(value is None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)):
             raise HTTPException(404, 'No saved comparison is configured.')
         if policy_workspace is not None and not running.acquire(blocking=False):
             operation = (dict(comparison_operation) if comparison_operation['status'] == 'running' else
@@ -633,6 +709,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             result = (policy_packet() if policy_workspace is not None else
                       _policy_comparison(policy_comparison, policy_comparison_pin) if policy_comparison is not None
                       else fidelity.load_comparison(fidelity_comparison, expected_files=fidelity_pins) if fidelity_comparison is not None
+                      else _teaching_comparison(teaching_comparison, teaching_pin) if teaching_comparison is not None
                       else load_comparison(comparison, expected_closure=comparison_pin))
             return comparison_html(result)
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
@@ -818,7 +895,7 @@ def main():
     import uvicorn
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('folder', type=Path, nargs='?', help='Saved session or conversation collection; omit for a fidelity benchmark only.')
+    parser.add_argument('folder', type=Path, nargs='?', help='Saved session or conversation collection; omit for a read-only fidelity or teaching comparison.')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--chat', action='store_true', help='Open a chat-only session; notebook state remains unknown.')
     mode.add_argument('--chat-sessions', action='store_true', help='Choose among saved chat sessions directly inside the folder.')
@@ -828,6 +905,7 @@ def main():
     compare.add_argument('--policy-comparison', type=Path, help='Saved one-decision tutor-policy pair for read-only Compare.')
     compare.add_argument('--policy-workspace', type=Path, help='Directory for creating saved policy pairs from eligible chat starts.')
     compare.add_argument('--fidelity-comparison', type=Path, help='Completed fixed help/work benchmark for read-only student fidelity comparison.')
+    compare.add_argument('--teaching-comparison', type=Path, help='Saved notebook teaching-pair sessions directory containing a, b and comparison.json.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
@@ -845,6 +923,7 @@ def main():
         app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat, comparison=args.comparison,
                          policy_comparison=args.policy_comparison, policy_workspace=args.policy_workspace,
                          fidelity_comparison=args.fidelity_comparison,
+                         teaching_comparison=args.teaching_comparison,
                          next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
                          send=args.send, policy=policy, reference=reference)
     except (OSError, ValueError) as exc:

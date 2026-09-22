@@ -1,5 +1,37 @@
 # Two tutor replies from one starting situation
 
+## Browser comparison (September 22)
+
+Open the existing pair together in the dedicated workspace:
+
+```sh
+.venv/bin/python -m src.agents.browser_workspace \
+  --teaching-comparison data/teaching-pair/sessions --port 8434
+```
+
+The directory contains `a`, `b` and `comparison.json`. No replay argument or
+send flag is needed. The shared task and initial code appear once, with each
+supplied tutor reply, saved action sequence, latest code, local check and stop
+reason alongside. Shared start / Reply A / Reply B selects one conversation in
+the existing chat sidebar; source inspection follows that selection.
+
+The loader pins the preparation receipt, checks child manifests and reply hashes,
+verifies matching initial inputs and independent execution identities, and reads
+current outcomes under existing locks. The original replaced tutor text cannot be
+reconstructed from the preparation hash; actual shared inputs are compared instead.
+Missing, changed, swapped, linked or unverified evidence is hidden. Preparation's
+`model_calls: 0` is never presented as the later run's call count. Later tutor
+interventions, if present, remain additional differences visible in chat.
+
+Verified: 686 Python tests (three optional skips), three Node checks and seven
+Marimo checks; independent review and desktop walkthrough. The existing completed
+pair reopens with both edit → local check → no-reply outcomes, while all 13 source
+files retain their contents and timestamps. No provider calls, executions, labels
+or simulator changes. A related status fix updates pending-chat text after opening
+a saved exercise without rebuilding the message nodes.
+
+This interface change does not reopen the completed experiment below.
+
 Educators need to try different support from a comparable starting point. The
 new `src/agents/notebook_teaching_pair.py` prepares two saved notebook sessions
 from one initial task, replacing its final tutor reply with two supplied texts.
