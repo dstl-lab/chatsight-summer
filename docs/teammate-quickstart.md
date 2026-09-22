@@ -187,6 +187,15 @@ the supplied table; it is not a course-autograder result or evidence of learning
 Free-form generated chat still needs interpretation. See the
 [example scope and verification](2026-09-21-notebook-example.md).
 
+### Assign a configured next exercise in the browser
+
+For a completed notebook encounter, the
+[browser next-exercise workflow](2026-09-22-browser-next-exercise.md) can now save
+one configured successor and open it in the same workspace. This feature is on
+`codex/browser-next-exercise` until its PR is integrated. It reuses the existing
+`--previous` setup, preserves history, and makes no model or execution requests
+while saving or reopening.
+
 ### Optionally supply a communication example
 
 If you have a saved chat session, use its original conversation prefix as a

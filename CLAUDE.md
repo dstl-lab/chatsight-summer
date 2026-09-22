@@ -1,5 +1,21 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser next exercise (2026-09-22)
+
+Standalone notebook workspaces accept paired `--next-exercise-file` and
+`--next-exercise-output`. The Next exercise inspector previews one configured task;
+Save next exercise calls the existing `notebook_example.create(previous=...)`
+offline only after a bound, genuine no-reply stop. Fresh work, feedback and supplied
+policy accompany verified prior history/example. `?exercise=next` identifies the
+one verified successor; GET recovers a completed save without repeating it and
+polls busy child requests. Interrupted publication stays blocked, never recreated.
+Current and child operations remain separate, drafts reset only on verified
+transition, and source files stay intact. 667 tests, three Node and seven Marimo
+checks pass; independent review and scripted two-task browser check complete.
+No provider calls, executions or new labels. Memo:
+docs/2026-09-22-browser-next-exercise.md. This is workflow progress, not fidelity
+evidence or permission to reopen closed private experiments.
+
 ## Saved student fidelity comparison (2026-09-22)
 
 `browser_workspace --fidelity-comparison <help-work-benchmark-v1>` opens the closed

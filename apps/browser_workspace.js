@@ -7,6 +7,7 @@ const taskText = task => typeof task==='string'?task:Array.isArray(task)&&task.e
 const state = {kind:'notebook',scenarios:null,scenarioId:null,encounters:[],caseIndex:0,step:0,mode:'simulate',selected:'step',showInspector:false,controls:{send_enabled:false},operation:{status:'idle',message:''},policyDraft:null,replyDraft:'',replyMode:'policy',submitting:false,monitoring:false,refreshing:false,clientError:''};
 Object.assign(state,{comparisonAvailable:false,policyWorkspaceAvailable:false,fidelityComparisonAvailable:false,replayAvailable:true,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:'',comparisonEntryNote:'',chatOpen:true,chatKey:null});
 Object.assign(state,{workspaceId:null,comparisonDraft:null,comparisonDirty:false,draftStored:false,comparisonEditing:false,comparisonSubmitting:false,comparisonMonitoring:false,comparisonOperation:{status:'idle',message:''}});
+Object.assign(state,{exercise:new URLSearchParams(window.location.search).get('exercise')||'current',preparingExercise:false,openingExercise:false});
 let pollTimer,comparisonPollTimer;
 const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
@@ -77,7 +78,7 @@ function renderModeButtons(){
 }
 function selectFrame(index){state.step=index;state.selected='step';state.showInspector=false;render();notify(frame().label)}
 function selectCase(index){state.caseIndex=index;state.step=current().frames.length-1;state.showInspector=false;state.selected='step';render();notify('Opened '+current().title)}
-const workspaceUrl = endpoint => state.scenarios?.length?endpoint+'?scenario='+encodeURIComponent(state.scenarioId):endpoint;
+const workspaceUrl = endpoint => state.scenarios?.length?endpoint+'?scenario='+encodeURIComponent(state.scenarioId):state.exercise!=='current'?endpoint+'?exercise='+encodeURIComponent(state.exercise):endpoint;
 async function selectScenario(id){
   if(state.refreshing||state.submitting||state.monitoring||!state.scenarios?.some(s=>s.id===id))return;
   if(id===state.scenarioId&&state.encounters.length)return;
@@ -270,6 +271,7 @@ function fidelityComparison(c,study){
 }
 function renderComparison(){
   const data=state.comparison,c=comparisonContext(),editable=data?.controls?.create_enabled===true;
+  $('next-exercise').hidden=true;
   renderCases();renderModeButtons();
   $('playback').hidden=true;$('next-step').hidden=true;
   $('saved-results').hidden=true;$('continue-run').hidden=true;
@@ -400,6 +402,7 @@ function notebook(){
 function renderInspector(){
   const f=frame(),key=state.selected;
   if(key==='controls'){renderControls();return}
+  if(key==='next-exercise'){renderNextExercise();return}
   if(key==='results'){
     $('inspector').innerHTML=`<div class="inspector-title">${esc(current().title)} · Entire ${state.kind==='chat'?'conversation':'task'} history</div><p class="quiet">All saved exchanges for this ${state.kind==='chat'?'conversation':'task'}, including those after the selected playback state. The chat sidebar remains at that selected state.</p><div class="saved-results">${current().saved_results_html||'<p>Saved exchange details are unavailable. Reload the saved run.</p>'}</div>`;
     document.querySelectorAll('#inspector pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Saved exchange text')});
@@ -440,6 +443,9 @@ function render(){
     return;
   }
   const c=current(),f=frame();
+  $('next-exercise').hidden=state.kind!=='notebook'||!state.controls.next_exercise;
+  $('next-exercise').disabled=state.submitting||state.monitoring||state.refreshing;
+  $('next-exercise').textContent=state.controls.next_exercise?.status==='saved'?'Open next exercise':'Next exercise';
   $('new-comparison').hidden=!state.policyWorkspaceAvailable;$('run-comparison').hidden=true;$('reuse-comparison').hidden=true;
   $('new-comparison').textContent='Compare tutor policies';
   $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
@@ -488,6 +494,44 @@ function updateSubmitButton(){
     $('continuation-reason').textContent=continuationReason();$('submit-operation').disabled=!canSubmit();$('submit-operation').textContent=state.submitting||state.monitoring?'Request running…':submitLabel();
   }
 }
+function nextExerciseReason(){
+  const next=state.controls.next_exercise;
+  if(state.mode==='compare'||state.kind!=='notebook'||!state.encounters.length||!next)return 'No next exercise is configured.';
+  if(state.submitting||state.monitoring||state.refreshing)return 'Waiting for the current request.';
+  if(next.status==='saved')return '';
+  if(next.status!=='ready')return next.reason||'The current encounter must end before assigning this exercise.';
+  if(state.caseIndex!==state.encounters.length-1||state.step!==current().frames.length-1)return 'Select the latest saved state before assigning the next exercise.';
+  return '';
+}
+function renderNextExercise(){
+  const next=state.controls.next_exercise;
+  $('inspector').innerHTML=`<div class="inspector-title">Next notebook exercise</div><h2>${next?.status==='saved'?'Open the saved successor':'Assign the configured task'}</h2><p class="saved-message">${esc(next?.task||'No configured task available.')}</p><div class="divider"></div><p>Retains the earlier simulation history and original conversation example. Work and check feedback start fresh; the supplied tutor policy becomes the new draft.</p><p>You are assigning this task. The prior stop does not establish learning or a student choice to continue.</p><p class="quiet">${esc(nextExerciseReason()||'Saves a separate task with six student decisions available. No model request or code execution. Continue run remains a separate action.')}</p><button class="primary" id="save-next-exercise"${nextExerciseReason()?' disabled':''}>${state.preparingExercise?'Saving exercise…':next?.status==='saved'?'Open saved exercise':'Save next exercise'}</button>`;
+  $('save-next-exercise').onclick=prepareNextExercise;
+}
+async function prepareNextExercise(){
+  if(nextExerciseReason())return;
+  const next=state.controls.next_exercise,opening=next.status==='saved';
+  state.submitting=true;state.preparingExercise=true;state.clientError='';renderNextExercise();renderOperationStatus();
+  try{
+    const response=await fetch(opening?'/api/workspace?exercise=next':'/api/next-exercise',opening?{cache:'no-store'}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({binding:{...frame().binding},exercise_sha256:next.exercise_sha256})});
+    const packet=await response.json();
+    if(response.status===202&&opening){
+      state.exercise='next';state.openingExercise=true;
+      const url=new URL(window.location.href);url.searchParams.set('exercise','next');window.history.replaceState(null,'',url);
+      clearWorkspaceView('<p class="quiet">Opening the saved exercise; checking its in-progress request without resending…</p>');
+      await reloadWorkspace();return;
+    }
+    if(!response.ok)throw new Error(typeof packet.detail==='string'?packet.detail:'The next exercise could not be verified.');
+    if(packet.exercise!=='next')throw new Error('The response does not identify the configured next exercise.');
+    applyWorkspace(packet,{openNext:true});
+    const url=new URL(window.location.href);url.searchParams.set('exercise','next');window.history.replaceState(null,'',url);
+    $('case-title').focus();$('canvas').scrollTop=0;
+    notify('Next exercise opened. No model requests or code execution.');
+  }catch(error){
+    state.clientError=(error.message||'The save outcome is unknown.')+' Reload checks for a saved exercise; nothing is resent.';
+    await reloadWorkspace();
+  }finally{state.submitting=false;state.preparingExercise=false;renderOperationStatus();if(state.showInspector&&state.selected==='next-exercise'){renderNextExercise();(nextExerciseReason()?$('operation-status'):$('save-next-exercise')).focus()}}
+}
 function renderControls(){
   const waiting=frame().status==='awaiting-tutor';
   const manual=waiting&&state.replyMode==='reply';
@@ -500,6 +544,7 @@ function renderControls(){
 function renderOperationStatus(){
   document.querySelector('.reset-label').textContent=state.mode==='compare'?'Reload saved comparison':'Reload saved run';
   $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
+  $('next-exercise').disabled=state.submitting||state.monitoring||state.refreshing;
   renderModeButtons();
   if(state.mode==='compare'){
     const editable=state.comparison?.controls?.create_enabled;
@@ -509,16 +554,18 @@ function renderOperationStatus(){
   }
   $('continue-run').disabled=Boolean(continuationReason());
   $('tutor-controls').hidden=!$('continue-run').hidden&&!$('continue-run').disabled;
-  const message=state.submitting||state.monitoring?'Request running'+(state.encounters.length?' · showing the last saved state.':'.')+' Reloading checks progress without resending.':state.clientError||state.controls.blocked_reason||state.operation.message||'';
+  const message=state.preparingExercise?'Preparing the next exercise · no model requests or code execution.':state.submitting||state.monitoring?'Request running'+(state.encounters.length?' · showing the last saved state.':'.')+' Reloading checks progress without resending.':state.clientError||state.controls.blocked_reason||state.operation.message||'';
   $('operation-status').textContent=message;$('operation-status').hidden=!message;
-  document.querySelector('.prototype-note').textContent=state.submitting||state.monitoring?'Simulation · Request running':state.controls.send_enabled?'Simulation · Sending enabled':'Saved simulation · Read only';
+  document.querySelector('.prototype-note').textContent=state.preparingExercise?'Next exercise · Offline setup':state.submitting||state.monitoring?'Simulation · Request running':state.controls.send_enabled?'Simulation · Sending enabled':'Saved simulation · Read only';
   document.querySelectorAll('[data-scenario]').forEach(b=>{b.disabled=state.refreshing||state.submitting||state.monitoring});
   updateSubmitButton();
 }
-function applyWorkspace(packet){
+function applyWorkspace(packet,{openNext=false}={}){
   if(state.scenarios?.length&&packet.scenario_id!==state.scenarioId)throw new Error('The response does not match the selected scenario. Reload before continuing.');
+  if(((openNext||state.exercise!=='current')||packet.exercise!==undefined)&&packet.exercise!==(openNext?'next':state.exercise))throw new Error('The response does not match the selected exercise. Reload before continuing.');
   if(!['chat','notebook'].includes(packet.kind||'notebook')||packet.version!==1||!Array.isArray(packet.encounters)||!packet.encounters.length||packet.encounters.some(c=>!Array.isArray(c.frames)||!c.frames.length))throw new Error('Unsupported saved workspace response.');
-  const previousId=current()?.id;
+  const previousId=openNext?null:current()?.id;
+  if(openNext){state.openingExercise=false;state.exercise='next';state.policyDraft=null;state.replyDraft='';state.replyMode='policy';state.selected='step';state.showInspector=false;state.chatKey=null}
   state.kind=packet.kind||'notebook';state.encounters=packet.encounters;state.controls=packet.controls||{send_enabled:false};state.operation=packet.operation||{status:'idle',message:''};state.monitoring=false;
   if(state.policyDraft===null)state.policyDraft=state.controls.policy||'';
   const found=state.encounters.findIndex(c=>c.id===previousId);
@@ -526,6 +573,7 @@ function applyWorkspace(packet){
   clearTimeout(pollTimer);render();
 }
 function clearWorkspaceView(message){
+  $('next-exercise').hidden=true;
   state.encounters=[];state.showInspector=false;$('cases').innerHTML='';$('inspector').innerHTML='';$('playback').hidden=true;
   $('instructions').disabled=true;$('tutor-controls').disabled=true;$('next-step').hidden=true;$('inspector-toggle').hidden=true;
   $('saved-results').disabled=true;$('continue-run').hidden=true;
@@ -567,7 +615,9 @@ async function reloadWorkspace(){
       pollTimer=setTimeout(()=>reloadWorkspace(),1500);return;
     }
     if(!response.ok)throw new Error(typeof packet.detail==='string'?packet.detail:'The saved run could not be verified.');
-    applyWorkspace(packet);notify('Saved run loaded.');
+    const opened=state.openingExercise;applyWorkspace(packet,{openNext:opened});
+    if(opened){$('case-title').focus();$('canvas').scrollTop=0}
+    notify(opened?'Saved next exercise opened. No requests resent.':'Saved run loaded.');
   }catch(error){
     state.monitoring=false;$('case-title').textContent='Saved run unavailable';$('view-description').textContent='No saved content is displayed.';
     clearWorkspaceView(`<div role="alert"><h2>Could not load saved results</h2><p>${esc(error.name==='AbortError'?'The local backend did not respond in time.':error.message)}</p><p class="quiet">Reload saved run to check again. An in-progress request may still finish; nothing will be resent.</p></div>`);
@@ -592,7 +642,7 @@ async function submitOperation(){
   }catch(error){
     state.clientError=error.message||'Request outcome is unknown. Checking saved status; it will not be resent.';
     await reloadWorkspace();
-  }finally{state.submitting=false;renderOperationStatus()}
+  }finally{state.submitting=false;renderOperationStatus();renderChat()}
 }
 document.title='Student lab · Simulation workspace';
 $('app').classList.toggle('connected-workspace',true);
@@ -600,6 +650,7 @@ $('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel"
 $('inspector-toggle').insertAdjacentHTML('beforebegin','<button id="chat-toggle" aria-controls="conversation-panel" aria-expanded="true">Hide chat</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button class="bare" id="tutor-controls">Tutor controls</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button id="saved-results">Saved results</button>');
+$('instructions').insertAdjacentHTML('beforebegin','<button id="next-exercise" hidden>Next exercise</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button class="bare" id="new-comparison" hidden>New comparison</button><button id="reuse-comparison" aria-describedby="policy-reuse-note" hidden>Use this setup</button><button class="primary" id="run-comparison" hidden>Run both conditions</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button class="primary" id="continue-run" hidden>Continue run</button><details class="run-details" id="run-details"><summary id="run-details-toggle">Run details</summary><div class="run-details-actions" id="run-details-actions"></div></details>');
 $('run-details-actions').append($('instructions'));
@@ -622,6 +673,7 @@ $('search').oninput=()=>{if(state.mode==='compare'||state.encounters.length||sta
 $('run-details').onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();$('run-details').open=false;$('run-details-toggle').focus()}};
 $('instructions').onclick=()=>selectEvidence('context');
 $('continue-run').onclick=()=>selectEvidence('controls');
+$('next-exercise').onclick=()=>selectEvidence('next-exercise');
 $('new-comparison').onclick=async()=>{
   if(state.submitting||state.monitoring||state.refreshing||comparisonBusy())return;
   const sourceId=state.mode==='compare'?null:state.scenarioId;
@@ -636,7 +688,7 @@ $('saved-results').onclick=()=>selectEvidence('results');
 $('chat-toggle').onclick=()=>{state.chatOpen=!state.chatOpen;if(state.chatOpen)state.chatKey=null;renderChat();if(!state.chatOpen&&state.selected.startsWith('turn:'))$('chat-toggle').focus()};
 document.querySelectorAll('[data-chat-jump]').forEach(b=>b.onclick=()=>{const messages=$('conversation-messages'),first=b.dataset.chatJump==='first';messages.scrollTop=first?0:messages.scrollHeight;messages.querySelector(first?'.chat-turn':'.chat-turn:last-of-type')?.focus({preventScroll:true})});
 $('next-step').onclick=()=>{if(state.step<current().frames.length-1)selectFrame(state.step+1)};
-$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen&&(state.kind!=='chat'||state.mode==='compare')?$('chat-toggle'):state.selected==='results'?$('saved-results'):state.selected==='controls'?($('tutor-controls').hidden?$('continue-run'):$('tutor-controls')):state.selected==='review'?$('tutor-controls'):state.selected==='context'?$('run-details-toggle'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
+$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen&&(state.kind!=='chat'||state.mode==='compare')?$('chat-toggle'):state.selected==='results'?$('saved-results'):state.selected==='controls'?($('tutor-controls').hidden?$('continue-run'):$('tutor-controls')):state.selected==='review'?$('tutor-controls'):state.selected==='next-exercise'?$('next-exercise'):state.selected==='context'?$('run-details-toggle'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
 $('explorer-toggle').onclick=()=>{const shown=$('app').classList.toggle('show-explorer');$('explorer-toggle').setAttribute('aria-expanded',String(shown))};
 $('reset').onclick=()=>state.mode==='compare'?reloadComparison({monitor:state.comparisonSubmitting||state.comparisonMonitoring}):reloadWorkspace();
 window.addEventListener('beforeunload',event=>{if(state.comparisonDirty){event.preventDefault();event.returnValue=''}});

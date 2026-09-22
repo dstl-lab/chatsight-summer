@@ -36,6 +36,7 @@ let workspaceId='test-workspace';
 const draftStorage=new Map();
 let comparisonAvailable=false, policyWorkspaceAvailable=false, fidelityComparisonAvailable=false, replayAvailable=true, comparisonFail=false;
 let comparisonReadBusy=false,comparisonPostError='',comparisonPostThrow=false,finishComparisonPost;
+let successorPacket=null,nextExerciseThrow=false,nextReadBusy=false,finishNextExercise;
 const review={help_request:'yes',work_present:'no',note:null};
 const comparison={version:1,kind:'saved-communication-comparison',rubric_id:'help-work-v1',status:'complete-review',
   definitions:{help_request:'Requests assistance.',work_present:'Shows work or diagnostics.'},
@@ -55,12 +56,17 @@ const makeContext=()=>{
   URL,URLSearchParams,AbortController,setTimeout:(fn,ms)=>ms===1500?(pollCallbacks.push(fn),0):setTimeout(fn,ms),clearTimeout,fetch:async(url,options)=>{
     requests.push({url,options});
     if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,workspace_id:workspaceId,comparison_available:comparisonAvailable,policy_workspace_available:policyWorkspaceAvailable,fidelity_comparison_available:fidelityComparisonAvailable,replay_available:replayAvailable})};
+    if(url==='/api/next-exercise'){
+      if(nextExerciseThrow){nextExerciseThrow=false;packet.controls.next_exercise.status='saved';throw new Error('Save response lost')}
+      return new Promise(resolve=>{finishNextExercise=()=>resolve({ok:true,status:200,json:async()=>successorPacket})});
+    }
+    if(url==='/api/workspace?exercise=next')return {ok:true,status:nextReadBusy?202:200,json:async()=>nextReadBusy?{version:1,operation:{status:'running',message:'Request running'}}:successorPacket};
     if(url.startsWith('/api/comparison')&&options.method==='POST'){
       if(comparisonPostThrow){comparisonPostThrow=false;throw new Error('Connection lost')}
       return new Promise(resolve=>{finishComparisonPost=()=>resolve({ok:!comparisonPostError,status:comparisonPostError?409:200,json:async()=>comparisonPostError?{detail:comparisonPostError}:comparison})});
     }
     if(url==='/api/comparison')return {ok:!comparisonFail,status:comparisonReadBusy?202:comparisonFail?409:200,json:async()=>comparisonReadBusy?{version:1,operation:{status:'running',message:'Request running.'}}:comparisonFail?{detail:'Comparison could not be verified.'}:comparison};
-    if(options.method==='POST')return new Promise(resolve=>{finishPost=()=>resolve({ok:!postFailure,status:postFailure?409:200,json:async()=>postFailure?{detail:'A request is already saved.'}:packet})});
+    if(options.method==='POST')return new Promise(resolve=>{finishPost=()=>resolve({ok:!postFailure,status:postFailure?409:200,json:async()=>postFailure?{detail:'A request is already saved.'}:url==='/api/continue?exercise=next'?successorPacket:packet})});
     return {ok:!fail,status:readBusy?202:fail?409:200,json:async()=>readBusy?{version:1,operation:{status:'running',message:'Request running.'}}:fail?{detail:'Cannot verify saved run.'}:packet};
   }});
 };
@@ -158,6 +164,7 @@ const run=code=>vm.runInContext(code,context);
   packet.encounters[0].frames.push({...initial,label:'Saved step 1',status:'awaiting-tutor',pending_message:'help'});
   finishPost();await sent;
   assert.equal(run('canSubmit()'),true);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/A request is running/,'Completed requests must clear the in-progress chat note');
   run("selectEvidence('controls')");
   node('policy').oninput({target:{value:'My edited tutor instructions.'}});
   await run('reloadWorkspace()');
@@ -742,5 +749,68 @@ const run=code=>vm.runInContext(code,context);
   assert.match(node('canvas').innerHTML,/could not be verified/);assert.doesNotMatch(node('canvas').innerHTML,/0\.359|Saved &lt;draw/);
   assert.doesNotMatch(node('conversation-messages').innerHTML,/Earlier &lt;context/);
   assert.ok(requests.every(r=>!r.options.method&&r.url!=='/api/workspace'));
-  console.log('Saved workspace: playback, evidence, drafts, fidelity comparison, and failed reload recovery pass.');
+  comparisonAvailable=false;fidelityComparisonAvailable=false;replayAvailable=true;comparisonFail=false;
+  savedUrl=new URL('http://127.0.0.1/');requests=[];
+  packet.kind='notebook';packet.exercise='current';packet.encounters=[{id:'1',title:'Task 1',task:'Finished task',frames:[initial,finished]}];
+  packet.controls={send_enabled:false,policy:'Old task policy',next_exercise:{status:'ready',task:'Count <pears>',exercise_sha256:'e'.repeat(64),reason:null}};
+  packet.operation={status:'idle',message:''};
+  successorPacket={...packet,exercise:'next',controls:{send_enabled:true,policy:'New task policy'},encounters:[...packet.encounters,{id:'2',title:'Task 2',task:'Count <pears>',frames:[{...initial,work:{cell_index:1,revision:0,source:'pear_count = 0'}}]}]};
+  const nextContext=makeContext(),next=code=>vm.runInContext(code,nextContext);
+  next(fs.readFileSync(script,'utf8'));await next('ready');
+  assert.equal(node('next-exercise').hidden,false);
+  const beforePreview=requests.length;node('next-exercise').onclick();
+  assert.equal(requests.length,beforePreview);assert.match(node('inspector').innerHTML,/Count &lt;pears&gt;/);
+  node('inspector-toggle').onclick();assert.equal(document.activeElement,node('next-exercise'));node('next-exercise').onclick();
+  assert.match(node('inspector').innerHTML,/No model request or code execution/);
+  assert.equal(next('nextExerciseReason()'),'');
+  next('selectFrame(0)');assert.match(next('nextExerciseReason()'),/latest saved state/);
+  next('selectFrame(1)');node('next-exercise').onclick();
+  const saving=node('save-next-exercise').onclick();await next('prepareNextExercise()');
+  assert.equal(requests.filter(r=>r.url==='/api/next-exercise').length,1);
+  assert.equal(node('next-exercise').disabled,true);assert.match(node('operation-status').textContent,/no model requests/i);
+  const exerciseBody=JSON.parse(requests.find(r=>r.url==='/api/next-exercise').options.body);
+  assert.equal(exerciseBody.exercise_sha256,'e'.repeat(64));assert.deepEqual(exerciseBody.binding,finished.binding);
+  assert.deepEqual(Object.keys(exerciseBody).sort(),['binding','exercise_sha256']);
+  finishNextExercise();await saving;
+  assert.equal(next('state.exercise'),'next');assert.equal(next('state.caseIndex'),1);
+  assert.equal(next('state.policyDraft'),'New task policy');assert.equal(next('state.showInspector'),false);
+  assert.equal(savedUrl.searchParams.get('exercise'),'next');assert.equal(node('next-exercise').hidden,true);
+  assert.match(node('canvas').innerHTML,/pear_count = 0/);assert.match(node('canvas').innerHTML,/No check feedback/);
+  assert.equal(document.activeElement,node('case-title'));
+  next("state.policyDraft='Edited successor policy'");await node('reset').onclick();
+  assert.equal(requests.at(-1).url,'/api/workspace?exercise=next');assert.equal(next('state.policyDraft'),'Edited successor policy');
+  const advancing=next('submitOperation()');assert.equal(requests.at(-1).url,'/api/continue?exercise=next');finishPost();await advancing;
+  assert.equal(next('state.exercise'),'next');
+
+  savedUrl=new URL('http://127.0.0.1/');nextExerciseThrow=true;requests=[];
+  const lostContext=makeContext(),lost=code=>vm.runInContext(code,lostContext);
+  lost(fs.readFileSync(script,'utf8'));await lost('ready');node('next-exercise').onclick();
+  await node('save-next-exercise').onclick();
+  assert.equal(lost('state.exercise'),'current','Unknown saves must first reload the current source');
+  assert.equal(requests.filter(r=>r.url==='/api/next-exercise').length,1);
+  assert.match(node('inspector').innerHTML,/Open saved exercise/);assert.match(node('operation-status').textContent,/nothing is resent/);
+  assert.equal(document.activeElement,node('save-next-exercise'));
+  await node('save-next-exercise').onclick();
+  assert.equal(lost('state.exercise'),'next');assert.equal(requests.at(-1).url,'/api/workspace?exercise=next');
+  assert.equal(requests.filter(r=>r.options.method==='POST').length,1,'Opening the saved successor is GET only');
+  const refreshedNext=makeContext(),refreshNext=code=>vm.runInContext(code,refreshedNext);
+  refreshNext(fs.readFileSync(script,'utf8'));await refreshNext('ready');
+  assert.equal(refreshNext('state.exercise'),'next');assert.equal(refreshNext('state.caseIndex'),1);
+  assert.equal(refreshNext('state.policyDraft'),'New task policy');
+  delete successorPacket.exercise;await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/does not match the selected exercise/);
+  assert.doesNotMatch(node('canvas').innerHTML,/pear_count = 0/);successorPacket.exercise='next';
+
+  savedUrl=new URL('http://127.0.0.1/');requests=[];nextReadBusy=true;
+  const pendingContext=makeContext(),pending=code=>vm.runInContext(code,pendingContext);
+  pending(fs.readFileSync(script,'utf8'));await pending('ready');node('next-exercise').onclick();
+  await node('save-next-exercise').onclick();
+  assert.equal(pending('state.exercise'),'next');assert.equal(pending('state.monitoring'),true);
+  assert.equal(pending('state.openingExercise'),true);assert.equal(pending('state.encounters.length'),0);
+  assert.equal(savedUrl.searchParams.get('exercise'),'next');
+  nextReadBusy=false;await pollCallbacks.pop()();
+  assert.equal(pending('state.openingExercise'),false);assert.equal(pending('state.caseIndex'),1);
+  assert.equal(pending('state.policyDraft'),'New task policy');assert.equal(document.activeElement,node('case-title'));
+  assert.ok(requests.every(r=>!r.options.method),'Opening a busy child polls GET only');
+  console.log('Saved workspace: playback, drafts, fidelity, next-exercise setup, and recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

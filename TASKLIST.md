@@ -1,5 +1,15 @@
 # Simulated students: task list
 
+**Next-exercise workflow complete:** a completed notebook encounter can now
+[preview and save one configured successor](docs/2026-09-22-browser-next-exercise.md)
+from the browser. The same verified history and conversation example continue;
+work, feedback and the supplied tutor policy start with the new task. Save is
+offline; generation is separate. URL selection and read-only recovery preserve
+the successor across reloads. 667 Python tests, three Node and seven Marimo checks
+pass; the authored two-task browser walkthrough and independent review are complete.
+No new provider calls, private demonstrations or labels. PR integration still
+requires independent review; the closed fidelity studies remain closed.
+
 The [Student fidelity view](docs/2026-09-22-browser-student-fidelity.md) now surfaces
 the **completed** matched benchmark: eight conversations, four draws per condition,
 64 saved replies and existing help/work judgments. Earlier dialogue had higher
