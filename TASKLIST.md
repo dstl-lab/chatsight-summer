@@ -1,10 +1,12 @@
 # Simulated students: task list
 
 **Current direction (September 22):** PR #43 is merged; resolved branches are
-cleaned up and the working simulator is on main. Pause extra infrastructure and
-complete one [research feasibility decision](docs/2026-09-22-simulation-research-scope.md):
-can existing evidence support studying how simulation errors affect educators'
-tutor-policy assessments? No new labeling, model run or participant study is queued.
+cleaned up and the working simulator is on main. The
+[research feasibility decision](docs/2026-09-22-educator-decision-feasibility.md)
+is complete: saved evidence supports a formative keep/revise/inspect-more task,
+not a policy-effectiveness comparison. A first-case walkthrough is drafted;
+participant availability is pending. No new labeling, model run, interface
+implementation or participant study has started.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached

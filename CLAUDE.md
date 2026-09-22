@@ -1,5 +1,18 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Educator decision feasibility complete (2026-09-22)
+
+Existing mixed-eight evidence supports a formative keep/revise/inspect-more task
+about an exact tutor reply, not a policy-effectiveness comparison. Five cases have
+a work-flag disagreement and three have none; keep all cases/draws. Report replay,
+50 preparation/9 closure/37 inventory pins and cohort data/receipt linkage verify;
+private check/report are in data/episode-pilot/educator-decision-feasibility-v1.
+See docs/2026-09-22-educator-decision-feasibility.md for the concrete first-case
+walkthrough and stopping rule: at most two internal sessions, no extra cases to
+manufacture a reaction. Participant availability is asked and unresolved; no
+invitations, study, new calls, labels, execution or UI work occurred. Before/after
+judgment changes would not establish an interface benefit or learning effect.
+
 ## Merged simulator; research scope next (2026-09-22)
 
 PR43 merged to main at 31142e3. User requested resolved-branch cleanup: 35 local
