@@ -175,8 +175,8 @@ scripted callback responses must not be treated as fresh model calls.
 The viewer requires the runner's existing `.lock` and verifies receipts under a
 shared read-only lock. A freshly created chat that has never been opened needs
 the existing `chat_student show` command once to initialize that lock; viewing
-does not create one or repair invalid records. The server still opens one session
-at launch; choosing a collection or comparing conditions is separate work.
+does not create one or repair invalid records. Use the collection mode below to
+switch sessions; matched comparisons remain separate work.
 
 Verification: 497 Python tests, Marimo checks and all three Node checks pass.
 All 29 historical workspace scenarios reopen with 105 files unchanged. Browser
@@ -184,3 +184,30 @@ playback, source inspection, pending-message display and disabled sending were
 checked on an existing six-state conversation. No new provider calls, runtime
 checks, labels or student-fidelity result. See the
 [scope and result](../2026-09-22-browser-chat-scenarios.md).
+
+## Browse a saved collection
+
+```sh
+.venv/bin/python -m src.agents.browser_workspace \
+  data/episode-pilot/chat-workspace-v1/sessions --chat-sessions --port 8428
+```
+
+`--chat-sessions` selects a collection instead of a single `--chat` session. The
+server lists only direct, non-symlink children containing session manifests and
+freezes that list at startup. Restart to include newly added folders. The sidebar
+shows numbered scenarios without loading every conversation or exposing filenames.
+Filter and select a scenario to verify its saved conversation and playback.
+The page URL retains selection on refresh; tabs select independently.
+
+Switching resets tutor/manual drafts and clears the previous content. Loading or
+generating disables switching; a failed case clears its view but leaves the list
+available. Reloading the same case preserves its draft. Reads and optional bound
+submissions name an allowed scenario; filenames and arbitrary paths are never
+accepted from the browser. The existing global writer lock allows one operation
+at a time. The normal `--send` opt-in applies; the research collection is opened
+without it, and closed studies remain closed.
+
+Verification: 508 Python tests, Marimo and all Node checks pass. All 29 scenarios
+reopen with 105 files unchanged; actual browser switching, filtering, draft reset,
+focus and refresh were checked. No new model requests or labels. See
+[scope and result](../2026-09-22-browser-scenario-selection.md).

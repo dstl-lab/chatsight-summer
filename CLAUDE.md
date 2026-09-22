@@ -1,5 +1,21 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Saved scenarios can be selected in the browser (2026-09-22)
+
+browser_workspace --chat-sessions freezes direct-child chat folders at startup,
+serves a path-free catalog, and verifies one selected scenario per GET/POST.
+Selection is explicit and per-tab; bound submissions and operation messages stay
+with that scenario. Symlink/unknown/duplicate selectors fail closed. Switching
+resets drafts and clears old content; URL retains selection on refresh. Busy work
+disables switching, failed cases retain the catalog, and keyboard focus recovers.
+508 tests, Marimo and Node checks pass; independent review found no remaining
+blocker. All29selected HTTP views and browser cases1/2/3/29 verified,105files
+unchanged. No calls/execution/labels. localhost:8428 serves the readonly collection;
+8427 remains the completed notebook, now readonly too. No engine changes or
+closed-study reruns. Memo: docs/2026-09-22-browser-scenario-selection.md.
+This supersedes the single-session browser limitation below; comparisons remain
+separate work. Local audit: data/browser-scenario-selection-verification/.
+
 ## Existing chat scenarios now open in the browser (2026-09-22)
 
 Explicit browser_workspace --chat opens one saved chat session, projects initial
