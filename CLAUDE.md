@@ -1,5 +1,24 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Recorded example persists across notebook tasks (2026-09-22)
+
+notebook_next_task now carries only the root's explicitly sourced conversation
+example and scope, separately from simulated encounter history. Query validation,
+the saved prefix hash and predecessor manifest chain bind the source; a carried
+content hash rejects altered/missing examples in new successors. The prechange
+writer hash ccaa59b9…7476c21b alone permits historical omission. Replay shows the
+example only where actually delivered. Arbitrary initialization stays excluded;
+one copy counts toward the existing 64KB shared-context ceiling. Engines/prompts
+are unchanged. See docs/2026-09-22-communication-continuity.md.
+444 tests, both Marimo checks and Node navigation pass; independent review caught
+and verified the fix for complete-example deletion masquerading as legacy input.
+An offline green-proportion successor is saved at data/notebook-communication-continuity:
+exact 10-turn example, previous simulated activity, fresh task/work/evaluator,
+zero calls/executions/actions and six unused decisions. All34setup pins verify;
+source sessions remain unchanged. The failed forecast's69pins still verify.
+No live run, labeling or persona/fidelity claim is queued. Old audits pinning
+the changed next-task/replay sources require their historical revisions.
+
 ## Work-presence forecast completed; failed screen closed (2026-09-22)
 
 Minchan answered Yes to the exact eight-prefix Gemini scope after the automatic

@@ -49,7 +49,7 @@ generations or further review rounds; preserve the existing simulator.
 
 Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
 
-**Current increment:** a separate [work-presence forecast](docs/2026-09-22-work-presence-forecast-status.md)
+**Latest fidelity diagnostic:** a separate [work-presence forecast](docs/2026-09-22-work-presence-forecast-status.md)
 is implemented and passes the 442-test suite. After specific approval, all eight
 requests completed with no errors or adapter retries, reusing completed labels.
 The screen **failed**: forecast error .80625 vs frequency .612245 and fixed 50/50
@@ -57,6 +57,12 @@ The screen **failed**: forecast error .80625 vs frequency .612245 and fixed 50/5
 simulator; no message-realization component, rerolls or new review form. The
 screen measures a conditional message-feature forecast, not generated-message
 fidelity. Earlier studies remain closed.
+
+**Current increment complete:** [preserve the recorded communication example](docs/2026-09-22-communication-continuity.md)
+when moving to later notebook tasks. Verified through Tasks 2 and 3 offline;
+444 tests pass. A successor to the completed notebook demonstration retains its
+10-turn example with fresh work and no actions/calls. No further run or labeling
+is queued; this repairs context continuity without claiming improved realism.
 
 ## North Star
 
@@ -223,6 +229,19 @@ milestones; the former does not establish the latter.
   Balanced work Brier is 5/12, descriptive only; there is no second condition.
   The [report](docs/2026-09-22-cached-communication-results.md) closes this pass;
   no replacement cases, second reviewer, additional labels or generator change.
+
+- [x] **15. Test work-presentation forecasting once using existing labels.**
+  Eight approved forecasts completed with no errors or adapter retries. The
+  [declared screen failed](docs/2026-09-22-work-presence-forecast-status.md):
+  error .80625 versus frequency .612245 and fixed 50/50 .5. Close without
+  adding a message-realization component, tuning the prompt or requesting labels.
+
+- [x] **16. Retain the recorded example across authored notebook tasks.**
+  The root's explicitly sourced example now survives separately from simulated
+  encounter history, with bounded context and verified provenance. New-session
+  tampering is rejected; old omissions retain their actual saved inputs. The
+  [offline successor and tests](docs/2026-09-22-communication-continuity.md) verify
+  both agent inputs and replay, without new model calls or changing prior records.
 
 ## Current difficulties
 

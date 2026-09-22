@@ -9,6 +9,30 @@ import tempfile
 from uuid import uuid4
 
 from src.agents import notebook_student as student
+from src.eval.retrieval_baseline import Query
+
+LEGACY_SOURCE = 'ccaa59b95bdd6c7fcdeade27039468ee58fcf15bf6c49006db8fc6bf7476c21b'  # 826db00: omitted examples
+
+
+def _communication(manifest):
+    """Recover only the explicitly sourced example captured by notebook_example."""
+    source = manifest.get('provenance', {}).get('communication_source')
+    if source is None:
+        return {}
+    initial = manifest['initial']['initialization']
+    if (not isinstance(source, dict) or not isinstance(initial, dict)
+            or not isinstance(source.get('path'), str) or not source['path'].strip()
+            or any(not isinstance(source.get(key), str) or len(source[key]) != 64
+                   or any(c not in '0123456789abcdef' for c in source[key])
+                   for key in ('session_sha256', 'prefix_sha256'))):
+        raise ValueError('Communication example requires its original source provenance.')
+    prefix = Query.model_validate({'id':'example', 'conversation_id':'example',
+                                   'prefix':initial.get('conversation_example')}).model_dump()['prefix']
+    scope = initial.get('communication_scope')
+    if (student.digest(prefix) != source['prefix_sha256']
+            or not isinstance(scope, str) or not scope.strip()):
+        raise ValueError('Communication example does not match its saved source and scope.')
+    return {'conversation_example':prefix, 'communication_scope':scope}
 
 
 def _observed(state):
@@ -54,6 +78,7 @@ def lineage(folder, stack, *, previous=None):
         folder = Path(previous if previous is not None else ancestry['path']).resolve()
         previous = None
     entries.reverse()
+    communication = _communication(entries[0][1])
     observed = []
     for index, (_, manifest, state, _, _) in enumerate(entries):
         if index:
@@ -68,6 +93,13 @@ def lineage(folder, stack, *, previous=None):
                     or ('earlier_encounters' in initialization
                         and initialization['earlier_encounters'] != observed[:-1])):
                 raise ValueError('Ancestry does not match the saved predecessor and shared history.')
+            carried = {key:initialization[key] for key in ('conversation_example', 'communication_scope')
+                       if key in initialization}
+            required = communication and ancestry.get('source_sha256') != LEGACY_SOURCE
+            if required or carried or 'communication_sha256' in ancestry:
+                if (not communication or carried != communication
+                        or ancestry.get('communication_sha256') != student.digest(communication)):
+                    raise ValueError('Communication context does not match the original captured example.')
         observed.append(_observed(state))
     return entries
 
@@ -80,13 +112,17 @@ def create(previous, folder, *, task, activity, evaluation=None, max_decisions=1
         if not _ended(state):
             raise ValueError('The previous encounter must end with a generated no-reply action.')
         records = [_observed(entry[2]) for entry in entries]
+        communication = _communication(entries[0][1])
         shared = records[-1]
         # ponytail: exact history up to 64 KB; add explicit evidence selection only when this ceiling is reached.
-        if len(json.dumps(records, ensure_ascii=False, allow_nan=False).encode('utf-8')) > 64000:
+        context = {'encounters':records, **communication} if communication else records
+        if len(json.dumps(context, ensure_ascii=False, allow_nan=False).encode('utf-8')) > 64000:
             raise ValueError('Previous encounters exceed the 64000-byte shared-history limit.')
         provenance = {'path':str(previous.resolve()), 'session_sha256':student.digest(manifest),
                       'state_sha256':student.digest(state), 'history_sha256':student.digest(shared),
                       'source_sha256':student.digest(Path(__file__).read_text())}
+        if communication:
+            provenance['communication_sha256'] = student.digest(communication)
         prepared = deepcopy(task)
         prepared['initialization'] = {
             'current_task':prepared['initialization'],
@@ -95,7 +131,7 @@ def create(previous, folder, *, task, activity, evaluation=None, max_decisions=1
                 'to its own earlier task. The researcher supplied this new task; no learning or choice '
                 'to continue is established by earlier stops.',
             'earlier_encounters':records[:-1],
-            'previous_encounter':shared}
+            'previous_encounter':shared, **communication}
     folder.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=folder.parent, prefix='.next-task-') as temporary:
         staged = Path(temporary) / 'session'
