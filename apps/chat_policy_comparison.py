@@ -6,10 +6,11 @@ app = marimo.App(width="full", app_title="Tutor policy comparison")
 
 @app.cell
 def _():
+    import html
     from pathlib import Path
     import marimo as mo
-    from src.agents import chat_policy_pair, tutor_context
-    return Path, chat_policy_pair, mo, tutor_context
+    from src.agents import chat_policy_pair
+    return Path, chat_policy_pair, html, mo
 
 
 @app.cell
@@ -34,8 +35,15 @@ def _(chat_policy_pair, folder, mo):
 
 
 @app.cell
-def _(chat_policy_pair, folder, get_view, mo, send_enabled, set_view, tutor_context):
+def _(chat_policy_pair, folder, get_view, html, mo, send_enabled, set_view):
     _packet, _error = get_view()
+
+    def _wrapped_text(value):
+        return mo.Html(
+            '<div style="white-space: pre-wrap; overflow-wrap: anywhere; '
+            'word-break: break-word; max-width: 100%;">'
+            + html.escape(value) + '</div>'
+        )
 
     def _refresh(_=None, selected_folder=folder, message=""):
         try:
@@ -50,7 +58,7 @@ def _(chat_policy_pair, folder, get_view, mo, send_enabled, set_view, tutor_cont
     comparison_view = mo.vstack([_heading, _error_view, _reload])
     mo.stop(_packet is None, comparison_view)
 
-    _columns = []
+    _condition_views = {}
     for _key in ("a", "b"):
         _condition = _packet["conditions"][_key]
         _snapshot = _condition["snapshot"]
@@ -81,11 +89,15 @@ def _(chat_policy_pair, folder, get_view, mo, send_enabled, set_view, tutor_cont
                 _origin = {"source": "Recorded", "generated": "Simulated",
                            "scripted": "Tutor intervention", "supplied": "Tutor intervention"}.get(
                                _turn.get("origin"), "Supplied context")
-                _conversation.append(mo.md(f"**{_turn['role'].capitalize()} · {_origin}**\n\n"
-                                          + tutor_context._block(_turn["text"])))
+                _conversation.append(mo.vstack([
+                    mo.md(f"**{_turn['role'].capitalize()} · {_origin}**"),
+                    _wrapped_text(_turn["text"]),
+                ], gap=0.5))
             if _snapshot["pending_message"]:
-                _conversation.append(mo.md("**Simulated student · Awaiting a tutor reply**\n\n"
-                                          + tutor_context._block(_snapshot["pending_message"])))
+                _conversation.append(mo.vstack([
+                    mo.md("**Simulated student · Awaiting a tutor reply**"),
+                    _wrapped_text(_snapshot["pending_message"]),
+                ], gap=0.5))
         else:
             _conversation.append(mo.md("The saved results remain available in the next tab."))
 
@@ -103,20 +115,21 @@ def _(chat_policy_pair, folder, get_view, mo, send_enabled, set_view, tutor_cont
 
             _controls = mo.ui.button(label=f"Continue condition {_key.upper()} one decision",
                                      on_change=_continue, kind="success")
-        _columns.append(mo.vstack([
-            mo.md(f"## Condition {_key.upper()}\n### Fixed tutor policy"),
-            mo.plain_text(_condition["policy"]), mo.md(_status),
+        _condition_views[f"Condition {_key.upper()}"] = mo.vstack([
+            mo.md("### Fixed tutor policy"),
+            _wrapped_text(_condition["policy"]), mo.md(_status),
             mo.callout(mo.plain_text(_condition_error), kind="danger") if _condition_error else mo.md(""),
             _controls,
             mo.ui.tabs({"Conversation": mo.vstack(_conversation),
                         "Saved results": mo.md(_condition["history"])}),
-        ]))
+        ], gap=1)
 
     comparison_view = mo.vstack([
         _heading, mo.plain_text("Comparison: " + _packet["comparison_id"]),
         mo.md(f"Each condition allows up to **{_packet['max_new_decisions']} new student decisions**. "
               "The cached first reply is a simulated starting point, not an observed student future."),
-        _error_view, mo.hstack(_columns, widths="equal", align="start", gap=2),
+        mo.md("Open each condition tab to compare its fixed policy, tutor response, and simulated student response."),
+        _error_view, mo.ui.tabs(_condition_views),
         mo.md("Continuing sends only the selected condition's fixed policy and visible conversation to Gemini."
               if send_enabled else "Viewing only. Sending is disabled for this comparison."),
         _reload,
