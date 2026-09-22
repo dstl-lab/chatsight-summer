@@ -16,7 +16,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from src.agents import chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace
+from src.agents import chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace, workspace_history
 from src.eval.saved_comparison import load_comparison
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +40,25 @@ def _tutor_html(text):
     md.preprocessors.register(_PlainFences(md, md.preprocessors['fenced_code_block'].config),
                               'fenced_code_block', 25)
     return md.convert(text)
+
+
+def _saved_results(folder):
+    """Reuse receipt interpretation without following links or exposing diagnostics."""
+    folder = Path(folder)
+    paths = [folder / 'session.json', *folder.glob('step-*.json')]
+    for name, pattern in (('tutor-exchanges', '*'), ('lesson', 'tutor-*')):
+        directory = folder / name
+        if directory.is_symlink():
+            raise ValueError('Saved exchange folders must not be symlinks.')
+        paths.append(directory / 'receipt.json')
+        for exchange in directory.glob(pattern):
+            if exchange.is_symlink():
+                raise ValueError('Saved exchanges must not be symlinks.')
+            if exchange.is_dir():
+                paths.extend(exchange / name for name in ('receipt.json', 'context.json'))
+    if any(path.is_symlink() for path in paths):
+        raise ValueError('Saved exchange files must not be symlinks.')
+    return _tutor_html(workspace_history.render(folder, diagnostics=False))
 
 
 class Binding(BaseModel):
@@ -105,12 +124,13 @@ def _chat_snapshot(folder):
                 'work':None, 'feedback':None, 'changes':None,
                 'actions':[{key:receipt['response'][key] for key in ('decision', 'text')} | {'source':None}]
                     if receipt is not None and receipt['status'] == 'complete' else []})
+        saved_results = _saved_results(folder)
     return {'version':1, 'kind':'chat', 'encounters':[{
         'id':'1', 'title':'Conversation', 'task':'Conversation scenario',
         'initialization':'Supplied conversation prefix followed by saved simulated continuation. '
             'The prefix may be recorded or authored; its saved origin alone does not establish this. '
             'Notebook activity and outcomes are unknown. Code in a message is text only.',
-        'activity':None, 'frames':frames}]}
+        'activity':None, 'frames':frames, 'saved_results_html':saved_results}]}
 
 
 def snapshot(folder, *, chat_mode=False):
@@ -119,7 +139,7 @@ def snapshot(folder, *, chat_mode=False):
         return _chat_snapshot(folder)
     encounters = []
     with ExitStack() as stack:
-        for number, (_, manifest, _, receipts, _) in enumerate(notebook_next_task.lineage(folder, stack), 1):
+        for number, (encounter_folder, manifest, _, receipts, _) in enumerate(notebook_next_task.lineage(folder, stack), 1):
             initial = manifest['initial']
             frames = [_frame(manifest, initial, None, 0, 0)]
             previous, decisions = initial, 0
@@ -131,7 +151,7 @@ def snapshot(folder, *, chat_mode=False):
             encounters.append({'id':str(number), 'title':f'Task {number}', 'task':initial['task'],
                 'initialization':initial['initialization'],
                 'activity':{key:value for key,value in initial['activity'].items() if key != 'image_id'},
-                'frames':frames})
+                'frames':frames, 'saved_results_html':_saved_results(encounter_folder)})
     return {'version':1, 'kind':'notebook', 'encounters':encounters}
 
 

@@ -13,10 +13,11 @@ const node = id => {
   return elements.get(id);
 };
 const modes = ['inspect','simulate','compare'].map(mode=>Object.assign(node(mode),{dataset:{mode}}));
+const chatJumps = ['first','last'].map(chatJump=>Object.assign(node('chat-'+chatJump),{dataset:{chatJump}}));
 let sidebarButtons=[];
 const document = {activeElement:null, body:node('body'), getElementById:node,
   querySelector:selector=>node(selector),
-  querySelectorAll:selector=>selector==='[data-mode]'?modes:selector==='[data-scenario]'?sidebarButtons:[]};
+  querySelectorAll:selector=>selector==='[data-mode]'?modes:selector==='[data-chat-jump]'?chatJumps:selector==='[data-scenario]'?sidebarButtons:[]};
 const initial = {label:'Initial state',status:'active',decisions_remaining:3,
   work:{cell_index:1,revision:0,source:'count = 0'},dialogue:[],pending_message:null,
   feedback:null,changes:{baseline_revision:0,baseline_kind:'initial-work',unified_diff:''},actions:[],binding:{}};
@@ -27,7 +28,8 @@ const finished = {...initial,label:'Saved step 1',status:'no-reply',decisions_re
   feedback:{status:'checked',success:true,value:2},
   changes:{baseline_revision:0,baseline_kind:'previous-saved-step',unified_diff:'-count = 0\n+count = 2'}};
 const packet = {version:1,encounters:[{id:'1',title:'Task 1',task:[{index:0,source:'Find the fraction of blue rows.'}],
-  initialization:'Authored example',activity:{library:'babypandas'},frames:[initial,finished]}]};
+  initialization:'Authored example',activity:{library:'babypandas'},frames:[initial,finished],
+  saved_results_html:'<h2>Saved results</h2><p>Tutor policy used: saved instructions.</p>'}]};
 let fail=false, requests=[], finishPost, readBusy=false, pollCallbacks=[], postFailure=false;
 let catalog=[], savedUrl=new URL('http://127.0.0.1/');
 let comparisonAvailable=false, comparisonFail=false;
@@ -62,8 +64,30 @@ const run=code=>vm.runInContext(code,context);
   assert.doesNotMatch(node('conversation-messages').innerHTML,/<img src=x|Find the fraction|never execute/);
   assert.equal(node('inspect').hidden,true);
   assert.equal(node('conversation-panel').hidden,false);
+  assert.equal(node('chat-count').textContent,'1 message');
+  assert.ok(chatJumps.every(b=>b.disabled));
+  assert.equal(node('saved-results').hidden,false);
+  run("selectEvidence('results')");
+  assert.match(node('inspector').innerHTML,/Entire task history/);
+  assert.match(node('inspector').innerHTML,/Tutor policy used: saved instructions/);
+  assert.doesNotMatch(node('inspector').innerHTML,/One concise hint/);
+  assert.match(node('conversation-messages').innerHTML,/&lt;img src=x/);
+  node('inspector-toggle').onclick();
+  assert.equal(document.activeElement,node('saved-results'));
   finished.dialogue.push({role:'tutor',origin:'supplied',text:'**Try** `x < 3`',display_html:'<p><strong>Try</strong> <code>x &lt; 3</code></p>'});
   run('render()');
+  assert.equal(node('chat-count').textContent,'2 messages');
+  assert.ok(chatJumps.every(b=>!b.disabled));
+  node('conversation-messages').scrollHeight=900;
+  node('conversation-messages').querySelector=selector=>node('message-'+selector);
+  const requestsBeforeJump=requests.length;
+  chatJumps[1].onclick();
+  assert.equal(node('conversation-messages').scrollTop,900);
+  assert.equal(document.activeElement,node('message-.chat-turn:last-of-type'));
+  chatJumps[0].onclick();
+  assert.equal(node('conversation-messages').scrollTop,0);
+  assert.equal(document.activeElement,node('message-.chat-turn'));
+  assert.equal(requests.length,requestsBeforeJump);
   assert.match(node('conversation-messages').innerHTML,/<strong>Try<\/strong> <code>x &lt; 3<\/code>/);
   run("selectEvidence('turn:1')");
   assert.match(node('inspector').innerHTML,/\*\*Try\*\* `x &lt; 3`/);
@@ -95,8 +119,11 @@ const run=code=>vm.runInContext(code,context);
   assert.doesNotMatch(node('canvas').innerHTML,/never execute/);
   assert.doesNotMatch(node('conversation-messages').innerHTML,/chat-turn|&lt;img src=x/);
   assert.match(node('conversation-messages').innerHTML,/No verified conversation/);
+  assert.equal(node('chat-count').textContent,'0 messages');
+  assert.ok(chatJumps.every(b=>b.disabled));
   assert.equal(node('cases').innerHTML,'');
   assert.equal(node('playback').hidden,true);
+  assert.equal(node('saved-results').disabled,true);
   fail=false;await run('reloadWorkspace()');
   assert.match(node('conversation-messages').innerHTML,/&lt;img src=x/);
   run("selectMode('simulate')");
@@ -249,6 +276,9 @@ const run=code=>vm.runInContext(code,context);
   run("state.replyDraft='Keep this draft'");
   const postsBeforeCompare=requests.filter(r=>r.options.method==='POST').length;
   const loadingComparison=run("selectMode('compare')");
+  assert.equal(node('saved-results').hidden,true);
+  assert.equal(node('chat-count').textContent,'0 messages');
+  assert.ok(chatJumps.every(b=>b.disabled));
   assert.match(node('conversation-messages').innerHTML,/Loading saved conversation/);
   assert.doesNotMatch(node('conversation-messages').innerHTML,/what went wrong|A saved tutor turn|chat-turn/);
   await loadingComparison;
@@ -295,6 +325,7 @@ const run=code=>vm.runInContext(code,context);
   assert.match(node('canvas').innerHTML,/Simulated reply 2/);
   run("selectMode('simulate')");
   assert.equal(run('state.scenarioId'),replaySelection);
+  assert.equal(node('saved-results').hidden,false);
   assert.equal(run('state.replyDraft'),'Keep this draft');
   assert.match(node('cases').innerHTML,/Scenario 02/);
   assert.doesNotMatch(node('canvas').innerHTML,/Simulated reply 2/);

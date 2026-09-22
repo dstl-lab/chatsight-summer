@@ -84,7 +84,7 @@ function renderCases(){
   document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>selectCase(Number(b.dataset.case)));
 }
 function conversation(rows=turns(),offset=0){
-  return rows.length?rows.map((turn,i)=>`<article class="chat-turn"><header>${esc(turn.role==='student'?'Student':'Tutor')} <span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p style="white-space:pre-wrap">${esc(turn.text)}</p>`}</div><button data-evidence="turn:${i+offset}">Inspect source</button></article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
+  return rows.length?rows.map((turn,i)=>`<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${turn.role==='student'?'S':'T'}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">Inspect source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div></article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
 function renderChat(){
   const comparing=state.mode==='compare',c=state.comparison?.cases[state.reviewIndex];
@@ -97,9 +97,11 @@ function renderChat(){
   $('chat-caption').textContent=comparing?(c?`${c.title} · before the replies`:'No saved context loaded'):available?`${current().title} · ${frame().label}`:'No saved conversation loaded';
   const key=comparing?'compare:'+c?.id:`${state.scenarioId}:${current()?.id}:${state.step}`;
   if(state.chatKey!==key){$('conversation-messages').scrollTop=0;state.chatKey=key}
+  const rows=available?turns():[];
+  $('chat-count').textContent=rows.length+' message'+(rows.length===1?'':'s');
+  document.querySelectorAll('[data-chat-jump]').forEach(b=>b.disabled=rows.length<2);
   if(!available){$('conversation-messages').innerHTML='<p class="quiet">'+(state.comparisonLoading||state.refreshing||state.monitoring?'Loading saved conversation…':'No verified conversation to display.')+'</p>';return}
-  const rows=turns();
-  $('conversation-messages').innerHTML=comparing?`<p class="quiet">${esc(c.context_status)}</p><h3>Earlier messages supplied</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3>Current exchange</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
+  $('conversation-messages').innerHTML=comparing?`<p class="quiet chat-context-note">${esc(c.context_status)}</p><h3 class="chat-section-label">Earlier messages supplied</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3 class="chat-section-label">Current exchange</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
   document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
   document.querySelectorAll('.message-body pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Tutor code block')});
 }
@@ -107,6 +109,7 @@ function renderComparison(){
   const data=state.comparison,c=data?.cases[state.reviewIndex];
   renderCases();renderModeButtons();
   $('playback').hidden=true;$('next-step').hidden=true;
+  $('saved-results').hidden=true;
   $('instructions').hidden=true;$('tutor-controls').textContent='Review details';
   $('instructions').disabled=!c;$('tutor-controls').disabled=!c;
   $('case-title').textContent=c?.title||(state.comparisonLoading?'Loading comparison…':'Comparison unavailable');
@@ -163,6 +166,11 @@ function notebook(){
 function renderInspector(){
   const f=frame(),key=state.selected;
   if(key==='controls'){renderControls();return}
+  if(key==='results'){
+    $('inspector').innerHTML=`<div class="inspector-title">${esc(current().title)} · Entire ${state.kind==='chat'?'conversation':'task'} history</div><p class="quiet">All saved exchanges for this ${state.kind==='chat'?'conversation':'task'}, including those after the selected playback state. The chat sidebar remains at that selected state.</p><div class="saved-results">${current().saved_results_html||'<p>Saved exchange details are unavailable. Reload the saved run.</p>'}</div>`;
+    document.querySelectorAll('#inspector pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Saved exchange text')});
+    return;
+  }
   let title,body;
   if(key==='work'){
     title='Notebook changes';body=`<p>${f.changes.baseline_kind==='initial-work'?'Initial selected-cell work.':`Net change from the previous saved state, revision ${esc(f.changes.baseline_revision)}. A saved step can contain several decisions.`}</p>`+(f.changes.unified_diff?block(f.changes.unified_diff):'<p>No source change.</p>');
@@ -199,6 +207,7 @@ function render(){
   renderCases();
   renderModeButtons();
   $('instructions').hidden=false;$('instructions').textContent='Run context';$('tutor-controls').textContent='Tutor controls';
+  $('saved-results').hidden=false;$('saved-results').disabled=false;
   $('case-title').textContent=c.title;
   $('view-description').textContent=`${f.label} · ${statusText(f)}`;
   $('canvas').innerHTML=state.kind==='chat'?`<div class="inspect-content">${missingNotebook}<h2>Saved activity</h2><p class="quiet">${esc(statusText(f))}. ${esc(f.decisions_remaining)} decisions remaining.</p>${f.actions.map(a=>`<p>${esc(decisionNames[a.decision]||a.decision)}</p>`).join('')||'<p class="quiet">No simulated student decision at this state.</p>'}<p class="note">The conversation is in the chat sidebar. Use saved playback to follow its progress. A no-reply decision does not establish learning or abandonment.</p></div>`:`${notebook()}<p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`;
@@ -270,6 +279,7 @@ function applyWorkspace(packet){
 function clearWorkspaceView(message){
   state.encounters=[];state.showInspector=false;$('cases').innerHTML='';$('inspector').innerHTML='';$('playback').hidden=true;
   $('instructions').disabled=true;$('tutor-controls').disabled=true;$('next-step').hidden=true;$('inspector-toggle').hidden=true;
+  $('saved-results').disabled=true;
   $('body-grid').classList.toggle('no-inspector',true);$('body-grid').classList.toggle('inspector-open',false);
   renderModeButtons();
   $('canvas').innerHTML=message;
@@ -330,9 +340,10 @@ async function submitOperation(){
 }
 document.title='Student lab · Simulation workspace';
 $('app').classList.toggle('connected-workspace',true);
-$('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel" id="conversation-panel" aria-label="Student and tutor conversation"><header><h2 id="chat-title">Student–tutor chat</h2><p id="chat-caption" class="small muted"></p></header><div id="conversation-messages"></div></aside>');
+$('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel" id="conversation-panel" aria-label="Student and tutor conversation"><header><h2 id="chat-title">Student–tutor chat</h2><p id="chat-caption" class="small muted"></p><div class="chat-navigation"><span id="chat-count" class="small muted"></span><button data-chat-jump="first" aria-label="Go to first message" aria-controls="conversation-messages">First</button><button data-chat-jump="last" aria-label="Go to last message" aria-controls="conversation-messages">Last</button></div></header><div id="conversation-messages"></div></aside>');
 $('inspector-toggle').insertAdjacentHTML('beforebegin','<button id="chat-toggle" aria-controls="conversation-panel" aria-expanded="true">Hide chat</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button id="tutor-controls">Tutor controls</button>');
+$('instructions').insertAdjacentHTML('beforebegin','<button id="saved-results">Saved results</button>');
 $('canvas').insertAdjacentHTML('beforebegin','<div id="operation-status" role="status" aria-live="polite" style="padding:12px 36px;border-bottom:1px solid var(--line);font-size:12px" hidden></div>');
 document.querySelector('.prototype-note').textContent='Saved simulation · Read only';
 document.querySelector('.breadcrumb').textContent='Notebook simulation';
@@ -346,9 +357,11 @@ document.querySelectorAll('[data-mode]').forEach(b=>{if(b.dataset.mode==='compar
 $('search').oninput=()=>{if(state.mode==='compare'||state.encounters.length||state.scenarios?.length)renderCases()};
 $('instructions').onclick=()=>selectEvidence('context');
 $('tutor-controls').onclick=()=>selectEvidence(state.mode==='compare'?'review':'controls');
+$('saved-results').onclick=()=>selectEvidence('results');
 $('chat-toggle').onclick=()=>{state.chatOpen=!state.chatOpen;renderChat();if(!state.chatOpen&&state.selected.startsWith('turn:'))$('chat-toggle').focus()};
+document.querySelectorAll('[data-chat-jump]').forEach(b=>b.onclick=()=>{const messages=$('conversation-messages'),first=b.dataset.chatJump==='first';messages.scrollTop=first?0:messages.scrollHeight;messages.querySelector(first?'.chat-turn':'.chat-turn:last-of-type')?.focus({preventScroll:true})});
 $('next-step').onclick=()=>{if(state.step<current().frames.length-1)selectFrame(state.step+1)};
-$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen?$('chat-toggle'):state.selected==='context'?$('instructions'):['controls','review'].includes(state.selected)?$('tutor-controls'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
+$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen?$('chat-toggle'):state.selected==='results'?$('saved-results'):state.selected==='context'?$('instructions'):['controls','review'].includes(state.selected)?$('tutor-controls'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
 $('explorer-toggle').onclick=()=>{const shown=$('app').classList.toggle('show-explorer');$('explorer-toggle').setAttribute('aria-expanded',String(shown))};
 $('reset').onclick=()=>state.mode==='compare'?reloadComparison():reloadWorkspace();
 const ready=reloadWorkspace();
