@@ -14,7 +14,7 @@ def _():
 
 
 @app.cell
-def _(chat_mode, folder, mo):
+def _(chat_mode, folder, initial_policy, mo):
     # Keep drafts through refresh, but reset them when selecting another scenario.
     _selected_folder = folder
     tutor_inputs = mo.ui.dictionary({
@@ -22,8 +22,9 @@ def _(chat_mode, folder, mo):
                             value="Tutor policy", inline=True),
         "reply": mo.ui.text_area(label="Your tutor reply", full_width=True, debounce=False),
         "policy": mo.ui.text_area(label="Tutor policy", full_width=True, debounce=False,
-            value="Respond concisely to the student's current request using the visible conversation." if chat_mode else
-                  "Respond concisely to the student's current request using the visible work and check feedback."),
+            value=initial_policy if initial_policy is not None else (
+                "Respond concisely to the student's current request using the visible conversation." if chat_mode else
+                "Respond concisely to the student's current request using the visible work and check feedback.")),
     })
     return (tutor_inputs,)
 
@@ -40,7 +41,17 @@ def _(Path, mo):
     session_folder = Path(_session).resolve() if _session is not None else None
     chat_root = Path(_chats).resolve() if _chats is not None else None
     send_enabled = _args.get("send") is True
-    return chat_root, send_enabled, session_folder
+    initial_policy = None
+    _policy_file = _args.get("policy-file")
+    if _policy_file is not None:
+        mo.stop(not isinstance(_policy_file, str) or not _policy_file.strip(),
+                mo.callout("Supply a file path with --policy-file.", kind="danger"))
+        try:
+            initial_policy = Path(_policy_file).read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as _exc:
+            mo.stop(True, mo.callout(mo.plain_text("Tutor policy could not be read: " + str(_exc)), kind="danger"))
+        mo.stop(not initial_policy.strip(), mo.callout("The tutor policy file is blank.", kind="danger"))
+    return chat_root, initial_policy, send_enabled, session_folder
 
 
 @app.cell

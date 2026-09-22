@@ -1,5 +1,20 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Workspace loads the prepared policy (2026-09-22)
+
+Fixed a handoff gap: custom exercise setup saved policy.txt but the documented
+workspace opened with generic text. Optional --policy-file now reads UTF-8 once
+into the editable draft; malformed/missing/blank files stop without fallback.
+Omission keeps old defaults. Draft edits survive reload; scenario selection resets
+to the initial file content, and restart rereads disk. Existing explicit sending
+and saved policy receipts are unchanged. Both notebook and chat modes use it.
+The real Marimo-cell regression reproduced the gap before the fix and now checks
+edited-draft delivery, reload, disk changes, reset and invalid-file handling with
+authored callbacks. 454 tests, both Marimo checks and Node navigation pass;
+independent review found no issue. See docs/2026-09-22-workspace-policy-file.md and
+updated launch examples. No live calls, labeling, engine or prompt change.
+Task19 complete; combined PR43 still requires independent GitHub review.
+
 ## Custom notebook exercise setup complete (2026-09-22)
 
 notebook_example now accepts an optional exercise mapping / --exercise-file with

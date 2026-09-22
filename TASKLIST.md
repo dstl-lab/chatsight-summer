@@ -75,6 +75,10 @@ can now use the same verified conversation example without custom Python glue.
 The public fruit-count bundle works offline; 446 tests pass. No engine change,
 new live run or additional labeling.
 
+**Policy handoff repaired:** the workspace can [load the prepared tutor policy](docs/2026-09-22-workspace-policy-file.md)
+as its editable draft. Reload preserves edits; submitted requests retain the
+actual draft. All 454 tests pass, without new model calls or labels.
+
 ## North Star
 
 Build a tool where educators can try tutoring approaches with simulated students
@@ -267,6 +271,12 @@ milestones; the former does not establish the latter.
   Both agent inputs, next-task context, malformed inputs and source preservation
   are verified offline. The runtime still supports one selected cell, one string
   column and one scalar result; this does not establish broader student fidelity.
+
+- [x] **19. Carry the prepared tutor policy into the workspace.**
+  Explicit `--policy-file` loads the starting draft; missing/invalid/blank files
+  stop instead of silently falling back. Defaults remain available when omitted.
+  Real Marimo controls verify draft edits, reload/reset behavior and exact saved
+  policy delivery with authored callbacks. The layout and sending rules are unchanged.
 
 ## Current difficulties
 

@@ -80,7 +80,8 @@ NOTEBOOK_RUNTIME_IMAGE=$(docker image inspect chatsight-notebook --format '{{.Id
   --image-id "$NOTEBOOK_RUNTIME_IMAGE"
 .venv/bin/marimo run apps/student_workspace.py \
   --host 127.0.0.1 --port 8427 --headless -- \
-  --session data/notebook-example/session
+  --session data/notebook-example/session \
+  --policy-file data/notebook-example/policy.txt
 ```
 
 Open **http://127.0.0.1:8427/**. Inspect the task, table and initial code. Creation
@@ -137,7 +138,8 @@ into PR #43; use `codex/selection-results` until that PR reaches main. Creation 
 offline and refuses existing destinations. It verifies the saved chat and copies
 only the original prefix, excluding simulated replies and identity metadata.
 The exercise, initial code, evaluator and six-decision limit stay unchanged.
-Open `data/notebook-with-context/session` with the same workspace command above.
+Open `data/notebook-with-context/session` with the same workspace command above,
+using `--policy-file data/notebook-with-context/policy.txt`.
 
 Both student and tutor receive the communication example. Its task/code do not
 replace the current exercise, and it does not establish the same learner,
@@ -160,13 +162,23 @@ task, table, initial code, expected answer and tutor policy:
   --exercise-file examples/fruit-count.json
 .venv/bin/marimo run apps/student_workspace.py \
   --host 127.0.0.1 --port 8428 --headless -- \
-  --session data/fruit-example/session
+  --session data/fruit-example/session \
+  --policy-file data/fruit-example/policy.txt
 ```
 
 Open **http://127.0.0.1:8428/** to inspect the prepared task. Setup and viewing
 make no model or execution calls. The session retains the six-decision limit;
 its supplied policy is saved as `data/fruit-example/policy.txt` for the existing
-lesson command. Without `--exercise-file`, the original example is unchanged.
+lesson command and loaded into the workspace's editable policy draft by the
+launch command above. Without `--exercise-file`, the original example is unchanged.
+
+The optional `--policy-file` also works with chat workspaces. It reads a UTF-8
+file once when the app initializes; a missing, unreadable or blank file stops
+initialization instead of selecting a default. Without the argument, the usual
+defaults apply. Your draft edits survive **Reload saved session**. Selecting
+another scenario resets the draft to the initially loaded policy; restarting the
+app rereads the file. Editing the file while the app is running does not update
+the draft, and loading a policy does not send it to the tutor.
 
 To include an existing communication example, add
 `--chat-source data/workspace/sessions/case-01` to the creation command, using an

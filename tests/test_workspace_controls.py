@@ -1,5 +1,6 @@
 """Standalone cleanup must leave the workspace's visible controls callable."""
 import gc
+from pathlib import Path
 import weakref
 from types import SimpleNamespace
 
@@ -164,5 +165,118 @@ def test_damaged_receipt_keeps_saved_results_and_reload_available(tmp_path, monk
             runtime.ui_element_registry.get_object(reload_id)._update(1)
         assert globals_['get_view']() == (None, "'result'")
         assert files(folder) == before
+    finally:
+        teardown_context()
+
+
+def test_policy_file_draft_survives_reload_and_reaches_saved_request(tmp_path, monkeypatch):
+    from src.agents import notebook_student as student, student_workspace as workspace, workspace_history
+    from tests.test_notebook_session import ACTIVITY, TASK
+
+    folder = tmp_path / 'student'
+    student.create(folder, task=TASK, activity=ACTIVITY, branch_id='authored/policy-file')
+    student.step(folder, max_actions=1, check=None,
+                 generate=lambda _, schema: schema(decision='reply', text='this?', source=None))
+    policy_file = tmp_path / 'policy.txt'
+    policy_file.write_text('Loaded instructions.\nUse one short hint.\n')
+    monkeypatch.setattr(mo, 'cli_args', lambda: {
+        'session': str(folder), 'policy-file': str(policy_file), 'send': True})
+    monkeypatch.setattr(student.llm, 'make_generate', lambda *a, **kw: pytest.fail('Unexpected provider'))
+    app._maybe_initialize()
+    internal = InternalApp(app)
+    cells = [cell._cell for _, cell in internal.cell_manager.valid_cells()]
+    evaluator = Evaluator(executor=resolve_executor(), lifecycles=[])
+    initialize_script_context(internal, NoopStream(), None)
+    runtime = get_context()
+    globals_ = dict(mo=mo, Path=Path, chat_mode=False, folder=folder)
+    def evaluate(definition):
+        cell = compile_cell(next(c.code for c in cells if definition in c.defs), cell_id=definition)
+        with runtime.with_cell_id(definition):
+            result = evaluator.evaluate_sync(cell, globals_)
+        assert result.exception is None, result.exception
+        return result.output
+    calls = []
+    edited = 'Edited instructions.\nAsk one focused question.'
+    def tutor(prompt, schema):
+        calls.append('tutor')
+        return schema(text='Which values should match?')
+    def learner(prompt, schema):
+        calls.append('student')
+        return schema(decision='no-reply', text='', source=None)
+    try:
+        evaluate('chat_root')
+        evaluate('tutor_inputs')
+        inputs = globals_['tutor_inputs']
+        assert inputs.value['policy'] == policy_file.read_text()
+        inputs._update({'mode': 'Tutor policy', 'reply': '', 'policy': edited})
+        with runtime.with_cell_id('state'):
+            get_view, set_view = mo.state((tutor_context.snapshot(folder), ''), allow_self_loops=True)
+        globals_.update(get_view=get_view, set_view=set_view, scenario_picker=None,
+            snapshot_session=tutor_context.snapshot, tutor_context=tutor_context,
+            workspace_history=workspace_history,
+            advance_session=lambda *a, **kw: pytest.fail('Unexpected quiet continuation'),
+            respond_session=lambda *a, **kw: workspace.respond(*a, **kw,
+                generate_tutor=tutor, generate_student=learner, check=None))
+        output = evaluate('workspace_view')
+        assert calls == [] and not (folder / 'tutor-exchanges').exists()
+        policy_file.write_text('Later file content; restart to load it.')
+        reload = next(b for b in _buttons(output) if 'Reload saved session' in b.text)
+        with runtime.with_cell_id('event'):
+            reload._update(1)
+        output = evaluate('workspace_view')
+        assert inputs.value['policy'] == edited and calls == []
+        submit = next(b for b in _buttons(output) if 'Generate tutor reply' in b.text)
+        with runtime.with_cell_id('event'):
+            submit._update(1)
+        assert calls == ['tutor', 'student'] and get_view()[0]['status'] == 'no-reply'
+        receipt = student._read(next((folder / 'tutor-exchanges').glob('*/receipt.json')))
+        assert receipt['request']['policy'] == edited
+        assert policy_file.read_text() == 'Later file content; restart to load it.'
+        globals_.update(folder=tmp_path / 'another-scenario', chat_mode=True)
+        evaluate('tutor_inputs')
+        assert globals_['tutor_inputs'].value['policy'] == 'Loaded instructions.\nUse one short hint.\n'
+        assert calls == ['tutor', 'student']
+    finally:
+        teardown_context()
+
+
+@pytest.mark.parametrize('kind', ['missing', 'blank', 'encoding', 'directory', 'flag', 'empty-path', 'default'])
+def test_policy_file_invalid_inputs_stop_without_fallback(tmp_path, monkeypatch, kind):
+    path = tmp_path / 'policy.txt'
+    if kind == 'blank':
+        path.write_text(' \n\t')
+    elif kind == 'encoding':
+        path.write_bytes(b'\xff')
+    elif kind == 'directory':
+        path.mkdir()
+    args = {'session': str(tmp_path / 'session')}
+    if kind != 'default':
+        args['policy-file'] = True if kind == 'flag' else ' ' if kind == 'empty-path' else str(path)
+    monkeypatch.setattr(mo, 'cli_args', lambda: args)
+    app._maybe_initialize()
+    internal = InternalApp(app)
+    cell = compile_cell(next(c._cell.code for _, c in internal.cell_manager.valid_cells()
+                             if 'chat_root' in c._cell.defs), cell_id='launch')
+    initialize_script_context(internal, NoopStream(), None)
+    try:
+        globals_ = dict(mo=mo, Path=Path)
+        with get_context().with_cell_id('launch'):
+            result = Evaluator(executor=resolve_executor(), lifecycles=[]).evaluate_sync(cell, globals_)
+        error = result.exception
+        if isinstance(error, MarimoRuntimeException):
+            error = unwrap_user_exception(error)
+        if kind == 'default':
+            assert error is None and globals_['initial_policy'] is None
+            inputs_cell = compile_cell(next(c._cell.code for _, c in internal.cell_manager.valid_cells()
+                                            if 'tutor_inputs' in c._cell.defs), cell_id='inputs')
+            for chat_mode, expected in ((True, 'visible conversation'), (False, 'visible work and check feedback')):
+                globals_.update(chat_mode=chat_mode, folder=tmp_path)
+                with get_context().with_cell_id('inputs'):
+                    result = Evaluator(executor=resolve_executor(), lifecycles=[]).evaluate_sync(inputs_cell, globals_)
+                assert result.exception is None, result.exception
+                assert expected in globals_['tutor_inputs'].value['policy']
+        else:
+            assert isinstance(error, MarimoStopError), error
+            assert 'policy' in error.output.text.lower()
     finally:
         teardown_context()
