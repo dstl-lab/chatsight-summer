@@ -3,6 +3,8 @@
 ## Conversation example for an authored notebook task (2026-09-22)
 
 On codex/notebook-communication-context, notebook_example accepts --chat-source.
+PR #45 merged into parent PR #43 at 1680abd with the tested tree unchanged;
+it is not yet on main. Continue from codex/selection-results.
 Reuse chat._load and the existing initialization path; copy only the original
 query.prefix, separately from current authored task/work/dialogue. Exclude
 simulated continuations and identifier metadata from model context; keep source

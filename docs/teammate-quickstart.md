@@ -132,8 +132,8 @@ separate communication example for a new authored notebook task:
   --chat-source data/workspace/sessions/case-01
 ```
 
-Use an actual source directory supplied by your team. This option is on the
-`codex/notebook-communication-context` branch until integrated. Creation is
+Use an actual source directory supplied by your team. PR #45 merged this option
+into PR #43; use `codex/selection-results` until that PR reaches main. Creation is
 offline and refuses existing destinations. It verifies the saved chat and copies
 only the original prefix, excluding simulated replies and identity metadata.
 The exercise, initial code, evaluator and six-decision limit stay unchanged.

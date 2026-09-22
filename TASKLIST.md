@@ -32,6 +32,9 @@ Three student requests, no additional tutor replies; that bounded run is closed.
 
 The [Saved results repair](docs/2026-09-22-lesson-saved-results.md) also makes lesson
 tutor receipts visible and separates configured policy from confirmed delivery.
+The [optional conversation example](docs/2026-09-22-notebook-communication-context.md)
+now connects an existing chat prefix to a fresh authored notebook task, with one
+offline setup verified. PR #45 merged into #43; no new generations or labels.
 
 Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
 
