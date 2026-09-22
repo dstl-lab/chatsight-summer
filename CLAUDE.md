@@ -1,5 +1,19 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Conversation-conditioned notebook run prepared, not sent (2026-09-22)
+
+The current Continue prepared one run of data/notebook-communication-example/session:
+six student decisions, at most two tutor replies, eight logical requests/32 adapter
+attempts, existing Gemini 2.5 Pro and local runtime. Both roles would receive the
+private original 10-turn prefix plus authored task/current work and later feedback.
+Independent preflight passed all 84 pins, exact inputs and mocked dispatch guards.
+Automatic approval review rejected process creation because this specific private
+payload/destination needs explicit authorization. No dispatch, model/check call or
+student step exists; initial session and source artifacts are unchanged. Preserve
+scope/protocol/preflight/approval-block files under live-run. Do not retry or
+bypass the rejection; await explicit user approval for this saved scope. See
+docs/2026-09-22-live-notebook-communication.md. No labels or rerolls are queued.
+
 ## Conversation example for an authored notebook task (2026-09-22)
 
 On codex/notebook-communication-context, notebook_example accepts --chat-source.

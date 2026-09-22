@@ -187,6 +187,11 @@ milestones; the former does not establish the latter.
 
 ## Current difficulties
 
+The [single notebook run with conversation context](docs/2026-09-22-live-notebook-communication.md)
+is prepared, but automatic approval review blocked sending its private prefix to
+Gemini pending exact-payload authorization. Zero requests or actions occurred;
+all inputs remain unchanged. No labeling is needed for this step.
+
 The live demonstration is complete. Different policy instructions did not always
 produce different tutor behavior; single simulated outcomes cannot estimate policy
 effects. Generated task details and notebook-like output in that chat-only run
