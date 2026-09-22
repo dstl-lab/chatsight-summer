@@ -64,10 +64,11 @@ when moving to later notebook tasks. Verified through Tasks 2 and 3 offline;
 10-turn example with fresh work and no actions/calls. This repairs context
 continuity without claiming improved realism.
 
-**Prepared continuation:** one [bounded second exercise](docs/2026-09-22-live-notebook-continuity.md)
-is ready; all 59 pins and both agent inputs independently verify. Automatic
-approval review blocked sending the new private payload to Gemini pending
-specific approval. Nothing was sent or executed. No manual labeling is needed.
+**Continuation complete:** after exact payload approval, the
+[second exercise](docs/2026-09-22-live-notebook-continuity-status.md) produced a
+quiet edit, passing local check (`0.25`) and no-reply. Three student requests,
+zero tutor requests; all 59 pins and two-task replay verify. No new labels or
+further run is queued. This demonstrates continuity, not learning or fidelity.
 
 ## North Star
 
@@ -248,17 +249,18 @@ milestones; the former does not establish the latter.
   [offline successor and tests](docs/2026-09-22-communication-continuity.md) verify
   both agent inputs and replay, without new model calls or changing prior records.
 
-- [ ] **17. Run the prepared second notebook exercise once.**
-  The [frozen scope](docs/2026-09-22-live-notebook-continuity.md) retains the original
-  example and prior activity, capped at six student decisions and two tutor replies.
-  Preparation passed; dispatch was blocked before any requests or execution.
-  Obtain the required exact payload approval, run once, verify the two-task replay
-  and close without rerolls or labeling. This demonstrates operation, not fidelity.
+- [x] **17. Run the prepared second notebook exercise once.**
+  After specific approval, [the run completed](docs/2026-09-22-live-notebook-continuity-status.md):
+  quiet edit → local check (`0.25`, pass) → no-reply. Three student requests,
+  one execution, zero generated tutor/chat turns or failures. Original example
+  and prior activity persist; both sessions replay and all 59 pins verify.
+  Closed with three decisions unused, no rerolls, new labels or fidelity claim.
 
 ## Current difficulties
 
-Item 17 awaits specific approval for its private Gemini payload after an actual
-automatic approval rejection. The frozen run is ready; do not bypass the block.
+The second notebook exercise is complete and closed after specific approval.
+Both linked exercises ended without generated chat, so they demonstrate operation
+and preserved context but do not address the communication-fidelity gap.
 
 The [single notebook run with conversation context](docs/2026-09-22-live-notebook-communication.md)
 completed after explicit payload approval: three student requests produced a

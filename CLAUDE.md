@@ -1,5 +1,20 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Second notebook exercise completed and closed (2026-09-22)
+
+Minchan explicitly answered Yes to the exact blocked private-payload Gemini scope.
+Saved approval precedes the one dispatch, 03:02:02–03:02:24 UTC. Quiet edit → real
+local check (float0.25/pass, revision1) → no-reply; three student requests, zero
+tutor requests/generated chat, one container execution, no recorded failures,
+three decisions unused. All59pins and exact two-task replay verify; prior0.5
+feedback stays in history and current feedback starts null. Both recorded example
+and prior simulated activity reach every actual student prompt. Follow-up tutor
+policy/reference were configured but never delivered. Private closure/replay are
+in data/notebook-communication-continuity/live-run; public result is
+docs/2026-09-22-live-notebook-continuity-status.md. No code/prompt change, resends,
+labels, automatic third exercise or fidelity/learning claim. This supersedes the
+blocked state below. Actual retries unmeasured; at most12adapter attempts.
+
 ## Second notebook exercise prepared; dispatch blocked (2026-09-22)
 
 Latest Continue prepares one bounded live continuation using the unchanged lesson
