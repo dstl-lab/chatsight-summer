@@ -1,10 +1,15 @@
 # Simulated students: task list
 
 PR #47's reviewed issues are fixed, and the [browser policy comparison](docs/2026-09-22-browser-policy-comparison.md)
-now opens one saved pair with shared context once, fixed policies, tutor responses
-and distinct student outcomes. Viewing is read-only. Next: create a frozen pair
-and explicitly run it from the browser using the existing runner; batch controls
-remain deferred. This is workflow integration, not new fidelity evidence.
+now opens saved pairs with shared context once, fixed policies, tutor responses
+and distinct student outcomes. The [creation/run workflow](docs/2026-09-22-browser-policy-runs.md)
+is also complete: choose an eligible conversation, save current/proposed
+instructions offline, then explicitly run untouched conditions. Reloads do not
+resend requests; drafts survive response errors. 637 tests pass, with browser,
+Marimo and independent checks. Port8431 has separate working copies of 29 saved
+conversations (27 eligible). No new provider calls or labels were needed.
+Next: independent PR review and integration; batch controls remain deferred.
+This is workflow integration, not new fidelity evidence.
 
 The [replay usability pass](docs/2026-09-22-browser-replay-usability.md) is complete:
 conversation-only runs use one chat with Previous/Next; the duplicate activity

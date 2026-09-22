@@ -1,6 +1,6 @@
 """Inspect a saved notebook or chat session; continue only through explicit submissions."""
 import argparse
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 import difflib
 import fcntl
 from hashlib import sha256
@@ -16,7 +16,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace, workspace_history
+from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, policy_comparison_setup, student_workspace, workspace_history
 from src.eval.saved_comparison import load_comparison
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -80,6 +80,35 @@ class Submission(BaseModel):
         if self.mode != 'advance' and (self.text is None or not self.text.strip()):
             raise ValueError('Supply nonblank tutor instructions or a reply.')
         return self
+
+
+class PolicyCreation(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    source_id: str = Field(min_length=64, max_length=64, pattern=r'^[0-9a-f]{64}$')
+    binding: Binding
+    current_policy: str = Field(min_length=1, max_length=64000)
+    proposed_policy: str = Field(min_length=1, max_length=64000)
+
+    @model_validator(mode='after')
+    def distinct_policies(self):
+        if not self.current_policy.strip() or not self.proposed_policy.strip():
+            raise ValueError('Enter both tutor policies.')
+        if self.current_policy.strip() == self.proposed_policy.strip():
+            raise ValueError('The proposed policy must differ from the current policy.')
+        return self
+
+
+class PolicyRun(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    comparison_id: str = Field(min_length=1, max_length=128)
+    comparison_sha256: str = Field(min_length=64, max_length=64, pattern=r'^[0-9a-f]{64}$')
+
+
+def _policy_prefix(state):
+    episode = state['episode']
+    return {'context':[{key:turn[key] for key in ('role', 'text', 'origin')}
+                       for turn in [*episode['context'], *episode['turns']]],
+            'turns':[{'role':'student', 'text':state['message'], 'origin':'generated'}]}
 
 
 def _frame(manifest, state, previous, decisions, index):
@@ -204,10 +233,7 @@ def _policy_comparison(folder, expected_pin):
                     raise ValueError('Invalid saved tutor exchange path.')
             status = chat_policy_pair._condition_lifecycle(folder, receipt, name)
             if prefix is None:
-                episode = first['result']['episode']
-                prefix = {'context':[{key:turn[key] for key in ('role', 'text', 'origin')}
-                                     for turn in [*episode['context'], *episode['turns']]],
-                          'turns':[{'role':'student', 'text':first['result']['message'], 'origin':'generated'}]}
+                prefix = _policy_prefix(first['result'])
             exchanges = list((child / 'tutor-exchanges').glob('*/receipt.json'))
             if len(exchanges) > 1:
                 raise ValueError('A one-decision policy arm has multiple tutor exchanges.')
@@ -229,10 +255,19 @@ def _policy_comparison(folder, expected_pin):
         'prefix':prefix, 'conditions':conditions}]}
 
 
-def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
     folder = Path(folder).resolve()
-    if comparison is not None and policy_comparison is not None:
+    if sum(value is not None for value in (comparison, policy_comparison, policy_workspace)) > 1:
         raise ValueError('Choose one comparison: a communication review or a tutor-policy pair.')
+    if policy_workspace is not None:
+        if not (chat_mode or chat_sessions):
+            raise ValueError('A policy workspace requires a chat session or collection.')
+        policy_workspace = Path(policy_workspace).absolute()
+        if policy_workspace.is_symlink():
+            raise ValueError('The policy workspace must not be a symlink.')
+        policy_workspace = policy_workspace.resolve()
+        if policy_workspace == folder or policy_workspace.is_relative_to(folder):
+            raise ValueError('Keep the policy workspace outside the source session or collection.')
     if policy_comparison is not None:
         policy_comparison = Path(policy_comparison).absolute()
         if policy_comparison.is_symlink() or (policy_comparison / 'comparison.json').is_symlink():
@@ -264,7 +299,76 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
     # ponytail: one serving process; use a shared job store if multiple writers are needed.
     running = Lock()
     operations = {key:{'status':'idle', 'message':''} for key in [None, *scenarios]}
+    comparison_operation = {'status':'idle', 'message':'', 'comparison_id':None}
+    policy_sources, policy_runs = {}, {}
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+
+    @contextmanager
+    def policy_source(source_id):
+        selected = policy_sources[source_id]['path']
+        if selected.is_symlink() or selected.resolve() != selected:
+            raise ValueError('The source path changed.')
+        if any(path.is_symlink() for path in selected.rglob('*')):
+            raise ValueError('The source files changed.')
+        with (selected / '.lock').open('rb') as stream:
+            fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            manifest, state, _ = chat_policy_pair._source(selected)
+            binding = {'session_sha256':student.digest(manifest), 'state_sha256':student.digest(state)}
+            pinned = policy_sources[source_id].get('binding')
+            if pinned is not None and binding != pinned:
+                raise ValueError('The source changed after this workspace opened.')
+            yield {'id':source_id, 'title':policy_sources[source_id]['title'], 'binding':binding,
+                   'prefix':_policy_prefix(state),
+                   'context_status':'This supplied conversation and cached simulated question will start both policies. '
+                                    'The conversation may be recorded or authored; notebook activity is unknown.'}
+
+    def run_paths():
+        if (policy_workspace.is_symlink() or policy_workspace.resolve() != policy_workspace
+                or (policy_workspace / '.lock').is_symlink()):
+            raise ValueError('The policy workspace path changed.')
+        if not policy_workspace.exists():
+            return []
+        return sorted(path for path in policy_workspace.iterdir() if re.fullmatch(r'run-\d{4}', path.name))
+
+    def register_run(path):
+        if path.is_symlink() or (path / 'comparison.json').is_symlink():
+            raise ValueError('Saved comparisons must not be symlinks.')
+        pin = sha256((path / 'comparison.json').read_bytes()).hexdigest()
+        case = _policy_comparison(path, pin)['cases'][0]
+        if case['id'] in policy_runs:
+            raise ValueError('Saved comparison identifiers must be unique.')
+        policy_runs[case['id']] = {'path':path, 'pin':pin}
+        return case['id']
+
+    def policy_packet():
+        if set(run_paths()) != {item['path'] for item in policy_runs.values()}:
+            raise ValueError('The saved comparison list changed. Reopen the workspace.')
+        cases, sources = [], []
+        for index, item in enumerate(policy_runs.values(), 1):
+            case = _policy_comparison(item['path'], item['pin'])['cases'][0]
+            cases.append(case | {'title':f'Policy comparison {index:02d}', 'comparison_sha256':item['pin']})
+        for source_id in policy_sources:
+            try:
+                with policy_source(source_id) as source:
+                    sources.append(source)
+            except (OSError, ValueError, KeyError, TypeError):
+                # A continued source cannot seed another pair; its frozen comparisons remain usable.
+                continue
+        return {'version':1, 'kind':'saved-policy-comparison', 'cases':cases,
+                'controls':{'create_enabled':True, 'send_enabled':send is True, 'sources':sources},
+                'operation':dict(comparison_operation)}
+
+    if policy_workspace is not None:
+        candidates = scenarios if chat_sessions else {student.digest('single-chat-session'):folder}
+        for source_id, selected in candidates.items():
+            policy_sources[source_id] = {'path':selected, 'title':titles.get(source_id, 'Conversation')}
+            try:
+                with policy_source(source_id) as source:
+                    policy_sources[source_id]['binding'] = source['binding']
+            except (OSError, ValueError, KeyError, TypeError):
+                del policy_sources[source_id]
+        for path in run_paths():
+            register_run(path)
 
     def selection(request):
         params = list(request.query_params.multi_items())
@@ -307,6 +411,17 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
                         if reference is not None else None,
             'blocked_reason':blocked(selected, frame)}, 'operation':dict(operations[scenario_id])}
 
+    def comparison_html(result):
+        for case in [*result['cases'], *result.get('controls', {}).get('sources', [])]:
+            for turns in case['prefix'].values():
+                for turn in turns:
+                    if turn['role'] == 'tutor':
+                        turn['display_html'] = _tutor_html(turn['text'])
+            for condition in case.get('conditions', []):
+                if condition['tutor_reply'] is not None:
+                    condition['tutor_html'] = _tutor_html(condition['tutor_reply'])
+        return result
+
     @app.middleware('http')
     async def local_requests(request: Request, call_next):
         origin = request.headers.get('origin')
@@ -340,28 +455,106 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
         if request.query_params:
             raise HTTPException(400, 'The scenario catalog does not accept query parameters.')
         return {'version':1, 'scenarios':[{'id':key, 'title':titles[key]} for key in scenarios],
-                **({'comparison_available':True} if comparison is not None or policy_comparison is not None else {})}
+                **({'comparison_available':True} if any(value is not None for value in
+                   (comparison, policy_comparison, policy_workspace)) else {}),
+                **({'policy_workspace_available':True} if policy_workspace is not None else {})}
 
     @app.get('/api/comparison')
     def comparison_view(request: Request):
         if request.query_params:
             raise HTTPException(400, 'The comparison uses only the saved evidence selected at launch.')
-        if comparison is None and policy_comparison is None:
+        if comparison is None and policy_comparison is None and policy_workspace is None:
             raise HTTPException(404, 'No saved comparison is configured.')
+        if policy_workspace is not None and not running.acquire(blocking=False):
+            operation = (dict(comparison_operation) if comparison_operation['status'] == 'running' else
+                         {'status':'running', 'message':'The workspace is handling another request. '
+                          'Checking progress does not resend it.', 'comparison_id':None})
+            return JSONResponse({'version':1, 'kind':'saved-policy-comparison',
+                'operation':operation}, status_code=202)
         try:
-            result = (_policy_comparison(policy_comparison, policy_comparison_pin) if policy_comparison is not None
+            result = (policy_packet() if policy_workspace is not None else
+                      _policy_comparison(policy_comparison, policy_comparison_pin) if policy_comparison is not None
                       else load_comparison(comparison, expected_closure=comparison_pin))
-            for case in result['cases']:
-                for turns in case['prefix'].values():
-                    for turn in turns:
-                        if turn['role'] == 'tutor':
-                            turn['display_html'] = _tutor_html(turn['text'])
-                for condition in case.get('conditions', []):
-                    if condition['tutor_reply'] is not None:
-                        condition['tutor_html'] = _tutor_html(condition['tutor_reply'])
-            return result
+            return comparison_html(result)
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             raise HTTPException(409, 'The saved comparison could not be verified. Its evidence is not displayed.') from exc
+        finally:
+            if policy_workspace is not None:
+                running.release()
+
+    if policy_workspace is not None:
+        @app.post('/api/comparison')
+        def create_comparison(body: PolicyCreation, request: Request):
+            if request.query_params:
+                raise HTTPException(400, 'Choose a source from the workspace catalog.')
+            if body.source_id not in policy_sources:
+                raise HTTPException(400, 'Choose a source from the workspace catalog.')
+            if not running.acquire(blocking=False):
+                raise HTTPException(409, 'The workspace is busy. Check progress without resending.')
+            try:
+                policy_packet()  # Verify all registered evidence before the setup helper reads it.
+                with policy_source(body.source_id) as source:
+                    if source['binding'] != body.binding.model_dump():
+                        raise HTTPException(409, 'The displayed source is stale. Reload before saving.')
+                    comparison_operation.update(status='running', message='Saving this policy comparison.', comparison_id=None)
+                    path, _ = policy_comparison_setup.freeze_next(policy_workspace,
+                        source=policy_sources[body.source_id]['path'], current_policy=body.current_policy,
+                        proposed_policy=body.proposed_policy)
+                selected_id = register_run(path)
+                comparison_operation.update(status='complete', message='The policy comparison is saved. No requests were sent.',
+                                            comparison_id=selected_id)
+                return comparison_html(policy_packet()) | {'selected_id':selected_id}
+            except HTTPException:
+                raise
+            except Exception as exc:
+                duplicate = isinstance(exc, ValueError) and re.fullmatch(
+                    r'This exact scenario and policy pair already exists as run-\d{4}\.', str(exc))
+                comparison_operation.update(status='error', message=(
+                    'This conversation and policy pair is already saved. Open its existing comparison.' if duplicate else
+                    'The comparison could not be saved or verified. '
+                    'Check saved comparisons before trying again; identical setups are not recreated.'))
+                raise HTTPException(409, comparison_operation['message']) from exc
+            finally:
+                running.release()
+
+        @app.post('/api/comparison/run')
+        def run_comparison(body: PolicyRun, request: Request):
+            if request.query_params:
+                raise HTTPException(400, 'Choose a saved comparison from the workspace.')
+            if send is not True:
+                raise HTTPException(403, 'This workspace was opened without sending enabled.')
+            if body.comparison_id not in policy_runs:
+                raise HTTPException(400, 'Choose a saved comparison from the workspace.')
+            if not running.acquire(blocking=False):
+                raise HTTPException(409, 'The workspace is busy. Check progress without resending.')
+            try:
+                item = policy_runs[body.comparison_id]
+                if body.comparison_sha256 != item['pin']:
+                    raise HTTPException(409, 'The displayed comparison is stale. Reload before running.')
+                saved = policy_packet()
+                case = next(case for case in saved['cases'] if case['id'] == body.comparison_id)
+                if not any(condition['status'] == 'ready' for condition in case['conditions']):
+                    raise HTTPException(409, 'This comparison has no untouched conditions to run. Saved attempts are never resent.')
+                comparison_operation.update(status='running', message='Running the saved tutor policies and student responses.',
+                                            comparison_id=body.comparison_id)
+                policy_comparison_setup.run_both(item['path'], send=True,
+                    generate_tutor=generate_tutor, generate_student=generate)
+                result = policy_packet()
+                case = next(case for case in result['cases'] if case['id'] == body.comparison_id)
+                failed = any(condition['status'] in ('failed', 'incomplete') for condition in case['conditions'])
+                comparison_operation.update(status='error' if failed else 'complete', message=(
+                    'Some requests failed or remain incomplete. Their saved attempts will not be resent.' if failed else
+                    'Both policy outcomes are saved.'))
+                result['operation'] = dict(comparison_operation)
+                return comparison_html(result) | {'selected_id':body.comparison_id}
+            except HTTPException:
+                raise
+            except Exception as exc:
+                comparison_operation.update(status='error', message='The run could not complete or be verified. '
+                    'Inspect saved outcomes before trying again; saved attempts are never resent.', comparison_id=body.comparison_id)
+                raise HTTPException(409, comparison_operation['message']) from exc
+            finally:
+                running.release()
 
     @app.get('/api/workspace')
     def workspace(request: Request):
@@ -437,6 +630,7 @@ def main():
     compare = parser.add_mutually_exclusive_group()
     compare.add_argument('--comparison', type=Path, help='Completed cached communication review folder for read-only Compare.')
     compare.add_argument('--policy-comparison', type=Path, help='Saved one-decision tutor-policy pair for read-only Compare.')
+    compare.add_argument('--policy-workspace', type=Path, help='Directory for creating saved policy pairs from eligible chat starts.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
@@ -448,7 +642,8 @@ def main():
         reference = notebook_tutor.LibraryReference.model_validate_json(
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
         app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat, comparison=args.comparison,
-                         policy_comparison=args.policy_comparison, send=args.send, policy=policy, reference=reference)
+                         policy_comparison=args.policy_comparison, policy_workspace=args.policy_workspace,
+                         send=args.send, policy=policy, reference=reference)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')
     uvicorn.run(app, host='127.0.0.1', port=args.port)

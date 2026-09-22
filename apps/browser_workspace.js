@@ -6,12 +6,15 @@ const block = value => `<pre>${esc(typeof value==='string'?value:JSON.stringify(
 const taskText = task => typeof task==='string'?task:Array.isArray(task)&&task.every(cell=>typeof cell?.source==='string')?task.map(cell=>cell.source).join('\n\n'):JSON.stringify(task,null,2);
 const state = {kind:'notebook',scenarios:null,scenarioId:null,encounters:[],caseIndex:0,step:0,mode:'simulate',selected:'step',showInspector:false,controls:{send_enabled:false},operation:{status:'idle',message:''},policyDraft:null,replyDraft:'',replyMode:'policy',submitting:false,monitoring:false,refreshing:false,clientError:''};
 Object.assign(state,{comparisonAvailable:false,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:'',chatOpen:true,chatKey:null});
-let pollTimer;
+Object.assign(state,{comparisonDraft:null,comparisonEditing:false,comparisonSubmitting:false,comparisonMonitoring:false,comparisonOperation:{status:'idle',message:''}});
+let pollTimer,comparisonPollTimer;
 const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
 const notify = text => {$('status').textContent=text};
 const decisionNames = {'reply':'Student reply','revise-work':'Work edited','request-check':'Local check requested','no-reply':'Student chose no reply'};
 const isPolicyComparison = () => state.comparison?.kind==='saved-policy-comparison';
+const comparisonBusy = () => state.comparisonLoading||state.comparisonSubmitting||state.comparisonMonitoring;
+const comparisonContext = () => state.comparisonEditing?state.comparison?.controls?.sources?.find(s=>s.id===state.comparisonDraft?.source_id):state.comparison?.cases[state.reviewIndex];
 const originNames = {authored:'Authored context',source:'Starting conversation',generated:'Simulated',supplied:'Supplied intervention',scripted:'Added tutor reply'};
 function statusText(f){
   if(f.decisions_remaining===0&&['active','ready','awaiting-tutor'].includes(f.status))return 'Decision budget exhausted · simulation paused';
@@ -19,14 +22,14 @@ function statusText(f){
 }
 function turns(){
   if(state.mode==='compare'){
-    const c=state.comparison?.cases[state.reviewIndex];
+    const c=comparisonContext();
     return c?[...c.prefix.context,...c.prefix.turns].map(t=>({...t,origin:t.origin||'source'})):[];
   }
   const f=frame();
   return [...f.dialogue,...(f.pending_message!==null?[{role:'student',origin:'generated',text:f.pending_message,pending:true}]:[])];
 }
 function selectMode(mode){
-  if(state.submitting||state.monitoring||state.refreshing||state.comparisonLoading||mode==='compare'&&!state.comparisonAvailable)return;
+  if(state.submitting||state.monitoring||state.refreshing||comparisonBusy()||mode==='compare'&&!state.comparisonAvailable)return;
   mode=mode==='inspect'?'simulate':mode;
   state.mode=mode;state.showInspector=false;$('search').value='';$('run-details').open=false;
   if(mode==='compare')return reloadComparison();
@@ -36,7 +39,7 @@ function renderModeButtons(){
   document.querySelectorAll('[data-mode]').forEach(b=>{
     if(b.dataset.mode==='simulate')b.textContent=state.kind==='chat'?'Conversation':'Notebook';
     b.hidden=b.dataset.mode==='inspect'||b.dataset.mode==='compare'&&!state.comparisonAvailable;
-    b.disabled=state.submitting||state.monitoring||state.refreshing||state.comparisonLoading||(!state.encounters.length&&state.mode!=='compare'&&b.dataset.mode!=='compare');
+    b.disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy()||(!state.encounters.length&&state.mode!=='compare'&&b.dataset.mode!=='compare');
     b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode));
   });
 }
@@ -67,8 +70,8 @@ function renderCases(){
     $('search').placeholder=label+'…';$('search').setAttribute('aria-label',label);
     document.querySelector('label[for="search"]').textContent=label;
     $('cases').innerHTML=(state.comparison?.cases||[]).map((c,i)=>({c,i})).filter(({c})=>c.title.toLowerCase().includes(query)).map(({c,i})=>
-      `<button class="case-button" data-review-case="${i}" aria-pressed="${state.reviewIndex===i}"><span><b>${esc(c.title)}</b><small>${isPolicyComparison()?'Current + proposed instructions':'Recorded + 2 simulated replies'}</small></span></button>`).join('')||'<p class="empty">'+(state.comparison?'No matching cases.':'No comparison loaded.')+'</p>';
-    document.querySelectorAll('[data-review-case]').forEach(b=>b.onclick=()=>{state.reviewIndex=Number(b.dataset.reviewCase);state.showInspector=false;render();$('canvas').scrollTop=0;notify('Opened '+state.comparison.cases[state.reviewIndex].title)});
+      `<button class="case-button" data-review-case="${i}" aria-pressed="${!state.comparisonEditing&&state.reviewIndex===i}"><span><b>${esc(c.title)}</b><small>${isPolicyComparison()?'Current + proposed instructions':'Recorded + 2 simulated replies'}</small></span></button>`).join('')||'<p class="empty">'+(state.comparison?'No saved comparisons.':'No comparison loaded.')+'</p>';
+    document.querySelectorAll('[data-review-case]').forEach(b=>{b.disabled=comparisonBusy();b.onclick=()=>{if(comparisonBusy())return;state.reviewIndex=Number(b.dataset.reviewCase);state.comparisonEditing=false;state.showInspector=false;render();$('canvas').scrollTop=0;notify('Opened '+state.comparison.cases[state.reviewIndex].title)}});
     return;
   }
   document.querySelector('.breadcrumb').textContent=state.kind==='chat'?'Conversation simulation':'Notebook simulation';
@@ -100,7 +103,7 @@ function conversation(rows=turns(),offset=0){
   return rows.length?rows.map((turn,i)=>`${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${turn.role==='student'?'S':'T'}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">Inspect source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
 function renderChat(){
-  const comparing=state.mode==='compare',c=state.comparison?.cases[state.reviewIndex];
+  const comparing=state.mode==='compare',c=comparisonContext();
   const available=comparing?Boolean(c):Boolean(state.encounters.length);
   const chatOnly=state.kind==='chat'&&!comparing,primaryChat=chatOnly&&available&&!state.showInspector;
   const visibleChat=chatOnly?available:state.chatOpen;
@@ -114,7 +117,7 @@ function renderChat(){
   $('chat-toggle').setAttribute('aria-expanded',String(state.chatOpen));
   $('chat-title').textContent=comparing?'Shared conversation':'Student–tutor chat';
   $('chat-caption').textContent=comparing?(c?`${c.title} · before the replies`:'No saved context loaded'):available?`${current().title} · ${frame().label}`:'No saved conversation loaded';
-  const key=comparing?'compare:'+c?.id:`${state.scenarioId}:${current()?.id}:${state.step}`;
+  const key=comparing?'compare:'+state.comparisonEditing+':'+c?.id:`${state.scenarioId}:${current()?.id}:${state.step}`;
   const changed=state.chatKey!==key;
   if(visibleChat)state.chatKey=key;
   const rows=available?turns():[];
@@ -139,21 +142,69 @@ function policyColumns(c){
     `<article class="comparison"><header><h2>${esc(condition.title)}</h2><div class="kind">Condition ${esc(condition.id.toUpperCase())}</div></header><details class="policy-instructions"><summary>Tutor instructions</summary><p class="saved-message">${esc(condition.policy)}</p></details><div class="entry"><h3 class="chat-section-label">Tutor response</h3>${condition.tutor_reply!==null?`<div class="message-body">${condition.tutor_html||block(condition.tutor_reply)}</div>`:'<p class="quiet">No completed tutor response saved.</p>'}<h3 class="chat-section-label">Student outcome</h3><p class="quiet">${esc(outcomes[condition.status]||'Outcome unavailable.')}</p>${condition.student_reply!==null?`<p class="saved-message">${esc(condition.student_reply)}</p>`:''}</div></article>`
   ).join('')+'</div><p class="note">Same starting question, different tutor instructions. These saved simulations do not establish student realism, learning, or which policy works better for real students.</p>';
 }
+function newComparison(){
+  if(comparisonBusy()||!state.comparison?.controls?.create_enabled)return;
+  const sources=state.comparison.controls.sources;
+  if(!state.comparisonDraft){
+    const source=sources.find(s=>s.id===state.scenarioId)||sources[0];
+    state.comparisonDraft={source_id:source?.id||'',binding:source?.binding,current_policy:state.policyDraft||'',proposed_policy:''};
+  }
+  state.comparisonEditing=true;state.showInspector=false;state.comparisonError='';state.chatOpen=true;
+  render();$('comparison-source').focus();
+}
+function canSaveComparison(){
+  const draft=state.comparisonDraft;
+  return Boolean(state.mode==='compare'&&state.comparisonEditing&&!comparisonBusy()&&state.comparison?.controls?.create_enabled&&draft?.current_policy.trim()&&draft.proposed_policy.trim()&&draft.current_policy.trim()!==draft.proposed_policy.trim()&&comparisonContext());
+}
+function renderComparisonForm(){
+  const draft=state.comparisonDraft,sources=state.comparison?.controls?.sources||[];
+  $('canvas').innerHTML=`<form class="policy-setup" id="comparison-form"><label for="comparison-source">Starting conversation</label><select id="comparison-source">${sources.length?'<option value="" disabled>Choose a saved starting conversation</option>'+sources.map(s=>`<option value="${esc(s.id)}">${esc(s.title)}</option>`).join(''):'<option value="">No eligible starting conversations</option>'}</select><p class="quiet">Both policies start from the same conversation and cached simulated question, shown in the chat.</p><div class="policy-editors"><div><label for="current-policy">Current tutor instructions</label><textarea id="current-policy" maxlength="64000" required>${esc(draft.current_policy)}</textarea></div><div><label for="proposed-policy">Proposed tutor instructions</label><textarea id="proposed-policy" maxlength="64000" required>${esc(draft.proposed_policy)}</textarea></div></div><p class="quiet">Enter the instructions you want to compare. These fields are not connected to a deployed tutor.</p><div class="draft-actions"><button class="primary" id="save-comparison" type="submit">Save comparison</button><button id="cancel-comparison" type="button">Back to saved comparisons</button></div><p class="draft-status">Saving makes no model requests. Drafts stay in this page until saved; refreshing the browser clears them.</p></form>`;
+  $('comparison-source').value=sources.some(s=>s.id===draft.source_id)?draft.source_id:'';
+  $('comparison-source').onchange=e=>{
+    const source=sources.find(s=>s.id===e.target.value);if(!source||comparisonBusy())return;
+    draft.source_id=source.id;draft.binding={...source.binding};state.showInspector=false;render();$('comparison-source').focus();
+  };
+  for(const [id,key]of [['current-policy','current_policy'],['proposed-policy','proposed_policy']]){
+    $(id).disabled=comparisonBusy();$(id).oninput=e=>{draft[key]=e.target.value;$('save-comparison').disabled=!canSaveComparison()};
+  }
+  $('comparison-source').disabled=comparisonBusy()||!sources.length;
+  $('save-comparison').disabled=!canSaveComparison();
+  $('cancel-comparison').disabled=comparisonBusy();
+  $('cancel-comparison').onclick=()=>{if(comparisonBusy())return;state.comparisonEditing=false;state.showInspector=false;render()};
+  $('comparison-form').onsubmit=e=>{e.preventDefault();return submitComparison('save')};
+}
+function comparisonRunReason(c){
+  if(state.mode!=='compare'||state.comparisonEditing)return 'Select a saved comparison to run.';
+  if(!state.comparison?.controls?.create_enabled)return 'This saved comparison is read only.';
+  if(comparisonBusy())return 'A request is running. Reloading checks saved progress without resending.';
+  if(!state.comparison.controls.send_enabled)return 'Sending is disabled. This workspace can save comparisons, but cannot generate replies.';
+  if(!c?.conditions?.some(condition=>condition.status==='ready'))return 'No untouched conditions remain. Saved outcomes are not rerun.';
+  return '';
+}
 function renderComparison(){
-  const data=state.comparison,c=data?.cases[state.reviewIndex];
+  const data=state.comparison,c=comparisonContext(),editable=data?.controls?.create_enabled===true;
   renderCases();renderModeButtons();
   $('playback').hidden=true;$('next-step').hidden=true;
   $('saved-results').hidden=true;$('continue-run').hidden=true;
   $('instructions').hidden=true;$('tutor-controls').textContent=isPolicyComparison()?'Comparison details':'Review details';
-  $('instructions').disabled=!c;$('tutor-controls').disabled=!c;
-  $('case-title').textContent=c?.title||(state.comparisonLoading?'Loading comparison…':'Comparison unavailable');
-  $('view-description').textContent=c?(isPolicyComparison()?'One shared starting question. Two fixed tutor policies.':'Recorded next message and two saved simulated replies.'):'Reading saved evidence only.';
+  $('instructions').disabled=!c;$('tutor-controls').disabled=!c||state.comparisonEditing;
+  $('new-comparison').hidden=!editable||state.comparisonEditing;
+  $('new-comparison').disabled=comparisonBusy();
+  $('run-comparison').hidden=!editable||state.comparisonEditing||!c;
+  $('run-comparison').disabled=Boolean(comparisonRunReason(c));
+  $('run-comparison').textContent=c?.conditions?.filter(condition=>condition.status==='ready').length===1?'Run remaining condition':'Run both conditions';
+  $('case-title').textContent=state.comparisonEditing?'New policy comparison':c?.title||(state.comparisonLoading?'Loading comparison…':editable?'Compare tutor instructions':'Comparison unavailable');
+  $('view-description').textContent=state.comparisonEditing?'Choose a starting conversation, then save two different instruction sets.':c?(isPolicyComparison()?'One shared starting question. Two fixed tutor policies.':'Recorded next message and two saved simulated replies.'):'Create a saved comparison before generating any replies.';
   $('body-grid').classList.toggle('no-inspector',!state.showInspector);
   $('body-grid').classList.toggle('inspector-open',state.showInspector);
   $('inspector-toggle').hidden=!state.showInspector;
-  if(c){
+  if(state.comparisonEditing){
+    renderComparisonForm();
+    if(c&&state.showInspector)renderComparisonInspector(c,data);else $('inspector').innerHTML='';
+  }else if(c){
     if(isPolicyComparison()){
-      $('canvas').innerHTML=policyColumns(c);
+      const remaining=c.conditions.filter(condition=>condition.status==='ready').length;
+      $('canvas').innerHTML=policyColumns(c)+(editable?`<p class="policy-run-note quiet">${esc(comparisonRunReason(c)||`Run ${remaining===2?'both conditions':'the remaining condition'}: sends this conversation and each policy to Gemini for up to ${remaining*2} logical requests (${remaining} tutor replies and ${remaining} student decisions). Each request may make up to 4 adapter attempts. Completed, failed and unfinished requests are not resent.`)}</p>`:'');
     }else{
     const columns=[{title:'Recorded student',subtitle:'First observed next message',...c.reference},
       ...c.draws.map(d=>({title:'Simulated reply '+d.draw,subtitle:'Same setup · draw '+d.draw,...d}))];
@@ -163,7 +214,7 @@ function renderComparison(){
     }
     if(state.showInspector)renderComparisonInspector(c,data);else $('inspector').innerHTML='';
   }else{
-    $('canvas').innerHTML=state.comparisonError?`<div role="alert"><p>${esc(state.comparisonError)}</p><p class="quiet">Reload saved comparison to check again. Replay remains available.</p></div>`:'<p class="quiet" role="status">Verifying the saved review and message links…</p>';
+    $('canvas').innerHTML=state.comparisonError?`<div role="alert"><p>${esc(state.comparisonError)}</p><p class="quiet">Reload saved comparison to check again. Nothing will be resent.</p></div>`:editable?'<p class="quiet">No comparisons saved yet. Choose New comparison to select a conversation and enter tutor instructions.</p>':'<p class="quiet" role="status">Verifying the saved comparison and message links…</p>';
     $('inspector').innerHTML='';
   }
   renderChat();renderOperationStatus();
@@ -179,20 +230,61 @@ function renderComparisonInspector(c,data){
     $('inspector').innerHTML=`<div class="inspector-title">Existing human review</div><h2>How to read this comparison</h2><h3>Requests help / check</h3><p>${esc(data.definitions.help_request)}</p><div class="divider"></div><h3>Shows work / evidence</h3><p>${esc(data.definitions.work_present)}</p><div class="divider"></div><p>Both flags can be yes. Unclear and not reviewed remain separate from no.</p><p>One reviewer supplied these judgments. The cases had prior development exposure; coding reliability is unmeasured.</p><div class="divider"></div><p>Two replies from the same historical configuration do not compare baseline and grounded simulators. Notebook actions, correctness and learning remain unknown.</p><p>This view reads completed evidence and does not collect new labels or change the simulator.</p>`;
   }
 }
-async function reloadComparison(){
+function applyComparison(data){
+  if(data.version!==1||!['saved-communication-comparison','saved-policy-comparison'].includes(data.kind)||!Array.isArray(data.cases)||(!data.cases.length&&!data.controls?.create_enabled))throw new Error('Unsupported saved comparison.');
+  const selected=data.selected_id||state.comparison?.cases[state.reviewIndex]?.id;
+  state.comparison=data;state.comparisonOperation=data.operation||{status:'idle',message:''};
+  const index=data.cases.findIndex(c=>c.id===selected);
+  state.reviewIndex=index>=0?index:Math.max(0,Math.min(state.reviewIndex,data.cases.length-1));
+}
+async function reloadComparison({monitor=false}={}){
   if(state.comparisonLoading)return;
-  state.comparisonLoading=true;state.comparison=null;state.comparisonError='';state.showInspector=false;
+  clearTimeout(comparisonPollTimer);
+  state.comparisonLoading=true;if(!monitor)state.comparison=null;
+  state.comparisonError='';state.showInspector=false;
   $('reset').disabled=true;render();
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
   try{
     const response=await fetch('/api/comparison',{cache:'no-store',signal:controller.signal});
     const data=await response.json();
+    if(response.status===202){
+      state.comparisonOperation=data.operation;state.comparisonMonitoring=true;
+      comparisonPollTimer=setTimeout(()=>reloadComparison({monitor:true}),1500);return;
+    }
     if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:'Could not read the saved comparison.');
-    if(data.version!==1||!['saved-communication-comparison','saved-policy-comparison'].includes(data.kind)||!Array.isArray(data.cases)||!data.cases.length)throw new Error('Unsupported saved comparison.');
-    state.comparison=data;state.reviewIndex=Math.min(state.reviewIndex,data.cases.length-1);
-    notify('Saved comparison loaded. No new labels or generation.');
-  }catch(error){state.comparisonError=error.name==='AbortError'?'The local comparison did not respond in time.':error.message;notify('Saved comparison unavailable.');}
+    applyComparison(data);state.comparisonMonitoring=false;
+    notify('Saved comparison loaded. No requests sent.');
+  }catch(error){
+    state.comparison=null;state.comparisonMonitoring=false;
+    state.comparisonError=error.name==='AbortError'?'The local comparison did not respond in time. Reload to check saved progress; nothing will be resent.':error.message;
+    notify('Saved comparison unavailable.');
+  }
   finally{clearTimeout(timeout);state.comparisonLoading=false;$('reset').disabled=false;render();}
+}
+async function submitComparison(action){
+  const saving=action==='save',c=state.comparison?.cases[state.reviewIndex];
+  if(saving?!canSaveComparison():Boolean(comparisonRunReason(c)))return;
+  const payload=saving?{...state.comparisonDraft,binding:{...state.comparisonDraft.binding}}:{comparison_id:c.id,comparison_sha256:c.comparison_sha256};
+  state.comparisonSubmitting=true;state.comparisonError='';render();
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+  try{
+    // A timeout only ends the HTTP wait. Recover with reads; never repeat the POST.
+    const response=await fetch(saving?'/api/comparison':'/api/comparison/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
+    const data=await response.json();
+    if(response.status===202){
+      state.comparisonOperation=data.operation;state.comparisonMonitoring=true;
+      comparisonPollTimer=setTimeout(()=>reloadComparison({monitor:true}),1500);return;
+    }
+    if(response.status>=500)throw new Error('The server could not confirm the request outcome.');
+    if(!response.ok){state.comparisonError=typeof data.detail==='string'?data.detail:'The request was rejected. Reload saved comparison before trying again.';return}
+    applyComparison(data);state.comparisonEditing=false;state.showInspector=false;
+    if(saving)state.comparisonDraft=null;
+    notify(data.operation?.message||(saving?'Comparison saved. No model requests sent.':'Comparison results saved.'));
+  }catch(error){
+    state.comparisonMonitoring=true;
+    await reloadComparison({monitor:true});
+    state.comparisonError=error.name==='AbortError'?'The request response timed out. Saved status is shown; nothing was resent.':'The request response was lost. Saved status is shown; nothing was resent.';
+  }finally{clearTimeout(timeout);state.comparisonSubmitting=false;render()}
 }
 function checkLabel(feedback){
   if(!feedback)return 'No check feedback for this revision.';
@@ -247,6 +339,7 @@ function render(){
     return;
   }
   const c=current(),f=frame();
+  $('new-comparison').hidden=true;$('run-comparison').hidden=true;
   renderCases();
   renderModeButtons();
   $('instructions').hidden=false;$('instructions').textContent='Run context';$('tutor-controls').textContent='Tutor setup';
@@ -303,8 +396,10 @@ function renderOperationStatus(){
   document.querySelector('.reset-label').textContent=state.mode==='compare'?'Reload saved comparison':'Reload saved run';
   renderModeButtons();
   if(state.mode==='compare'){
-    document.querySelector('.prototype-note').textContent='Saved comparison · Read only';
-    $('operation-status').hidden=true;return;
+    const editable=state.comparison?.controls?.create_enabled;
+    document.querySelector('.prototype-note').textContent=comparisonBusy()?'Policy comparison · Checking saved progress':editable?(state.comparison.controls.send_enabled?'Policy comparison · Sending enabled':'Policy comparison · Save only'):'Saved comparison · Read only';
+    const message=state.comparisonSubmitting?(state.comparisonEditing?'Saving comparison…':'Generating tutor and student replies · showing the last verified data.'):state.comparisonMonitoring?'Request running · showing the last verified data. Reloading checks progress without resending.':state.comparisonError||state.comparisonOperation.message||'';
+    $('operation-status').textContent=message;$('operation-status').hidden=!message;return;
   }
   $('continue-run').disabled=Boolean(continuationReason());
   const message=state.submitting||state.monitoring?'Request running'+(state.encounters.length?' · showing the last saved state.':'.')+' Reloading checks progress without resending.':state.clientError||state.controls.blocked_reason||state.operation.message||'';
@@ -327,6 +422,7 @@ function clearWorkspaceView(message){
   state.encounters=[];state.showInspector=false;$('cases').innerHTML='';$('inspector').innerHTML='';$('playback').hidden=true;
   $('instructions').disabled=true;$('tutor-controls').disabled=true;$('next-step').hidden=true;$('inspector-toggle').hidden=true;
   $('saved-results').disabled=true;$('continue-run').hidden=true;
+  $('new-comparison').hidden=true;$('run-comparison').hidden=true;
   $('body-grid').classList.toggle('no-inspector',true);$('body-grid').classList.toggle('inspector-open',false);
   renderModeButtons();
   $('canvas').innerHTML=message;
@@ -391,6 +487,7 @@ $('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel"
 $('inspector-toggle').insertAdjacentHTML('beforebegin','<button id="chat-toggle" aria-controls="conversation-panel" aria-expanded="true">Hide chat</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button id="tutor-controls">Tutor controls</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button id="saved-results">Saved results</button>');
+$('instructions').insertAdjacentHTML('beforebegin','<button id="new-comparison" hidden>New comparison</button><button class="primary" id="run-comparison" hidden>Run both conditions</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button class="primary" id="continue-run" hidden>Continue run</button><details class="run-details" id="run-details"><summary id="run-details-toggle">Run details</summary><div class="run-details-actions" id="run-details-actions"></div></details>');
 $('run-details-actions').append($('saved-results'),$('instructions'),$('tutor-controls'));
 $('canvas').after($('inspector'));
@@ -411,6 +508,8 @@ $('search').oninput=()=>{if(state.mode==='compare'||state.encounters.length||sta
 $('run-details').onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();$('run-details').open=false;$('run-details-toggle').focus()}};
 $('instructions').onclick=()=>selectEvidence('context');
 $('continue-run').onclick=()=>selectEvidence('controls');
+$('new-comparison').onclick=newComparison;
+$('run-comparison').onclick=()=>submitComparison('run');
 $('previous-step').onclick=()=>{if(state.step>0)selectFrame(state.step-1)};
 $('tutor-controls').onclick=()=>selectEvidence(state.mode==='compare'?'review':'controls');
 $('saved-results').onclick=()=>selectEvidence('results');
@@ -419,5 +518,5 @@ document.querySelectorAll('[data-chat-jump]').forEach(b=>b.onclick=()=>{const me
 $('next-step').onclick=()=>{if(state.step<current().frames.length-1)selectFrame(state.step+1)};
 $('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen&&(state.kind!=='chat'||state.mode==='compare')?$('chat-toggle'):['results','context','controls','review'].includes(state.selected)?$('run-details-toggle'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
 $('explorer-toggle').onclick=()=>{const shown=$('app').classList.toggle('show-explorer');$('explorer-toggle').setAttribute('aria-expanded',String(shown))};
-$('reset').onclick=()=>state.mode==='compare'?reloadComparison():reloadWorkspace();
+$('reset').onclick=()=>state.mode==='compare'?reloadComparison({monitor:state.comparisonSubmitting||state.comparisonMonitoring}):reloadWorkspace();
 const ready=reloadWorkspace();

@@ -92,6 +92,27 @@ server first, since this alternative uses the same port:
 Open **http://127.0.0.1:8426/** and select `a` or `b`. Both are finished and
 viewing only. The Notebook tab correctly shows that notebook activity is unknown.
 
+## 2a. Save a new policy comparison offline
+
+The authored source also works with the browser's comparison workspace:
+
+```sh
+.venv/bin/python -m src.agents.browser_workspace \
+  data/teammate-demo/source --chat \
+  --policy-workspace data/teammate-policy-runs --port 8431
+```
+
+Open **Compare → New comparison**, select the saved starting conversation, and
+enter different current/proposed tutor instructions. **Save comparison** copies
+the same cached starting question into two independent arms without model calls.
+The shared conversation appears once beside the form and saved results. Saved
+pairs appear in the sidebar; exact duplicate source/policy pairs are rejected.
+
+Sending is disabled in this example. Its `authored-offline-demo` model is a fixture
+identifier, not a live provider model. For real generation, use working sources
+with a configured Gemini model as described below. Saving and running are separate
+actions; editing a policy requires a new saved comparison.
+
 ## 2b. Start with an explicit notebook task
 
 Use the revision containing this guide. This example requires the notebook
@@ -314,7 +335,33 @@ This page is read-only. It shows the shared recorded history, the held-out real
 next message, one saved simulated next message, and request provenance. It does
 not make a model request, modify the saved case, or report an accuracy score.
 
-To freeze a new one-scenario policy comparison without generating:
+For browser policy experiments over eligible supplied working conversations:
+
+```sh
+.venv/bin/python -m src.agents.browser_workspace \
+  data/workspace/sessions --chat-sessions \
+  --policy-workspace data/workspace/policy-runs --port 8431
+```
+
+In **Compare**, choose **New comparison**, select a starting conversation, and
+save the two tutor policies. Eligible starts have exactly one cached simulated
+student reply and no subsequent tutor intervention. Later-progressed conversations
+remain available for replay but cannot be silently reset into a new start.
+
+To run a saved pair, configure `GEMINI_API_KEY` and relaunch the same command with
+`--send`. Select a saved comparison and use its explicit run button. Each untouched
+arm makes at most one logical tutor request and one logical student request: four
+logical requests for both arms, with up to four adapter attempts per request.
+Provider SDK retries are not measured. Saved failed, interrupted and completed
+arms are not resent; an untouched peer can still run. Reloading checks saved
+progress only. Keep the source and output directories separate.
+
+The current-policy field contains the instructions you enter, not a recovered
+deployment configuration. Outcomes describe these simulations, not real-student
+learning or the probability that an instructor policy will work.
+
+The optional Marimo tools remain available for research inspection. To freeze a
+new one-scenario comparison there without generating:
 
 ```sh
 .venv/bin/marimo run apps/policy_comparison_setup.py \
@@ -326,7 +373,7 @@ To freeze a new one-scenario policy comparison without generating:
 Select an eligible source, enter the confirmed current policy and proposed policy,
 then freeze the plan. Setup makes no provider request and refuses to overwrite an
 existing comparison. The source currently includes one saved simulated student
-reply after recorded history; it is a mechanism setup, not a real policy outcome.
+reply after supplied history; it is a mechanism setup, not a real policy outcome.
 Launch with `--send=true` to replace the freeze-only button with **Freeze and run
 comparison**. That action saves the plan first, then makes one tutor and one student
 request per condition and displays both outcomes. Reopening skips every completed

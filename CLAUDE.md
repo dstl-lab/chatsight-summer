@@ -1,5 +1,18 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Browser policy creation and explicit runs (2026-09-22)
+
+Compare now creates frozen policy pairs from eligible saved chat starts through
+--policy-workspace, then runs untouched arms only with --send and an explicit
+button. Reuses freeze_next/run_both; shared context appears once. Source/run pins,
+serialized mutations and GET-only lost-response recovery preserve evidence and
+drafts. Failed/interrupted/completed arms are never resent. One serving process;
+external additions require reopening. 637 Python tests (three optional skips),
+seven Marimo and three Node checks pass; independent and authored browser review
+complete. Port8431 uses working copies of 29 conversations (27 eligible), sending
+enabled for user actions. All 105 original files unchanged; no new provider calls,
+labels or fidelity evidence. Memo: docs/2026-09-22-browser-policy-runs.md. PR #57.
+
 ## Policy labs integrated as saved browser comparisons (2026-09-22)
 
 PR #47 corrections verify saved/derived results, use structured receipt lifecycle,
