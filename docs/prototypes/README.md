@@ -84,8 +84,9 @@ saved step can contain several decisions. Diffs compare neighboring saved states
 Pending messages are shown once; edits clear old feedback. Missing origins stay
 unspecified. Local checks, decision-budget pauses, and chosen no-reply remain
 separate. Runtime/evaluator internals and raw error diagnostics are omitted; the
-researcher-supplied initialization is available as saved context. This supports
-notebook sessions only, not the separate chat-only scenario format.
+researcher-supplied initialization is available as saved context. Notebook sessions
+retain their work and check evidence. Chat sessions use the explicit mode below
+and show unavailable notebook activity instead.
 
 The opened example has authored starting content plus previously saved generated
 actions and local feedback: quiet edit → check (`0.5`, pass) → no-reply. Opening it
@@ -147,3 +148,39 @@ one container check, no generated tutor turn or errors. Refresh and exact offlin
 replay preserve the result; continuation is disabled. This example is now closed.
 The policy-generation and manual-reply browser paths remain covered by the
 authored test above; this live run did not exercise them or validate student realism.
+
+## Saved conversation scenarios
+
+Use `--chat` to open one existing saved chat session in the same browser layout.
+For example, after creating the [authored teammate demo](../teammate-quickstart.md):
+
+```sh
+.venv/bin/python -m src.agents.browser_workspace \
+  data/teammate-demo/comparison/sessions/a --chat --port 8428
+```
+
+Historical workspace sessions also open directly, for example
+`data/episode-pilot/chat-workspace-v1/sessions/case-01`. Open
+`http://127.0.0.1:8428/`; playback shows the supplied prefix and each saved student
+decision. Notebook cells, changes and execution feedback are unavailable. Code
+inside a message remains text, and a saved `source` origin alone does not prove
+whether the prefix was recorded or authored. Raw origins remain inspectable.
+
+Sending is off by default. `--send` enables the same explicit policy/manual reply
+and one-decision controls for an authorized active scenario; `--policy-file` loads
+its draft. Chat cannot run notebook checks, and `--reference-file` is refused.
+Opening a completed study does not authorize rerunning it. Cached imports and
+scripted callback responses must not be treated as fresh model calls.
+
+The viewer requires the runner's existing `.lock` and verifies receipts under a
+shared read-only lock. A freshly created chat that has never been opened needs
+the existing `chat_student show` command once to initialize that lock; viewing
+does not create one or repair invalid records. The server still opens one session
+at launch; choosing a collection or comparing conditions is separate work.
+
+Verification: 497 Python tests, Marimo checks and all three Node checks pass.
+All 29 historical workspace scenarios reopen with 105 files unchanged. Browser
+playback, source inspection, pending-message display and disabled sending were
+checked on an existing six-state conversation. No new provider calls, runtime
+checks, labels or student-fidelity result. See the
+[scope and result](../2026-09-22-browser-chat-scenarios.md).

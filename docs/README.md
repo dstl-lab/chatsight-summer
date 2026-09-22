@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-22 | [Browser chat scenarios](2026-09-22-browser-chat-scenarios.md) — reuse saved conversation evidence | Explicit chat mode, verified playback and bound controls; 29 existing scenarios reopen without mutation or new generation |
 | 2026-09-22 | [Live browser walkthrough](2026-09-22-live-browser-workspace.md) — actual browser controls, Gemini and local runtime | Closed: quiet edit, requested pass, no-reply; three student requests, no tutor; exact replay verified |
 | 2026-09-22 | [Browser workspace](prototypes/README.md) — desktop preview and connected saved viewer | Verified notebook replay and explicit bound controls; offline browser test, no new research result |
 | 2026-09-15 | `2026-09-15-grounded-chat-result.md` — completed local-task continuation | Complete: one reply adds the visible name assignment to existing code; exact replay and 224 pins verified; initial saved-chat demonstration closed |

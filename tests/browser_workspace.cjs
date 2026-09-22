@@ -117,5 +117,32 @@ const run=code=>vm.runInContext(code,context);
   packet.controls.blocked_reason='An earlier tutor request is saved; it will not be resent.';
   await run('reloadWorkspace()');assert.equal(run('canSubmit()'),false);
   assert.match(node('operation-status').textContent,/not be resent/);
+  packet.kind='chat';packet.controls.blocked_reason=null;
+  packet.encounters=[{id:'1',title:'Conversation',task:'Conversation scenario',
+    initialization:'Supplied conversation prefix; notebook activity is unknown.',activity:null,
+    frames:[{...initial,status:'ready',work:null,feedback:null,changes:null,
+      dialogue:[{role:'student',origin:'source',text:'<b>what went wrong</b>'}]}]}];
+  await run('reloadWorkspace()');
+  assert.match(node('.breadcrumb').textContent,/Conversation/);
+  assert.match(node('canvas').innerHTML,/Notebook activity unavailable/);
+  assert.match(node('canvas').innerHTML,/&lt;b&gt;what went wrong/);
+  assert.doesNotMatch(node('canvas').innerHTML,/Saved notebook work|View changes|local check|split-view/);
+  assert.match(node('view-description').textContent,/student can continue/);
+  assert.equal(run('canSubmit()'),true);
+  postFailure=false;
+  const chatAdvance=run('submitOperation()');
+  assert.deepEqual(JSON.parse(requests.filter(r=>r.options.method==='POST').at(-1).options.body),{binding:{},mode:'advance'});
+  finishPost();await chatAdvance;
+  run("selectEvidence('controls')");
+  assert.doesNotMatch(node('inspector').innerHTML,/local check|task, work/);
+  run("selectEvidence('context')");
+  assert.doesNotMatch(node('inspector').innerHTML,/selected cell|<h3>Activity/);
+  run("selectMode('inspect')");
+  assert.match(node('canvas').innerHTML,/Notebook activity unavailable/);
+  assert.doesNotMatch(node('canvas').innerHTML,/recorded checks are available/);
+  packet.encounters[0].frames[0].decisions_remaining=0;
+  await run('reloadWorkspace()');
+  assert.equal(run('canSubmit()'),false);
+  assert.match(node('view-description').textContent,/budget exhausted/);
   console.log('Saved workspace: playback, escaping, evidence, status, and failed reload recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

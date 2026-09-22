@@ -1,7 +1,8 @@
-"""Inspect a saved notebook session; optionally continue through explicit submissions."""
+"""Inspect a saved notebook or chat session; continue only through explicit submissions."""
 import argparse
 from contextlib import ExitStack
 import difflib
+import fcntl
 from pathlib import Path
 import re
 from threading import Lock
@@ -12,7 +13,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from src.agents import notebook_next_task, notebook_student as student, notebook_tutor, student_workspace
+from src.agents import chat_student, chat_workspace, notebook_next_task, notebook_student as student, notebook_tutor, student_workspace
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_POLICY = "Respond concisely to the student's current request using the visible work and check feedback."
@@ -62,8 +63,37 @@ def _frame(manifest, state, previous, decisions, index):
         'actions':[{key:event['action'][key] for key in ('decision', 'text', 'source')} for event in history]}
 
 
-def snapshot(folder):
+def _chat_snapshot(folder):
+    with (Path(folder) / '.lock').open('rb') as stream:
+        fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        manifest, _, _ = chat_student._load(Path(folder))
+        receipts = [student._read(path) for path in sorted(Path(folder).glob('step-*.json'))]
+        states = [chat_student._initial(manifest['query']), *(receipt['result'] for receipt in receipts)]
+        frames = []
+        for index, state in enumerate(states):
+            episode = state['episode']
+            receipt = receipts[index - 1] if index else None
+            frames.append({'label':f'Saved step {index}' if index else 'Initial state',
+                'binding':{'session_sha256':student.digest(manifest), 'state_sha256':student.digest(state)},
+                'status':state['status'], 'decisions_remaining':manifest['max_decisions'] - index,
+                'dialogue':[{key:turn[key] for key in ('role', 'text', 'origin')}
+                            for turn in [*episode['context'], *episode['turns']]],
+                'pending_message':state['message'] if state['status'] == 'awaiting-tutor' else None,
+                'work':None, 'feedback':None, 'changes':None,
+                'actions':[{key:receipt['response'][key] for key in ('decision', 'text')} | {'source':None}]
+                    if receipt is not None and receipt['status'] == 'complete' else []})
+    return {'version':1, 'kind':'chat', 'encounters':[{
+        'id':'1', 'title':'Conversation', 'task':'Conversation scenario',
+        'initialization':'Supplied conversation prefix followed by saved simulated continuation. '
+            'The prefix may be recorded or authored; its saved origin alone does not establish this. '
+            'Notebook activity and outcomes are unknown. Code in a message is text only.',
+        'activity':None, 'frames':frames}]}
+
+
+def snapshot(folder, *, chat_mode=False):
     """Project only display evidence after verifying every saved predecessor and receipt."""
+    if chat_mode:
+        return _chat_snapshot(folder)
     encounters = []
     with ExitStack() as stack:
         for number, (_, manifest, _, receipts, _) in enumerate(notebook_next_task.lineage(folder, stack), 1):
@@ -79,7 +109,7 @@ def snapshot(folder):
                 'initialization':initial['initialization'],
                 'activity':{key:value for key,value in initial['activity'].items() if key != 'image_id'},
                 'frames':frames})
-    return {'version':1, 'encounters':encounters}
+    return {'version':1, 'kind':'notebook', 'encounters':encounters}
 
 
 def _page():
@@ -105,12 +135,16 @@ def _page():
     return page
 
 
-def create_app(folder, *, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+def create_app(folder, *, chat_mode=False, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
     folder = Path(folder).resolve()
     if policy is not None and (not isinstance(policy, str) or not policy.strip()):
         raise ValueError('The tutor policy must contain nonblank text.')
-    policy = DEFAULT_POLICY if policy is None else policy
+    if chat_mode and reference is not None:
+        raise ValueError('A library reference is only available for notebook sessions.')
+    policy = ("Respond concisely to the student's current request using the visible conversation."
+              if chat_mode else DEFAULT_POLICY) if policy is None else policy
     reference = notebook_tutor.LibraryReference.model_validate(reference).model_dump() if reference is not None else None
+    runner = chat_workspace if chat_mode else student_workspace
     # ponytail: one serving process; use a shared job store if multiple writers are needed.
     running = Lock()
     operation = {'status':'idle', 'message':''}
@@ -123,7 +157,7 @@ def create_app(folder, *, send=False, policy=None, reference=None, generate=None
         return None
 
     def packet():
-        result = snapshot(folder)
+        result = snapshot(folder, chat_mode=chat_mode)
         frame = result['encounters'][-1]['frames'][-1]
         return result | {'controls':{'send_enabled':send is True, 'policy':policy,
             'reference':{key:reference[key] for key in ('library', 'library_version', 'source')}
@@ -182,27 +216,30 @@ def create_app(folder, *, send=False, policy=None, reference=None, generate=None
         if not running.acquire(blocking=False):
             raise HTTPException(409, 'The workspace is busy. Reload to inspect its current state; do not resend.')
         try:
-            current = snapshot(folder)['encounters'][-1]['frames'][-1]
+            current = snapshot(folder, chat_mode=chat_mode)['encounters'][-1]['frames'][-1]
             binding = body.binding.model_dump()
             if binding != current['binding']:
                 raise HTTPException(409, 'The displayed state is stale. Reload before continuing.')
             if reason := blocked(current):
                 raise HTTPException(409, reason)
-            if current['status'] not in ('active', 'awaiting-tutor') or current['decisions_remaining'] <= 0:
+            ready = 'ready' if chat_mode else 'active'
+            if current['status'] not in (ready, 'awaiting-tutor') or current['decisions_remaining'] <= 0:
                 raise HTTPException(409, 'This encounter has stopped or used its decision budget.')
-            if (body.mode == 'advance') != (current['status'] == 'active'):
-                raise HTTPException(409, 'Tutor guidance requires a pending student message; quiet work does not accept it.')
+            if (body.mode == 'advance') != (current['status'] == ready):
+                raise HTTPException(409, 'Tutor guidance requires a pending student message; continuation does not accept it.')
             if body.mode == 'policy':
-                student_workspace.respond(folder, binding=binding, policy=body.text, send=True,
-                    generate_tutor=generate_tutor, generate_student=generate, check=check, reference=reference)
+                runner.respond(folder, binding=binding, policy=body.text, send=True,
+                    generate_tutor=generate_tutor, generate_student=generate,
+                    **({} if chat_mode else {'check':check, 'reference':reference}))
             else:
-                student_workspace.advance(folder, binding=binding,
+                runner.advance(folder, binding=binding,
                     tutor_reply=body.text if body.mode == 'reply' else None,
-                    send=True, generate=generate, check=check)
+                    send=True, generate=generate, **({} if chat_mode else {'check':check}))
             result = packet()
             failed = result['encounters'][-1]['frames'][-1]['status'] in ('error', 'environment-error', 'execution-limit')
             operation.update(status='error' if failed else 'complete', message=(
-                'The simulation stopped after an error or unavailable local check. Inspect the saved result.'
+                ('The simulation stopped after a generation error. Inspect the saved result.' if chat_mode else
+                 'The simulation stopped after an error or unavailable local check. Inspect the saved result.')
                 if failed else 'One student decision was saved.'))
             result['operation'] = dict(operation)
             return result
@@ -222,17 +259,20 @@ def main():
     import uvicorn
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('folder', type=Path, help='Saved notebook session to inspect.')
+    parser.add_argument('folder', type=Path, help='Saved session to inspect.')
+    parser.add_argument('--chat', action='store_true', help='Open a chat-only session; notebook state remains unknown.')
     parser.add_argument('--port', type=int, default=8427)
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
     args = parser.parse_args()
     try:
+        if args.chat and args.reference_file:
+            raise ValueError('A library reference is only available for notebook sessions.')
         policy = args.policy_file.read_text(encoding='utf-8') if args.policy_file else None
         reference = notebook_tutor.LibraryReference.model_validate_json(
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
-        app = create_app(args.folder, send=args.send, policy=policy, reference=reference)
+        app = create_app(args.folder, chat_mode=args.chat, send=args.send, policy=policy, reference=reference)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')
     uvicorn.run(app, host='127.0.0.1', port=args.port)

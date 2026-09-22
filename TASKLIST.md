@@ -12,6 +12,9 @@ read-only defaults, visible progress and no automatic resending. The
 three student requests produced a quiet edit, a real passing local check and
 no-reply. Saved replay and terminal controls verify; no tutor request or new label.
 Matched baseline/grounded comparison remains separate from this engineering check.
+The browser also opens [existing chat scenarios](docs/2026-09-22-browser-chat-scenarios.md)
+through explicit `--chat`, with no invented notebook state. All 29 saved scenarios
+reopen unchanged; one is displayed read-only on port 8428. No new generation/labels.
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
 The fidelity target is when work/evidence is presented in chat. A separate cached
@@ -166,14 +169,17 @@ milestones; the former does not establish the latter.
   generator condition; an improvement comparison is still undeclared. No new
   generation or review batch is queued; simulator engineering can continue.
 
-- [ ] **5. Make the notebook and chat experience coherent.** Bring the existing
+- [x] **5. Make the notebook and chat experience coherent.** Bring the existing
   authored notebook mode into the same scenario workflow, with notebook work and
   diffs on the left and conversation on the right. Keep historical chat scenarios
-  explicit about unavailable work. Continue using Marimo and coordinate with the
-  teammate's viewer work before duplicating it.
+  explicit about unavailable work. The accepted dedicated browser replaces the
+  earlier Marimo-only direction and reuses the existing Python operations.
   **Done when:** an instructor can follow an existing notebook interaction and its
   work changes in one view. No historical notebook actions are invented.
-  **Deferred by Minchan:** leave the current layout for the later workspace redesign.
+  **Complete:** the accepted browser layout supports notebook sessions and explicit
+  chat mode, saved playback and bound controls. Historical chat has no reconstructed
+  notebook work. One session per launch; collection selection/comparison remains
+  separate. The original Marimo interface still works.
 
 - [x] **6. Package the prototype for a teammate to run.** Document startup, local
   private-data setup, scenario selection, policy controls and saved results. Resolve

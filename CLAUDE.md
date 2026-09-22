@@ -1,5 +1,19 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Existing chat scenarios now open in the browser (2026-09-22)
+
+Explicit browser_workspace --chat opens one saved chat session, projects initial
+and receipt states after existing-loader verification under a shared readonly
+lock, and routes bound controls through chat_workspace. Ready status is preserved;
+notebook work/changes/activity/checks stay null. Source labels are neutral and
+raw origins inspectable. Chat cannot execute checks or load a library reference.
+Missing lock/incomplete/tampered records fail closed. No engine/prompt changes.
+497 tests, Marimo and Node checks pass; independent review found no blocker.
+All29historical workspace scenarios reopen with105filesunchanged. localhost:8428
+shows case01read-only; notebook result remains at8427. No calls/labels or migration.
+Scope/result: docs/2026-09-22-browser-chat-scenarios.md. Task5complete; collection
+selection and matched comparisons are separate work. Closed studies stay closed.
+
 ## Live browser walkthrough complete and closed (2026-09-22)
 
 The fresh public authored browser example was continued through three actual UI
