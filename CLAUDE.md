@@ -1,5 +1,19 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Saved student fidelity comparison (2026-09-22)
+
+`browser_workspace --fidelity-comparison <help-work-benchmark-v1>` opens the closed
+eight-conversation, two-condition, four-draw study without a replay folder. Both
+conditions share the current request and recorded tutor reply; history additionally
+receives earlier student AND tutor messages. Fixed-file pins, prompt reconstruction,
+existing scorer reproduction and message joins verify read-only display. No model
+calls, new labels or simulator changes. Mean Brier: history 0.359375, current-only
+0.29296875. All references help=yes/work=no; one reviewer and development exposure
+preclude general fidelity/adoption claims. This experiment already reached its
+stopping rule; do not rerun/relabel it. No untouched learner-separated holdout has
+been identified, and conversation IDs are not learner IDs. Memo:
+docs/2026-09-22-browser-student-fidelity.md.
+
 ## Browser policy creation and explicit runs (2026-09-22)
 
 UI direction: apply shadcn's code-ownership/composition philosophy through shared

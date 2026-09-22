@@ -1,5 +1,14 @@
 # Simulated students: task list
 
+The [Student fidelity view](docs/2026-09-22-browser-student-fidelity.md) now surfaces
+the **completed** matched benchmark: eight conversations, four draws per condition,
+64 saved replies and existing help/work judgments. Earlier dialogue had higher
+mean Brier error (0.359375 versus 0.29296875). All reference messages request help
+without showing work; this narrow, development-exposed sample cannot establish
+overall fidelity or a random-student result. The benchmark is closed. No new
+generation or labeling is queued; inspect this evidence before defining a distinct
+improvement study. UI integration still needs independent PR review.
+
 PR #47's reviewed issues are fixed, and the [browser policy comparison](docs/2026-09-22-browser-policy-comparison.md)
 now opens saved pairs with shared context once, fixed policies, tutor responses
 and distinct student outcomes. The [creation/run workflow](docs/2026-09-22-browser-policy-runs.md)
@@ -45,7 +54,7 @@ does not change the simulator or add fidelity evidence.
 The [Compare tab](docs/2026-09-22-browser-saved-comparison.md) now opens the existing
 eight-case review beside replay: recorded messages, both cached draws, supplied
 context and completed help/work judgments. No new generation, labels or metrics;
-the missing matched improvement comparison remains a separate research step.
+that cached review is separate from the completed matched benchmark above.
 The [chat sidebar](docs/2026-09-22-browser-chat-sidebar.md) now keeps conversation
 beside notebook work or comparison cards; details and tutor controls use the
 center. The separate Inspect tab is retired in the connected workspace.

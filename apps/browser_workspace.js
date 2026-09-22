@@ -5,7 +5,7 @@ const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 const block = value => `<pre>${esc(typeof value==='string'?value:JSON.stringify(value,null,2))}</pre>`;
 const taskText = task => typeof task==='string'?task:Array.isArray(task)&&task.every(cell=>typeof cell?.source==='string')?task.map(cell=>cell.source).join('\n\n'):JSON.stringify(task,null,2);
 const state = {kind:'notebook',scenarios:null,scenarioId:null,encounters:[],caseIndex:0,step:0,mode:'simulate',selected:'step',showInspector:false,controls:{send_enabled:false},operation:{status:'idle',message:''},policyDraft:null,replyDraft:'',replyMode:'policy',submitting:false,monitoring:false,refreshing:false,clientError:''};
-Object.assign(state,{comparisonAvailable:false,policyWorkspaceAvailable:false,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:'',comparisonEntryNote:'',chatOpen:true,chatKey:null});
+Object.assign(state,{comparisonAvailable:false,policyWorkspaceAvailable:false,fidelityComparisonAvailable:false,replayAvailable:true,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:'',comparisonEntryNote:'',chatOpen:true,chatKey:null});
 Object.assign(state,{workspaceId:null,comparisonDraft:null,comparisonDirty:false,draftStored:false,comparisonEditing:false,comparisonSubmitting:false,comparisonMonitoring:false,comparisonOperation:{status:'idle',message:''}});
 let pollTimer,comparisonPollTimer;
 const current = () => state.encounters[state.caseIndex];
@@ -13,6 +13,7 @@ const frame = () => current().frames[state.step];
 const notify = text => {$('status').textContent=text};
 const decisionNames = {'reply':'Student reply','revise-work':'Work edited','request-check':'Local check requested','no-reply':'Student chose no reply'};
 const isPolicyComparison = () => state.comparison?.kind==='saved-policy-comparison';
+const isFidelityComparison = () => state.comparison?.kind==='saved-student-fidelity-comparison';
 const comparisonBusy = () => state.comparisonLoading||state.comparisonSubmitting||state.comparisonMonitoring;
 const comparisonContext = () => state.comparisonEditing?state.comparison?.controls?.sources?.find(s=>s.id===state.comparisonDraft?.source_id):state.comparison?.cases[state.reviewIndex];
 const excerpt = (text,limit=90) => {const value=String(text||'').replace(/\s+/g,' ').trim();return value.length>limit?value.slice(0,limit)+'…':value};
@@ -59,6 +60,7 @@ function turns(){
 function selectMode(mode){
   if(state.submitting||state.monitoring||state.refreshing||comparisonBusy()||mode==='compare'&&!state.comparisonAvailable)return;
   mode=mode==='inspect'?'simulate':mode;
+  if(mode==='simulate'&&!state.replayAvailable)return;
   state.mode=mode;state.showInspector=false;$('search').value='';$('run-details').open=false;
   const url=new URL(window.location.href);url.searchParams.set('view',mode==='compare'?'compare':'replay');window.history.replaceState(null,'',url);
   if(mode==='compare')return reloadComparison();
@@ -67,8 +69,8 @@ function selectMode(mode){
 function renderModeButtons(){
   document.querySelectorAll('[data-mode]').forEach(b=>{
     if(b.dataset.mode==='simulate')b.textContent=state.kind==='chat'?'Conversation':'Notebook';
-    if(b.dataset.mode==='compare')b.textContent=state.policyWorkspaceAvailable||isPolicyComparison()?'Tutor policies':state.comparison?.kind==='saved-communication-comparison'?'Reviewed replies':'Compare';
-    b.hidden=b.dataset.mode==='inspect'||b.dataset.mode==='compare'&&!state.comparisonAvailable;
+    if(b.dataset.mode==='compare')b.textContent=state.fidelityComparisonAvailable||isFidelityComparison()?'Student fidelity':state.policyWorkspaceAvailable||isPolicyComparison()?'Tutor policies':state.comparison?.kind==='saved-communication-comparison'?'Reviewed replies':'Compare';
+    b.hidden=b.dataset.mode==='inspect'||b.dataset.mode==='compare'&&!state.comparisonAvailable||b.dataset.mode==='simulate'&&!state.replayAvailable;
     b.disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy()||(!state.encounters.length&&state.mode!=='compare'&&b.dataset.mode!=='compare');
     b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode));
   });
@@ -93,14 +95,14 @@ function selectEvidence(key){state.selected=key;state.showInspector=true;$('run-
 function renderCases(){
   const query=$('search').value.toLowerCase();
   if(state.mode==='compare'){
-    document.querySelector('.breadcrumb').textContent=state.policyWorkspaceAvailable||isPolicyComparison()?'Tutor policies':'Reviewed replies';
-    document.querySelector('.explorer-heading').textContent=isPolicyComparison()?'Saved comparisons':'Reviewed cases';
+    document.querySelector('.breadcrumb').textContent=state.fidelityComparisonAvailable||isFidelityComparison()?'Student fidelity':state.policyWorkspaceAvailable||isPolicyComparison()?'Tutor policies':'Reviewed replies';
+    document.querySelector('.explorer-heading').textContent=isFidelityComparison()?'Fidelity cases':isPolicyComparison()?'Saved comparisons':'Reviewed cases';
     $('conversation-guide').hidden=true;
     const label=isPolicyComparison()?'Filter policy comparisons':'Filter reviewed cases';
     $('search').placeholder=label+'…';$('search').setAttribute('aria-label',label);
     document.querySelector('label[for="search"]').textContent=label;
     $('cases').innerHTML=(state.comparison?.cases||[]).map((c,i)=>({c,i})).filter(({c})=>[c.title,questionSummary(c),c.source?.title,...(c.conditions||[]).map(condition=>condition.policy)].join(' ').toLowerCase().includes(query)).map(({c,i})=>
-      `<button class="case-button" data-review-case="${i}" aria-pressed="${!state.comparisonEditing&&state.reviewIndex===i}"><span><b>${esc(c.title)}</b>${isPolicyComparison()?`<span class="case-summary">${esc(questionSummary(c))}</span><small>${esc(c.source?.title||'Saved starting conversation')} · ${policyStatus(c)}</small><span class="case-summary">${c.conditions.map(condition=>`${esc(condition.id.toUpperCase())}: ${esc(excerpt(condition.policy,55))}`).join(' · ')}</span>`:'<small>Recorded + 2 simulated replies</small>'}</span></button>`).join('')||'<p class="empty">'+(query?'No matching comparisons.':state.comparison?'Your saved comparisons will appear here.':'No comparison loaded.')+'</p>';
+      `<button class="case-button" data-review-case="${i}" aria-pressed="${!state.comparisonEditing&&state.reviewIndex===i}"><span><b>${esc(c.title)}</b>${isFidelityComparison()?`<span class="case-summary">${esc(questionSummary(c))}</span><small>Recorded + 8 saved draws</small>`:isPolicyComparison()?`<span class="case-summary">${esc(questionSummary(c))}</span><small>${esc(c.source?.title||'Saved starting conversation')} · ${policyStatus(c)}</small><span class="case-summary">${c.conditions.map(condition=>`${esc(condition.id.toUpperCase())}: ${esc(excerpt(condition.policy,55))}`).join(' · ')}</span>`:'<small>Recorded + 2 simulated replies</small>'}</span></button>`).join('')||'<p class="empty">'+(query?'No matching comparisons.':state.comparison?'Your saved comparisons will appear here.':'No comparison loaded.')+'</p>';
     document.querySelectorAll('[data-review-case]').forEach(b=>{b.disabled=comparisonBusy();b.onclick=()=>{if(comparisonBusy())return;state.reviewIndex=Number(b.dataset.reviewCase);state.comparisonEditing=false;state.showInspector=false;render();$('canvas').scrollTop=0;notify('Opened '+state.comparison.cases[state.reviewIndex].title)}});
     return;
   }
@@ -145,8 +147,8 @@ function renderChat(){
   $('body-grid').classList.toggle('no-chat',!visibleChat);
   $('chat-toggle').textContent=state.chatOpen?'Hide chat':'Show chat';
   $('chat-toggle').setAttribute('aria-expanded',String(state.chatOpen));
-  $('chat-title').textContent=comparing?'Shared conversation':'Student–tutor chat';
-  $('chat-caption').textContent=comparing?(c?`${c.source?.title||c.title} · shared starting point`:'No saved context loaded'):available?`${current().title} · ${frame().label}`:'No saved conversation loaded';
+  $('chat-title').textContent=isFidelityComparison()&&comparing?'Recorded conversation':comparing?'Shared conversation':'Student–tutor chat';
+  $('chat-caption').textContent=comparing?(c?`${c.source?.title||c.title} · ${isFidelityComparison()?'before the next reply':'shared starting point'}`:'No saved context loaded'):available?`${current().title} · ${frame().label}`:'No saved conversation loaded';
   const key=comparing?'compare:'+state.comparisonEditing+':'+c?.id:`${state.scenarioId}:${current()?.id}:${state.step}`;
   const changed=state.chatKey!==key;
   if(visibleChat)state.chatKey=key;
@@ -155,9 +157,9 @@ function renderChat(){
   document.querySelectorAll('[data-chat-jump]').forEach(b=>b.disabled=rows.length<2);
   if(!available){$('conversation-messages').innerHTML='<p class="quiet">'+(state.comparisonLoading||state.refreshing||state.monitoring?'Loading saved conversation…':'No verified conversation to display.')+'</p>';return}
   const messages=$('conversation-messages'),previousScroll=messages.scrollTop;
-  messages.innerHTML=comparing?`<p class="quiet chat-context-note">${esc(c.context_status)}</p><h3 class="chat-section-label">Earlier messages supplied</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3 class="chat-section-label"${isPolicyComparison()?' id="tested-question"':''}>${isPolicyComparison()?'Question being tested · simulated':'Current exchange'}</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
+  messages.innerHTML=comparing?`<p class="quiet chat-context-note">${esc(c.context_status)}</p><h3 class="chat-section-label">${isFidelityComparison()?'Earlier dialogue · history condition only':'Earlier messages supplied'}</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3 class="chat-section-label"${isPolicyComparison()||isFidelityComparison()?' id="tested-question"':''}>${isFidelityComparison()?'Current exchange · both conditions':isPolicyComparison()?'Question being tested · simulated':'Current exchange'}</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
   if(changed&&visibleChat){
-    if(comparing&&isPolicyComparison())messages.querySelector('#tested-question')?.scrollIntoView({block:'start'});
+    if(comparing&&(isPolicyComparison()||isFidelityComparison()))messages.querySelector('#tested-question')?.scrollIntoView({block:'start'});
     else messages.scrollTop=!comparing&&state.step>0?(messages.querySelector('.chat-turn:last-of-type')?.offsetTop||0):0;
   }else messages.scrollTop=previousScroll;
   document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
@@ -256,12 +258,22 @@ function comparisonRunReason(c){
   if(!c?.conditions?.some(condition=>condition.status==='ready'))return 'No untouched conditions remain. Saved outcomes are not rerun.';
   return '';
 }
+const brier = value => Number.isFinite(value)?value.toFixed(3):'Not scored';
+function fidelityReview(review){
+  const flag=value=>({yes:'Yes',no:'No',unclear:'Unclear'})[value]||'Not reviewed';
+  return `<dl class="review-flags"><dt>Requests help / check</dt><dd>${flag(review?.help_request)}</dd><dt>Shows work / evidence</dt><dd>${flag(review?.work_present)}</dd></dl>${review?.note?`<p class="small muted">Review note: ${esc(review.note)}</p>`:''}`;
+}
+function fidelityComparison(c,study){
+  const paired=study.paired,difference=paired.grounded_minus_current_exchange;
+  const finding=!Number.isFinite(difference)?'Insufficient complete cases to compare':difference>0?'Earlier dialogue had higher error in this sample':difference<0?'Earlier dialogue had lower error in this sample':'Both conditions had equal error in this sample';
+  return `<section class="fidelity-summary" aria-label="Completed benchmark result"><p class="kind">Closed benchmark · ${study.counts.cases} conversations · ${study.counts.scheduled_draws} saved draws</p><h2>${finding}</h2><p>Help-seeking and work submission · mean Brier error, 0–1 · lower is better.</p><dl class="fidelity-metrics"><div><dt>Current exchange only</dt><dd>${brier(paired['current-exchange']?.mean_brier)}</dd></div><div><dt>With earlier dialogue</dt><dd>${brier(paired.grounded?.mean_brier)}</dd></div><div><dt>History minus current</dt><dd>${Number.isFinite(difference)?(difference>0?'+':'')+difference.toFixed(4):'Not scored'}</dd></div></dl><p class="quiet">Recorded references: ${study.reference_counts.help_request.yes}/${study.counts.cases} request help; ${study.reference_counts.work_present.yes}/${study.counts.cases} show work. One reviewer · previously exposed development data. This does not establish overall student realism.</p><details><summary>Measures and limitations</summary><table class="fidelity-table"><caption>Error by communication flag · ${paired.cases} complete cases</caption><thead><tr><th scope="col">Condition</th><th scope="col">Help</th><th scope="col">Work</th></tr></thead><tbody>${c.conditions.map(condition=>`<tr><th scope="row">${esc(condition.title)}</th><td>${brier(paired[condition.id]?.help_request)}</td><td>${brier(paired[condition.id]?.work_present)}</td></tr>`).join('')}</tbody></table><p>${esc(study.metric)}</p><p>${study.counts.excluded_cases} excluded cases · ${study.counts.missing_judgments} missing judgments · ${study.counts.unclear_flags} unclear flags.</p>${c.conditions.map(condition=>{const d=study.dispositions[condition.id];return `<p>${esc(condition.title)}: ${d.reply} replies, ${d['no-reply']} no-reply decisions, ${d.error} errors.</p>`}).join('')}<ul>${study.limits.map(limit=>`<li>${esc(limit)}</li>`).join('')}</ul></details></section><article class="comparison fidelity-reference"><header><h2>Recorded next student message</h2><div class="kind">Reference · excluded from both generation inputs</div></header><div class="entry"><p class="saved-message">${esc(c.reference.text)}</p>${fidelityReview(c.reference.review)}</div></article><div class="compare-grid saved-comparison policy-comparison">${c.conditions.map(condition=>`<article class="comparison"><header><h2>${esc(condition.title)}</h2><div class="kind">${condition.id==='current-exchange'?'Current student request + recorded tutor reply':'Same exchange + earlier student and tutor messages'} · 4 draws</div></header>${condition.draws.map(draw=>`<section class="entry fidelity-draw"><h3>Draw ${draw.draw}</h3>${draw.status==='reply'?`<p class="saved-message">${esc(draw.text)}</p>`:`<p class="quiet">${draw.status==='no-reply'?'Simulator chose no reply.':'Generation failed; this is not student silence.'}</p>`}${draw.status==='reply'?fidelityReview(draw.review):'<p class="quiet">Help/work flags not applicable: no student message was generated.</p>'}</section>`).join('')}</article>`).join('')}</div><p class="note">All scheduled draws are retained. These are saved results; viewing does not generate replies or request new labels.</p>`;
+}
 function renderComparison(){
   const data=state.comparison,c=comparisonContext(),editable=data?.controls?.create_enabled===true;
   renderCases();renderModeButtons();
   $('playback').hidden=true;$('next-step').hidden=true;
   $('saved-results').hidden=true;$('continue-run').hidden=true;
-  $('instructions').hidden=true;$('tutor-controls').textContent=isPolicyComparison()?'Comparison details':'Review details';
+  $('instructions').hidden=true;$('tutor-controls').textContent=isFidelityComparison()?'Study details':isPolicyComparison()?'Comparison details':'Review details';
   $('instructions').disabled=!c;$('tutor-controls').disabled=!c||state.comparisonEditing;
   $('tutor-controls').hidden=!c||state.comparisonEditing;
   $('run-details').hidden=true;
@@ -274,7 +286,7 @@ function renderComparison(){
   $('run-comparison').disabled=Boolean(comparisonRunReason(c));
   $('run-comparison').textContent=c?.conditions?.filter(condition=>condition.status==='ready').length===1?'Run remaining condition':'Run both conditions';
   $('case-title').textContent=state.comparisonEditing?'New policy comparison':c?.title||(state.comparisonLoading?'Loading comparison…':editable?'Compare tutor instructions':'Comparison unavailable');
-  $('view-description').textContent=state.comparisonEditing?'Set up → Save → Run → Compare responses':c?(isPolicyComparison()?policyStatus(c)+(c.conditions.some(condition=>condition.status==='ready')?' · Review the instructions, then run the comparison.':' · Compare the tutor replies and student outcomes below.'):'Recorded next message and two saved simulated replies.'):'Create a saved comparison before generating any replies.';
+  $('view-description').textContent=state.comparisonEditing?'Set up → Save → Run → Compare responses':c?(isFidelityComparison()?'Same recorded tutor reply · two student input conditions · existing reviews':isPolicyComparison()?policyStatus(c)+(c.conditions.some(condition=>condition.status==='ready')?' · Review the instructions, then run the comparison.':' · Compare the tutor replies and student outcomes below.'):'Recorded next message and two saved simulated replies.'):editable?'Create a saved comparison before generating any replies.':'Read-only saved evidence';
   $('body-grid').classList.toggle('no-inspector',!state.showInspector);
   $('body-grid').classList.toggle('inspector-open',state.showInspector);
   $('inspector-toggle').hidden=!state.showInspector;
@@ -282,7 +294,9 @@ function renderComparison(){
     renderComparisonForm();
     if(c&&state.showInspector)renderComparisonInspector(c,data);else $('inspector').innerHTML='';
   }else if(c){
-    if(isPolicyComparison()){
+    if(isFidelityComparison()){
+      $('canvas').innerHTML=fidelityComparison(c,data.study);
+    }else if(isPolicyComparison()){
       const remaining=c.conditions.filter(condition=>condition.status==='ready').length;
       $('canvas').innerHTML='<p class="comparison-scope">One simulated exchange per policy · exploratory comparison</p>'+policyColumns(c)+(editable?`<p class="policy-reuse-note" id="policy-reuse-note">${esc(comparisonReuseReason(c)||'Use this setup copies this exact starting conversation and both policies into a separate draft.')}</p><p class="policy-run-note quiet">${esc(comparisonRunReason(c)||`Run ${remaining===2?'both conditions':'the remaining condition'}: sends this conversation and each policy to Gemini for up to ${remaining*2} logical requests (${remaining} tutor replies and ${remaining} student decisions). Each request may make up to 4 adapter attempts. Completed, failed and unfinished requests are not resent.`)}</p>`:'');
     }else{
@@ -303,7 +317,9 @@ function renderComparison(){
 function renderComparisonInspector(c,data){
   if(state.selected.startsWith('turn:')){
     const turn=turns()[Number(state.selected.split(':')[1])];
-    $('inspector').innerHTML='<div class="inspector-title">Conversation source</div><h2>Original message</h2>'+block(turn.text)+(isPolicyComparison()?'<p>Exact text shared by both tutor-policy conditions.</p>':'<p>Exact text from the shared review context. The recorded next message stays outside the generation inputs.</p>');
+    $('inspector').innerHTML='<div class="inspector-title">Conversation source</div><h2>Original message</h2>'+block(turn.text)+(isFidelityComparison()?'<p>Earlier dialogue is supplied only to the history condition. The current request and recorded tutor reply are supplied to both. The recorded next message is excluded from both inputs.</p>':isPolicyComparison()?'<p>Exact text shared by both tutor-policy conditions.</p>':'<p>Exact text from the shared review context. The recorded next message stays outside the generation inputs.</p>');
+  }else if(isFidelityComparison()){
+    $('inspector').innerHTML=`<div class="inspector-title">Completed student benchmark</div><h2>What changed between conditions?</h2><p>The baseline receives the current student request and recorded tutor reply. The history condition also receives earlier student and tutor messages. Model and generation setup remain the same.</p><p>Model: ${esc(data.study.model)}</p><h3>Existing human review</h3><p>Requests help / check: ${esc(data.definitions.help_request)}</p><p>Shows work / evidence: ${esc(data.definitions.work_present)}</p><p>Both flags can be yes. Unclear, missing labels, no-reply decisions and generation errors are distinct from no.</p><p>The fixed benchmark is closed. No winner is adopted and no additional labeling or generation is triggered by this view.</p>`;
   }else if(isPolicyComparison()){
     $('inspector').innerHTML='<div class="inspector-title">Saved policy comparison</div><h2>How to read this comparison</h2><p>Both conditions use the same supplied conversation and cached simulated question. Each has its own fixed tutor instructions and at most one new student decision.</p><p>The starting question is simulated. It is not an observed future student message.</p><div class="divider"></div><p>Ready means no new exchange has run. A failed or unfinished request is not student silence. A no-follow-up is a saved simulator choice.</p><p>Model: '+esc(c.model)+'</p><p>Viewing sends nothing. This comparison supplies no accuracy score or evidence of real policy effects.</p>';
   }else{
@@ -311,7 +327,7 @@ function renderComparisonInspector(c,data){
   }
 }
 function applyComparison(data){
-  if(data.version!==1||!['saved-communication-comparison','saved-policy-comparison'].includes(data.kind)||!Array.isArray(data.cases)||(!data.cases.length&&!data.controls?.create_enabled))throw new Error('Unsupported saved comparison.');
+  if(data.version!==1||!['saved-communication-comparison','saved-policy-comparison','saved-student-fidelity-comparison'].includes(data.kind)||!Array.isArray(data.cases)||(!data.cases.length&&!data.controls?.create_enabled))throw new Error('Unsupported saved comparison.');
   const selected=data.selected_id||state.comparison?.cases[state.reviewIndex]?.id;
   state.comparison=data;state.comparisonOperation=data.operation||{status:'idle',message:''};
   const index=data.cases.findIndex(c=>c.id===selected);
@@ -532,6 +548,8 @@ async function reloadWorkspace(){
       if(!response.ok||catalog.version!==1||!Array.isArray(catalog.scenarios)||catalog.scenarios.some(s=>typeof s.id!=='string'||!s.id||typeof s.title!=='string')||new Set(catalog.scenarios.map(s=>s.id)).size!==catalog.scenarios.length)throw new Error('The saved scenario list could not be loaded.');
       state.scenarios=catalog.scenarios;
       state.comparisonAvailable=catalog.comparison_available===true;
+      state.fidelityComparisonAvailable=catalog.fidelity_comparison_available===true;
+      state.replayAvailable=catalog.replay_available!==false;
       state.policyWorkspaceAvailable=catalog.policy_workspace_available===true;
       state.workspaceId=typeof catalog.workspace_id==='string'?catalog.workspace_id:null;
       if(state.policyWorkspaceAvailable)restoreComparisonDraft();
@@ -540,6 +558,7 @@ async function reloadWorkspace(){
         renderCases();
       }
     }
+    if(!state.replayAvailable){state.mode='compare';return}
     const response=await fetch(workspaceUrl('/api/workspace'),{cache:'no-store',signal:controller.signal});
     const packet=await response.json();
     if(response.status===202){
@@ -624,8 +643,8 @@ window.addEventListener('beforeunload',event=>{if(state.comparisonDirty){event.p
 const ready=(async()=>{
   await reloadWorkspace();
   const params=new URLSearchParams(window.location.search);
-  if(state.comparisonAvailable&&(params.get('view')==='compare'||
-      state.policyWorkspaceAvailable&&!params.has('view')&&!params.has('scenario'))){
+  if(state.comparisonAvailable&&(!state.replayAvailable||params.get('view')==='compare'||
+      (state.policyWorkspaceAvailable||state.fidelityComparisonAvailable)&&!params.has('view')&&!params.has('scenario'))){
     await selectMode('compare');
     if(state.mode==='compare'&&state.comparison?.controls?.create_enabled&&(state.comparisonDirty||!state.comparison.cases.length))newComparison();
   }
