@@ -18,8 +18,9 @@ def test_fixed_comparison_endpoint_is_read_only_pinned_and_separate_from_replay(
     app = browser.create_app(session, chat_mode=True, comparison=review,
         generate=lambda *_: pytest.fail('Compare dispatched a model'))
     viewer = TestClient(app, base_url='http://127.0.0.1')
-    assert viewer.get('/api/scenarios').json() == {
-        'version':1, 'scenarios':[], 'comparison_available':True}
+    catalog = viewer.get('/api/scenarios').json()
+    assert catalog == {'version':1, 'workspace_id':catalog['workspace_id'],
+                       'scenarios':[], 'comparison_available':True}
     replay = viewer.get('/api/workspace').json()
     response = viewer.get('/api/comparison')
     assert response.status_code == 200 and response.headers['cache-control'] == 'no-store'

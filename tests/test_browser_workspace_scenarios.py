@@ -1,5 +1,6 @@
 """Collection requests select one verified scenario without sharing client selection."""
 from concurrent.futures import ThreadPoolExecutor
+import fcntl
 import sys
 from threading import Event
 
@@ -31,7 +32,7 @@ def body(folder):
     return {'binding':chat.show(folder)['binding'], 'mode':'advance'}
 
 
-def test_catalog_is_frozen_metadata_only_and_reads_do_not_modify_sessions(tmp_path):
+def test_catalog_has_verified_literal_excerpts_and_reads_do_not_modify_sessions(tmp_path):
     root = sessions(tmp_path)
     (root / 'linked').symlink_to(root / 'private-a', target_is_directory=True)
     (root / 'linked-manifest').mkdir()
@@ -40,11 +41,11 @@ def test_catalog_is_frozen_metadata_only_and_reads_do_not_modify_sessions(tmp_pa
     before = {name:files(root / name) for name in ('private-a', 'private-b')}
     catalog = viewer.get('/api/scenarios')
     assert catalog.status_code == 200
-    assert catalog.json() == {'version':1, 'scenarios':[
-        {'id':store.digest(name), 'title':f'Conversation {index:02d}'}
+    assert catalog.json() == {'version':1, 'workspace_id':catalog.json()['workspace_id'], 'scenarios':[
+        {'id':store.digest(name), 'title':f'Conversation {index:02d}', 'summary':'how do i add them'}
         for index, name in enumerate(('private-a', 'private-b'), 1)]}
+    assert len(catalog.json()['workspace_id']) == 64
     assert 'private-' not in catalog.text and str(root) not in catalog.text
-    assert not any(turn['text'] in catalog.text for turn in QUERY['prefix'] if turn['text'])
     shown = viewer.get(selected('private-a')).json()
     assert shown['scenario_id'] == store.digest('private-a')
     assert shown['kind'] == 'chat' and shown['controls']['send_enabled'] is False
@@ -90,7 +91,8 @@ def test_unknown_duplicate_and_extra_selectors_never_dispatch(tmp_path):
         assert viewer.post('/api/continue' + query, json=request).status_code == 400
     assert viewer.get('/api/scenarios?extra=1').status_code == 400
     single = TestClient(browser.create_app(root / 'private-a', chat_mode=True), base_url='http://127.0.0.1')
-    assert single.get('/api/scenarios').json() == {'version':1, 'scenarios':[]}
+    catalog = single.get('/api/scenarios').json()
+    assert catalog == {'version':1, 'workspace_id':catalog['workspace_id'], 'scenarios':[]}
     assert single.get('/api/workspace').json()['scenario_id'] is None
     assert single.get(selected('private-a')).status_code == 400
 
@@ -115,6 +117,8 @@ def test_replaced_symlink_is_refused_then_selection_recovers(tmp_path, target):
                          viewer.post(selected('private-a', '/api/continue'), json=request)):
             assert response.status_code == 409 and str(tmp_path) not in response.text
             assert 'encounters' not in response.json()
+        assert [item['summary'] for item in viewer.get('/api/scenarios').json()['scenarios']] == [
+            None, 'how do i add them']
         assert viewer.get(selected('private-b')).status_code == 200
     finally:
         original.unlink()
@@ -133,6 +137,29 @@ def test_invalid_or_uninitialized_scenario_does_not_break_other_selection(tmp_pa
     assert viewer.get(selected('uninitialized')).status_code == 409
     assert files(root / 'uninitialized') == before and not (root / 'uninitialized' / '.lock').exists()
     assert viewer.get(selected('private-b')).status_code == 200
+    summaries = {item['id']:item['summary'] for item in viewer.get('/api/scenarios').json()['scenarios']}
+    assert summaries == {store.digest('private-a'):None, store.digest('private-b'):'how do i add them',
+                         store.digest('uninitialized'):None}
+
+
+def test_catalog_busy_source_does_not_hide_other_excerpts_or_touch_locks(tmp_path):
+    root = sessions(tmp_path)
+    viewer = client(root)
+    before = files(root)
+    lock = root / 'private-a' / '.lock'
+    metadata = lock.stat()
+    with lock.open('rb') as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        assert [item['summary'] for item in viewer.get('/api/scenarios').json()['scenarios']] == [
+            None, 'how do i add them']
+    assert files(root) == before
+    assert lock.stat().st_mtime_ns == metadata.st_mtime_ns
+    binding = chat.show(root / 'private-a')['binding']
+    question = '  does\nthis\twork ' + 'x' * 200
+    chat.step(root / 'private-a', binding=binding,
+              generate=lambda _, schema: schema(decision='reply', text=question))
+    excerpt = viewer.get('/api/scenarios').json()['scenarios'][0]['summary']
+    assert excerpt == ' '.join(question.split())[:160] + '…'
 
 
 def test_pending_and_failed_operation_stay_scoped_to_requested_scenario(tmp_path):

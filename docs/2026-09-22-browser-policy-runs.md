@@ -5,7 +5,7 @@ Compare workflow with an explicitly configured local `--policy-workspace` for
 numbered saved comparisons. Reuse eligible chat sources, `freeze_next`, and
 `run_both`; do not add another simulator or batch coordinator.
 
-The user chooses a saved starting conversation, enters current/proposed tutor
+The user chooses a saved starting conversation, enters Policy A / Policy B tutor
 instructions, and saves a frozen comparison offline. Its common prefix and cached
 simulated question appear once in the chat sidebar. An explicit run action is
 available only with `--send`; it generates at most one tutor reply and one student
@@ -32,7 +32,7 @@ after rejected or lost responses and recovers through reads only; metadata from 
 older operation cannot falsely confirm a new save. Existing fixed viewers remain
 read-only. Saved attempts are not resent; an untouched peer can still run.
 
-Validation: 637 Python tests pass (three optional skips), all seven Marimo app
+Initial implementation validation: 637 Python tests pass (three optional skips), all seven Marimo app
 checks and all three Node checks pass. Independent review found no remaining
 blockers, including a two-server concurrency check with no duplicate requests.
 The desktop browser walkthrough used authored callbacks: save made zero calls,
@@ -53,8 +53,9 @@ python -m src.agents.browser_workspace data/browser-policy-workspace/sources \
 ```
 
 The workspace supports one serving process. Its source/run catalog is pinned at
-startup; adding numbered runs externally requires reopening it. Drafts last only
-for the current page. Multi-scenario batches and new fidelity experiments remain
+startup; adding numbered runs externally requires reopening it. Comparison setup
+drafts recover across refresh in the same browser tab, as described below.
+Multi-scenario batches and new fidelity experiments remain
 deferred. This increment integrates the existing runner; it does not establish
 simulator realism or a real-student policy effect.
 
@@ -64,18 +65,54 @@ After feedback that the integrations were too buried, a policy workspace now
 opens directly on Tutor policies. An empty workspace shows setup immediately;
 existing comparisons show their saved results. Explicit view URLs and older
 conversation links retain the requested view. Conversations expose Compare tutor
-policies, Tutor instructions and Saved results directly. Only infrequent run
+policies and Saved results directly. Reply to student / Continue run opens the
+tutor controls when available; Tutor instructions remains available for viewing
+when continuation is unavailable. Only infrequent run
 context stays under Run details; the empty menu is hidden during setup.
 
-Setup labels the conversation and instruction steps and keeps Save visible in the
-desktop viewport. Saved policies expand before running; the comparison list shows
+Setup labels the conversation and instruction steps. Saved policies expand before
+running; the comparison list shows
 Ready to run, One condition remaining, Results saved or Needs attention. A shortcut
 from an ineligible conversation asks for another start rather than silently
 substituting one. Existing drafts remain visible when returning from a conversation.
 Save and Run remain separate, with one shared chat and no backend changes.
 
-Validation: 85 browser backend tests and all three Node checks pass, including direct entry, initial landing,
+Navigation follow-up validation: 85 browser backend tests and all three Node checks pass, including direct entry, initial landing,
 explicit/legacy URLs, unavailable starts, draft preservation, focus return and
 navigation making no POST requests. Desktop setup and conversation controls were
 inspected, and independent review found no remaining blockers. No provider calls,
 new comparisons or labels were needed for this navigation change.
+
+## HCI audit follow-up
+
+Cases now show searchable literal question excerpts alongside stable titles and
+source identity. The shared chat initially opens at **Question being tested ·
+simulated**, then preserves the reader's position. Policy A / Policy B are neutral
+draft labels; neither implies a recovered deployment policy. Saved outcomes state
+**One simulated exchange per policy** beside the comparison.
+
+**Use this setup** copies both policies and the exact eligible source into a new
+draft. It is disabled when that source is unavailable or another unsaved draft
+would be replaced. Setup fields recover after refresh through tab-scoped
+`sessionStorage`, keyed by an opaque workspace identifier; chat messages are not
+stored there. Save or Discard draft clears recovery. Storage failure is visible,
+and drafts remain distinct from saved comparisons. Inline feedback explains why
+Save is unavailable; successful saves and errors have explicit focus targets.
+
+The primary Reply / Continue control replaces its duplicate Tutor instructions
+button when usable. Source inspection remains visible with less emphasis. Input
+borders are separate from the pale structural dividers and exceed 3:1 contrast
+against their adjacent surfaces. These changes address the audit findings; they
+are not a full WCAG certification or evidence of improved simulator fidelity.
+
+Validation: 639 Python tests passed (three optional skips), all three Node checks
+and seven Marimo checks passed. Independent integration review found no remaining
+blockers. Authored desktop checks verified the tested question is visible on
+entry, identical-policy feedback, save-to-heading focus, exact-source reuse, and
+duplicate-save error focus without losing the draft. Automated checks cover
+refresh recovery, storage isolation, stale-source rejection and scroll retention.
+The browser's unsaved-change protection prevented an automated refresh; recovery
+was verified in the controller harness rather than claimed from that browser run.
+All 105 original files and their working copies, plus three authored source files,
+remain unchanged. No new model calls or labels were required. The updated local
+workspace is served at port 8431.

@@ -2,6 +2,15 @@
 
 ## Browser policy creation and explicit runs (2026-09-22)
 
+HCI audit fixes: literal question excerpts and policy text identify/search starts
+and pairs; the single chat opens at the tested question. Neutral Policy A/B and
+one-exchange scope clarify the evidence. Use this setup copies only an exact
+eligible source and its policies. Unsaved comparison drafts recover per browser
+tab/workspace, with resume/discard, inline validation and save/error focus.
+Duplicate action controls are reduced and input outlines strengthened. 639 Python
+tests pass (three optional skips), seven Marimo and three Node checks pass;
+independent review and authored desktop checks complete. No new provider calls.
+
 Wayfinding follow-up: configured policy workspaces land on Tutor policies (empty
 ones show setup). Explicit view/legacy conversation URLs preserve replay. Direct
 comparison, instructions and saved-results controls replace nested access; ready

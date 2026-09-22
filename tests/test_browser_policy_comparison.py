@@ -31,6 +31,9 @@ def test_policy_pair_is_read_only_and_distinguishes_cached_start_from_result(tmp
     assert response.status_code == 200
     assert response.json()['kind'] == 'saved-policy-comparison'
     case = response.json()['cases'][0]
+    assert case['summary'] == 'how do i count that'
+    assert case['source'] is None and 'configurable policy workspace' in case['reuse_unavailable_reason']
+    assert [condition['title'] for condition in case['conditions']] == ['Policy A', 'Policy B']
     assert case['prefix']['turns'] == [
         {'role':'student', 'text':'how do i count that', 'origin':'generated'}]
     assert case['conditions'][0]['status'] == ('student-replied' if completed else 'ready')

@@ -94,7 +94,7 @@ class PolicyCreation(BaseModel):
         if not self.current_policy.strip() or not self.proposed_policy.strip():
             raise ValueError('Enter both tutor policies.')
         if self.current_policy.strip() == self.proposed_policy.strip():
-            raise ValueError('The proposed policy must differ from the current policy.')
+            raise ValueError('Policy B must differ from Policy A.')
         return self
 
 
@@ -109,6 +109,24 @@ def _policy_prefix(state):
     return {'context':[{key:turn[key] for key in ('role', 'text', 'origin')}
                        for turn in [*episode['context'], *episode['turns']]],
             'turns':[{'role':'student', 'text':state['message'], 'origin':'generated'}]}
+
+
+def _question_summary(state):
+    episode = state['episode']
+    text = state['message'] or next((turn['text'] for turn in
+        reversed([*episode['context'], *episode['turns']])
+        if turn['role'] == 'student' and turn['text'].strip()), '')
+    text = ' '.join(text.split())
+    return text[:160] + ('…' if len(text) > 160 else '')
+
+
+def _chat_summary(folder):
+    if folder.is_symlink() or any(path.is_symlink() for path in folder.rglob('*')):
+        raise ValueError('Saved conversation paths must not be symlinks.')
+    with (folder / '.lock').open('rb') as stream:
+        fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        _, state, _ = chat_student._load(folder)
+        return _question_summary(state)
 
 
 def _frame(manifest, state, previous, decisions, index):
@@ -207,7 +225,7 @@ def _page():
     return page
 
 
-def _policy_comparison(folder, expected_pin):
+def _policy_comparison(folder, expected_pin, *, sources=None):
     """Project a fixed one-decision pair under read-only locks, with shared context once."""
     if folder.is_symlink() or any(path.is_symlink() for path in folder.rglob('*')):
         raise ValueError('Policy comparison paths must not be symlinks.')
@@ -243,13 +261,23 @@ def _policy_comparison(folder, expected_pin):
             if status == 'student-replied':
                 _, state, _ = chat_student._load(child)
                 student_reply = state['message']
-            conditions.append({'id':name, 'title':'Current policy' if name == 'a' else 'Proposed policy',
+            conditions.append({'id':name, 'title':f'Policy {name.upper()}',
                                'policy':plan['policies'][name], 'status':status,
                                'tutor_reply':tutor_reply, 'student_reply':student_reply})
     if sha256(manifest_path.read_bytes()).hexdigest() != expected_pin:
         raise ValueError('The policy comparison changed during inspection.')
+    binding = {key:plan['source'][key] for key in ('session_sha256', 'state_sha256')}
+    matches = [source for source in sources or [] if source['binding'] == binding]
+    source = ({key:matches[0][key] for key in ('id', 'title', 'summary', 'binding')}
+              if len(matches) == 1 else None)
+    reason = (None if source else
+              'Open a configurable policy workspace to reuse this setup.' if sources is None else
+              'Several saved starts share this identity; select a source in a new comparison.' if matches else
+              'The original saved start is unavailable or no longer eligible in this workspace.')
     return {'version':1, 'kind':'saved-policy-comparison', 'cases':[{
         'id':plan['comparison_id'], 'title':'Tutor policy comparison', 'model':plan['model'],
+        'summary':_question_summary(first['result']),
+        'source':source, 'reuse_unavailable_reason':reason,
         'context_status':'Both policies start from this supplied conversation and the same cached simulated question. '
                          'The earlier conversation may be recorded or authored; notebook activity is unknown.',
         'prefix':prefix, 'conditions':conditions}]}
@@ -277,6 +305,8 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
         raise ValueError('The comparison folder must not be a symlink.')
     comparison = Path(comparison).resolve() if comparison is not None else None
     comparison_pin = sha256((comparison / 'closure.json').read_bytes()).hexdigest() if comparison else None
+    workspace_id = student.digest([str(path.resolve()) if path is not None else None
+        for path in (folder, comparison, policy_comparison, policy_workspace)])
     if chat_sessions and chat_mode:
         raise ValueError('Choose one chat session or a chat collection, not both.')
     scenarios = {}
@@ -318,6 +348,7 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
             if pinned is not None and binding != pinned:
                 raise ValueError('The source changed after this workspace opened.')
             yield {'id':source_id, 'title':policy_sources[source_id]['title'], 'binding':binding,
+                   'summary':_question_summary(state),
                    'prefix':_policy_prefix(state),
                    'context_status':'This supplied conversation and cached simulated question will start both policies. '
                                     'The conversation may be recorded or authored; notebook activity is unknown.'}
@@ -344,9 +375,6 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
         if set(run_paths()) != {item['path'] for item in policy_runs.values()}:
             raise ValueError('The saved comparison list changed. Reopen the workspace.')
         cases, sources = [], []
-        for index, item in enumerate(policy_runs.values(), 1):
-            case = _policy_comparison(item['path'], item['pin'])['cases'][0]
-            cases.append(case | {'title':f'Policy comparison {index:02d}', 'comparison_sha256':item['pin']})
         for source_id in policy_sources:
             try:
                 with policy_source(source_id) as source:
@@ -354,6 +382,9 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
             except (OSError, ValueError, KeyError, TypeError):
                 # A continued source cannot seed another pair; its frozen comparisons remain usable.
                 continue
+        for index, item in enumerate(policy_runs.values(), 1):
+            case = _policy_comparison(item['path'], item['pin'], sources=sources)['cases'][0]
+            cases.append(case | {'title':f'Policy comparison {index:02d}', 'comparison_sha256':item['pin']})
         return {'version':1, 'kind':'saved-policy-comparison', 'cases':cases,
                 'controls':{'create_enabled':True, 'send_enabled':send is True, 'sources':sources},
                 'operation':dict(comparison_operation)}
@@ -454,7 +485,14 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
     def catalog(request: Request):
         if request.query_params:
             raise HTTPException(400, 'The scenario catalog does not accept query parameters.')
-        return {'version':1, 'scenarios':[{'id':key, 'title':titles[key]} for key in scenarios],
+        entries = []
+        for key, selected in scenarios.items():
+            try:
+                summary = _chat_summary(selected)
+            except (OSError, ValueError, KeyError, TypeError, AttributeError):
+                summary = None
+            entries.append({'id':key, 'title':titles[key], 'summary':summary})
+        return {'version':1, 'workspace_id':workspace_id, 'scenarios':entries,
                 **({'comparison_available':True} if any(value is not None for value in
                    (comparison, policy_comparison, policy_workspace)) else {}),
                 **({'policy_workspace_available':True} if policy_workspace is not None else {})}

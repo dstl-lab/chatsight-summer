@@ -37,8 +37,9 @@ private sessions, use the team's agreed code revision as described in step 3.
 ```
 
 Open **http://127.0.0.1:8426/**. Select **Conversation 01** or **Conversation 02** in
-the left sidebar. Read the chat, use Previous/Next to inspect earlier states,
-and open **Run details → Saved results** to see the tutor instructions actually
+the left sidebar. Literal question excerpts help identify and search conversations.
+Read the chat, use Previous/Next to inspect earlier states,
+and open **Saved results** to see the tutor instructions actually
 used. Tutor instruction drafts are separate from the saved policy.
 Sending is disabled. Notebook activity is explicitly unavailable for these
 conversation-only examples.
@@ -62,8 +63,9 @@ For the side-by-side policy comparison in the same browser workspace:
   --policy-comparison data/teammate-demo/comparison --port 8429
 ```
 
-Open **http://127.0.0.1:8429/** and choose **Compare**. The shared starting
-conversation appears once beside the two policy outcomes. Expand **Tutor
+Open **http://127.0.0.1:8429/** and choose **Tutor policies**. The shared starting
+conversation appears once beside the two policy outcomes, initially positioned at
+**Question being tested · simulated**. Expand **Tutor
 instructions** to read each fixed policy. Ready, failed, unfinished and
 no-follow-up are distinct; viewing cannot run a condition.
 Do not pass this demo's comparison folder to the
@@ -104,10 +106,22 @@ The authored source also works with the browser's comparison workspace:
 
 The policy workspace opens directly on **Tutor policies** and shows setup when
 there are no saved comparisons. Select the saved starting conversation and
-enter different current/proposed tutor instructions. **Save comparison** copies
+enter different **Policy A — draft** and **Policy B — draft** instructions. These
+fields are not connected to a deployed tutor. **Save comparison** copies
 the same cached starting question into two independent arms without model calls.
 The shared conversation appears once beside the form and saved results. Saved
 pairs appear in the sidebar; exact duplicate source/policy pairs are rejected.
+Each result represents **one simulated exchange per policy**. **Use this setup**
+copies both policies and the exact starting conversation into a new draft for
+editing. It is unavailable if that source changed or an unsaved draft would be
+replaced; the page explains why.
+
+Unsaved comparison drafts recover after refresh in the same tab. Recovery stores
+only setup fields, scoped to this workspace, not chat messages. **Save comparison**
+or **Discard draft** clears that recovery copy. If browser storage is unavailable,
+the draft indicator says so. Inline feedback explains a disabled Save button,
+including missing instructions or identical policies. This recovery applies to
+comparison setup, not the separate live-reply controls.
 
 Sending is disabled in this example. Its `authored-offline-demo` model is a fixture
 identifier, not a live provider model. For real generation, use working sources
@@ -346,8 +360,10 @@ For browser policy experiments over eligible supplied working conversations:
 
 In **Tutor policies**, use the setup form (or **New comparison** when results
 already exist), select a starting conversation, and save the two tutor policies.
-From Conversation, **Compare tutor policies** opens setup directly; **Tutor
-instructions** and **Saved results** are also visible without opening a menu.
+From Conversation, **Compare tutor policies** opens setup directly. **Reply to
+student** / **Continue run** opens the tutor controls when continuation is enabled;
+otherwise **Tutor instructions** remains available for inspection. **Saved results**
+is also visible without opening a menu.
 Eligible starts have exactly one cached simulated
 student reply and no subsequent tutor intervention. Later-progressed conversations
 remain available for replay but cannot be silently reset into a new start.
@@ -360,7 +376,7 @@ Provider SDK retries are not measured. Saved failed, interrupted and completed
 arms are not resent; an untouched peer can still run. Reloading checks saved
 progress only. Keep the source and output directories separate.
 
-The current-policy field contains the instructions you enter, not a recovered
+Policy A and Policy B contain the instructions you enter, not a recovered
 deployment configuration. Outcomes describe these simulations, not real-student
 learning or the probability that an instructor policy will work.
 

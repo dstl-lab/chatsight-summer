@@ -1,6 +1,7 @@
 """Policy setup and execution reuse frozen pairs without resending saved requests."""
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
+import shutil
 import sys
 
 from fastapi.testclient import TestClient
@@ -52,6 +53,7 @@ def test_offline_save_pins_same_start_without_sending_or_touching_source(tmp_pat
     packet = viewer.get('/api/comparison').json()
     assert packet['cases'] == [] and packet['controls']['send_enabled'] is False
     assert packet['controls']['sources'][0]['prefix']['turns'][0]['text'] == 'how do i count that'
+    assert packet['controls']['sources'][0]['summary'] == 'how do i count that'
     assert files(tmp_path) == before and not workspace.exists()
     original = files(source)
     payload = draft(viewer)
@@ -59,6 +61,9 @@ def test_offline_save_pins_same_start_without_sending_or_touching_source(tmp_pat
     assert result.status_code == 200
     case = result.json()['cases'][0]
     assert len(case['comparison_sha256']) == 64
+    original_source = packet['controls']['sources'][0]
+    assert case['source'] == {key:original_source[key] for key in ('id', 'title', 'summary', 'binding')}
+    assert case['summary'] == 'how do i count that' and case['reuse_unavailable_reason'] is None
     assert all(condition['status'] == 'ready' for condition in case['conditions'])
     assert result.json()['operation']['comparison_id'] == case['id']
     assert viewer.get('/api/comparison').json()['operation']['status'] == 'complete'
@@ -186,6 +191,8 @@ def test_source_changes_do_not_block_frozen_outcomes(tmp_path):
     (source / 'step-0001.json').write_text('{}')
     packet = viewer.get('/api/comparison').json()
     assert packet['controls']['sources'] == [] and len(packet['cases']) == 1
+    assert packet['cases'][0]['source'] is None
+    assert 'no longer eligible' in packet['cases'][0]['reuse_unavailable_reason']
     assert viewer.post('/api/comparison/run', json=run).status_code == 200
     assert len(calls) == 4
 
@@ -247,6 +254,7 @@ def test_startup_registration_strict_inputs_and_collection_catalog(tmp_path):
     assert packet['cases'][0]['id'] == run['comparison_id']
     assert len(packet['controls']['sources']) == 1
     assert packet['controls']['sources'][0]['id'] in {item['id'] for item in viewer.get('/api/scenarios').json()['scenarios']}
+    assert packet['cases'][0]['source']['id'] == packet['controls']['sources'][0]['id']
     payload = draft(viewer)
     assert viewer.post('/api/comparison', json=payload | {'folder':'private'}).status_code == 422
     assert viewer.post('/api/comparison', json=payload | {'source_id':'0' * 64}).status_code == 400
@@ -254,6 +262,33 @@ def test_startup_registration_strict_inputs_and_collection_catalog(tmp_path):
     assert viewer.post('/api/comparison?scenario=x', json=payload).status_code == 400
     assert viewer.post('/api/comparison', json=payload, headers={'Origin':'https://other.invalid'}).status_code == 403
     assert viewer.get('/api/comparison?folder=private').status_code == 400
+
+
+def test_reuse_requires_unique_exact_source_identity_and_workspace_drafts_are_scoped(tmp_path):
+    source, workspace, viewer = setup(tmp_path)
+    save(viewer)
+    first_id = viewer.get('/api/scenarios').json()['workspace_id']
+    reopened = TestClient(browser.create_app(source, chat_mode=True, policy_workspace=workspace),
+                          base_url='http://127.0.0.1')
+    assert reopened.get('/api/scenarios').json()['workspace_id'] == first_id
+    different = TestClient(browser.create_app(source, chat_mode=True, policy_workspace=tmp_path / 'other'),
+                           base_url='http://127.0.0.1')
+    assert different.get('/api/scenarios').json()['workspace_id'] != first_id
+    # Same visible question in a different session must never stand in for the original.
+    chat_demo.create(tmp_path / 'unrelated')
+    unrelated = TestClient(browser.create_app(tmp_path / 'unrelated' / 'source', chat_mode=True,
+                           policy_workspace=workspace), base_url='http://127.0.0.1')
+    case = unrelated.get('/api/comparison').json()['cases'][0]
+    assert case['source'] is None and 'no longer eligible' in case['reuse_unavailable_reason']
+    # Two byte-identical copies are ambiguous, even though their bindings match.
+    shutil.copytree(source, source.parent / 'duplicate')
+    ambiguous = TestClient(browser.create_app(source.parent, chat_sessions=True, policy_workspace=workspace),
+                           base_url='http://127.0.0.1')
+    before = files(tmp_path)
+    response = ambiguous.get('/api/comparison')
+    assert response.json()['cases'][0]['source'] is None
+    assert 'Several saved starts' in response.json()['cases'][0]['reuse_unavailable_reason']
+    assert str(tmp_path) not in response.text and files(tmp_path) == before
 
 
 def test_cli_mode_is_explicit_and_mutually_exclusive(tmp_path, monkeypatch):

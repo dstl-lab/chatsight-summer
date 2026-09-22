@@ -28,6 +28,16 @@
 .policy-comparison{grid-template-columns:repeat(2,minmax(0,1fr))}.policy-instructions{margin:0 0 24px;font-size:12px}.policy-instructions summary{cursor:pointer;color:var(--green);padding:6px 0}.policy-instructions p{margin-top:12px;line-height:1.7}.policy-comparison .chat-section-label{margin-top:20px}.policy-comparison .quiet{font-size:12px!important}
 .policy-setup{max-width:850px}.policy-setup label{display:block;font-size:13px;font-weight:600;margin:0 0 8px}.policy-setup select{width:100%;max-width:400px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);color:var(--ink)}.policy-setup .quiet,.policy-run-note{font-size:12px;line-height:1.7;margin-top:12px}.policy-editors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:12px}.policy-editors textarea{width:100%;min-height:180px;resize:vertical;padding:12px;border:1px solid var(--line);border-radius:var(--radius);font:inherit;font-size:13px;line-height:1.7;background:var(--paper);color:var(--ink)}.policy-setup .draft-actions{margin-top:24px}.policy-setup .draft-status{margin-top:12px}.policy-setup :is(textarea,select):focus-visible{outline:2px solid var(--green);outline-offset:2px}.policy-run-note{padding-top:16px;border-top:1px solid var(--line)}
 .policy-setup .setup-step{font-size:13px;font-weight:600;margin-top:24px}.policy-setup .entry-note{font-size:13px;line-height:1.6;padding:12px;border-left:2px solid var(--green);background:var(--mint);margin-bottom:20px}
+.connected-workspace{--input-border:#7a8986}
+.connected-workspace :is(input,textarea,select){border-color:var(--input-border)}
+.connected-workspace select:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.connected-workspace .case-button>span{min-width:0}.connected-workspace .case-summary{display:block;margin-top:5px;font-size:12px;line-height:1.5;color:var(--ink);overflow-wrap:anywhere}
+.connected-workspace .comparison-scope{margin:0 0 20px;padding:10px 12px;border-left:2px solid var(--green);background:var(--mint);font-size:12px;line-height:1.6;color:var(--ink)}
+.connected-workspace .form-feedback{margin:12px 0;font-size:13px;line-height:1.6;color:var(--ink)}.connected-workspace [aria-invalid=true]{border-color:#9c433a}
+.connected-workspace .draft-indicator{font-size:12px;font-weight:600;line-height:1.6;color:#8a5a1f}
+.connected-workspace .chat-turn .source-inspect{padding:4px 6px;min-height:24px;font-size:11px;font-weight:400;color:var(--muted);background:transparent;border-color:transparent;text-underline-offset:3px}.connected-workspace .chat-turn .source-inspect:hover{text-decoration:underline}
+.connected-workspace .policy-reuse-note{margin:12px 0;font-size:12px;line-height:1.6;color:var(--muted)}
+.connected-workspace .draft-actions{flex-wrap:wrap;align-items:center;gap:8px 12px}
 @container(max-width:620px){.policy-comparison{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>

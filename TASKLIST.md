@@ -3,9 +3,9 @@
 PR #47's reviewed issues are fixed, and the [browser policy comparison](docs/2026-09-22-browser-policy-comparison.md)
 now opens saved pairs with shared context once, fixed policies, tutor responses
 and distinct student outcomes. The [creation/run workflow](docs/2026-09-22-browser-policy-runs.md)
-is also complete: choose an eligible conversation, save current/proposed
+is also complete: choose an eligible conversation, save Policy A/B
 instructions offline, then explicitly run untouched conditions. Reloads do not
-resend requests; drafts survive response errors. 637 tests pass, with browser,
+resend requests; comparison drafts recover in their browser tab. 639 tests pass, with browser,
 Marimo and independent checks. Port8431 has separate working copies of 29 saved
 conversations (27 eligible). No new provider calls or labels were needed.
 Next: independent PR review and integration; batch controls remain deferred.
@@ -13,6 +13,9 @@ This is workflow integration, not new fidelity evidence.
 Navigation is now direct: policy workspaces open on Tutor policies, empty ones
 show setup immediately, and conversations expose policy comparison, tutor
 instructions and saved results. The single chat and explicit Save/Run steps remain.
+All seven HCI audit findings are addressed: searchable question/policy excerpts,
+tested-question entry, neutral A/B and one-exchange scope, exact-source setup reuse,
+draft recovery/validation, fewer duplicate controls, and input contrast/focus.
 
 The [replay usability pass](docs/2026-09-22-browser-replay-usability.md) is complete:
 conversation-only runs use one chat with Previous/Next; the duplicate activity
