@@ -41,14 +41,14 @@ def test_catalog_is_frozen_metadata_only_and_reads_do_not_modify_sessions(tmp_pa
     catalog = viewer.get('/api/scenarios')
     assert catalog.status_code == 200
     assert catalog.json() == {'version':1, 'scenarios':[
-        {'id':store.digest(name), 'title':f'Scenario {index:02d}'}
+        {'id':store.digest(name), 'title':f'Conversation {index:02d}'}
         for index, name in enumerate(('private-a', 'private-b'), 1)]}
     assert 'private-' not in catalog.text and str(root) not in catalog.text
     assert not any(turn['text'] in catalog.text for turn in QUERY['prefix'] if turn['text'])
     shown = viewer.get(selected('private-a')).json()
     assert shown['scenario_id'] == store.digest('private-a')
     assert shown['kind'] == 'chat' and shown['controls']['send_enabled'] is False
-    assert shown['encounters'][0]['title'] == 'Scenario 01'
+    assert shown['encounters'][0]['title'] == 'Conversation 01'
     assert {name:files(root / name) for name in before} == before
     chat.create(root / 'later', query=QUERY)
     assert viewer.get('/api/scenarios').json() == catalog.json()

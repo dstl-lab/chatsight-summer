@@ -52,3 +52,31 @@ No engine, API or prompt changes; no provider requests, notebook execution, new
 labels or evidence writes. These are usability improvements, not measured
 usability gains or new simulator-fidelity evidence. Added to the existing browser
 PR #48; independent review is still required before merging to main.
+
+## Follow-up: explain conversations, decisions and missing replies
+
+User feedback: scenarios and steps remain ambiguous, and student messages without
+following tutor replies look like missing UI content. Read-only exact replay found
+29 conversation starts: 27 retain only the imported first student decision; two
+have five and three decisions. All currently end awaiting a tutor. Six tutor
+replies are saved across the two continued conversations. Five supplied histories
+already contain consecutive student messages; the browser preserves them exactly.
+Ingestion can skip empty/null responses, so their absence cannot establish that a
+tutor never replied.
+
+Clarify conversation selection and one-decision playback in place. Label the
+initial supplied history separately, show when a later decision includes a tutor
+reply, and explain pending student messages at the point where the reply would
+appear. Earlier playback positions must acknowledge later saved activity; the
+latest position must not claim a reply was never generated. Keep missing recorded
+replies distinct from simulated pending replies. No generation or evidence edits.
+
+Implemented and verified: the catalog now says Conversation, the starting context
+is labeled separately, and completed versus failed continuation attempts have
+appropriate labels. Activity titles identify newly added tutor replies. Pending
+message notes distinguish earlier playback from the latest saved result, read-only
+mode, running/blocked requests and decision limits. Source-history gaps receive
+neutral recorded-absence notes. The 34 browser Python tests and Node controller
+check pass; the browser confirmed both earlier/latest explanations and a typical
+single-result conversation. Independent semantic review found no unsupported
+claim or functional blocker. No request was sent and the preview remains read-only.

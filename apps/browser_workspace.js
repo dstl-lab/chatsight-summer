@@ -11,10 +11,10 @@ const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
 const notify = text => {$('status').textContent=text};
 const decisionNames = {'reply':'Student reply','revise-work':'Work edited','request-check':'Local check requested','no-reply':'Student chose no reply'};
-const originNames = {authored:'Authored context',source:'Supplied prefix',generated:'Simulated',supplied:'Supplied intervention',scripted:'Supplied tutor turn'};
+const originNames = {authored:'Authored context',source:'Starting conversation',generated:'Simulated',supplied:'Supplied intervention',scripted:'Added tutor reply'};
 function statusText(f){
   if(f.decisions_remaining===0&&['active','ready','awaiting-tutor'].includes(f.status))return 'Decision budget exhausted · simulation paused';
-  return ({active:'Paused · student can continue', ready:'Paused · student can continue', 'awaiting-tutor':'Waiting for a tutor reply', 'no-reply':'Student chose no reply',error:'Simulation stopped after an error','environment-error':'Execution unavailable · ungraded','execution-limit':'Execution limit reached · ungraded'})[f.status]||'Saved status: '+f.status;
+  return ({active:'Paused · student can continue', ready:'Paused · student can continue', 'awaiting-tutor':'Awaiting a tutor reply at this point', 'no-reply':'Student chose no reply',error:'Simulation stopped after an error','environment-error':'Execution unavailable · ungraded','execution-limit':'Execution limit reached · ungraded'})[f.status]||'Saved status: '+f.status;
 }
 function turns(){
   if(state.mode==='compare'){
@@ -60,6 +60,7 @@ function renderCases(){
   if(state.mode==='compare'){
     document.querySelector('.breadcrumb').textContent='Saved comparison';
     document.querySelector('.explorer-heading').textContent='Reviewed cases';
+    $('conversation-guide').hidden=true;
     $('search').placeholder='Filter reviewed cases…';$('search').setAttribute('aria-label','Filter reviewed cases');
     document.querySelector('label[for="search"]').textContent='Filter reviewed cases';
     $('cases').innerHTML=(state.comparison?.cases||[]).map((c,i)=>({c,i})).filter(({c})=>c.title.toLowerCase().includes(query)).map(({c,i})=>
@@ -68,13 +69,14 @@ function renderCases(){
     return;
   }
   document.querySelector('.breadcrumb').textContent=state.kind==='chat'?'Conversation simulation':'Notebook simulation';
-  document.querySelector('.explorer-heading').textContent=state.scenarios?.length?'Scenarios':state.kind==='chat'?'Conversation':'Tasks';
-  const label=state.scenarios?.length?'Filter saved scenarios':state.kind==='chat'?'Filter saved conversation':'Filter saved tasks';
-  $('search').placeholder=state.scenarios?.length?'Filter scenarios…':state.kind==='chat'?'Filter conversation…':'Filter tasks…';
+  document.querySelector('.explorer-heading').textContent=state.scenarios?.length?'Conversations':state.kind==='chat'?'Conversation':'Tasks';
+  $('conversation-guide').hidden=!state.scenarios?.length;
+  const label=state.scenarios?.length?'Filter saved conversations':state.kind==='chat'?'Filter saved conversation':'Filter saved tasks';
+  $('search').placeholder=state.scenarios?.length?'Filter conversations…':state.kind==='chat'?'Filter conversation…':'Filter tasks…';
   $('search').setAttribute('aria-label',label);document.querySelector('label[for="search"]').textContent=label;
   if(state.scenarios?.length){
     $('cases').innerHTML=state.scenarios.filter(s=>s.title.toLowerCase().includes(query)).map(s=>
-      `<button class="case-button" data-scenario="${esc(s.id)}" aria-pressed="${state.scenarioId===s.id}"><span><b>${esc(s.title)}</b><small>${s.id===state.scenarioId&&current()?current().frames.length+' saved states':'Saved conversation'}</small></span></button>`).join('')||'<p class="empty">No matching scenarios.</p>';
+      `<button class="case-button" data-scenario="${esc(s.id)}" aria-pressed="${state.scenarioId===s.id}"><span><b>${esc(s.title)}</b><small>${s.id===state.scenarioId&&current()?(current().frames.length===1?'Starting conversation only':(current().frames.length-1)+' saved result'+(current().frames.length===2?'':'s')):'Saved conversation'}</small></span></button>`).join('')||'<p class="empty">No matching scenarios.</p>';
     document.querySelectorAll('[data-scenario]').forEach(b=>{b.disabled=state.refreshing||state.submitting||state.monitoring;b.onclick=()=>selectScenario(b.dataset.scenario)});
     return;
   }
@@ -82,8 +84,16 @@ function renderCases(){
     .map(({c,i})=>`<button class="case-button" data-case="${i}" aria-pressed="${state.caseIndex===i}"><span><b>${esc(c.title)}</b><small>${c.frames.length} saved state${c.frames.length===1?'':'s'}</small></span></button>`).join('')||'<p class="empty">No matching '+(state.kind==='chat'?'conversation':'tasks')+'.</p>';
   document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>selectCase(Number(b.dataset.case)));
 }
+function pendingReplyNote(){
+  if(state.step<current().frames.length-1)return 'This saved result ends before a tutor reply. Use Next to see later saved activity.';
+  const next=state.submitting||state.monitoring?'A request is running; this is the last saved conversation.':
+    state.controls.blocked_reason?'Open Run details → Saved results to inspect the saved request.':
+    frame().decisions_remaining===0?'This run has reached its decision limit.':
+    state.controls.send_enabled?'Use Reply to student to continue.':'This workspace is a saved replay; replies do not run automatically.';
+  return 'No tutor reply follows this student message in the saved conversation. '+next;
+}
 function conversation(rows=turns(),offset=0){
-  return rows.length?rows.map((turn,i)=>`<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${turn.role==='student'?'S':'T'}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">Inspect source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div></article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
+  return rows.length?rows.map((turn,i)=>`${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${turn.role==='student'?'S':'T'}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">Inspect source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
 function renderChat(){
   const comparing=state.mode==='compare',c=state.comparison?.cases[state.reviewIndex];
@@ -191,11 +201,14 @@ function renderInspector(){
   $('inspector').innerHTML=`<div class="inspector-title">Saved evidence</div><h2>${esc(title)}</h2>${body}`;
 }
 function activityTitle(f,index){
-  return index===0?'Starting conversation':f.actions.length?f.actions.map(a=>decisionNames[a.decision]||a.decision).join(' · '):statusText(f);
+  if(index===0)return 'Starting conversation';
+  const action=f.actions.length?f.actions.map(a=>decisionNames[a.decision]||a.decision).join(' · '):statusText(f);
+  const hasTutor=f.dialogue.slice(current().frames[index-1].dialogue.length).some(t=>t.role==='tutor');
+  return hasTutor?'Tutor reply, then '+action.toLowerCase():action;
 }
 function activityOverview(){
-  return `<section class="activity-overview"><div class="activity-heading"><h2>Conversation activity</h2><p class="quiet">All saved steps. Select one to see the conversation at that point.</p></div><ol class="activity-list">${current().frames.map((f,i)=>{
-    const preview=i===0?`${f.dialogue.length} supplied messages before simulation.`:f.actions.map(a=>a.text).filter(Boolean).join('\n')||statusText(f);
+  return `<section class="activity-overview"><div class="activity-heading"><h2>Saved student decisions</h2><p class="quiet">Start with the supplied conversation. Each saved result shows a simulated student reply, a decision not to reply, or a failed attempt. It also includes any tutor reply supplied before that decision.</p></div><ol class="activity-list">${current().frames.map((f,i)=>{
+    const preview=i===0?`${f.dialogue.length} supplied messages used to start this simulation.`:f.actions.map(a=>a.text).filter(Boolean).join('\n')||statusText(f);
     return `<li><button class="activity-step" data-activity="${i}" aria-pressed="${i===state.step}"><span class="activity-number">${i}</span><span class="activity-body"><span class="activity-step-title">${esc(activityTitle(f,i))}</span><span class="activity-preview">${esc(preview)}</span><span class="activity-meta">${esc(f.label)}${i===state.step?' · Viewing':''}</span></span></button></li>`;
   }).join('')}</ol><p class="observation-note">Notebook edits, runs and grader outcomes are unknown. Code in chat is message text. A no-reply decision does not establish learning or abandonment.</p></section>`;
 }
@@ -203,7 +216,7 @@ function renderTrail(){
   $('playback').hidden=state.mode!=='simulate';
   $('playback').setAttribute('aria-label',state.kind==='chat'?'Conversation playback':'Notebook playback');
   $('trail-title').textContent='Saved playback';
-  $('trail-hint').textContent=`State ${state.step+1} of ${current().frames.length} · no new generation`;
+  $('trail-hint').textContent=(state.kind==='chat'?frame().label:`State ${state.step+1} of ${current().frames.length}`)+' · no new generation';
   $('previous-step').disabled=state.step===0;
   $('trail').hidden=state.kind==='chat';
   $('trail').innerHTML=state.kind==='chat'?'':current().frames.map((f,i)=>`<button data-trail="${i}" aria-pressed="${i===state.step}"><span class="count">${i+1}</span>${esc(f.label)}</button>`).join('');
@@ -378,6 +391,7 @@ $('canvas').insertAdjacentHTML('beforebegin','<div id="operation-status" role="s
 document.querySelector('.prototype-note').textContent='Saved simulation · Read only';
 document.querySelector('.breadcrumb').textContent='Notebook simulation';
 document.querySelector('.explorer-heading').textContent='Tasks';
+document.querySelector('.explorer-heading').insertAdjacentHTML('afterend','<p id="conversation-guide" class="conversation-guide" hidden>Each entry is a separate conversation used to start a simulation.</p>');
 document.querySelector('.reset-label').textContent='Reload saved run';
 $('reset').title='Reload saved run without generating or executing';
 $('search').placeholder='Filter tasks…';$('search').setAttribute('aria-label','Filter saved tasks');

@@ -115,7 +115,7 @@ def _chat_snapshot(folder):
         for index, state in enumerate(states):
             episode = state['episode']
             receipt = receipts[index - 1] if index else None
-            frames.append({'label':f'Saved step {index}' if index else 'Initial state',
+            frames.append({'label':(f'Student decision {index}' if receipt['status'] == 'complete' else f'Failed attempt {index}') if index else 'Starting conversation',
                 'binding':{'session_sha256':student.digest(manifest), 'state_sha256':student.digest(state)},
                 'status':state['status'], 'decisions_remaining':manifest['max_decisions'] - index,
                 'dialogue':[{key:turn[key] for key in ('role', 'text', 'origin')}
@@ -194,7 +194,7 @@ def create_app(folder, *, chat_sessions=False, chat_mode=False, comparison=None,
         if not scenarios:
             raise ValueError('No saved conversation scenarios were found.')
         chat_mode = True
-    titles = {key:f'Scenario {index:02d}' for index, key in enumerate(scenarios, 1)}
+    titles = {key:f'Conversation {index:02d}' for index, key in enumerate(scenarios, 1)}
     if policy is not None and (not isinstance(policy, str) or not policy.strip()):
         raise ValueError('The tutor policy must contain nonblank text.')
     if chat_mode and reference is not None:

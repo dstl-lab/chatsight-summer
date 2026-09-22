@@ -46,7 +46,7 @@ def test_chat_frames_are_verified_private_and_read_only(tmp_path, monkeypatch):
     frames = encounter['frames']
     assert [frame['status'] for frame in frames] == ['ready', 'awaiting-tutor', 'no-reply']
     assert [frame['decisions_remaining'] for frame in frames] == [3, 2, 1]
-    assert [frame['label'] for frame in frames] == ['Initial state', 'Saved step 1', 'Saved step 2']
+    assert [frame['label'] for frame in frames] == ['Starting conversation', 'Student decision 1', 'Student decision 2']
     assert frames[1]['pending_message'] == '<script>7?</script>'
     assert frames[1]['dialogue'] == frames[0]['dialogue']
     assert frames[2]['dialogue'][-2:] == [

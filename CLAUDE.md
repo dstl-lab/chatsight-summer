@@ -9,6 +9,12 @@ No API/engine/evidence changes or new requests/labels. 544 Python tests pass (th
 optional skips), three Node checks and both Marimo checks pass; desktop browser
 and independent JS review complete. Scope: docs/2026-09-22-browser-replay-usability.md.
 Included in browser PR #48; main still requires independent review.
+Follow-up clarification: Conversation replaces Scenario; starting context and
+student decisions are labeled separately. Pending replies distinguish earlier
+playback from the latest saved result, and missing replies within supplied history
+are marked as recorded gaps. 27 of 29 current starts have one imported decision;
+all 29 end awaiting a tutor. No new generation; 34 browser tests and the controller
+check pass. Details in the same usability memo.
 
 ## Browser Saved results and chat reading (2026-09-22)
 
