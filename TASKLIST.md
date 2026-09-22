@@ -49,6 +49,13 @@ generations or further review rounds; preserve the existing simulator.
 
 Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
 
+**Current increment:** a separate [work-presence forecast](docs/2026-09-22-work-presence-forecast-status.md)
+is implemented and passes the 442-test suite. One fixed eight-case screen reuses
+completed labels; no new review form. Its prepared Gemini dispatch was blocked by
+automatic approval review pending specific payload approval. Zero requests sent;
+the simulator and all closed studies remain unchanged. The screen measures a
+conditional message-feature forecast, not generated-message fidelity.
+
 ## North Star
 
 Build a tool where educators can try tutoring approaches with simulated students

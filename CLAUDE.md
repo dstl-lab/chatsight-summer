@@ -1,5 +1,27 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Work-presence forecast implemented; dispatch blocked (2026-09-22)
+
+Latest Continue adds only src/eval/work_presence_forecast.py, a strict probability
+schema and future-excluding, ID-free prefix projection. No default simulator or
+saved-engine change. Dated advance protocol and subsequent status are in
+docs/2026-09-22-work-presence-forecast{,-status}.md. Reuse the eight just-coded
+references for one exposed-development forecast screen, conditional on a next
+message being recorded; no new labels or message generation. Existing scorer
+supplies leave-one-conversation-out frequency baseline .612245 (multiclass Brier
+0–2); fixed .5 forecast scores .5, no-work scores .75. No model result yet.
+69 pins, 36 visible turns and all eight source/label joins independently verify;
+442 tests, both Marimo checks, Node navigation and authored arithmetic pass.
+The exact 8-request/32-attempt Gemini scope is saved in ignored
+data/episode-pilot/work-presence-forecast-v1. Automatic approval review rejected
+process creation: it requires specific approval for this private payload and
+destination despite the standing grant. Zero requests, no dispatch/event ledger.
+Preserve approval-block.json and scope SHA
+80573690b3e7e834fc132f233fe2ab8fae94fa7050e5f8628a9ccb8f6cfd7e16.
+Do not bypass/retry without required approval. After approval, run once, retain
+failures, score and close; no rerolls, automatic adoption or new review queue.
+The prior cached-review pass remains closed and its original pins unchanged.
+
 ## Cached-message coding and report complete; pass closed (2026-09-22)
 
 The returned 23-message/46-flag form is complete with no missing/unclear values.
