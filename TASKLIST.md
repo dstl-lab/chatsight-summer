@@ -1,5 +1,14 @@
 # Simulated students: task list
 
+**Saved notebook comparison complete:** the existing
+[teaching pair](docs/2026-09-15-teaching-pair.md#browser-comparison-september-22)
+now opens in one browser workspace. Shared task/code, both supplied tutor replies,
+saved actions, local results and stop reasons are visible together; one chat
+sidebar switches between the shared start and either condition. Preparation and
+current outcomes are verified separately. 686 Python tests, three Node and seven
+Marimo checks pass; independent review and desktop checks complete. No new calls
+or labels. Next: independent PR review and integration; no new experiment queued.
+
 **Next-exercise workflow complete:** a completed notebook encounter can now
 [preview and save one configured successor](docs/2026-09-22-browser-next-exercise.md)
 from the browser. The same verified history and conversation example continue;

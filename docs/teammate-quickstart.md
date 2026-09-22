@@ -196,6 +196,11 @@ one configured successor and open it in the same workspace. This feature is on
 `--previous` setup, preserves history, and makes no model or execution requests
 while saving or reopening.
 
+An existing A/B notebook teaching pair can also open together with
+`--teaching-comparison <pair-directory>/sessions`; see the
+[saved notebook comparison](2026-09-15-teaching-pair.md#browser-comparison-september-22).
+It shows both completed outcomes and one selectable chat without new requests.
+
 ### Optionally supply a communication example
 
 If you have a saved chat session, use its original conversation prefix as a

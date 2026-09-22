@@ -14,10 +14,12 @@ const node = id => {
 };
 const modes = ['inspect','simulate','compare'].map(mode=>Object.assign(node(mode),{dataset:{mode}}));
 const chatJumps = ['first','last'].map(chatJump=>Object.assign(node('chat-'+chatJump),{dataset:{chatJump}}));
+const teachingButtons=['shared','a','b'].map(teachingChat=>Object.assign(node('teaching-'+teachingChat),{dataset:{teachingChat}}));
 let sidebarButtons=[];
+const replyNote={set textContent(value){node('conversation-messages').innerHTML=node('conversation-messages').innerHTML.replace(/(<p class="reply-note">)[\s\S]*?(<\/p>)/,(_match,start,end)=>start+value+end)}};
 const document = {activeElement:null, body:node('body'), getElementById:node,
   querySelector:selector=>node(selector),
-  querySelectorAll:selector=>selector==='[data-mode]'?modes:selector==='[data-chat-jump]'?chatJumps:selector==='[data-scenario]'?sidebarButtons:[]};
+  querySelectorAll:selector=>selector==='[data-mode]'?modes:selector==='[data-chat-jump]'?chatJumps:selector==='[data-teaching-chat]'?teachingButtons:selector==='[data-scenario]'?sidebarButtons:selector==='#conversation-messages .reply-note'?[replyNote]:[]};
 const initial = {label:'Initial state',status:'active',decisions_remaining:3,
   work:{cell_index:1,revision:0,source:'count = 0'},dialogue:[],pending_message:null,
   feedback:null,changes:{baseline_revision:0,baseline_kind:'initial-work',unified_diff:''},actions:[],binding:{}};
@@ -36,6 +38,7 @@ let workspaceId='test-workspace';
 const draftStorage=new Map();
 let comparisonAvailable=false, policyWorkspaceAvailable=false, fidelityComparisonAvailable=false, replayAvailable=true, comparisonFail=false;
 let comparisonReadBusy=false,comparisonPostError='',comparisonPostThrow=false,finishComparisonPost;
+let teachingComparisonAvailable=false;
 let successorPacket=null,nextExerciseThrow=false,nextReadBusy=false,finishNextExercise;
 const review={help_request:'yes',work_present:'no',note:null};
 const comparison={version:1,kind:'saved-communication-comparison',rubric_id:'help-work-v1',status:'complete-review',
@@ -55,7 +58,7 @@ const makeContext=()=>{
   get location(){return savedUrl},history:{replaceState:(_a,_b,url)=>{savedUrl=new URL(url,savedUrl)}}},
   URL,URLSearchParams,AbortController,setTimeout:(fn,ms)=>ms===1500?(pollCallbacks.push(fn),0):setTimeout(fn,ms),clearTimeout,fetch:async(url,options)=>{
     requests.push({url,options});
-    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,workspace_id:workspaceId,comparison_available:comparisonAvailable,policy_workspace_available:policyWorkspaceAvailable,fidelity_comparison_available:fidelityComparisonAvailable,replay_available:replayAvailable})};
+    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,workspace_id:workspaceId,comparison_available:comparisonAvailable,policy_workspace_available:policyWorkspaceAvailable,fidelity_comparison_available:fidelityComparisonAvailable,teaching_comparison_available:teachingComparisonAvailable,replay_available:replayAvailable})};
     if(url==='/api/next-exercise'){
       if(nextExerciseThrow){nextExerciseThrow=false;packet.controls.next_exercise.status='saved';throw new Error('Save response lost')}
       return new Promise(resolve=>{finishNextExercise=()=>resolve({ok:true,status:200,json:async()=>successorPacket})});
@@ -749,7 +752,37 @@ const run=code=>vm.runInContext(code,context);
   assert.match(node('canvas').innerHTML,/could not be verified/);assert.doesNotMatch(node('canvas').innerHTML,/0\.359|Saved &lt;draw/);
   assert.doesNotMatch(node('conversation-messages').innerHTML,/Earlier &lt;context/);
   assert.ok(requests.every(r=>!r.options.method&&r.url!=='/api/workspace'));
-  comparisonAvailable=false;fidelityComparisonAvailable=false;replayAvailable=true;comparisonFail=false;
+  fidelityComparisonAvailable=false;comparisonFail=false;teachingComparisonAvailable=true;requests=[];
+  Object.assign(comparison,{kind:'saved-notebook-teaching-comparison',controls:undefined,cases:[{
+    id:'pair',title:'Notebook teaching comparison',task:'Count <pears>',initial_work:initial.work,
+    context_status:'Same task and work; two supplied tutor replies.',prefix:{context:[],turns:[{role:'student',text:'how many pears',origin:'authored'}]},
+    conditions:[{id:'a',tutor_reply:'Count only pears.',tutor_html:'<p>Count only pears.</p>',encounter:{frames:[initial,{...finished,dialogue:[{role:'student',text:'how many pears'},{role:'tutor',text:'Count only pears.',origin:'supplied'}]}]}},
+      {id:'b',tutor_reply:'Use the fruit column.',tutor_html:'<p>Use the fruit column.</p>',encounter:{frames:[initial,{...initial,status:'awaiting-tutor',pending_message:'which <column>',dialogue:[{role:'student',text:'how many pears'},{role:'tutor',text:'Use the fruit column.',origin:'supplied'}]}]}}]}]});
+  const teachingContext=makeContext(),teaching=code=>vm.runInContext(code,teachingContext);
+  teaching(fs.readFileSync(script,'utf8'));await teaching('ready');
+  assert.equal(node('compare').textContent,'Tutor replies');assert.equal(node('simulate').hidden,true);
+  assert.match(node('canvas').innerHTML,/Shared exercise/);assert.match(node('canvas').innerHTML,/Count &lt;pears&gt;/);
+  assert.match(node('canvas').innerHTML,/Reply A/);assert.match(node('canvas').innerHTML,/Reply B/);
+  assert.match(node('canvas').innerHTML,/Passed · local check/);assert.match(node('canvas').innerHTML,/Student chose no reply/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<script>|Recorded student|Not reviewed/);
+  assert.match(node('conversation-messages').innerHTML,/how many pears/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/Use the fruit column\./);
+  teachingButtons[2].onclick();
+  assert.match(node('chat-caption').textContent,/Reply B/);
+  assert.match(node('conversation-messages').innerHTML,/Use the fruit column\./);
+  assert.match(node('conversation-messages').innerHTML,/which &lt;column&gt;/);
+  assert.match(node('conversation-messages').innerHTML,/read only; no reply is running/);
+  teaching("selectEvidence('turn:2')");assert.match(node('inspector').innerHTML,/which &lt;column&gt;/);
+  assert.doesNotMatch(node('inspector').innerHTML,/how many pears/);
+  teachingButtons[1].onclick();assert.equal(teaching('state.showInspector'),false);
+  assert.match(node('conversation-messages').innerHTML,/Count only pears\./);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/which &lt;column&gt;|Use the fruit column\./);
+  await node('reset').onclick();assert.equal(teaching('state.teachingArm'),'a');
+  comparisonFail=true;await node('reset').onclick();
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/Count only pears\./);
+  assert.doesNotMatch(node('canvas').innerHTML,/Passed · local check/);
+  assert.ok(requests.every(r=>!r.options.method&&r.url!=='/api/workspace'));
+  comparisonAvailable=false;teachingComparisonAvailable=false;replayAvailable=true;comparisonFail=false;
   savedUrl=new URL('http://127.0.0.1/');requests=[];
   packet.kind='notebook';packet.exercise='current';packet.encounters=[{id:'1',title:'Task 1',task:'Finished task',frames:[initial,finished]}];
   packet.controls={send_enabled:false,policy:'Old task policy',next_exercise:{status:'ready',task:'Count <pears>',exercise_sha256:'e'.repeat(64),reason:null}};
@@ -783,6 +816,7 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(next('state.exercise'),'next');
 
   savedUrl=new URL('http://127.0.0.1/');nextExerciseThrow=true;requests=[];
+  successorPacket.encounters.at(-1).frames.push({...initial,label:'Saved step 1',status:'awaiting-tutor',pending_message:'which column'});
   const lostContext=makeContext(),lost=code=>vm.runInContext(code,lostContext);
   lost(fs.readFileSync(script,'utf8'));await lost('ready');node('next-exercise').onclick();
   await node('save-next-exercise').onclick();
@@ -792,6 +826,8 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(document.activeElement,node('save-next-exercise'));
   await node('save-next-exercise').onclick();
   assert.equal(lost('state.exercise'),'next');assert.equal(requests.at(-1).url,'/api/workspace?exercise=next');
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/A request is running/,'Opening an existing exercise must clear its temporary request status');
+  assert.match(node('conversation-messages').innerHTML,/Use Reply to student to continue/);
   assert.equal(requests.filter(r=>r.options.method==='POST').length,1,'Opening the saved successor is GET only');
   const refreshedNext=makeContext(),refreshNext=code=>vm.runInContext(code,refreshedNext);
   refreshNext(fs.readFileSync(script,'utf8'));await refreshNext('ready');
