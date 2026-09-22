@@ -172,6 +172,16 @@ milestones; the former does not establish the latter.
   replays pass without calls or evidence changes. See the
   [repair note](docs/2026-09-22-lesson-saved-results.md).
 
+- [x] **12. Connect an existing conversation example to a fresh notebook task.**
+  The optional `--chat-source` setup copies only a verified source's original
+  prefix into separate initialization context. Current task/work and the private
+  evaluator stay unchanged; generated replies and identifier metadata are excluded.
+  Both agents see the example. One private setup with 10 original turns is ready,
+  with zero model calls or actions and six unused decisions. This is an optional
+  input path, not a validated persona or generator-adoption result. The existing
+  next-task path does not retain this initialization. See
+  [scope and verification](docs/2026-09-22-notebook-communication-context.md).
+
 ## Current difficulties
 
 The live demonstration is complete. Different policy instructions did not always

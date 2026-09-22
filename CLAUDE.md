@@ -1,5 +1,23 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Conversation example for an authored notebook task (2026-09-22)
+
+On codex/notebook-communication-context, notebook_example accepts --chat-source.
+Reuse chat._load and the existing initialization path; copy only the original
+query.prefix, separately from current authored task/work/dialogue. Exclude
+simulated continuations and identifier metadata from model context; keep source
+path and hashes in private provenance. Both student and tutor see the example.
+See docs/2026-09-22-notebook-communication-context.md. This is an opt-in input
+bridge, not a validated persona or adopted fidelity fix; later next-task transfer
+does not preserve arbitrary initialization. Engines/prompts remain unchanged.
+441 tests pass (three optional container skips), Marimo/Node checks and independent
+review pass. Ignored data/notebook-communication-example contains one offline
+setup from existing case 1: 10 original turns, six student contributions, cached
+simulated reply excluded, six unused decisions, zero model or execution calls.
+Original sources/public walkthrough remain unchanged; preserve their old pins
+and use historical revisions for all-source audits. Task 12 complete. No labels,
+rerolls or live experiment queued. Parent PR #43 still requires GitHub review.
+
 ## Lesson policy visibility repaired (2026-09-22)
 
 Saved results now discovers notebook lesson/tutor-* records as well as workspace
