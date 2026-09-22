@@ -1,5 +1,22 @@
 # CLAUDE.md — Top-Down Labeling + Learner-Agent Simulation (one repo, temporary name)
 
+## Cached-message coding and report complete; pass closed (2026-09-22)
+
+The returned 23-message/46-flag form is complete with no missing/unclear values.
+Literal chat text and normalized JSON are both preserved; only HTML indentation,
+escaped key underscores and the Done heading were removed. Exposure=no remains
+a self-report; these are still previously exposed development cases. Independent
+transcription and arithmetic audits pass, including all 50 preparation pins.
+Recorded help 8/8 and work 3/8; generated help 13/16 and work 10/16. In five
+work-absent cases, 6/10 generated draws present work; in three work-present cases,
+2/6 omit it. Both groups now support the descriptive balanced work Brier, 5/12
+(constant-no-work rule .5); this is no adoption threshold or grounding benefit.
+See docs/2026-09-22-cached-communication-results.md and the matching private
+result/intake/closure artifacts. Preserve the frozen page, rules, mapping and
+received answers. Close item 14; no further review, new generation, prompt change
+or second-reviewer request. Original studies remain closed. This set has only
+one historical chat condition and does not validate the notebook agent.
+
 ## Fixed cached-message review prepared; human export needed (2026-09-22)
 
 Minchan's Continue advances the inventoried scope to one help-work-v1 review.

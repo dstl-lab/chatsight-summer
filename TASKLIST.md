@@ -1,15 +1,16 @@
 # Simulated students: task list
 
 **TL;DR:** Saved interactions and paired tutor-policy comparisons now work.
-The fidelity target is excess work/evidence presentation in chat, but the current
-help-only reference set cannot validate a fix. Generator-adoption experiments stay deferred.
+The fidelity target is when work/evidence is presented in chat. A separate cached
+review now covers five work-absent and three work-present references, but supplies
+no matched improvement comparison. Generator-adoption experiments stay deferred.
 The teammate quickstart and authored offline demo are on main via
 [PR #30](https://github.com/dstl-lab/chatsight-summer/pull/30). Automated contributor
 checks are also merged via [PR #40](https://github.com/dstl-lab/chatsight-summer/pull/40).
 The six-case [joint evaluation](docs/2026-09-21-joint-fidelity-check.md) is closed:
 four recorded-message preferences and two both-possible judgments. It supplies
 qualitative feedback, not the missing binary labels. Keep bulk labeling and
-workspace redesign paused; the separate fixed pass below is the only open review.
+workspace redesign paused; the separate fixed pass below is now closed too.
 The automatic
 [recorded-continuation selection comparison](docs/2026-09-21-recorded-continuation-selection.md)
 is closed: with and without history both scored 8/16 complete pairs; word overlap
@@ -41,9 +42,10 @@ The [cached-message inventory](docs/2026-09-22-cached-fidelity-scope.md) now ver
 eight references and 16 saved replies. One duplicate reduces any later common
 coding pass to 23 distinct messages / 46 flags. No compatible labels overlap.
 These are two draws of one condition, so this set cannot estimate a grounding
-benefit. The subsequent [fixed review](docs/2026-09-22-cached-communication-review.md)
-is prepared at `http://127.0.0.1:8425/`, awaiting one human export. The report rules
-are frozen; no new generations or further review rounds are queued.
+benefit. The subsequent [fixed review result](docs/2026-09-22-cached-communication-results.md)
+is complete: generated work appears in 6/10 draws for work-absent references and
+is absent in 2/6 draws for work-present references. No missing judgments, new
+generations or further review rounds; preserve the existing simulator.
 
 Updated: September 22, 2026. Unchecked items are proposed work, not completed results.
 
@@ -111,8 +113,10 @@ milestones; the former does not establish the latter.
   fixed sample and no rolling review queue.
   **Done when:** report improvement, no improvement, or inconclusive evidence and
   close the comparison. Do not reroll until an appealing difference appears.
-  **Deferred:** the measurement gate in item 3 failed. No generation or review
-  batch is queued; this does not block simulator engineering.
+  **Deferred:** the original measurement gate in item 3 failed. Item 14 now fills
+  both work groups for a separate development slice, but supplies only one
+  generator condition; an improvement comparison is still undeclared. No new
+  generation or review batch is queued; simulator engineering can continue.
 
 - [ ] **5. Make the notebook and chat experience coherent.** Bring the existing
   authored notebook mode into the same scenario workflow, with notebook work and
@@ -202,14 +206,14 @@ milestones; the former does not establish the latter.
   closed and this inventory creates no review queue, labels or generations.
   See [scope and stopping rule](docs/2026-09-22-cached-fidelity-scope.md).
 
-- [ ] **14. Complete one common-rubric pass over the cached messages.**
-  **Prepared:** the existing page shows eight shared conversations and 23 distinct
-  messages with two flags each. Source joins, 50 pins, exact page/local access and
-  authored draft/report checks pass. Origins and previous labels are concealed.
-  **Input needed:** one review JSON export; preserve partial work if review stops.
-  **Done when:** one report states work-absent/work-present coverage, per-flag
-  discrepancy and exclusions, then closes even if inconclusive. No replacement
-  cases or generator adoption. See [fixed scope](docs/2026-09-22-cached-communication-review.md).
+- [x] **14. Complete one common-rubric pass over the cached messages.**
+  All 23 messages/46 flags returned, with no uncertainty or missing values.
+  Independent intake and arithmetic checks verify 50 pins and exact replay.
+  Five reference cases lack work and three contain it. Generated replies include
+  work in 6/10 draws in the first group and omit it in 2/6 in the second.
+  Balanced work Brier is 5/12, descriptive only; there is no second condition.
+  The [report](docs/2026-09-22-cached-communication-results.md) closes this pass;
+  no replacement cases, second reviewer, additional labels or generator change.
 
 ## Current difficulties
 
@@ -226,8 +230,8 @@ effects. Generated task details and notebook-like output in that chat-only run
 remain synthetic chat; that run performed no execution or assignment verification.
 The separate authored notebook walkthrough did execute its supplied task once,
 but cannot validate historical student behavior. Combined PR #43 still
-needs independent review for main integration. The separate fixed review in item
-14 is now the sole pending human measurement input.
+needs independent review for main integration. Item 14's human measurement input
+has been received and its report is closed; no further labeling is queued.
 
 The automatic selection comparison above is complete. Earlier history showed no
 accuracy benefit on the 16 complete pairs; all-19 missing-outcome bounds range

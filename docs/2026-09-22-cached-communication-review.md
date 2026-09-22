@@ -1,5 +1,9 @@
 # One common-rubric pass over existing communication
 
+This pass is complete and closed. See the
+[result and stopping decision](2026-09-22-cached-communication-results.md).
+The preparation protocol and handoff record below remain historical.
+
 **TL;DR:** Minchan's Continue advances the completed
 [inventory](2026-09-22-cached-fidelity-scope.md) to its specified review: eight
 conversation cases, 23 distinct messages, two yes/no/unclear flags each. Reuse
