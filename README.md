@@ -117,13 +117,62 @@ Two entry points (installed via `uv sync` from `pyproject.toml`):
 Both write immutable labeled-corpus snapshots to `data/snapshots/<id>/` with a full
 provenance manifest.
 
+## Running the episode viewer
+
+`episode-viewer` is a localhost-only instructor surface for question-scoped
+Jupyter and tutor activity. It imports the schema-versioned event JSONL produced
+by `dsc10-tutor-jlab`, reconstructs student-question journeys, and never queries
+Postgres directly.
+
+```bash
+uv run episode-viewer \
+  --input /path/to/events.jsonl \
+  --source-kind synthetic
+```
+
+Open `http://127.0.0.1:8342`. The overview keeps each question readable at a
+glance; selecting a question opens aggregate recorded progressions and granular
+student timelines. Raw student identity is pseudonymized in the API, and legacy
+tutor text remains hidden unless the server starts with `--show-transcripts`.
+
+To generate and inspect the reproducible 100-student synthetic Lab 1 cohort:
+
+```bash
+uv run synthetic-lab1-cohort
+uv run episode-classify \
+  --input data/synthetic/lab1-100/<run_id>/events.jsonl \
+  --dotenv /path/to/.env
+uv run episode-overview \
+  --input data/synthetic/lab1-100/<run_id>/events.jsonl \
+  --dotenv /path/to/.env
+uv run episode-viewer \
+  --input data/synthetic/lab1-100/<run_id>/events.jsonl \
+  --source-kind synthetic \
+  --show-transcripts
+```
+
+`episode-classify` gives each tutor-using student-question record one contextual
+purpose using all tutor messages and the surrounding event sequence. Calls are
+batched for transport, but each classification and every class-level count
+remain one student per question.
+
+`episode-overview` makes one Gemini call for short lab notes and one-line
+question summaries. Displayed counts are computed from events and cached in
+`overview.json` beside the event log.
+
+The synthetic cohort uses documented historical aggregates only for pre-chat
+sequence shares. Other behavior probabilities are explicit scenario assumptions,
+not estimates of DSC 10 students. Generated artifacts remain under gitignored
+`data/` and are for pipeline and interface validation only.
+
 ## Where things live
 
 - Phase plan and invariants: `CLAUDE.md`
 - Memos: `docs/` (start with `2026-08-05-simulation-first-framing.md` and
   `2026-08-01-topdown-labeling-same-repo.md`)
 - Snapshot provenance ledger: `snapshots.md`
-- Code: `src/` (ingest → labeling → eval → trajectories → agents → replay, plus scoring)
+- Code: `src/` (ingest → labeling/eval and episode reconstruction/viewing →
+  trajectories → agents → replay, plus scoring)
 - Experiments (pinned configs + results): `experiments/`
 
 Data (`data/`) is gitignored and contains IRB-covered student conversations. Never commit it.

@@ -31,6 +31,11 @@ workspace = ["marimo==0.24.2"]
 [project.scripts]
 label-loop = "src.labeling.cli:main"
 label-loop-web = "src.labeling.webapp:main"
+episode-viewer = "src.viewer.webapp:main"
+episode-classify = "src.viewer.classification:main"
+episode-briefing = "src.viewer.briefing:main"
+episode-overview = "src.viewer.overview:main"
+synthetic-lab1-cohort = "src.synthetic.cohort:main"
 
 [build-system]
 requires = ["hatchling"]
