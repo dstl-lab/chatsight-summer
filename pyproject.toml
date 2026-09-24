@@ -32,6 +32,7 @@ workspace = ["marimo==0.24.2"]
 label-loop = "src.labeling.cli:main"
 label-loop-web = "src.labeling.webapp:main"
 episode-viewer = "src.viewer.webapp:main"
+episode-viewer-demo = "src.viewer.demo:main"
 episode-classify = "src.viewer.classification:main"
 episode-briefing = "src.viewer.briefing:main"
 episode-overview = "src.viewer.overview:main"

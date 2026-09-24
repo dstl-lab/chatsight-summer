@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-23 | [Ready-to-run episode viewer demo](2026-09-23-episode-viewer-demo.md) | Implemented: committed fictional 100-student cohort, one-command startup, no credentials or provider call required |
 | 2026-09-22 | [Browser policy runs](2026-09-22-browser-policy-runs.md) | Implemented: freeze offline, explicitly run untouched arms; 637 tests and authored browser check pass |
 | 2026-09-22 | [Saved browser policy comparison](2026-09-22-browser-policy-comparison.md) | Implemented: PR #47 behind existing Compare, shared context once, saved results only; 618 tests pass |
 | 2026-09-22 | [Policy lab corrections](2026-09-22-policy-lab-corrections.md) | Implemented: receipt verification, read-only inspection, lifecycle counts and attribution; 529 tests pass |

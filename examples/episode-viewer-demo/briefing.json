@@ -1,0 +1,351 @@
+{
+  "schema_version": "1.0.0",
+  "bundle_id": "bundle_0a22ff076869de4d",
+  "source_kind": "synthetic",
+  "lab_label": "Lab 1",
+  "cohort_statement": "This synthetic Lab 1 dataset represents 100 students across 8 questions. It contains 757 records of one student's work on one question; 283 included at least one tutor question.",
+  "generation_mode": "gemini",
+  "fallback_reason": null,
+  "model": "gemini-2.5-flash",
+  "generated_at": "2026-09-10T22:36:05.079887Z",
+  "packet_hash": "bceca073a943cf5ec8699169831bbc9ad6b0727f659e78e2d4a336b23f71a0ef",
+  "prompt_hash": "9efd53c9fdf3fb3cf2bb7c7c7f7f211c663380910f084cb30dd2990ece17bb1c",
+  "summary_sentences": [
+    "A notable pattern in this synthetic lab data is the frequent use of the tutor for validation after passing autograder checks and for direct answers before attempting code.",
+    "The professor can inspect individual student journeys to observe the sequence of events around these tutor interactions."
+  ],
+  "findings": [
+    {
+      "headline": "Validation Questions After Passing Autograder Varied by Question",
+      "explanation": "Students used the tutor for validation after successfully passing the autograder. This behavior was observed more often for some questions than others.",
+      "instructor_prompt": "How do question characteristics relate to the frequency of validation requests after a passing autograder check?",
+      "facts": [
+        {
+          "fact_id": "classified_validation_after_pass",
+          "title": "Validation questions after passing the autograder",
+          "evidence": "Question 1.1.5 had the highest share classified as validation after passing the autograder (13 of 38 (34.2%)); Question 3.2 had the lowest (8 of 36 (22.2%)).",
+          "question_ids": [
+            "1.1.1",
+            "1.1.2",
+            "1.1.4",
+            "1.1.5",
+            "2.2.2",
+            "3.2",
+            "3.3",
+            "4.3"
+          ],
+          "comparison": [
+            {
+              "label": "Question 1.1.1",
+              "value": 0.3076923076923077,
+              "display": "8 of 26 (30.8%)",
+              "question_id": "1.1.1"
+            },
+            {
+              "label": "Question 1.1.2",
+              "value": 0.2571428571428571,
+              "display": "9 of 35 (25.7%)",
+              "question_id": "1.1.2"
+            },
+            {
+              "label": "Question 1.1.4",
+              "value": 0.2857142857142857,
+              "display": "10 of 35 (28.6%)",
+              "question_id": "1.1.4"
+            },
+            {
+              "label": "Question 1.1.5",
+              "value": 0.34210526315789475,
+              "display": "13 of 38 (34.2%)",
+              "question_id": "1.1.5"
+            },
+            {
+              "label": "Question 2.2.2",
+              "value": 0.3333333333333333,
+              "display": "10 of 30 (33.3%)",
+              "question_id": "2.2.2"
+            },
+            {
+              "label": "Question 3.2",
+              "value": 0.2222222222222222,
+              "display": "8 of 36 (22.2%)",
+              "question_id": "3.2"
+            },
+            {
+              "label": "Question 3.3",
+              "value": 0.2558139534883721,
+              "display": "11 of 43 (25.6%)",
+              "question_id": "3.3"
+            },
+            {
+              "label": "Question 4.3",
+              "value": 0.25,
+              "display": "10 of 40 (25.0%)",
+              "question_id": "4.3"
+            }
+          ],
+          "caution": "These purposes were classified by Gemini from each complete student-question record. They remain model interpretations."
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_4ecb3efb25029a86",
+          "evidence_episode_id": "ep_ca493bff4f272376",
+          "question_id": "1.1.5",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply. 5 code runs and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "Validation after passing the autograder"
+        },
+        {
+          "journey_id": "journey_30fb25f96c48ee5d",
+          "evidence_episode_id": "ep_c59b5eb9fdb24ab6",
+          "question_id": "1.1.5",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply. 2 code runs and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "Validation after passing the autograder"
+        },
+        {
+          "journey_id": "journey_5cca8f81f1583f61",
+          "evidence_episode_id": "ep_75da1ea216600817",
+          "question_id": "1.1.5",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply. 2 code runs and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "Validation after passing the autograder"
+        }
+      ]
+    },
+    {
+      "headline": "Direct Answer Requests Showed Differences Across Questions",
+      "explanation": "Direct-answer requests before editing or running code were recorded, with some questions receiving more of these requests than others.",
+      "instructor_prompt": "What characteristics of certain questions are associated with a higher rate of direct-answer requests before any code attempt?",
+      "facts": [
+        {
+          "fact_id": "classified_direct_answer_requests",
+          "title": "Direct-answer requests by question",
+          "evidence": "Question 3.2 had the highest share classified as a direct-answer request before editing or running code (11 of 36 (30.6%)); Question 1.1.1 had the lowest (4 of 26 (15.4%)).",
+          "question_ids": [
+            "1.1.1",
+            "1.1.2",
+            "1.1.4",
+            "1.1.5",
+            "2.2.2",
+            "3.2",
+            "3.3",
+            "4.3"
+          ],
+          "comparison": [
+            {
+              "label": "Question 1.1.1",
+              "value": 0.15384615384615385,
+              "display": "4 of 26 (15.4%)",
+              "question_id": "1.1.1"
+            },
+            {
+              "label": "Question 1.1.2",
+              "value": 0.2571428571428571,
+              "display": "9 of 35 (25.7%)",
+              "question_id": "1.1.2"
+            },
+            {
+              "label": "Question 1.1.4",
+              "value": 0.2,
+              "display": "7 of 35 (20.0%)",
+              "question_id": "1.1.4"
+            },
+            {
+              "label": "Question 1.1.5",
+              "value": 0.2631578947368421,
+              "display": "10 of 38 (26.3%)",
+              "question_id": "1.1.5"
+            },
+            {
+              "label": "Question 2.2.2",
+              "value": 0.3,
+              "display": "9 of 30 (30.0%)",
+              "question_id": "2.2.2"
+            },
+            {
+              "label": "Question 3.2",
+              "value": 0.3055555555555556,
+              "display": "11 of 36 (30.6%)",
+              "question_id": "3.2"
+            },
+            {
+              "label": "Question 3.3",
+              "value": 0.23255813953488372,
+              "display": "10 of 43 (23.3%)",
+              "question_id": "3.3"
+            },
+            {
+              "label": "Question 4.3",
+              "value": 0.25,
+              "display": "10 of 40 (25.0%)",
+              "question_id": "4.3"
+            }
+          ],
+          "caution": "These purposes were classified by Gemini from each complete student-question record. They remain model interpretations."
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_a9b6af45349c50bc",
+          "evidence_episode_id": "ep_abc203b05e525622",
+          "question_id": "3.2",
+          "summary": "The student used the tutor before editing or running code; exact tutor code was used and a later edit was recorded. 1 code run and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "A direct answer before editing or running code"
+        },
+        {
+          "journey_id": "journey_0979d7c0708462ba",
+          "evidence_episode_id": "ep_934e9debb426cbcb",
+          "question_id": "3.2",
+          "summary": "The student used the tutor before editing or running code; code was edited afterward without an exact tutor-code transfer. 1 code run and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "A direct answer before editing or running code"
+        },
+        {
+          "journey_id": "journey_16ba775cc2668777",
+          "evidence_episode_id": "ep_8168adb8cf774c87",
+          "question_id": "3.2",
+          "summary": "The student used the tutor before editing or running code; code was edited afterward without an exact tutor-code transfer. 1 code run and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "A direct answer before editing or running code"
+        }
+      ]
+    },
+    {
+      "headline": "Debugging Questions After Problems Differed by Question",
+      "explanation": "Debugging questions after an error or failed autograder check were recorded, with the frequency varying across different questions.",
+      "instructor_prompt": "What question characteristics are associated with a higher incidence of debugging questions after a problem is recorded?",
+      "facts": [
+        {
+          "fact_id": "classified_debugging_after_problem",
+          "title": "Debugging questions after recorded problems",
+          "evidence": "Question 3.3 had the highest share classified as debugging after an error or failed autograder check (9 of 43 (20.9%)); Question 1.1.1 had the lowest (0 of 26 (0.0%)).",
+          "question_ids": [
+            "1.1.1",
+            "1.1.2",
+            "1.1.4",
+            "1.1.5",
+            "2.2.2",
+            "3.2",
+            "3.3",
+            "4.3"
+          ],
+          "comparison": [
+            {
+              "label": "Question 1.1.1",
+              "value": 0.0,
+              "display": "0 of 26 (0.0%)",
+              "question_id": "1.1.1"
+            },
+            {
+              "label": "Question 1.1.2",
+              "value": 0.02857142857142857,
+              "display": "1 of 35 (2.9%)",
+              "question_id": "1.1.2"
+            },
+            {
+              "label": "Question 1.1.4",
+              "value": 0.08571428571428572,
+              "display": "3 of 35 (8.6%)",
+              "question_id": "1.1.4"
+            },
+            {
+              "label": "Question 1.1.5",
+              "value": 0.15789473684210525,
+              "display": "6 of 38 (15.8%)",
+              "question_id": "1.1.5"
+            },
+            {
+              "label": "Question 2.2.2",
+              "value": 0.03333333333333333,
+              "display": "1 of 30 (3.3%)",
+              "question_id": "2.2.2"
+            },
+            {
+              "label": "Question 3.2",
+              "value": 0.1111111111111111,
+              "display": "4 of 36 (11.1%)",
+              "question_id": "3.2"
+            },
+            {
+              "label": "Question 3.3",
+              "value": 0.20930232558139536,
+              "display": "9 of 43 (20.9%)",
+              "question_id": "3.3"
+            },
+            {
+              "label": "Question 4.3",
+              "value": 0.2,
+              "display": "8 of 40 (20.0%)",
+              "question_id": "4.3"
+            }
+          ],
+          "caution": "These purposes were classified by Gemini from each complete student-question record. They remain model interpretations."
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_17d5d4ef854fd64f",
+          "evidence_episode_id": "ep_e609bc66682ceca5",
+          "question_id": "3.3",
+          "summary": "The student had an error or failed autograder check before using the tutor; code was edited afterward without an exact tutor-code transfer. 3 code runs and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "Debugging after an error or failed autograder check"
+        },
+        {
+          "journey_id": "journey_2c05cf0dc27ba6ce",
+          "evidence_episode_id": "ep_0f9b4606bfed713a",
+          "question_id": "3.3",
+          "summary": "The student had an error or failed autograder check before using the tutor; code was edited afterward without an exact tutor-code transfer. 3 code runs and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "Debugging after an error or failed autograder check"
+        },
+        {
+          "journey_id": "journey_53e18c44583082ec",
+          "evidence_episode_id": "ep_01e9a4dfb3543b09",
+          "question_id": "3.3",
+          "summary": "The student had an error or failed autograder check before using the tutor; exact tutor code was used with no later edit recorded. 4 code runs and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "Debugging after an error or failed autograder check"
+        }
+      ]
+    },
+    {
+      "headline": "Post-Tutor Reply Code Activity Varied",
+      "explanation": "After a tutor reply, some records showed no subsequent code change, while others involved using exact tutor code, sometimes followed by further edits.",
+      "instructor_prompt": "How do the different types of tutor replies relate to whether students make subsequent code changes or use the provided code directly?",
+      "facts": [
+        {
+          "fact_id": "class_after_tutor_reply",
+          "title": "What followed tutor replies",
+          "evidence": "140 of 283 tutor-using records (49.5%) had no later recorded code change; 53 of 283 tutor-using records (18.7%) had a later edit without exact tutor code; 55 of 283 tutor-using records (19.4%) used exact tutor code without a later edit; 35 of 283 tutor-using records (12.4%) used exact tutor code and later edited.",
+          "question_ids": [],
+          "comparison": [],
+          "caution": null
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_67dc113858b91b1d",
+          "evidence_episode_id": "ep_4edc611e053ff22a",
+          "question_id": "1.1.1",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply. 2 code runs and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "Validation after passing the autograder"
+        },
+        {
+          "journey_id": "journey_281dd799b368c96d",
+          "evidence_episode_id": "ep_9a84d9dc4010f428",
+          "question_id": "1.1.1",
+          "summary": "The student used the tutor before editing or running code; exact tutor code was used with no later edit recorded. 1 code run and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "A direct answer before editing or running code"
+        },
+        {
+          "journey_id": "journey_fecdd04f1b0661b3",
+          "evidence_episode_id": "ep_8c3c3d3535c9c973",
+          "question_id": "1.1.1",
+          "summary": "The student used the tutor before editing or running code; code was edited afterward without an exact tutor-code transfer. 2 code runs and 1 tutor question were recorded. A passing autograder check was recorded.",
+          "contextual_label": "Unclear help before editing or running code"
+        }
+      ]
+    }
+  ],
+  "caveats": [
+    "This is synthetic scenario data. It does not estimate how real DSC 10 students behave.",
+    "Recorded events describe actions, not intent, understanding, learning, or tutor effectiveness.",
+    "A passing autograder check shows that recorded tests passed; it does not establish learning or independent authorship.",
+    "Gemini's student-question purpose classifications agreed with 86.2% of the generator's synthetic labels."
+  ]
+}

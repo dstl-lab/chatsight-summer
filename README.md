@@ -119,51 +119,19 @@ provenance manifest.
 
 ## Running the episode viewer
 
-`episode-viewer` is a localhost-only instructor surface for question-scoped
-Jupyter and tutor activity. It imports the schema-versioned event JSONL produced
-by `dsc10-tutor-jlab`, reconstructs student-question journeys, and never queries
-Postgres directly.
+The repository includes a ready-to-view fictional cohort: 100 students across
+eight Lab 1 questions. No credentials, generation, or real student data are
+needed.
 
 ```bash
-uv run episode-viewer \
-  --input /path/to/events.jsonl \
-  --source-kind synthetic
+uv run episode-viewer-demo
 ```
 
-Open `http://127.0.0.1:8342`. The overview keeps each question readable at a
-glance; selecting a question opens aggregate recorded progressions and granular
-student timelines. Raw student identity is pseudonymized in the API, and legacy
-tutor text remains hidden unless the server starts with `--show-transcripts`.
+Open `http://127.0.0.1:8342`. Click a question for aggregate progressions and
+individual student timelines.
 
-To generate and inspect the reproducible 100-student synthetic Lab 1 cohort:
-
-```bash
-uv run synthetic-lab1-cohort
-uv run episode-classify \
-  --input data/synthetic/lab1-100/<run_id>/events.jsonl \
-  --dotenv /path/to/.env
-uv run episode-overview \
-  --input data/synthetic/lab1-100/<run_id>/events.jsonl \
-  --dotenv /path/to/.env
-uv run episode-viewer \
-  --input data/synthetic/lab1-100/<run_id>/events.jsonl \
-  --source-kind synthetic \
-  --show-transcripts
-```
-
-`episode-classify` gives each tutor-using student-question record one contextual
-purpose using all tutor messages and the surrounding event sequence. Calls are
-batched for transport, but each classification and every class-level count
-remain one student per question.
-
-`episode-overview` makes one Gemini call for short lab notes and one-line
-question summaries. Displayed counts are computed from events and cached in
-`overview.json` beside the event log.
-
-The synthetic cohort uses documented historical aggregates only for pre-chat
-sequence shares. Other behavior probabilities are explicit scenario assumptions,
-not estimates of DSC 10 students. Generated artifacts remain under gitignored
-`data/` and are for pipeline and interface validation only.
+The included cohort and its limitations are documented in
+[`examples/episode-viewer-demo`](examples/episode-viewer-demo/README.md).
 
 ## Where things live
 

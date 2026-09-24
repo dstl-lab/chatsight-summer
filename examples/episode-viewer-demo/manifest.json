@@ -1,0 +1,179 @@
+{
+  "bundle_id": "cohort_dbe02a780a2fa0",
+  "synthetic": true,
+  "event_schema_version": "1.0.0",
+  "generation": {
+    "generator": "src.synthetic.cohort",
+    "generator_version": "1.0.1",
+    "seed": 20260909,
+    "student_count": 100,
+    "question_count": 8,
+    "historical_aggregate_anchors": {
+      "status": "evidence_anchor_with_documented_limits",
+      "source": "docs/2026-08-09-sequence-pilot-first-numbers.md; 7,782 historical tutor conversations; notebook-level join; 45-minute pre-chat and 20-minute outcome windows",
+      "pre_pattern_shares": {
+        "ask-first": 0.27,
+        "fail-then-ask": 0.17,
+        "pass-then-ask": 0.56
+      }
+    },
+    "scenario_assumptions": {
+      "direct_request_share": 0.25,
+      "direct_request_sensitivity_targets": [
+        0.1,
+        0.4
+      ],
+      "skip_base_probability": 0.025,
+      "eventual_resolution_base": 0.9
+    },
+    "observed": {
+      "potential_question_paths": 800,
+      "represented_question_paths": 757,
+      "skipped_question_paths": 43,
+      "tutor_using_question_paths": 283,
+      "event_count": 8390,
+      "transcript_row_count": 566,
+      "total_jsonl_rows": 8956,
+      "eventual_pass_paths": 650,
+      "unresolved_paths": 107,
+      "code_transfer_paths": 90,
+      "pre_pattern": {
+        "ask-first": {
+          "count": 76,
+          "share": 0.2686
+        },
+        "fail-then-ask": {
+          "count": 48,
+          "share": 0.1696
+        },
+        "pass-then-ask": {
+          "count": 159,
+          "share": 0.5618
+        }
+      },
+      "interaction_acts": {
+        "direct-request": {
+          "count": 71,
+          "share": 0.2509
+        },
+        "debugging-request": {
+          "count": 32,
+          "share": 0.1131
+        },
+        "syntax-help": {
+          "count": 32,
+          "share": 0.1131
+        },
+        "conceptual-clarification": {
+          "count": 37,
+          "share": 0.1307
+        },
+        "assignment-reference": {
+          "count": 23,
+          "share": 0.0813
+        },
+        "validation": {
+          "count": 88,
+          "share": 0.311
+        }
+      },
+      "immediate_outcomes": {
+        "fail-after": {
+          "count": 2,
+          "share": 0.0071
+        },
+        "no-run-after": {
+          "count": 104,
+          "share": 0.3675
+        },
+        "quick-pass": {
+          "count": 177,
+          "share": 0.6254
+        }
+      }
+    }
+  },
+  "questions": [
+    {
+      "question_id": "1.1.1",
+      "grader_id": "q1_1_1",
+      "cell_index": 12,
+      "prompt": "Make an array containing 2, 4, and 6 named even_numbers.",
+      "difficulty": 0.12,
+      "runtime_error": "NameError",
+      "conceptual_hint": "constructing a NumPy array from listed values"
+    },
+    {
+      "question_id": "1.1.2",
+      "grader_id": "q1_1_2",
+      "cell_index": 15,
+      "prompt": "Make an array containing 0, -1, 1, pi, and e named odd_numbers.",
+      "difficulty": 0.22,
+      "runtime_error": "TypeError",
+      "conceptual_hint": "using NumPy constants inside an array"
+    },
+    {
+      "question_id": "1.1.4",
+      "grader_id": "q1_1_4",
+      "cell_index": 21,
+      "prompt": "Use np.arange for multiples of 99 from 0 through 9999.",
+      "difficulty": 0.46,
+      "runtime_error": "ValueError",
+      "conceptual_hint": "the exclusive stop value and step in np.arange"
+    },
+    {
+      "question_id": "1.1.5",
+      "grader_id": "q1_1_5",
+      "cell_index": 24,
+      "prompt": "Create hourly collection times in seconds for all 30 days.",
+      "difficulty": 0.52,
+      "runtime_error": "ValueError",
+      "conceptual_hint": "converting days and hours into seconds"
+    },
+    {
+      "question_id": "2.2.2",
+      "grader_id": "q2_2_2",
+      "cell_index": 90,
+      "prompt": "Assign the tenth movie name from top_10_movies_by_name.",
+      "difficulty": 0.38,
+      "runtime_error": "IndexError",
+      "conceptual_hint": "zero-based indexing"
+    },
+    {
+      "question_id": "3.2",
+      "grader_id": "q3_2",
+      "cell_index": 141,
+      "prompt": "Sort imdb_by_name chronologically into imdb_sorted.",
+      "difficulty": 0.58,
+      "runtime_error": "KeyError",
+      "conceptual_hint": "sorting a DataFrame by a named column"
+    },
+    {
+      "question_id": "3.3",
+      "grader_id": "q3_3",
+      "cell_index": 144,
+      "prompt": "Use code to get the earliest movie title from imdb_sorted.",
+      "difficulty": 0.64,
+      "runtime_error": "KeyError",
+      "conceptual_hint": "retrieving an index label after sorting"
+    },
+    {
+      "question_id": "4.3",
+      "grader_id": "q4_3_2",
+      "cell_index": 192,
+      "prompt": "Find average ratings for 20th- and 21st-century movies.",
+      "difficulty": 0.82,
+      "runtime_error": "ValueError",
+      "conceptual_hint": "boolean filtering around the year 2000 boundary"
+    }
+  ],
+  "files": {
+    "events": "events.jsonl",
+    "cohort_summary": "cohort_summary.json",
+    "classifications": "classifications.json",
+    "overview": "overview.json",
+    "briefing": "briefing.json",
+    "validation_report": "validation_report.md",
+    "instructions": "README.md"
+  }
+}
