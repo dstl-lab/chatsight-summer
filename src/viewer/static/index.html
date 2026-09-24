@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Question Interactions</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg:#f6f7fa; --surface:#fff; --text:#202736; --muted:#647084; --stroke:#e2e6ed;
+  --blue:#22658b; --blue-soft:#edf6fc; --purple:#7051aa; --purple-soft:#f3effb;
+  --red:#ac4148; --red-soft:#fcf1f1; --green:#24745b; --green-soft:#edf7f1;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+button,select,input { font:inherit; }
+button,summary,select { -webkit-tap-highlight-color:transparent; }
+button,summary { cursor:pointer; }
+button { border:1px solid var(--stroke); border-radius:7px; background:var(--surface); color:var(--text); padding:8px 12px; }
+button:hover { background:var(--bg); }
+:focus-visible { outline:3px solid #6095cf; outline-offset:4px; }
+h1,h2,h3,p { margin:0; }
+h1 { font-size:30px; letter-spacing:-1px; font-weight:650; }
+h2 { font-size:23px; letter-spacing:-.5px; }
+h3 { font-size:14px; font-weight:650; }
+.shell { max-width:1120px; margin:auto; padding:42px 28px 60px; }
+body.panel-open .shell { max-width:1120px; margin-left:auto; margin-right:560px; }
+.page-header { margin-bottom:30px; }
+.subtitle { color:var(--muted); margin-top:8px; max-width:680px; }
+.specs { margin-top:14px; color:var(--muted); font-size:12px; }
+.notice { padding:18px; color:var(--red); background:var(--red-soft); }
+[hidden] { display:none !important; }
+details > summary { list-style:none; }
+details > summary::-webkit-details-marker { display:none; }
+.lab { border:1px solid var(--stroke); border-radius:14px; background:var(--surface); padding:26px; }
+.lab-stat { margin-top:8px; font-size:16px; }
+.question-strip { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; }
+.q-tile { position:relative; min-width:76px; padding:12px 10px; border:1px solid transparent; border-radius:8px; font-weight:650; letter-spacing:-.2px; }
+.q-tile.empty { background:#e8ebf0; color:#6b7382; border-color:#d5dae2; }
+.tile-hint { position:absolute; left:0; top:calc(100% + 8px); z-index:3; width:220px; padding:10px 12px; border:1px solid var(--stroke); border-radius:8px; background:var(--surface); box-shadow:0 10px 28px #1b2a4414; text-align:left; font-weight:400; }
+.hint-row { display:flex; justify-content:space-between; gap:12px; font-size:12px; padding:3px 0; }
+.hint-row span:first-child { color:var(--muted); }
+.lab-details { margin-top:28px; padding-top:22px; border-top:1px solid var(--stroke); }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.metric { min-width:0; }
+.metric + .metric { border-left:1px solid var(--stroke); padding-left:20px; }
+.metric-label { display:block; color:var(--muted); font-size:12px; }
+.metric-value { display:block; font-size:27px; font-weight:650; letter-spacing:-.7px; line-height:1.3; margin-top:4px; }
+.metric-note { display:block; color:var(--muted); font-size:11px; margin-top:3px; }
+.tone-red { color:var(--red); }
+.tone-green { color:var(--green); }
+.tone-purple { color:var(--purple); }
+.tone-blue { color:var(--blue); }
+.section-heading { display:flex; justify-content:space-between; gap:16px; align-items:baseline; margin-bottom:12px; }
+.section-heading > h3 { font-size:16px; }
+.section-note { font-size:11px; color:var(--muted); margin-top:10px; }
+.question-list { display:grid; gap:10px; }
+.question { width:100%; border:1px solid var(--stroke); border-radius:9px; padding:17px 18px; text-align:left; background:var(--surface); }
+.question:hover { background:#fafbfd; border-color:#cfd6e1; }
+.question-top { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.q-id { font-size:15px; font-weight:650; }
+.question-open { color:var(--blue); font-size:12px; font-weight:600; white-space:nowrap; }
+.question-prompt { font-size:13px; color:var(--muted); margin:5px 0 11px; }
+.question-synthesis { max-width:780px; font-size:13px; line-height:1.55; margin:0 0 15px; }
+.question-synthesis-label { display:block; color:var(--muted); font-size:10px; font-weight:650; letter-spacing:.04em; text-transform:uppercase; margin-bottom:3px; }
+.question .metrics { max-width:740px; }
+.question .metric-value { font-size:19px; letter-spacing:-.3px; }
+.question .metric-label { font-size:11px; }
+.evidence-basis { color:var(--muted); font-size:12px; line-height:1.55; max-width:760px; margin-top:6px; }
+.use-paths { display:grid; gap:0; margin:10px 0 0; }
+.use-path { display:grid; grid-template-columns:minmax(0,1fr) 7.5rem; align-items:start; gap:16px; width:100%; text-align:left; border:0; border-bottom:1px solid var(--stroke); border-radius:0; background:transparent; padding:10px; margin:0 -10px; width:calc(100% + 20px); font-size:13px; line-height:1.45; }
+button.use-path:hover,.use-path.selected { background:#f3f5f8; }
+.use-path-name { min-width:0; }
+.use-path-count { color:var(--muted); font-variant-numeric:tabular-nums; font-size:12px; white-space:nowrap; text-align:right; padding-top:1px; }
+.panel-handle { position:fixed; z-index:6; top:50%; right:0; transform:translateY(-50%); writing-mode:vertical-rl; border:1px solid var(--stroke); border-right:0; border-radius:7px 0 0 7px; background:var(--surface); color:var(--text); padding:14px 8px; }
+body.panel-open .panel-handle { right:min(540px,94vw); }
+.sequence-panel { position:fixed; z-index:5; top:0; right:0; width:min(540px,94vw); height:100dvh; border-left:1px solid var(--stroke); background:var(--surface); color:var(--text); display:flex; flex-direction:column; }
+.panel-tabs { display:flex; gap:4px; border-bottom:1px solid var(--stroke); margin:0 -20px 16px; padding:0 20px; }
+.panel-tab { border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; color:var(--muted); padding:8px 10px; }
+button.panel-tab:hover { background:transparent; color:var(--text); }
+.panel-tab[aria-selected="true"] { color:var(--text); border-bottom-color:var(--text); }
+.fact { margin-bottom:16px; }
+.fact h3 { font-size:11px; color:var(--muted); font-weight:600; letter-spacing:.02em; text-transform:uppercase; margin-bottom:6px; }
+.fact p { font-size:13px; line-height:1.55; }
+.lab-break { margin-top:8px; }
+.lab-break-row { display:flex; justify-content:space-between; gap:12px; font-size:12px; padding:4px 0; border-bottom:1px solid var(--stroke); }
+.ask-item { padding:8px 0; border-bottom:1px solid var(--stroke); font-size:13px; line-height:1.5; }
+.ask-count { color:var(--muted); font-size:11px; margin-top:3px; }
+.progression-list { display:grid; margin-top:8px; }
+.progression-row { display:grid; grid-template-columns:minmax(0,1fr) 7.5rem; gap:14px; width:100%; border:0; border-bottom:1px solid var(--stroke); border-radius:0; padding:12px 4px; text-align:left; background:transparent; }
+.progression-row:hover { background:var(--bg); }
+.progression-count { color:var(--muted); text-align:right; font-size:12px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.progression-step { display:block; font-size:12px; line-height:1.5; }
+.progression-step + .progression-step { margin-top:4px; }
+.progression-action { display:block; color:var(--blue); font-size:11px; margin-top:5px; }
+.student-filter { display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid var(--stroke); padding-bottom:10px; margin-bottom:12px; }
+.student-filter p { color:var(--muted); font-size:11px; }
+footer { color:var(--muted); font-size:11px; margin-top:18px; }
+.drawer-header { display:flex; justify-content:space-between; align-items:start; gap:16px; padding:18px 20px; border-bottom:1px solid var(--stroke); flex:none; }
+.drawer-header h2 { font-size:16px; letter-spacing:-.2px; }
+.drawer-header .subtitle { font-size:12px; }
+.drawer-content { padding:16px 20px 28px; overflow:auto; flex:1; }
+.student-toolbar { display:flex; align-items:end; gap:8px; margin-bottom:14px; }
+.student-picker { flex:1; }
+.student-picker label { display:block; color:var(--muted); font-size:11px; margin-bottom:4px; }
+select { padding:7px 10px; width:100%; border:1px solid var(--stroke); border-radius:7px; color:var(--text); background:var(--surface); }
+.journey-summary { color:var(--muted); font-size:11px; margin-bottom:12px; }
+.evidence-options { display:flex; justify-content:flex-end; margin-bottom:8px; font-size:11px; color:var(--muted); }
+.evidence-options label { display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.timeline { display:grid; }
+.timeline-step { display:grid; grid-template-columns:64px minmax(0,1fr); gap:10px; padding:8px 0; border-bottom:1px solid var(--stroke); }
+.timeline-step.highlight { background:var(--purple-soft); margin:0 -8px; padding-left:8px; padding-right:8px; border-radius:6px; border-bottom-color:transparent; }
+.timeline-time { color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; padding-top:1px; }
+.event-kind { display:inline-flex; align-items:center; gap:6px; font-size:10px; font-weight:600; margin-bottom:2px; }
+.dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:currentColor; flex:none; }
+.event-text { font-weight:550; font-size:13px; }
+.transcript-text { white-space:pre-wrap; overflow-wrap:anywhere; margin-top:5px; line-height:1.55; font-size:12px; }
+.raw-event { white-space:pre-wrap; overflow-wrap:anywhere; font:10px/1.6 ui-monospace,monospace; padding:10px; border-radius:6px; background:var(--bg); margin:8px 0 0; }
+.loading,.empty { padding:16px 0; color:var(--muted); font-size:13px; }
+@media(max-width:900px) {
+  .shell { padding:24px 12px; } h1 { font-size:26px; }
+  .lab { padding:18px 14px; }
+  .metrics { gap:12px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .metric + .metric { padding-left:12px; }
+  .metric:nth-child(3) { border-left:0; padding-left:0; }
+  .metric-value { font-size:24px; }
+  .question { padding:14px; }
+  .progression-row { grid-template-columns:1fr; gap:4px; }
+  .progression-count { text-align:left; }
+  body.panel-open .shell { margin-right:0; padding-right:12px; }
+  .drawer-header,.drawer-content { padding:16px 14px; }
+  .panel-tabs { margin:0 -14px 16px; padding:0 14px; }
+  .tile-hint { width:min(220px,70vw); }
+}
+@media(prefers-reduced-motion:no-preference) { html { scroll-behavior:smooth; } }
+
+.exchange { border:1px solid var(--stroke); border-radius:10px; margin:14px 0; overflow:hidden; }
+.exchange-title { font-size:14px; padding:12px 14px; background:var(--bg); }
+.exchange-part { padding:12px 14px; border-top:1px solid var(--stroke); }
+.exchange-part h3 { color:var(--muted); font-size:11px; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+.exchange-part.request { border-left:3px solid var(--purple); }
+.exchange-part.reply { border-left:3px solid var(--blue); }
+.exchange-part p { font-size:12px; }
+.edit-note { color:var(--muted); font-size:11px; margin-top:5px; padding-left:8px; border-left:2px solid var(--stroke); }
+.gap { color:var(--muted); font-size:11px; border-top:1px dashed var(--stroke); margin-top:10px; padding:7px 0; }
+.record-toggle { margin-top:18px; border-top:1px solid var(--stroke); padding-top:12px; }
+.record-toggle > summary { font-weight:600; padding:4px 0 10px; }
+.student-link { display:block; text-align:left; width:100%; margin:6px 0; }
+.student-link small { display:block; color:var(--muted); }
+.view-all { margin-top:16px; color:var(--blue); }
+.pattern-step + .pattern-step { margin-top:5px; }
+.pattern-step { display:block; }
+.demo-label { color:var(--muted); font-size:11px; margin-bottom:7px; }
+.record-meta { color:var(--muted); font-size:11px; margin:8px 0; }
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="page-header">
+    <h1>Student Question Interactions</h1>
+    <p class="subtitle">One interaction brings together a student’s recorded work and tutor exchanges on a question, including return visits.</p>
+    <p class="specs"><em id="specs"></em></p>
+  </header>
+  <div class="notice" id="error" role="alert" hidden></div>
+  <div id="labs"></div>
+  <footer>Recorded time sums recorded work segments; it is not a measure of attention. Tutor-question medians include tutor users only. Errors include failed checks.</footer>
+</main>
+<button class="panel-handle" id="panel-handle" type="button" aria-controls="sequence-panel" aria-expanded="false">Interactions</button>
+<aside class="sequence-panel" id="sequence-panel" aria-labelledby="drawer-title" hidden>
+  <div class="drawer-header">
+    <div>
+      <h2 id="drawer-title">Interactions</h2>
+      <p class="subtitle" id="drawer-subtitle">Choose a question or an interaction pattern.</p>
+    </div>
+    <button id="drawer-close" type="button" aria-label="Close interaction panel">Close</button>
+  </div>
+  <div class="drawer-content" id="drawer-content"></div>
+</aside>
+<script>
+const byId = id => document.getElementById(id);
+const journeyCache = new Map();
+let drawerRequest = 0;
+let evidenceTrigger = null;
+let panelState = { question: null, view: null, path: null, payload: null, tab: "question" };
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+const pct = ratio => ratio && ratio.denominator ? Math.round(ratio.numerator / ratio.denominator * 100) + "%" : "—";
+const count = ratio => ratio && ratio.denominator ? ratio.numerator + " of " + ratio.denominator : "No records";
+function metric(label, value, note = "", tone = "") {
+  const box = el("div", "metric");
+  box.append(el("span", "metric-label", label), el("strong", "metric-value " + tone, value));
+  if (note) box.append(el("span", "metric-note", note));
+  return box;
+}
+function mixRgb(start, end, amount) {
+  return start.map((value, index) => Math.round(value + (end[index] - value) * amount));
+}
+function tileTone(errors) {
+  if (errors == null || Number.isNaN(errors)) return { bg:"#e8ebf0", fg:"#6b7382", empty:true };
+  const t = Math.min(Math.max(errors, 0) / 5, 1);
+  const rgb = t <= 0.5
+    ? mixRgb([47, 158, 106], [232, 193, 65], t * 2)
+    : mixRgb([232, 193, 65], [172, 65, 72], (t - 0.5) * 2);
+  return { bg:`rgb(${rgb[0]},${rgb[1]},${rgb[2]})`, fg: t >= 0.75 ? "#fff" : "#202736", empty:false };
+}
+function attachHint(host, hint) {
+  const show = () => { hint.hidden = false; };
+  const hide = () => { hint.hidden = true; };
+  host.addEventListener("mouseenter", show);
+  host.addEventListener("mouseleave", hide);
+  host.addEventListener("focus", show);
+  host.addEventListener("blur", hide);
+}
+function renderTile(question, view) {
+  const tone = tileTone(view.has_data ? question.median_errors : null);
+  const tile = el("button", "q-tile" + (tone.empty ? " empty" : ""), question.question_id);
+  tile.type = "button";
+  tile.style.background = tone.bg;
+  tile.style.color = tone.fg;
+  const hint = el("div", "tile-hint");
+  hint.hidden = true;
+  [
+    ["Recorded time (median)", question.median_active_display],
+    ["Median tutor questions", String(question.median_tutor_queries)],
+    ["Median errors", String(question.median_errors)],
+    ["Students who passed the autograder", count(view.passed)],
+    ["Students with an error", count(view.error_students)]
+  ].forEach(([label, value]) => {
+    const row = el("div", "hint-row");
+    row.append(el("span", "", label), el("strong", "", value));
+    hint.append(row);
+  });
+  tile.append(hint);
+  attachHint(tile, hint);
+  tile.addEventListener("click", event => {
+    event.preventDefault();
+    hint.hidden = true;
+    openQuestionPanel(question, view, tile);
+  });
+  return tile;
+}
+function renderLab(overview) {
+  const info = overview.presentation;
+  const card = el("section", "lab");
+  const header = el("div", "lab-header");
+  header.append(el("h2", "", overview.lab_label));
+  const tutor = info.tutor_students;
+  header.append(el("p", "lab-stat", tutor.numerator + " of " + tutor.denominator + " students used the tutor"));
+  const strip = el("div", "question-strip");
+  strip.setAttribute("aria-label", "Questions in assignment order");
+  overview.questions.forEach(question => strip.append(renderTile(question, info.questions[question.question_id])));
+  const details = el("div", "lab-details");
+  const heading = el("div", "section-heading");
+  heading.append(el("h3", "", "Questions"), el("p", "section-note", "Select a question for progression and student details."));
+  const list = el("div", "question-list");
+  overview.questions.forEach(question => list.append(renderQuestion(question, info.questions[question.question_id])));
+  details.replaceChildren(heading, list);
+  card.append(
+    header,
+    strip,
+    el("p", "section-note", "Zero errors, green. 5+ errors, red."),
+    details
+  );
+  return card;
+}
+function renderQuestion(question, view) {
+  const card = el("button", "question");
+  card.type = "button";
+  card.id = "question-" + question.question_id;
+  const top = el("div", "question-top");
+  top.append(el("span", "q-id", "Question " + question.question_id), el("span", "question-open", "Open details →"));
+  card.append(top);
+  card.append(el("p", "question-prompt", question.prompt || "Question prompt unavailable"));
+  const synthesis = el("p", "question-synthesis", question.one_line || "Interaction summary unavailable.");
+  synthesis.prepend(el("span", "question-synthesis-label", "Interaction summary"));
+  card.append(synthesis);
+  const metrics = el("div", "metrics");
+  metrics.append(
+    metric("Recorded time (median)", question.median_active_display),
+    metric("Median tutor questions", String(question.median_tutor_queries)),
+    metric("Median errors", String(question.median_errors), "", question.median_errors > 0 ? "tone-red" : "tone-green"),
+    metric("Passed autograder", pct(question.passed), "", "tone-green")
+  );
+  card.append(metrics);
+  card.addEventListener("click", () => openQuestionPanel(question, view, card));
+  return card;
+}
+function formatDuration(ms) {
+  if (ms < 1000) return ms + " ms";
+  const seconds = Math.round(ms / 1000);
+  return seconds < 60 ? seconds + " sec" : Math.floor(seconds / 60) + "m " + (seconds % 60) + "s";
+}
+function eventStyle(event) {
+  if (event.event_type === "cell_error" || (["autograder_completed","cell_execution_completed"].includes(event.event_type) && event.payload.success === false)) return ["Error / failed check","tone-red"];
+  if (event.event_type === "autograder_completed" && event.payload.success === true) return ["Passed autograder","tone-green"];
+  if (event.event_type === "tutor_query") return ["Student question","tone-purple"];
+  if (event.event_type === "tutor_response") return ["Tutor reply","tone-blue"];
+  if (event.event_type.startsWith("cell_execution")) return ["Code run","tone-blue"];
+  return ["Notebook action",""];
+}
+function journeyLine(journey) {
+  const m = journey.metrics;
+  const parts = [
+    m.attempt_count + (m.attempt_count === 1 ? " run" : " runs"),
+    m.tutor_turn_count + (m.tutor_turn_count === 1 ? " tutor question" : " tutor questions"),
+    m.difficulty_count + (m.difficulty_count === 1 ? " error" : " errors")
+  ];
+  if (m.eventually_passed) parts.push("passed");
+  return parts.join(" · ");
+}
+const EDIT_NOTE = "Code diff unavailable. This log records edit counts and code hashes, not the before-and-after code.";
+function eventList(events, journey, raw = false) {
+  const list = el("div", "timeline");
+  const positions = new Map(journey.events.map((event, index) => [event.event_id, index]));
+  events.forEach(event => {
+    const index = positions.get(event.event_id);
+    const previous = journey.events[index - 1];
+    if (previous && event.relative_ms - previous.relative_ms >= 60000) {
+      list.append(el("p", "gap", formatDuration(event.relative_ms - previous.relative_ms) + " between recorded events on this question"));
+    }
+    const row = el("div", "timeline-step" + (event.event_type === "tutor_query" ? " highlight" : ""));
+    const detail = el("div");
+    const [kind, tone] = eventStyle(event);
+    detail.append(el("span", "event-kind " + tone, kind));
+    detail.append(el("div", "event-text", event.event_type === "tutor_query" ? "Asked the tutor" : event.summary));
+    if (event.transcript_text) detail.append(el("div", "transcript-text", event.transcript_text));
+    else if (["tutor_query", "tutor_response"].includes(event.event_type)) detail.append(el("p", "section-note", journey.transcripts_enabled ? "Message text unavailable." : "Message text is hidden."));
+    if (["cell_edit", "notebook_paste", "tutor_code_inserted"].includes(event.event_type)) detail.append(el("p", "edit-note", EDIT_NOTE));
+    if (raw) {
+      const details = el("details", "record-toggle");
+      details.append(el("summary", "", "Event details"), el("pre", "raw-event", JSON.stringify(event, null, 2)));
+      detail.append(details);
+    }
+    row.append(el("div", "timeline-time", "+" + formatDuration(event.relative_ms)), detail);
+    list.append(row);
+  });
+  return list;
+}
+function renderJourney(journey) {
+  const target = byId("journey-view");
+  target.replaceChildren(el("p", "journey-summary", journeyLine(journey)));
+  const byEvent = new Map(journey.events.map(event => [event.event_id, event]));
+  const pick = ids => ids.map(id => byEvent.get(id)).filter(Boolean);
+  const exchanges = journey.exchanges || [];
+  target.append(el("p", "evidence-basis", "Question association comes from notebook context. Time gaps show elapsed time, not attention or thinking."));
+  exchanges.forEach(exchange => {
+    const card = el("article", "exchange");
+    card.append(el("h3", "exchange-title", "Exchange " + exchange.number));
+    function part(title, className, events, empty) {
+      const block = el("section", "exchange-part " + className);
+      block.append(el("h3", "", title));
+      if (events.length) block.append(eventList(events, journey));
+      else block.append(el("p", "section-note", empty));
+      card.append(block);
+      return block;
+    }
+    const before = part("Before asking", "", pick(exchange.before_ids), "No notebook activity recorded in this interval.");
+    before.prepend(el("p", "record-meta", exchange.number === 1 ? "From the start of this question record" : "Since the previous request · earlier exchanges remain above"));
+    const request = part("Student request", "request", pick([exchange.query_id]), "Request unavailable.");
+    if (exchange.demo_request_label) request.append(el("p", "demo-label", "Demo label: " + exchange.demo_request_label + ". Supplied by the synthetic scenario; not a reviewed interpretation."));
+    request.append(el("p", "record-meta", "Request origin: " + exchange.request_origin + " · Tutor mode: " + exchange.tutor_mode));
+    const waiting = pick(exchange.during_ids || []);
+    if (waiting.length) {
+      request.append(el("p", "record-meta", "Notebook activity after this request, before its reply or the next request"), eventList(waiting, journey));
+    }
+    const reply = part("Tutor response", "reply", pick([exchange.reply_id]), "No reply could be linked to this request. Check the full record below.");
+    if (exchange.reply_link === "recorded-order") reply.append(el("p", "section-note", "Paired by recorded order; no turn ID was available."));
+    const after = part("Afterward", "", pick(exchange.after_ids), exchange.outcome);
+    after.append(el("p", "section-note", exchange.window_end === "next-request" ? "Through the next request. Event order does not establish that this reply caused an action." : "Through the end of this question record. Event order does not establish that this reply caused an action."));
+    target.append(card);
+  });
+  const full = el("details", "record-toggle");
+  full.append(el("summary", "", "Full chronological record · " + journey.events.length + " events"), eventList(journey.events, journey, true));
+  if (!exchanges.length) {
+    target.append(el("p", "section-note", "No tutor requests recorded for this student on this question."));
+    full.open = true;
+  }
+  target.append(full);
+}
+function fact(title, content) {
+  const box = el("section", "fact");
+  box.append(el("h3", "", title));
+  box.append(typeof content === "string" ? el("p", "", content) : content);
+  return box;
+}
+function members(payload, path) {
+  const allowed = new Set(path.journey_ids || []);
+  return payload.students.filter(student => allowed.has(student.journey_id));
+}
+function renderQuestionGroups(question, view, payload) {
+  const wrap = el("div");
+  if (!payload) return el("p", "loading", "Loading interactions…");
+  const progressions = [...(view.progressions || [])];
+  const withoutTutor = payload.students.filter(student => !student.exchanges.length);
+  if (withoutTutor.length) {
+    progressions.push({
+      id: "no-tutor",
+      exchange_steps: ["No tutor exchange recorded"],
+      journey_ids: withoutTutor.map(student => student.journey_id),
+      student_count: new Set(withoutTutor.map(student => student.student_name)).size
+    });
+  }
+  wrap.append(fact(
+    "Question overview",
+    payload.students.length + " student interactions · " +
+      (view.progressions || []).length + " recorded tutor progression" +
+      ((view.progressions || []).length === 1 ? "" : "s")
+  ));
+  wrap.append(el("p", "evidence-basis", "Progressions group the same ordered recorded actions. Counts describe the record, not student intent."));
+  if (!progressions.length) return wrap;
+  const list = el("div", "progression-list");
+  progressions.forEach(path => {
+    const row = el("button", "progression-row");
+    row.type = "button";
+    const steps = el("span");
+    (path.exchange_steps || []).forEach((step, index) => {
+      steps.append(el(
+        "span",
+        "progression-step",
+        path.exchange_steps.length > 1 ? "Exchange " + (index + 1) + ": " + step : step
+      ));
+    });
+    steps.append(el("span", "progression-action", "Open matching student records →"));
+    row.append(
+      steps,
+      el("span", "progression-count", path.student_count + (path.student_count === 1 ? " student" : " students"))
+    );
+    row.addEventListener("click", () => {
+      panelState.path = path;
+      panelState.studentId = null;
+      panelState.tab = "student";
+      showPanelContent();
+    });
+    list.append(row);
+  });
+  wrap.append(fact("Recorded progression counts", list));
+  return wrap;
+}
+function renderSequenceStudents(payload, path) {
+  if (!payload) return el("p", "loading", "Loading students…");
+  const students = members(payload, path);
+  if (!students.length) return el("p", "empty", "No matching interactions recorded.");
+  const wrap = el("div"), journeyView = el("div");
+  journeyView.id = "journey-view";
+  if (path.id !== "all") {
+    const filter = el("div", "student-filter");
+    filter.append(el("p", "", "Showing students in one recorded progression"));
+    const clear = el("button", "", "Show all");
+    clear.type = "button";
+    clear.addEventListener("click", () => {
+      panelState.path = allQuestionPath(panelState.view);
+      panelState.studentId = null;
+      showPanelContent();
+    });
+    filter.append(clear);
+    wrap.append(filter);
+  }
+  const toolbar = el("div", "student-toolbar"), picker = el("div", "student-picker");
+  const label = el("label", "", "Student"); label.htmlFor = "student-select";
+  const select = el("select"); select.id = "student-select";
+  students.forEach((student, index) => {
+    const option = el("option", "", student.student_name); option.value = String(index); select.append(option);
+  });
+  select.value = String(Math.max(0, students.findIndex(student => student.journey_id === panelState.studentId)));
+  const previous = el("button", "", "←"), next = el("button", "", "→");
+  previous.type = next.type = "button";
+  previous.setAttribute("aria-label", "Previous student"); next.setAttribute("aria-label", "Next student");
+  picker.append(label, select); toolbar.append(picker, previous, next); wrap.append(toolbar, journeyView);
+  function update() {
+    const index = Number(select.value);
+    previous.disabled = index === 0; next.disabled = index === students.length - 1;
+    panelState.studentId = students[index].journey_id;
+    renderJourney(students[index]);
+  }
+  previous.addEventListener("click", () => { select.value = String(Number(select.value) - 1); update(); });
+  next.addEventListener("click", () => { select.value = String(Number(select.value) + 1); update(); });
+  select.addEventListener("change", update);
+  queueMicrotask(() => { if (journeyView.isConnected) update(); });
+  return wrap;
+}
+function renderSequencePanel(question, view, path, payload, tab) {
+  const content = byId("drawer-content"), tabs = el("div", "panel-tabs");
+  tabs.setAttribute("role", "tablist");
+  [ ["question", "By question"], ["student", "By student"] ].forEach(([key, title]) => {
+    const button = el("button", "panel-tab", title);
+    button.type = "button";
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(tab === key));
+    button.addEventListener("click", () => { panelState.tab = key; showPanelContent(); });
+    tabs.append(button);
+  });
+  content.replaceChildren(
+    tabs,
+    tab === "student"
+      ? renderSequenceStudents(payload, path)
+      : renderQuestionGroups(question, view, payload)
+  );
+}
+function setPanelOpen(open) {
+  document.body.classList.toggle("panel-open", open);
+  byId("sequence-panel").hidden = !open;
+  byId("panel-handle").setAttribute("aria-expanded", open ? "true" : "false");
+}
+function showPanelContent() {
+  const { question, view, path, payload, tab } = panelState;
+  if (!question || !view || !path) {
+    byId("drawer-title").textContent = "Question interactions";
+    byId("drawer-subtitle").textContent = "Choose a question or an interaction pattern.";
+    byId("drawer-content").replaceChildren();
+    return;
+  }
+  byId("drawer-title").textContent = "Question " + question.question_id;
+  byId("drawer-subtitle").textContent = tab === "student" && path.id !== "all"
+    ? (path.student_count === 1 ? "1 student" : path.student_count + " students") + " in the selected progression"
+    : view.journey_ids.length + " student interactions · " + (view.progressions || []).length + " tutor progression groups";
+  renderSequencePanel(question, view, path, payload, tab);
+}
+function allQuestionPath(view) {
+  return {
+    id: "all",
+    title: "All question interactions",
+    journey_ids: view.journey_ids,
+    student_count: view.journey_ids.length,
+    event_ids: [],
+    exchange_steps: []
+  };
+}
+async function openQuestionPanel(question, view, trigger) {
+  const request = ++drawerRequest;
+  evidenceTrigger = trigger;
+  panelState = {
+    question,
+    view,
+    path: allQuestionPath(view),
+    payload: journeyCache.get(question.question_id) || null,
+    tab: "question",
+    studentId: null
+  };
+  showPanelContent();
+  setPanelOpen(true);
+  if (journeyCache.has(question.question_id)) return;
+  try {
+    const response = await fetch("/api/question-journeys?question_id=" + encodeURIComponent(question.question_id));
+    if (!response.ok) throw new Error("Unable to load these interactions.");
+    const payload = await response.json();
+    journeyCache.set(question.question_id, payload);
+    if (request === drawerRequest && panelState.question?.question_id === question.question_id) {
+      panelState.payload = payload;
+      showPanelContent();
+    }
+  } catch (error) {
+    journeyCache.delete(question.question_id);
+    if (request === drawerRequest) {
+      byId("drawer-content").append(el("p","empty",error.message));
+    }
+  }
+}
+byId("panel-handle").addEventListener("click", () => {
+  setPanelOpen(byId("sequence-panel").hidden);
+  if (!byId("sequence-panel").hidden) showPanelContent();
+});
+function closePanel() { setPanelOpen(false); evidenceTrigger?.focus(); }
+byId("drawer-close").addEventListener("click", closePanel);
+document.addEventListener("keydown", event => { if (event.key === "Escape" && !byId("sequence-panel").hidden) closePanel(); });
+async function start() {
+  try {
+    const [metaResponse,overviewResponse] = await Promise.all([fetch("/api/meta"),fetch("/api/overview")]);
+    if (!metaResponse.ok || !overviewResponse.ok) throw new Error("Unable to load the lab overview.");
+    const meta = await metaResponse.json(), overview = await overviewResponse.json();
+    if (!overview.presentation) throw new Error("Restart the viewer to load the updated summary.");
+    byId("specs").textContent = "This report uses " +
+      (meta.source_kind === "synthetic" ? "synthetic" : "recorded") +
+      " data from " + overview.presentation.student_count + " students, " +
+      overview.presentation.question_count + " questions, and " +
+      overview.presentation.interaction_count + " question interactions.";
+    byId("labs").replaceChildren(renderLab(overview));
+  } catch (error) { byId("error").hidden = false; byId("error").textContent = error.message; }
+}
+start();
+</script>
+</body>
+</html>

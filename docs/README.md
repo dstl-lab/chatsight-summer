@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-23 | [Ready-to-run episode viewer demo](2026-09-23-episode-viewer-demo.md) | Implemented: committed fictional 100-student cohort, one-command startup, no credentials or provider call required |
 | 2026-09-22 | [Browser policy runs](2026-09-22-browser-policy-runs.md) | Implemented: freeze offline, explicitly run untouched arms; 637 tests and authored browser check pass |
 | 2026-09-22 | [Saved browser policy comparison](2026-09-22-browser-policy-comparison.md) | Implemented: PR #47 behind existing Compare, shared context once, saved results only; 618 tests pass |
 | 2026-09-22 | [Policy lab corrections](2026-09-22-policy-lab-corrections.md) | Implemented: receipt verification, read-only inspection, lifecycle counts and attribution; 529 tests pass |
@@ -20,6 +21,14 @@ the code. Register of memos, newest first:
 | 2026-09-22 | [Browser workspace](prototypes/README.md) — desktop preview and connected saved viewer | Verified notebook replay and explicit bound controls; offline browser test, no new research result |
 | 2026-09-22 | `2026-09-22-educator-decision-feasibility.md` — existing evidence and educator decision task | Assessment complete; private handouts and facilitator notes prepared, participants pending; no policy-effectiveness claim |
 | 2026-09-22 | `2026-09-22-simulation-research-scope.md` — simulation errors and educator decisions | Proposed HCI direction; offline feasibility assessed, no participant study or new labeling started |
+| 2026-09-15 | [Recorded sequences panel](2026-09-15-recorded-sequences-panel.md) | Implemented: aggregate recorded progressions and granular student-question traces remain separate and evidence-linked |
+| 2026-09-15 | [Simple question interactions](2026-09-15-question-interactions.md) | Implemented: student-question journeys preserve ordered events and explicit evidence limits |
+| 2026-09-13 | [Structured student episode overview](2026-09-13-structured-overview.md) | Implemented: consistent question summaries and computed measures with sequence evidence in the side panel |
+| 2026-09-13 | [Question strip and message-level request labels](2026-09-13-message-labels-and-question-strip.md) | Implemented and refined: assignment-ordered questions with linked transcript evidence |
+| 2026-09-10 | [Professor-facing lab briefing](2026-09-10-professor-briefing.md) | Implemented: computed evidence plus validated generated explanations for synthetic data |
+| 2026-09-10 | [Class-level tutor pathway view](2026-09-10-class-pathway-view.md) | Superseded in the main interface; retained as an auditable API view |
+| 2026-09-09 | [Synthetic class cohort](2026-09-09-synthetic-cohort.md) | Implemented for pipeline and interface validation; not evidence about real students |
+| 2026-09-08 | [Question-scoped episode viewer V1](2026-09-08-episode-viewer-v1.md) | Implemented: validated event import, reconstruction, derived measures and localhost visualization |
 | 2026-09-15 | `2026-09-15-grounded-chat-result.md` — completed local-task continuation | Complete: one reply adds the visible name assignment to existing code; exact replay and 224 pins verified; initial saved-chat demonstration closed |
 | 2026-09-15 | `2026-09-15-grounded-chat.md` — continue an explicit local task from the saved prefix | Frozen protocol; case-6 exact scope approved, one-request run complete and closed |
 | 2026-09-15 | `2026-09-15-chat-clarification-result.md` — one actual saved-chat continuation | Complete: one new reply, one adapter attempt, exact replay; generated question text is scenario content, not recovered assignment evidence |

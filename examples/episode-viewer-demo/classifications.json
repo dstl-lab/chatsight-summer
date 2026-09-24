@@ -1,0 +1,3126 @@
+{
+  "schema_version": "1.0.0",
+  "bundle_id": "bundle_0a22ff076869de4d",
+  "source_kind": "synthetic",
+  "model": "gemini-2.5-flash",
+  "generated_at": "2026-09-10T22:34:56.197381Z",
+  "batch_size": 80,
+  "input_hash": "410ccf7ff871d389423ba270fe1ffbd1e595726095a2d28acc4fb58fa9a108c6",
+  "prompt_hash": "c77f25bf28c8c79355e24386971a369554b434e0ce26fdee3ca229e7d36124b4",
+  "classifications": [
+    {
+      "journey_id": "journey_0005953c34d083ad",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_006bfacead140f83",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_0188b21fa6081bd0",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_01f4d745ded571ef",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_021df1952072af9d",
+      "question_id": "2.2.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_058495e3acf70e84",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_085601a3a90c7134",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_08698f83b6993682",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_087de27ca61deb5b",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_0979d7c0708462ba",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_09b8437e6cb5c75c",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_0a6a1a882e3943c0",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_0a9276c4452be38b",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_0b233e78e8b04543",
+      "question_id": "1.1.5",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_0c8b0b37aa772427",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_0e38e4c9ad1e3c32",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_0fdeb6b33afdebea",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_117566b0ee2f5dea",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_11ce3066121948ff",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_128f867b292a038f",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_138d617b27597d96",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_14725de2c8932a46",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_14c2730954fd50b1",
+      "question_id": "1.1.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1595fdab0fc9956c",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1599a28f5c53cc7e",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_15d650f76756279b",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_16b351afec53c8ab",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_16ba775cc2668777",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_17d5d4ef854fd64f",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_17e422f77a654404",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1890d0bdb52f5985",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1b02dcce8a034568",
+      "question_id": "1.1.4",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1c313f233ba66477",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1ce0b6556dc0fd6a",
+      "question_id": "3.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1dc52e8bb84e50be",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1de858d2b9a303c1",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1eb587cab9fbc771",
+      "question_id": "1.1.4",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_1eb749b151febdc7",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_20a842605cc8c643",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_20aa8a18496cbbed",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_20b706b7ef146bec",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_2168df52d8297153",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_21e79582396587a4",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_2310e603685b230c",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_2417ef8596acba7e",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_259a1d6de0ad187b",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_260afecbe4d98bdb",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_265b54395f575d67",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_26c4d06ccd7da475",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_26d5cd100231cc5a",
+      "question_id": "2.2.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_26fc463d02601b11",
+      "question_id": "1.1.4",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_278401eb472574e6",
+      "question_id": "3.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_281dd799b368c96d",
+      "question_id": "1.1.1",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_298d713040e4c2e8",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_29acd41fd917dda1",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_2c05cf0dc27ba6ce",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_2eda77baa7fc09dd",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_2f870fb48211f7ce",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_30c190acf5efabfa",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_30fb25f96c48ee5d",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_31ca1da656455379",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_326fd36707a64458",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_33d7c165ae8a4ae2",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_33deddbd1aed3412",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_349d490a2bbc5d11",
+      "question_id": "3.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_35950fdf2549ef88",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_3767fc7edcf6aa59",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_38d2d3e64126aa05",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_3941fb475b39b98d",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_394afe3bdf20e70d",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_3b26c5c61deb7130",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_3d6f7ed3b0018ed4",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_3de71f69715363b5",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_3e9cd62e307ff270",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_3f9ac521c421b5c5",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_40e6e9df0ff948e3",
+      "question_id": "1.1.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_42c6b9b0ce572ac9",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_4372c8237643572a",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_438ca3099b2c8b7e",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_445228fddb8b721c",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4569a83525c8d15a",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_47c21f49ffe59bdd",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_48579b352e9f5b4d",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_48aecef524c5d806",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_49e0fa67bd057bb5",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4adda03375cbecc9",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4ccf33ac36b3e249",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4d10b5e6b115ae39",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "medium",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_4d983b15926cc18f",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4daf7ab62ee5f36a",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4dbd24e46c7fd9f0",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4ecb3efb25029a86",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4edd88a586522128",
+      "question_id": "1.1.5",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_4f59bbcdf113e216",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_4fec8b56eff139b5",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_50ccb6770ac4877c",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_51033476070bd183",
+      "question_id": "1.1.4",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "medium",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_515c923069e999b6",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_51df07803a9138a4",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_51e9d90a9ecd9f58",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_53e18c44583082ec",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_54ed3dc2d7aeffd4",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_56460cf0a44b4a0f",
+      "question_id": "1.1.4",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_57efc5ae9bd7ea9c",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_5ad73e4878ed72f7",
+      "question_id": "3.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_5c94430f169d981d",
+      "question_id": "3.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_5cca8f81f1583f61",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_5df7dcd51ed354a8",
+      "question_id": "1.1.4",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_60310df8a19943e6",
+      "question_id": "1.1.5",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6078678c693cc00b",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_607f31afdbaf1176",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_60ad9202b147467b",
+      "question_id": "1.1.4",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_60f936107583c673",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "medium",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_615ed983acb348c7",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_623d861b5333fa0b",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_634042511a1245bf",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_67dc113858b91b1d",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_67dc6bb5d576f330",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6894d7eb1a49222e",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6a3308bfe21078d8",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6a4633678272e9c5",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6c0a6224831498e8",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6caa4f39fbca6b59",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_6d28e5018e82f540",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6d624692d5c57804",
+      "question_id": "1.1.4",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6d6b2a2b2c391cac",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6d6fb1e1092c38cd",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6f54b3e9a165947c",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_6fc5bde43eebeb34",
+      "question_id": "1.1.1",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_70807e4b9a5e65ab",
+      "question_id": "1.1.1",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_71417c0709d02afb",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_71452fcc17000b1c",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_7345b6d05489c7d3",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_752684bf5706fe21",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_76685321e5282d73",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_76fd8fa846deebe3",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_77b721549d05ad55",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_78732ae3a1d93124",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_787724fc06c4f84b",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_791594030d6636c3",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_796ad470c97e4cdd",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_7b639edf673c127c",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_7bc55359d1a8d048",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_7cb7702ffc55054b",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_7d89268478a2224c",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_7e5ed65f7cbdeaa3",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_7e841591ee89a599",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_7ed367f96d53bd33",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_7ffc08852f2eec7d",
+      "question_id": "1.1.1",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_81437ff0de24134b",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_842dc25d262bcf38",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_845fbe60c8f44521",
+      "question_id": "1.1.5",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_84820a55a313e7fe",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_8495659133f245c3",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_859e9d1cfcb43713",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_8645838fc26e3948",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_86747f1dbe12b714",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_87749bc8bb4bf9ba",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_881c7e17bb3d58c4",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_88eaf9106157231c",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_8a121bf784293570",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_8ba0686bef700367",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_8bda43fe774ad83f",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_8e8bb8b6ad3f7ddf",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9150f2bcb45ce854",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9242fa9e30b5dfa6",
+      "question_id": "1.1.4",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9325eaec6ac3ca3a",
+      "question_id": "1.1.5",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_933241b8f7739227",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_94b79c01c40f4886",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_95b2a60ed807a971",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_963961e7b9ff736b",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_975f2f173e688822",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_984ae1c3d4d6012b",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9869f686b4dcb310",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_98f8360d73ce1858",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_9a746edb14c6e250",
+      "question_id": "1.1.4",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9b6b08a78ff9cc70",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9c64a3164ad80311",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9d6a6ec2402444d5",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9de4779aac3a4053",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9fab944328e13f56",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_9fd9c8bf62a4c6ce",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a088789d852ec904",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a09077cceb02195e",
+      "question_id": "3.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a171d9dc31c84e27",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_a1b03434812400e8",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a21d25aec9a82f1d",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a229a6e8984dd1ba",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a334db70fd268853",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a69fa2151eb71f81",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a78c45a89dff7c01",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_a84b85e6b2ff81d4",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a97044250b5d9301",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_a9b6af45349c50bc",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_aa447751620ca024",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_aad8eb1848fc70b5",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ab64815af9d800b5",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "medium",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_ae7332cafffffb68",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_af959e8b05e82e04",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_afa630d909f2c15e",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b0af27d9e23a72b6",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b0bdf9b9a8744ce5",
+      "question_id": "3.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b114af48a7c29e6c",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b15d5156729d9f32",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b2ea52849d113929",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b2ef8868822b41be",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b383bd3936b81466",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_b3c0bc69b1348509",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b45fd1514efa2c97",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b53b0f9cf9a14168",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b6794bc36107172c",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b6832bfc65633e1a",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b6f882f0a116b323",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_b745b426798c8ad3",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b7ab36117a2cabee",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_b8889ed489ec3fbf",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_bab314ccfacb1822",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_bb1a304427f634e0",
+      "question_id": "1.1.5",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_bbc15a66fa0239f3",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_bbf6c4b8bbae9236",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_bdd33b351e1de5de",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_bdf3a53d17c3b42d",
+      "question_id": "1.1.1",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c0c9743d8231e120",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c0dad9945e19d567",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c21b5f3066ce68ca",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c26a99e7e716e508",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c2d056f11973900c",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c3017fc9e6311bc3",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c327f05ff12c4982",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_c33c37e197c1fab6",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c3916b56cdb1d03a",
+      "question_id": "3.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c511256453b28024",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c561150e0c494d0a",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "medium",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_c5e62a884f9cffeb",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_c703dcb18c6a6a40",
+      "question_id": "2.2.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "medium",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_c7667825f631b095",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_ca8f1361be8520cc",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_cba9195407c6ccd8",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_cda5e9bce476e818",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ce1ef65fabac64d4",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_cfa7fc68189631ba",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_d08382b80a4f6613",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_d0dee7410817a792",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_d1f66c8ab84c9696",
+      "question_id": "1.1.4",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_d3fba1375f8b908d",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_d494d47d56149da7",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_dcf387c392b1652f",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_dcf603b95f974015",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_dd0031306023fa85",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_dd384ee898008897",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ddc711b3fd5ed9a2",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_de958f9f118e4a99",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_de9b83d445c4c9c2",
+      "question_id": "3.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_dee954bd4b93832f",
+      "question_id": "1.1.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_df1120bd44fb1f7d",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_df5e8b996384e624",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_e17ba692b8cc456a",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_e2103d68b901602f",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_e4f90eba35c71529",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_e5e7c9cb75ea9dda",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_e5e8cfafb9a8e6ec",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_e99a9b7de20f5a6e",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ea31d2ed83755f0b",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ec99d73ba5aa11ff",
+      "question_id": "1.1.2",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ed9d134ee2d89c59",
+      "question_id": "1.1.5",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ee07011ae8d6f1df",
+      "question_id": "1.1.1",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_f4aa1b37b75d36cf",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_f565da65e2166e5c",
+      "question_id": "4.3",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_f5af0edfeb93c6e2",
+      "question_id": "2.2.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_f7816a57f72ea9f4",
+      "question_id": "1.1.5",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_f9b1a2c845d8a01a",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "direct-answer-request",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "direct-answer-request"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_fa08b98f3fe8a9ac",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_fa31126a0208acde",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_fc4fe99f3dc4a241",
+      "question_id": "1.1.5",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_fc729c449d86f6bb",
+      "question_id": "3.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_fc94cacdc10043b1",
+      "question_id": "1.1.4",
+      "sequence_context": "after-pass",
+      "primary_purpose": "conceptual",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_fd9a4c77e52b9f1b",
+      "question_id": "3.2",
+      "sequence_context": "after-pass",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_fdb27c77e4fb62c0",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_fdcbd8bc9273db36",
+      "question_id": "4.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "assignment-clarification",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "conceptual"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_fecdd04f1b0661b3",
+      "question_id": "1.1.1",
+      "sequence_context": "before-attempt",
+      "primary_purpose": "unclear",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "assignment-clarification"
+      ],
+      "matches_synthetic_ground_truth": false
+    },
+    {
+      "journey_id": "journey_fee81830bae7f878",
+      "question_id": "2.2.2",
+      "sequence_context": "after-problem",
+      "primary_purpose": "syntax",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "syntax"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ff9192fd4939977f",
+      "question_id": "3.3",
+      "sequence_context": "after-pass",
+      "primary_purpose": "validation",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "validation"
+      ],
+      "matches_synthetic_ground_truth": true
+    },
+    {
+      "journey_id": "journey_ffda7b1cd210dd78",
+      "question_id": "4.3",
+      "sequence_context": "after-problem",
+      "primary_purpose": "debugging",
+      "confidence": "high",
+      "synthetic_ground_truth": [
+        "debugging"
+      ],
+      "matches_synthetic_ground_truth": true
+    }
+  ],
+  "synthetic_accuracy": 0.8621908127208481
+}

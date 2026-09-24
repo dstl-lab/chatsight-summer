@@ -1,0 +1,650 @@
+{
+  "schema_version": "1.0.0",
+  "bundle_id": "bundle_0a22ff076869de4d",
+  "source_kind": "synthetic",
+  "lab_label": "Lab 1",
+  "closed_summary": "100 students · 8 questions · 283 of 757 (37%) used the tutor",
+  "cohort_statement": "This synthetic Lab 1 dataset represents 100 students across 8 questions.",
+  "tutor_use": {
+    "numerator": 283,
+    "denominator": 757,
+    "display": "283 of 757 (37%)",
+    "value": 0.37384412153236457
+  },
+  "passed": {
+    "numerator": 650,
+    "denominator": 757,
+    "display": "650 of 757 (86%)",
+    "value": 0.8586525759577279
+  },
+  "most_common_pattern": "validation after passing the autograder",
+  "notable_questions": [
+    {
+      "question_id": "4.3",
+      "reason": "highest median recorded errors"
+    },
+    {
+      "question_id": "3.3",
+      "reason": "most classified debugging questions after recorded problems"
+    }
+  ],
+  "notes": [
+    "The most common tutor-use pattern was validation after passing the autograder.",
+    "Recorded errors were highest on Question 4.3 and Question 3.3.",
+    "Some students asked for a direct answer before editing or running code.",
+    "These notes describe the synthetic lab only; they are not findings about real students."
+  ],
+  "questions": [
+    {
+      "question_id": "1.1.1",
+      "prompt": "Make an array containing 2, 4, and 6 named even_numbers.",
+      "one_line": "Students often recorded validation after passing the autograder.",
+      "student_count": 92,
+      "tutor_use": {
+        "numerator": 26,
+        "denominator": 92,
+        "display": "26 of 92 (28%)",
+        "value": 0.2826086956521739
+      },
+      "passed": {
+        "numerator": 78,
+        "denominator": 92,
+        "display": "78 of 92 (85%)",
+        "value": 0.8478260869565217
+      },
+      "median_active_seconds": 78,
+      "median_active_display": "1 min 18 sec",
+      "median_tutor_queries": 1.0,
+      "median_errors": 0.0,
+      "most_common_purpose": "validation",
+      "most_common_purpose_label": "validation",
+      "top_patterns": [
+        {
+          "label": "validation after passing the autograder",
+          "context": "after-pass",
+          "purpose": "validation",
+          "count": 8,
+          "display": "8 of 26 (31%)"
+        },
+        {
+          "label": "a direct answer before editing or running code",
+          "context": "before-attempt",
+          "purpose": "direct-answer-request",
+          "count": 4,
+          "display": "4 of 26 (15%)"
+        },
+        {
+          "label": "conceptual help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "conceptual",
+          "count": 4,
+          "display": "4 of 26 (15%)"
+        },
+        {
+          "label": "syntax help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "syntax",
+          "count": 4,
+          "display": "4 of 26 (15%)"
+        },
+        {
+          "label": "assignment clarification after passing the autograder",
+          "context": "after-pass",
+          "purpose": "assignment-clarification",
+          "count": 3,
+          "display": "3 of 26 (12%)"
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_67dc113858b91b1d",
+          "evidence_episode_id": "ep_4edc611e053ff22a",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply.",
+          "contextual_label": "validation after passing the autograder"
+        },
+        {
+          "journey_id": "journey_16b351afec53c8ab",
+          "evidence_episode_id": "ep_76bb4095b03678f4",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply.",
+          "contextual_label": "validation after passing the autograder"
+        }
+      ]
+    },
+    {
+      "question_id": "1.1.2",
+      "prompt": "Make an array containing 0, -1, 1, pi, and e named odd_numbers.",
+      "one_line": "Students often recorded a direct answer before editing or running code.",
+      "student_count": 94,
+      "tutor_use": {
+        "numerator": 35,
+        "denominator": 94,
+        "display": "35 of 94 (37%)",
+        "value": 0.3723404255319149
+      },
+      "passed": {
+        "numerator": 82,
+        "denominator": 94,
+        "display": "82 of 94 (87%)",
+        "value": 0.8723404255319149
+      },
+      "median_active_seconds": 94,
+      "median_active_display": "1 min 34 sec",
+      "median_tutor_queries": 1.0,
+      "median_errors": 0.0,
+      "most_common_purpose": "direct-answer-request",
+      "most_common_purpose_label": "a direct answer",
+      "top_patterns": [
+        {
+          "label": "a direct answer before editing or running code",
+          "context": "before-attempt",
+          "purpose": "direct-answer-request",
+          "count": 9,
+          "display": "9 of 35 (26%)"
+        },
+        {
+          "label": "validation after passing the autograder",
+          "context": "after-pass",
+          "purpose": "validation",
+          "count": 9,
+          "display": "9 of 35 (26%)"
+        },
+        {
+          "label": "conceptual help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "conceptual",
+          "count": 7,
+          "display": "7 of 35 (20%)"
+        },
+        {
+          "label": "assignment clarification after passing the autograder",
+          "context": "after-pass",
+          "purpose": "assignment-clarification",
+          "count": 2,
+          "display": "2 of 35 (6%)"
+        },
+        {
+          "label": "unclear help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "unclear",
+          "count": 2,
+          "display": "2 of 35 (6%)"
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_81437ff0de24134b",
+          "evidence_episode_id": "ep_0b0785e31fe5f5b4",
+          "summary": "The student used the tutor before editing or running code; exact tutor code was used and a later edit was recorded.",
+          "contextual_label": "a direct answer before editing or running code"
+        },
+        {
+          "journey_id": "journey_ca8f1361be8520cc",
+          "evidence_episode_id": "ep_ccbe678a7ed02d10",
+          "summary": "The student used the tutor before editing or running code; exact tutor code was used and a later edit was recorded.",
+          "contextual_label": "a direct answer before editing or running code"
+        }
+      ]
+    },
+    {
+      "question_id": "1.1.4",
+      "prompt": "Use np.arange for multiples of 99 from 0 through 9999.",
+      "one_line": "Students often recorded validation after passing the autograder.",
+      "student_count": 96,
+      "tutor_use": {
+        "numerator": 35,
+        "denominator": 96,
+        "display": "35 of 96 (36%)",
+        "value": 0.3645833333333333
+      },
+      "passed": {
+        "numerator": 81,
+        "denominator": 96,
+        "display": "81 of 96 (84%)",
+        "value": 0.84375
+      },
+      "median_active_seconds": 102,
+      "median_active_display": "1 min 42 sec",
+      "median_tutor_queries": 1.0,
+      "median_errors": 1.0,
+      "most_common_purpose": "validation",
+      "most_common_purpose_label": "validation",
+      "top_patterns": [
+        {
+          "label": "validation after passing the autograder",
+          "context": "after-pass",
+          "purpose": "validation",
+          "count": 10,
+          "display": "10 of 35 (29%)"
+        },
+        {
+          "label": "a direct answer before editing or running code",
+          "context": "before-attempt",
+          "purpose": "direct-answer-request",
+          "count": 7,
+          "display": "7 of 35 (20%)"
+        },
+        {
+          "label": "conceptual help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "conceptual",
+          "count": 6,
+          "display": "6 of 35 (17%)"
+        },
+        {
+          "label": "syntax help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "syntax",
+          "count": 3,
+          "display": "3 of 35 (9%)"
+        },
+        {
+          "label": "debugging after an error or failed autograder check",
+          "context": "after-problem",
+          "purpose": "debugging",
+          "count": 3,
+          "display": "3 of 35 (9%)"
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_445228fddb8b721c",
+          "evidence_episode_id": "ep_97a13eb11ebb9965",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply.",
+          "contextual_label": "validation after passing the autograder"
+        },
+        {
+          "journey_id": "journey_4dbd24e46c7fd9f0",
+          "evidence_episode_id": "ep_5ee69cf70576cd14",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply.",
+          "contextual_label": "validation after passing the autograder"
+        }
+      ]
+    },
+    {
+      "question_id": "1.1.5",
+      "prompt": "Create hourly collection times in seconds for all 30 days.",
+      "one_line": "Students often recorded validation after passing the autograder.",
+      "student_count": 93,
+      "tutor_use": {
+        "numerator": 38,
+        "denominator": 93,
+        "display": "38 of 93 (41%)",
+        "value": 0.40860215053763443
+      },
+      "passed": {
+        "numerator": 83,
+        "denominator": 93,
+        "display": "83 of 93 (89%)",
+        "value": 0.8924731182795699
+      },
+      "median_active_seconds": 131,
+      "median_active_display": "2 min 11 sec",
+      "median_tutor_queries": 1.0,
+      "median_errors": 1.0,
+      "most_common_purpose": "validation",
+      "most_common_purpose_label": "validation",
+      "top_patterns": [
+        {
+          "label": "validation after passing the autograder",
+          "context": "after-pass",
+          "purpose": "validation",
+          "count": 13,
+          "display": "13 of 38 (34%)"
+        },
+        {
+          "label": "a direct answer before editing or running code",
+          "context": "before-attempt",
+          "purpose": "direct-answer-request",
+          "count": 10,
+          "display": "10 of 38 (26%)"
+        },
+        {
+          "label": "debugging after an error or failed autograder check",
+          "context": "after-problem",
+          "purpose": "debugging",
+          "count": 6,
+          "display": "6 of 38 (16%)"
+        },
+        {
+          "label": "conceptual help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "conceptual",
+          "count": 4,
+          "display": "4 of 38 (11%)"
+        },
+        {
+          "label": "syntax help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "syntax",
+          "count": 2,
+          "display": "2 of 38 (5%)"
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_4ecb3efb25029a86",
+          "evidence_episode_id": "ep_ca493bff4f272376",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply.",
+          "contextual_label": "validation after passing the autograder"
+        },
+        {
+          "journey_id": "journey_30fb25f96c48ee5d",
+          "evidence_episode_id": "ep_c59b5eb9fdb24ab6",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply.",
+          "contextual_label": "validation after passing the autograder"
+        }
+      ]
+    },
+    {
+      "question_id": "2.2.2",
+      "prompt": "Assign the tenth movie name from top_10_movies_by_name.",
+      "one_line": "Students often recorded validation after passing the autograder.",
+      "student_count": 93,
+      "tutor_use": {
+        "numerator": 30,
+        "denominator": 93,
+        "display": "30 of 93 (32%)",
+        "value": 0.3225806451612903
+      },
+      "passed": {
+        "numerator": 83,
+        "denominator": 93,
+        "display": "83 of 93 (89%)",
+        "value": 0.8924731182795699
+      },
+      "median_active_seconds": 98,
+      "median_active_display": "1 min 38 sec",
+      "median_tutor_queries": 1.0,
+      "median_errors": 0.0,
+      "most_common_purpose": "validation",
+      "most_common_purpose_label": "validation",
+      "top_patterns": [
+        {
+          "label": "validation after passing the autograder",
+          "context": "after-pass",
+          "purpose": "validation",
+          "count": 10,
+          "display": "10 of 30 (33%)"
+        },
+        {
+          "label": "a direct answer before editing or running code",
+          "context": "before-attempt",
+          "purpose": "direct-answer-request",
+          "count": 9,
+          "display": "9 of 30 (30%)"
+        },
+        {
+          "label": "conceptual help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "conceptual",
+          "count": 3,
+          "display": "3 of 30 (10%)"
+        },
+        {
+          "label": "assignment clarification after passing the autograder",
+          "context": "after-pass",
+          "purpose": "assignment-clarification",
+          "count": 3,
+          "display": "3 of 30 (10%)"
+        },
+        {
+          "label": "syntax help after an error or failed autograder check",
+          "context": "after-problem",
+          "purpose": "syntax",
+          "count": 2,
+          "display": "2 of 30 (7%)"
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_71417c0709d02afb",
+          "evidence_episode_id": "ep_c286cb94762c6fa9",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply.",
+          "contextual_label": "validation after passing the autograder"
+        },
+        {
+          "journey_id": "journey_a334db70fd268853",
+          "evidence_episode_id": "ep_4c7ca0440c5ddd56",
+          "summary": "The student passed the autograder before using the tutor; no code change was recorded after the reply.",
+          "contextual_label": "validation after passing the autograder"
+        }
+      ]
+    },
+    {
+      "question_id": "3.2",
+      "prompt": "Sort imdb_by_name chronologically into imdb_sorted.",
+      "one_line": "Students often recorded a direct answer before editing or running code.",
+      "student_count": 97,
+      "tutor_use": {
+        "numerator": 36,
+        "denominator": 97,
+        "display": "36 of 97 (37%)",
+        "value": 0.3711340206185567
+      },
+      "passed": {
+        "numerator": 83,
+        "denominator": 97,
+        "display": "83 of 97 (86%)",
+        "value": 0.8556701030927835
+      },
+      "median_active_seconds": 87,
+      "median_active_display": "1 min 27 sec",
+      "median_tutor_queries": 1.0,
+      "median_errors": 0.0,
+      "most_common_purpose": "direct-answer-request",
+      "most_common_purpose_label": "a direct answer",
+      "top_patterns": [
+        {
+          "label": "a direct answer before editing or running code",
+          "context": "before-attempt",
+          "purpose": "direct-answer-request",
+          "count": 11,
+          "display": "11 of 36 (31%)"
+        },
+        {
+          "label": "validation after passing the autograder",
+          "context": "after-pass",
+          "purpose": "validation",
+          "count": 8,
+          "display": "8 of 36 (22%)"
+        },
+        {
+          "label": "syntax help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "syntax",
+          "count": 5,
+          "display": "5 of 36 (14%)"
+        },
+        {
+          "label": "conceptual help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "conceptual",
+          "count": 4,
+          "display": "4 of 36 (11%)"
+        },
+        {
+          "label": "debugging after an error or failed autograder check",
+          "context": "after-problem",
+          "purpose": "debugging",
+          "count": 4,
+          "display": "4 of 36 (11%)"
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_95b2a60ed807a971",
+          "evidence_episode_id": "ep_5d24fd2e07acf24b",
+          "summary": "The student used the tutor before editing or running code; code was edited afterward without an exact tutor-code transfer.",
+          "contextual_label": "a direct answer before editing or running code"
+        },
+        {
+          "journey_id": "journey_a9b6af45349c50bc",
+          "evidence_episode_id": "ep_abc203b05e525622",
+          "summary": "The student used the tutor before editing or running code; exact tutor code was used and a later edit was recorded.",
+          "contextual_label": "a direct answer before editing or running code"
+        }
+      ]
+    },
+    {
+      "question_id": "3.3",
+      "prompt": "Use code to get the earliest movie title from imdb_sorted.",
+      "one_line": "Students often recorded validation after passing the autograder.",
+      "student_count": 96,
+      "tutor_use": {
+        "numerator": 43,
+        "denominator": 96,
+        "display": "43 of 96 (45%)",
+        "value": 0.4479166666666667
+      },
+      "passed": {
+        "numerator": 80,
+        "denominator": 96,
+        "display": "80 of 96 (83%)",
+        "value": 0.8333333333333334
+      },
+      "median_active_seconds": 116,
+      "median_active_display": "1 min 56 sec",
+      "median_tutor_queries": 1.0,
+      "median_errors": 1.0,
+      "most_common_purpose": "direct-answer-request",
+      "most_common_purpose_label": "a direct answer",
+      "top_patterns": [
+        {
+          "label": "validation after passing the autograder",
+          "context": "after-pass",
+          "purpose": "validation",
+          "count": 11,
+          "display": "11 of 43 (26%)"
+        },
+        {
+          "label": "a direct answer before editing or running code",
+          "context": "before-attempt",
+          "purpose": "direct-answer-request",
+          "count": 10,
+          "display": "10 of 43 (23%)"
+        },
+        {
+          "label": "debugging after an error or failed autograder check",
+          "context": "after-problem",
+          "purpose": "debugging",
+          "count": 9,
+          "display": "9 of 43 (21%)"
+        },
+        {
+          "label": "assignment clarification after passing the autograder",
+          "context": "after-pass",
+          "purpose": "assignment-clarification",
+          "count": 5,
+          "display": "5 of 43 (12%)"
+        },
+        {
+          "label": "syntax help after passing the autograder",
+          "context": "after-pass",
+          "purpose": "syntax",
+          "count": 3,
+          "display": "3 of 43 (7%)"
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_57efc5ae9bd7ea9c",
+          "evidence_episode_id": "ep_a47a0120430e7e6c",
+          "summary": "The student used the tutor before editing or running code; exact tutor code was used and a later edit was recorded.",
+          "contextual_label": "a direct answer before editing or running code"
+        },
+        {
+          "journey_id": "journey_b2ef8868822b41be",
+          "evidence_episode_id": "ep_f913f79495d747be",
+          "summary": "The student had an error or failed autograder check before using the tutor; exact tutor code was used with no later edit recorded.",
+          "contextual_label": "a direct answer after an error or failed autograder check"
+        }
+      ]
+    },
+    {
+      "question_id": "4.3",
+      "prompt": "Find average ratings for 20th- and 21st-century movies.",
+      "one_line": "Students often recorded a direct answer before editing or running code.",
+      "student_count": 96,
+      "tutor_use": {
+        "numerator": 40,
+        "denominator": 96,
+        "display": "40 of 96 (42%)",
+        "value": 0.4166666666666667
+      },
+      "passed": {
+        "numerator": 80,
+        "denominator": 96,
+        "display": "80 of 96 (83%)",
+        "value": 0.8333333333333334
+      },
+      "median_active_seconds": 170,
+      "median_active_display": "2 min 50 sec",
+      "median_tutor_queries": 1.0,
+      "median_errors": 1.0,
+      "most_common_purpose": "direct-answer-request",
+      "most_common_purpose_label": "a direct answer",
+      "top_patterns": [
+        {
+          "label": "a direct answer before editing or running code",
+          "context": "before-attempt",
+          "purpose": "direct-answer-request",
+          "count": 10,
+          "display": "10 of 40 (25%)"
+        },
+        {
+          "label": "validation after passing the autograder",
+          "context": "after-pass",
+          "purpose": "validation",
+          "count": 10,
+          "display": "10 of 40 (25%)"
+        },
+        {
+          "label": "debugging after an error or failed autograder check",
+          "context": "after-problem",
+          "purpose": "debugging",
+          "count": 8,
+          "display": "8 of 40 (20%)"
+        },
+        {
+          "label": "syntax help after an error or failed autograder check",
+          "context": "after-problem",
+          "purpose": "syntax",
+          "count": 4,
+          "display": "4 of 40 (10%)"
+        },
+        {
+          "label": "a direct answer after an error or failed autograder check",
+          "context": "after-problem",
+          "purpose": "direct-answer-request",
+          "count": 3,
+          "display": "3 of 40 (8%)"
+        }
+      ],
+      "examples": [
+        {
+          "journey_id": "journey_752684bf5706fe21",
+          "evidence_episode_id": "ep_49b5a77ea9a23312",
+          "summary": "The student used the tutor before editing or running code; exact tutor code was used with no later edit recorded.",
+          "contextual_label": "a direct answer before editing or running code"
+        },
+        {
+          "journey_id": "journey_aa447751620ca024",
+          "evidence_episode_id": "ep_c68e9bc318ee98e2",
+          "summary": "The student used the tutor before editing or running code; exact tutor code was used with no later edit recorded.",
+          "contextual_label": "a direct answer before editing or running code"
+        }
+      ]
+    }
+  ],
+  "generation_mode": "deterministic-fallback",
+  "fallback_reason": "Committed offline demo; no provider call required.",
+  "model": null,
+  "generated_at": null,
+  "packet_hash": "9ac10bb81e5b2382bf21455ba34e1c583b5c4b034b2b04f37d8db85dca34b9f2",
+  "prompt_hash": "921736311ded07fa7dc9dee4eaa205813a8441638ca4c483495ed7ce2da778e0",
+  "caveats": [
+    "This is synthetic scenario data. It does not estimate how real DSC 10 students behave.",
+    "Recorded events describe actions, not intent, understanding, learning, or tutor effectiveness.",
+    "Gemini notes organize the computed patterns. They do not supply the displayed numbers."
+  ]
+}

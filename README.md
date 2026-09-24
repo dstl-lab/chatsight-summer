@@ -117,13 +117,30 @@ Two entry points (installed via `uv sync` from `pyproject.toml`):
 Both write immutable labeled-corpus snapshots to `data/snapshots/<id>/` with a full
 provenance manifest.
 
+## Running the episode viewer
+
+The repository includes a ready-to-view fictional cohort: 100 students across
+eight Lab 1 questions. No credentials, generation, or real student data are
+needed.
+
+```bash
+uv run episode-viewer-demo
+```
+
+Open `http://127.0.0.1:8342`. Click a question for aggregate progressions and
+individual student timelines.
+
+The included cohort and its limitations are documented in
+[`examples/episode-viewer-demo`](examples/episode-viewer-demo/README.md).
+
 ## Where things live
 
 - Phase plan and invariants: `CLAUDE.md`
 - Memos: `docs/` (start with `2026-08-05-simulation-first-framing.md` and
   `2026-08-01-topdown-labeling-same-repo.md`)
 - Snapshot provenance ledger: `snapshots.md`
-- Code: `src/` (ingest → labeling → eval → trajectories → agents → replay, plus scoring)
+- Code: `src/` (ingest → labeling/eval and episode reconstruction/viewing →
+  trajectories → agents → replay, plus scoring)
 - Experiments (pinned configs + results): `experiments/`
 
 Data (`data/`) is gitignored and contains IRB-covered student conversations. Never commit it.
