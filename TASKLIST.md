@@ -1,5 +1,10 @@
 # Simulated students: task list
 
+**In progress (2026-09-27):** the [fixed local training pilot](docs/2026-09-27-local-student-training.md)
+now has a verified tokenizer, target-loss correction and frozen configuration.
+One starting-versus-trained model comparison is running locally; no new labels,
+Gemini requests or simulator replacement. Report the result before any further run.
+
 **Next (2026-09-27):** [use recorded student replies as training targets](docs/2026-09-27-recorded-student-training.md).
 The existing examples, separate development references and source pins now pass
 the private readiness check; no new labels or extraction pipeline were needed.
