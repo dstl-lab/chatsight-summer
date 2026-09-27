@@ -115,12 +115,34 @@ provider calls and is not wired into the production simulator. Integrated checks
 692 Python tests passed, three skipped; all three Node and seven Marimo checks
 pass. The private runner also passes authored offline
 checks for the 16-slot/64-attempt ceiling, preserved failures and no-reply,
-interruption, changed-input rejection and rerun refusal. No model requests have
-been sent. Minchan volunteered for the single capped pass. The reviewer commitment
+interruption, changed-input rejection and rerun refusal. No model requests were
+sent during preparation. Minchan volunteered for the single capped pass. The reviewer commitment
 and randomized presentation order were recorded before attempted dispatch.
 
 Automatic approval review rejected the private Gemini transfer before execution:
 volunteering to review was not accepted as authorization for the specific payload
-and destination. The rejection is preserved locally in `send-blocked.json`;
-specific permission for the unchanged disclosed run has been requested. Neither
-a dispatch marker nor event receipts exist. Fidelity remains unmeasured.
+and destination. The rejection is preserved locally in `send-blocked.json`.
+Minchan subsequently approved the specific disclosed transfer. Before dispatch,
+`approval-response.json` bound that answer to the scope, exact prompts,
+disclosure, reviewer commitment and earlier rejection by their hashes.
+The original rejection and frozen inputs remain unchanged.
+
+## Run and review handoff
+
+The approved dispatch completed all 16 scheduled replies in 16 adapter attempts,
+without retries, errors, no-reply outcomes or pending slots. The blinded review
+contains eight cases and 14 unique messages: two within-case duplicate pairs share
+one judgment each, while private mapping retains all 16 condition occurrences.
+The existing review UI asks 28 flags in total; references are not relabeled.
+Only the `reviewer/` directory is served locally. The condition mapping,
+demonstrations and reference judgments remain outside the served directory.
+
+All 96 frozen source pins and approval bindings verify. The private
+`run-verification.json` records generation usage and hashes the review handoff.
+Before review construction, `analysis-clarifications.json` specified per-flag
+paired eligibility and work-only wins/losses/ties; complete binary help/work
+labels across all 16 replies remain necessary for the overall screen. These
+clarifications do not change its stopping rule or frozen inputs.
+
+Generation is finished. Minchan's single review and the resulting fixed report
+are pending. No new human judgments or evidence of improved fidelity are claimed.

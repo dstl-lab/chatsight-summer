@@ -1,13 +1,13 @@
 # Simulated students: task list
 
 **Current step (2026-09-27):** [one retrieved student example](docs/2026-09-27-retrieved-student-example.md)
-is prepared as an experimental prompt change, independently of pending PR #62.
-Eight existing reviewed conversations are excluded from the example library;
-16 fresh control/candidate requests are frozen. No requests have been sent.
-Minchan volunteered for one capped pass over at most 16 messages; existing
-reference labels are reused. Specific provider-transfer permission is pending
-after automatic approval review blocked dispatch. This does not reopen earlier studies or
-change the default simulator. Earlier status notes below are historical.
+is an experimental prompt change, independently of pending PR #62.
+Eight existing reviewed conversations are excluded from the example library.
+The specifically approved run completed all 16 replies in 16 adapter attempts.
+Minchan's single review is ready: eight cases, 14 unique messages (two duplicate
+pairs share judgments), with existing reference labels reused. No new judgments
+or fidelity result yet. This does not reopen earlier studies or change the default
+simulator. Earlier status notes below are historical.
 
 **Review integration (September 27):** PRs #47, #48, #57–#60 and #63 are merged.
 The [completed communication review](docs/2026-09-27-standalone-communication-review.md)
