@@ -1,10 +1,18 @@
 # Simulated students: task list
 
+**Completed (2026-09-27):** the saved adapter now participates in a
+[bounded conversation comparison](docs/2026-09-27-local-student-conversation-status.md)
+through the existing chat engine. Starting and trained students each produced
+three messages with the same unchanged tutor policy; both saved branches are
+available in the read-only browser. Exact histories and source pins verify.
+The private report records limitations; this pilot is closed with no new labels,
+further training or default-generator replacement.
+
 **Completed (2026-09-27):** the [fixed local training pilot](docs/2026-09-27-local-student-training-status.md)
 saved a candidate adapter and completed the starting-versus-trained prediction
 comparison. Private results and receipts are preserved; no new labels, Gemini
-requests or simulator replacement. Next distinct milestone: a bounded conversation
-using the saved candidate, with fixed generation settings and no further training.
+requests or simulator replacement. The subsequent bounded conversation above
+uses the saved candidate with fixed settings and no further training.
 
 **Preparation completed (2026-09-27):** [use recorded student replies as training targets](docs/2026-09-27-recorded-student-training.md).
 The existing examples, separate development references and source pins now pass

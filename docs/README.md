@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-27 | [Saved local student conversation](2026-09-27-local-student-conversation-status.md) | Two bounded local branches complete and replayable; exact inputs/outputs retained privately, no fidelity ranking or new labels |
+| 2026-09-27 | [Local student conversation protocol](2026-09-27-local-student-conversation.md) | Fixed case, settings and stopping rule; existing engine and read-only viewer reused |
 | 2026-09-27 | [Local student training result](2026-09-27-local-student-training-status.md) | Fixed pilot complete; candidate adapter and private prediction results preserved, six tests and source verification pass; no generator adoption |
 | 2026-09-27 | [Local student training pilot](2026-09-27-local-student-training.md) | Frozen configuration; exact target serialization and padding correction verified; no new labeling |
 | 2026-09-27 | [Recorded student training targets](2026-09-27-recorded-student-training.md) | Reuse existing recorded targets and conversation split; local verification, no new labels or training run |
