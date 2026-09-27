@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**September 27:** PRs #47, #48 and #57–#60 are merged. PR #62 remains pending
+and is not a dependency for the simulator. The
+[completed communication review](docs/2026-09-27-standalone-communication-review.md)
+now opens directly with its aggregate work-presence counts and existing examples.
+689 Python tests pass (three skips), along with all three Node and seven Marimo
+checks. No new labeling, generation or change to the simulator. A future
+improvement experiment still needs its own declared comparison and stopping rule.
+
 **Integration update (2026-09-23):** PRs #47, #48 and #57–#59 are merged;
 #60 completes the browser workspace integration. Start from `main` using the
 [teammate quickstart](docs/teammate-quickstart.md). The implementation and independent

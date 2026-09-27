@@ -450,6 +450,24 @@ Select a scenario and inspect **Conversation** and **Saved results**. Viewing
 requires no credentials, tunnel, database or Docker. Chat scenarios expose the
 conversation only; code in a message does not establish notebook work or a run.
 
+### Inspect the completed communication review
+
+If the team supplies the private `cached-communication-review-v1` folder,
+open it directly without a replay session:
+
+```sh
+.venv/bin/python -m src.agents.browser_workspace \
+  --comparison data/episode-pilot/cached-communication-review-v1 --port 8434
+```
+
+Use a free port if another workspace is running. **Reviewed replies** shows the
+full review's work-presence counts above the selected recorded message and its
+two saved simulated replies. The chat sidebar supplies the context. Missing or
+unclear judgments remain explicit, and repeated draws keep their original weight.
+These are completed reviews, not a request for more labels. Viewing cannot send
+model requests. This single-configuration review is separate from the matched
+`--fidelity-comparison` benchmark and does not establish an improvement.
+
 ## 4. Optionally continue a live session
 
 For a supplied working session with a real Gemini model and remaining decisions,

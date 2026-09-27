@@ -43,6 +43,11 @@ let successorPacket=null,nextExerciseThrow=false,nextReadBusy=false,finishNextEx
 const review={help_request:'yes',work_present:'no',note:null};
 const comparison={version:1,kind:'saved-communication-comparison',rubric_id:'help-work-v1',status:'complete-review',
   definitions:{help_request:'Requests assistance.',work_present:'Shows work or diagnostics.'},
+  study:{cases:1,generated_draws:2,groups:[
+    {reference_work:'no',cases:1,draws:2,work_present:0,work_absent:0,unclear:0,unreviewed:2},
+    {reference_work:'yes',cases:0,draws:0,work_present:0,work_absent:0,unclear:0,unreviewed:0},
+    {reference_work:'unclear',cases:0,draws:0,work_present:0,work_absent:0,unclear:0,unreviewed:0},
+    {reference_work:null,cases:0,draws:0,work_present:0,work_absent:0,unclear:0,unreviewed:0}]},
   cases:[{id:'1',title:'Reviewed case 01',context_status:'Earlier activity is unknown.',
     prefix:{context:[{role:'student',text:'Earlier shared <context>.'}],turns:[{role:'tutor',text:'A saved tutor turn. **Try** `<x>`'}]},
     reference:{text:'<img src=x>help',review},draws:[
@@ -385,6 +390,11 @@ const run=code=>vm.runInContext(code,context);
   assert.doesNotMatch(node('canvas').innerHTML,/<img src=x>/);
   assert.match(node('canvas').innerHTML,/Not reviewed/);
   assert.match(node('canvas').innerHTML,/one review covers both/);
+  assert.match(node('canvas').innerHTML,/Work presentation across all cases/);
+  assert.match(node('canvas').innerHTML,/No reviewed draws/);
+  assert.match(node('canvas').innerHTML,/No recorded cases/);
+  assert.match(node('canvas').innerHTML,/2 unreviewed/);
+  assert.doesNotMatch(node('canvas').innerHTML,/NaN|0 \/ 0/);
   assert.match(node('conversation-messages').innerHTML,/Earlier shared &lt;context&gt;\./);
   assert.match(node('conversation-messages').innerHTML,/A saved tutor turn\. \*\*Try\*\* `&lt;x&gt;`/);
   assert.doesNotMatch(node('conversation-messages').innerHTML,/what went wrong|&lt;img src=x&gt;help|7\?|<x>/);
@@ -848,5 +858,16 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(pending('state.openingExercise'),false);assert.equal(pending('state.caseIndex'),1);
   assert.equal(pending('state.policyDraft'),'New task policy');assert.equal(document.activeElement,node('case-title'));
   assert.ok(requests.every(r=>!r.options.method),'Opening a busy child polls GET only');
-  console.log('Saved workspace: playback, drafts, fidelity, next-exercise setup, and recovery pass.');
+  Object.assign(comparison,communicationComparison);
+  comparisonAvailable=true;policyWorkspaceAvailable=false;fidelityComparisonAvailable=false;teachingComparisonAvailable=false;
+  replayAvailable=false;catalog=[];savedUrl=new URL('http://127.0.0.1/');requests=[];
+  const standaloneReview=makeContext();
+  vm.runInContext(fs.readFileSync(script,'utf8'),standaloneReview);
+  await vm.runInContext('ready',standaloneReview);
+  assert.equal(node('compare').textContent,'Reviewed replies');
+  assert.equal(node('simulate').hidden,true);
+  assert.match(node('canvas').innerHTML,/Work presentation across all cases/);
+  await node('reset').onclick();
+  assert.ok(requests.every(r=>['/api/scenarios','/api/comparison'].includes(r.url)&&!r.options.method));
+  console.log('Saved workspace: playback, drafts, fidelity, standalone review, next-exercise setup, and recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});
