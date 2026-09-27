@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-27 | [Recorded student training targets](2026-09-27-recorded-student-training.md) | Reuse existing recorded targets and conversation split; local verification, no new labels or training run |
 | 2026-09-27 | [Retrieved student example](2026-09-27-retrieved-student-example.md) | Closed: 14 messages reviewed; identical help/work flags in all eight pairs, no measured improvement, candidate not adopted |
 | 2026-09-27 | [Standalone communication review](2026-09-27-standalone-communication-review.md) | Direct read-only launch and work-presence counts from existing judgments; 689 tests pass, no new labels or calls |
 | 2026-09-22 | [Browser policy runs](2026-09-22-browser-policy-runs.md) | Implemented: freeze offline, explicitly run untouched arms; 637 tests and authored browser check pass |

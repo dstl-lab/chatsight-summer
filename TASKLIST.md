@@ -1,5 +1,11 @@
 # Simulated students: task list
 
+**Next (2026-09-27):** [use recorded student replies as training targets](docs/2026-09-27-recorded-student-training.md).
+The existing examples, separate development references and source pins now pass
+the private readiness check; no new labels or extraction pipeline were needed.
+Next, configure one same-model base-versus-trained comparison. Preparation is not
+training, and lower prediction loss alone will not establish simulator realism.
+
 **Closed (2026-09-27):** the [retrieved-example comparison](docs/2026-09-27-retrieved-student-example.md)
 shows no measured improvement. Minchan reviewed all 14 unique messages from the
 16-output run. Help/work flags match across conditions in all eight cases; both
