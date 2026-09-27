@@ -4,8 +4,9 @@
 is prepared as an experimental prompt change, independently of pending PR #62.
 Eight existing reviewed conversations are excluded from the example library;
 16 fresh control/candidate requests are frozen. No requests have been sent.
-Reviewer availability is pending for one capped pass over at most 16 messages;
-existing reference labels are reused. This does not reopen earlier studies or
+Minchan volunteered for one capped pass over at most 16 messages; existing
+reference labels are reused. Specific provider-transfer permission is pending
+after automatic approval review blocked dispatch. This does not reopen earlier studies or
 change the default simulator. Earlier status notes below are historical.
 
 **Review integration (September 27):** PRs #47, #48, #57–#60 and #63 are merged.

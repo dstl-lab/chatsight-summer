@@ -5,7 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-27 | [Retrieved student example](2026-09-27-retrieved-student-example.md) | Offline preparation complete: isolated library, eight cases, 16 frozen requests; reviewer availability pending, zero new calls or labels |
+| 2026-09-27 | [Retrieved student example](2026-09-27-retrieved-student-example.md) | Offline preparation complete; reviewer confirmed, specific transfer permission pending after automatic approval rejection; zero new calls or labels |
 | 2026-09-27 | [Standalone communication review](2026-09-27-standalone-communication-review.md) | Direct read-only launch and work-presence counts from existing judgments; 689 tests pass, no new labels or calls |
 | 2026-09-22 | [Browser policy runs](2026-09-22-browser-policy-runs.md) | Implemented: freeze offline, explicitly run untouched arms; 637 tests and authored browser check pass |
 | 2026-09-22 | [Saved browser policy comparison](2026-09-22-browser-policy-comparison.md) | Implemented: PR #47 behind existing Compare, shared context once, saved results only; 618 tests pass |

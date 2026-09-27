@@ -116,5 +116,11 @@ provider calls and is not wired into the production simulator. Integrated checks
 pass. The private runner also passes authored offline
 checks for the 16-slot/64-attempt ceiling, preserved failures and no-reply,
 interruption, changed-input rejection and rerun refusal. No model requests have
-been sent. Reviewer availability for the single capped pass is pending; fidelity
-remains unmeasured.
+been sent. Minchan volunteered for the single capped pass. The reviewer commitment
+and randomized presentation order were recorded before attempted dispatch.
+
+Automatic approval review rejected the private Gemini transfer before execution:
+volunteering to review was not accepted as authorization for the specific payload
+and destination. The rejection is preserved locally in `send-blocked.json`;
+specific permission for the unchanged disclosed run has been requested. Neither
+a dispatch marker nor event receipts exist. Fidelity remains unmeasured.
