@@ -1,11 +1,18 @@
 # Simulated students: task list
 
+**Completed (2026-09-27):** the [fixed local conversation evaluation](docs/2026-09-27-local-conversation-cohort-status.md)
+is closed. Starting and trained students completed every planned case using the
+same tutor policy. The private report combines automatic coverage, repetition and
+length diagnostics with per-case results; independent saved-token/history audits
+pass. No further training or labels were needed. Next: diagnose the already-saved
+repeated sequences before proposing a model change; no new run is queued.
+
 **Completed (2026-09-27):** [recorded repetition now has an automatic baseline](docs/2026-09-27-recorded-repetition-status.md).
 The same literal-text metric covers recorded response windows and the saved
 local students, with independent canonical-source verification and six passing
 tests. Private results distinguish descriptive evidence from plausibility
-judgments. No new model calls or labeling. Next: a fixed, limited conversation
-evaluation before further training; no automatic repetition penalty.
+judgments. That check added no model calls or labeling. The subsequent fixed
+conversation evaluation above is now complete; no automatic repetition penalty.
 
 **Completed (2026-09-27):** the saved adapter now participates in a
 [bounded conversation comparison](docs/2026-09-27-local-student-conversation-status.md)
