@@ -1,5 +1,11 @@
 # Simulated students: task list
 
+**Completed (2026-09-27):** the [saved repetition diagnosis](docs/2026-09-27-local-repetition-diagnosis-status.md)
+rules out stale histories and display duplication in the inspected repeats.
+Mandatory student replies and tutor-role failures confound later turns. An
+authored check and independent review pass; no new calls or labels. Next: isolate
+tutor-role handling on saved requests before changing student training.
+
 **Completed (2026-09-27):** the [fixed local conversation evaluation](docs/2026-09-27-local-conversation-cohort-status.md)
 is closed. Starting and trained students completed every planned case using the
 same tutor policy. The private report combines automatic coverage, repetition and

@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-27 | [Saved repetition diagnosis result](2026-09-27-local-repetition-diagnosis-status.md) | Exact history/token checks and contextual inspection complete; mandatory replies and tutor-role failures identified; no new calls or labels |
+| 2026-09-27 | [Saved repetition diagnosis method](2026-09-27-local-repetition-diagnosis.md) | Post-hoc boundaries, ancestry and tutor echo inspection; closed sources preserved |
 | 2026-09-27 | [Fixed local conversation result](2026-09-27-local-conversation-cohort-status.md) | All planned arms complete; automatic private metrics and independent token/history audit verified; no new labels or model adoption |
 | 2026-09-27 | [Fixed local conversation protocol](2026-09-27-local-conversation-cohort.md) | Remaining eligible starts, unchanged models/policy, bounded calls and declared diagnostics; evaluation closed |
 | 2026-09-27 | [Recorded repetition result](2026-09-27-recorded-repetition-status.md) | Automatic literal-text diagnostic verified against canonical turns; private comparison closed, no new calls, labels or model changes |
