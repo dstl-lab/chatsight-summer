@@ -1,12 +1,18 @@
 # Simulated students: task list
 
-**September 27:** PRs #47, #48 and #57–#60 are merged. PR #62 remains pending
-and is not a dependency for the simulator. The
-[completed communication review](docs/2026-09-27-standalone-communication-review.md)
+**Current step (2026-09-27):** [one retrieved student example](docs/2026-09-27-retrieved-student-example.md)
+is prepared as an experimental prompt change, independently of pending PR #62.
+Eight existing reviewed conversations are excluded from the example library;
+16 fresh control/candidate requests are frozen. No requests have been sent.
+Reviewer availability is pending for one capped pass over at most 16 messages;
+existing reference labels are reused. This does not reopen earlier studies or
+change the default simulator. Earlier status notes below are historical.
+
+**Review integration (September 27):** PRs #47, #48, #57–#60 and #63 are merged.
+The [completed communication review](docs/2026-09-27-standalone-communication-review.md)
 now opens directly with its aggregate work-presence counts and existing examples.
-689 Python tests pass (three skips), along with all three Node and seven Marimo
-checks. No new labeling, generation or change to the simulator. A future
-improvement experiment still needs its own declared comparison and stopping rule.
+Its 689 Python tests passed (three skips), along with all three Node and seven
+Marimo checks. That integration added no labeling, generation or simulator change.
 
 **Integration update (2026-09-23):** PRs #47, #48 and #57–#59 are merged;
 #60 completes the browser workspace integration. Start from `main` using the
