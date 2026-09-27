@@ -1,15 +1,16 @@
 # Simulated students: task list
 
-**In progress (2026-09-27):** the [fixed local training pilot](docs/2026-09-27-local-student-training.md)
-now has a verified tokenizer, target-loss correction and frozen configuration.
-One starting-versus-trained model comparison is running locally; no new labels,
-Gemini requests or simulator replacement. Report the result before any further run.
+**Completed (2026-09-27):** the [fixed local training pilot](docs/2026-09-27-local-student-training-status.md)
+saved a candidate adapter and completed the starting-versus-trained prediction
+comparison. Private results and receipts are preserved; no new labels, Gemini
+requests or simulator replacement. Next distinct milestone: a bounded conversation
+using the saved candidate, with fixed generation settings and no further training.
 
-**Next (2026-09-27):** [use recorded student replies as training targets](docs/2026-09-27-recorded-student-training.md).
+**Preparation completed (2026-09-27):** [use recorded student replies as training targets](docs/2026-09-27-recorded-student-training.md).
 The existing examples, separate development references and source pins now pass
 the private readiness check; no new labels or extraction pipeline were needed.
-Next, configure one same-model base-versus-trained comparison. Preparation is not
-training, and lower prediction loss alone will not establish simulator realism.
+The comparison above now uses these targets. Lower prediction loss alone does
+not establish simulator realism.
 
 **Closed (2026-09-27):** the [retrieved-example comparison](docs/2026-09-27-retrieved-student-example.md)
 shows no measured improvement. Minchan reviewed all 14 unique messages from the

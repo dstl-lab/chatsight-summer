@@ -5,7 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
-| 2026-09-27 | [Local student training pilot](2026-09-27-local-student-training.md) | Fixed local starting-versus-trained comparison; exact target serialization and padding correction verified, run in progress |
+| 2026-09-27 | [Local student training result](2026-09-27-local-student-training-status.md) | Fixed pilot complete; candidate adapter and private prediction results preserved, six tests and source verification pass; no generator adoption |
+| 2026-09-27 | [Local student training pilot](2026-09-27-local-student-training.md) | Frozen configuration; exact target serialization and padding correction verified; no new labeling |
 | 2026-09-27 | [Recorded student training targets](2026-09-27-recorded-student-training.md) | Reuse existing recorded targets and conversation split; local verification, no new labels or training run |
 | 2026-09-27 | [Retrieved student example](2026-09-27-retrieved-student-example.md) | Closed: 14 messages reviewed; identical help/work flags in all eight pairs, no measured improvement, candidate not adopted |
 | 2026-09-27 | [Standalone communication review](2026-09-27-standalone-communication-review.md) | Direct read-only launch and work-presence counts from existing judgments; 689 tests pass, no new labels or calls |
