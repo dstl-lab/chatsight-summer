@@ -67,3 +67,29 @@ def test_cli_companion_review_keeps_sending_disabled(tmp_path, monkeypatch):
     viewer = TestClient(apps[0], base_url='http://127.0.0.1')
     assert viewer.get('/api/comparison').status_code == 200
     assert viewer.get('/api/workspace').json()['controls']['send_enabled'] is False
+
+
+def test_review_opens_without_a_session_and_cannot_send(tmp_path, monkeypatch):
+    import uvicorn
+
+    review = write_bundle(tmp_path)
+    before = files(tmp_path)
+    apps = []
+    monkeypatch.setattr(uvicorn, 'run', lambda app, **_: apps.append(app))
+    monkeypatch.setattr(sys, 'argv', ['browser_workspace', '--comparison', str(review)])
+    browser.main()
+    viewer = TestClient(apps[0], base_url='http://127.0.0.1')
+    catalog = viewer.get('/api/scenarios').json()
+    assert catalog['comparison_available'] is True
+    assert catalog['replay_available'] is False and catalog['scenarios'] == []
+    result = viewer.get('/api/comparison').json()
+    assert len(result['cases']) == 2
+    assert viewer.get('/api/comparison').json() == result
+    assert viewer.get('/api/workspace').status_code == 404
+    assert viewer.post('/api/continue', json={'binding': {'session_sha256': '0' * 64,
+        'state_sha256': '0' * 64}, 'mode': 'advance'}).status_code == 404
+    assert viewer.post('/api/comparison/run', json={}).status_code == 404
+    assert files(tmp_path) == before
+    for options in ({'chat_mode': True}, {'send': True}, {'policy': 'hint'}):
+        with pytest.raises(ValueError, match='session folder'):
+            browser.create_app(comparison=review, **options)

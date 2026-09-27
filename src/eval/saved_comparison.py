@@ -130,6 +130,15 @@ def load_comparison(folder, *, expected_closure=None):
                       for draw in draws]})
     if seen != cases.keys():
         raise ValueError('The mapping is missing comparison cases.')
+    groups = []
+    for reference in ('no', 'yes', 'unclear', None):
+        members = [case for case in displayed if case['reference']['review']['work_present'] == reference]
+        flags = [draw['review']['work_present'] for case in members for draw in case['draws']]
+        groups.append({'reference_work': reference, 'cases': len(members), 'draws': len(flags),
+                       'work_present': flags.count('yes'), 'work_absent': flags.count('no'),
+                       'unclear': flags.count('unclear'), 'unreviewed': flags.count(None)})
     return {'version': 1, 'kind': 'saved-communication-comparison',
             'rubric_id': packet['rubric_id'], 'definitions': packet['definitions'],
-            'status': status, 'cases': displayed}
+            'status': status, 'cases': displayed,
+            'study': {'cases': len(displayed), 'generated_draws': sum(group['draws'] for group in groups),
+                      'groups': groups}}

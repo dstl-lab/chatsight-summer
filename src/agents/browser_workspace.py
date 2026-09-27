@@ -391,9 +391,9 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             source_manifest_pin = student.digest(ancestors[-1][1])
     if sum(value is not None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)) > 1:
         raise ValueError('Choose one comparison: communication review, tutor policies, student fidelity or notebook teaching.')
-    if folder is None and ((fidelity_comparison is None and teaching_comparison is None) or chat_sessions or chat_mode or send
+    if folder is None and ((comparison is None and fidelity_comparison is None and teaching_comparison is None) or chat_sessions or chat_mode or send
                            or policy is not None or reference is not None):
-        raise ValueError('A session folder is required unless only a read-only fidelity or teaching comparison is configured.')
+        raise ValueError('A session folder is required unless only a read-only communication, fidelity or teaching comparison is configured.')
     folder = Path(folder).resolve() if folder is not None else None
     if policy_workspace is not None:
         if not (chat_mode or chat_sessions):
@@ -687,6 +687,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         return {'version':1, 'workspace_id':workspace_id, 'scenarios':entries,
                 **({'comparison_available':True} if any(value is not None for value in
                    (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)) else {}),
+                **({'replay_available':False} if comparison is not None and folder is None else {}),
                 **({'fidelity_comparison_available':True, 'replay_available':folder is not None}
                    if fidelity_comparison is not None else {}),
                 **({'teaching_comparison_available':True, 'replay_available':folder is not None}
@@ -895,7 +896,7 @@ def main():
     import uvicorn
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('folder', type=Path, nargs='?', help='Saved session or conversation collection; omit for a read-only fidelity or teaching comparison.')
+    parser.add_argument('folder', type=Path, nargs='?', help='Saved session or conversation collection; omit for a read-only communication, fidelity or teaching comparison.')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--chat', action='store_true', help='Open a chat-only session; notebook state remains unknown.')
     mode.add_argument('--chat-sessions', action='store_true', help='Choose among saved chat sessions directly inside the folder.')

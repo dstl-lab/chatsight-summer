@@ -115,6 +115,44 @@ def test_partial_and_unclear_reviews_remain_explicit(tmp_path):
                                 'note': 'Work is ambiguous.'} for draw in view['cases'][-1]['draws'])
 
 
+@pytest.mark.parametrize('references', [('no', 'yes'), ('unclear', None)])
+def test_work_summary_preserves_draw_occurrences_and_unknown_flags(tmp_path, references):
+    folder = write_bundle(tmp_path)
+    original = load_comparison(folder)['study']
+    assert original['cases'] == 2 and original['generated_draws'] == 4
+    assert original['groups'][0] == {
+        'reference_work': 'no', 'cases': 2, 'draws': 4,
+        'work_present': 0, 'work_absent': 4, 'unclear': 0, 'unreviewed': 0}
+    form, result = _read(folder / 'received/review.json'), _read(folder / 'result.json')
+    judgments = {item['id']: item for item in form['judgments']}
+    for number, value in enumerate(references, 1):
+        judgments[f'private-reference-{number}'].update(work_present=value, note='Authored review.')
+    judgments['private-draw-1'].update(work_present='unclear', note='Work is ambiguous.')
+    judgments['private-draw-2']['work_present'] = None
+    judgments['private-shared'].update(help_request=None, work_present='yes')
+    for case in result['cases']:
+        case['reference'] = judgments[case['reference']['id']]
+        for draw in case['draws']:
+            draw['judgment'] = judgments[draw['id']]
+    result['status'] = 'incomplete-review'
+    _save(folder / 'received/review.json', form)
+    _save(folder / 'result.json', result)
+    _repin(folder)
+    study = load_comparison(folder)['study']
+    assert study['cases'] == 2 and study['generated_draws'] == 4
+    assert [group['reference_work'] for group in study['groups']] == ['no', 'yes', 'unclear', None]
+    groups = {group['reference_work']: group for group in study['groups']}
+    assert groups[references[0]] == {
+        'reference_work': references[0], 'cases': 1, 'draws': 2,
+        'work_present': 0, 'work_absent': 0, 'unclear': 1, 'unreviewed': 1}
+    assert groups[references[1]] == {
+        'reference_work': references[1], 'cases': 1, 'draws': 2,
+        'work_present': 2, 'work_absent': 0, 'unclear': 0, 'unreviewed': 0}
+    assert all(group == {'reference_work': value, 'cases': 0, 'draws': 0,
+                        'work_present': 0, 'work_absent': 0, 'unclear': 0, 'unreviewed': 0}
+               for value, group in groups.items() if value not in references)
+
+
 def test_copied_bundle_keeps_recorded_paths_as_metadata(tmp_path):
     folder = write_bundle(tmp_path)
     copied = tmp_path / 'relocated-review'
