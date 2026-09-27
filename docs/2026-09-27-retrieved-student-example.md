@@ -144,5 +144,48 @@ paired eligibility and work-only wins/losses/ties; complete binary help/work
 labels across all 16 replies remain necessary for the overall screen. These
 clarifications do not change its stopping rule or frozen inputs.
 
-Generation is finished. Minchan's single review and the resulting fixed report
-are pending. No new human judgments or evidence of improved fidelity are claimed.
+## Completed review and decision
+
+Minchan returned all 14 judgments: 28 binary flags, none missing or unclear.
+The shared judgments expand to all 16 scheduled outputs. Both conditions received
+the same help/work flags in every case. Two pairs were exact text duplicates;
+the remaining six also received identical flags. Neither condition copied an
+entire selected demonstration response verbatim.
+
+| Measurement | Original | With one retrieved example |
+|---|---:|---:|
+| Work disagreement when recorded work is absent | 3/5 | 3/5 |
+| Work disagreement when recorded work is present | 1/3 | 1/3 |
+| Balanced work disagreement | 46.7% | 46.7% |
+| Help disagreement | 0/8 | 0/8 |
+
+Work comparison: zero candidate wins, zero losses, eight ties. Coverage is
+complete, so the predeclared decision is **no demonstrated improvement on this
+pilot**, rather than inconclusive. The original generator remains the default;
+the experimental candidate is not adopted. The study is closed. No extra draws,
+new labels, replacement cases or follow-up prompt variation are queued.
+
+The original submitted form is preserved in private `received/review.json`.
+`coding-result.json` and `closure.json` retain all case dispositions, denominators,
+copying diagnostics and 113 verified provenance hashes. Authored checks cover
+duplicate occurrences, missing/unclear flags, non-replies, intake binding and
+create-only output; independent arithmetic and the saved closure agree.
+
+The returned form reports `previously_seen_cases: no`; that value is preserved
+exactly. These contexts nevertheless come from earlier development reviews, so
+the study is not an untouched holdout. One reviewer, eight conversations and one
+draw per condition cannot establish equivalence or overall student fidelity.
+Disagreement with a single recorded next message does not establish implausibility.
+
+### What the similarity means
+
+The user questioned the value of reviewing such similar messages. Holding the
+current conversation and core prompt fixed intentionally isolates the added
+recorded example. This one comparison supplies a negative result on two narrow
+features. It does not test realistic personalities, sustained behavior across
+turns, silent notebook actions, or instructor-policy effectiveness. The two flags
+also miss differences within the same help/work category.
+
+The completed review is sufficient to close this candidate. Further near-identical
+prompt rounds would need a concrete new failure hypothesis and a decision that
+the measurement can actually resolve; this result does not queue such a round.
