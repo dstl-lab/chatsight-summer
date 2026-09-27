@@ -1,5 +1,12 @@
 # Simulated students: task list
 
+**Closed (2026-09-28):** the [local tutor-format comparison](docs/2026-09-28-local-tutor-role-status.md)
+completed every fixed request and passed independent token/source verification.
+Partial echo improvement did not resolve grounding and correctness problems;
+the candidate is not adopted as a validated tutor. No student training or new
+labels. Keep recorded-tutor student evaluation separate from interactive tests
+with the intended tutor backend; no further formatting variant is queued.
+
 **Completed (2026-09-27):** the [saved repetition diagnosis](docs/2026-09-27-local-repetition-diagnosis-status.md)
 rules out stale histories and display duplication in the inspected repeats.
 Mandatory student replies and tutor-role failures confound later turns. An
