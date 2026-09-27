@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-28 | [Student evidence and hybrid readiness](2026-09-28-student-tutor-separation-status.md) | Offline synthesis verified; single hybrid exchange prepared, dispatch blocked pending exact payload approval; no new calls or labels |
+| 2026-09-28 | [Student/tutor separation protocol](2026-09-28-student-tutor-separation.md) | Recorded-tutor evidence separated from one bounded Gemini/local-student integration check |
 | 2026-09-28 | [Local tutor-format result](2026-09-28-local-tutor-role-status.md) | Fixed candidate closed; all calls and token audits complete, contextual limits prevent validated-tutor adoption; no student updates or labels |
 | 2026-09-27 | [Local tutor-format protocol](2026-09-27-local-tutor-role.md) | One native-message candidate on all saved tutor requests, unchanged policy/model/seeds; completed without further variants |
 | 2026-09-27 | [Saved repetition diagnosis result](2026-09-27-local-repetition-diagnosis-status.md) | Exact history/token checks and contextual inspection complete; mandatory replies and tutor-role failures identified; no new calls or labels |
