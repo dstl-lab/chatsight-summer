@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-27 | [Recorded repetition result](2026-09-27-recorded-repetition-status.md) | Automatic literal-text diagnostic verified against canonical turns; private comparison closed, no new calls, labels or model changes |
+| 2026-09-27 | [Recorded repetition protocol](2026-09-27-recorded-repetition.md) | Fixed pair definition, weighting and exclusions; reuse recorded windows and closed model outputs |
 | 2026-09-27 | [Saved local student conversation](2026-09-27-local-student-conversation-status.md) | Two bounded local branches complete and replayable; exact inputs/outputs retained privately, no fidelity ranking or new labels |
 | 2026-09-27 | [Local student conversation protocol](2026-09-27-local-student-conversation.md) | Fixed case, settings and stopping rule; existing engine and read-only viewer reused |
 | 2026-09-27 | [Local student training result](2026-09-27-local-student-training-status.md) | Fixed pilot complete; candidate adapter and private prediction results preserved, six tests and source verification pass; no generator adoption |

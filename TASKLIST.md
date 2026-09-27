@@ -1,5 +1,12 @@
 # Simulated students: task list
 
+**Completed (2026-09-27):** [recorded repetition now has an automatic baseline](docs/2026-09-27-recorded-repetition-status.md).
+The same literal-text metric covers recorded response windows and the saved
+local students, with independent canonical-source verification and six passing
+tests. Private results distinguish descriptive evidence from plausibility
+judgments. No new model calls or labeling. Next: a fixed, limited conversation
+evaluation before further training; no automatic repetition penalty.
+
 **Completed (2026-09-27):** the saved adapter now participates in a
 [bounded conversation comparison](docs/2026-09-27-local-student-conversation-status.md)
 through the existing chat engine. Starting and trained students each produced
