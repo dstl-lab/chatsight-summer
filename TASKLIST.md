@@ -1,5 +1,15 @@
 # Simulated students: task list
 
+**Implemented (2026-09-28):** [tutor instructions can now drive an explicitly selected Gemini tutor beside the local student](docs/2026-09-28-local-student-tutor.md).
+The single-chat browser command records each model's role separately and shows
+the destination before generation. Typed replies remain the default; failed or
+incomplete requests cannot retry or fall back to a cloud student. The fictional
+browser check completed two local decisions and one Gemini tutor reply, with
+exact history/token verification and read-only playback. All 742 Python tests
+pass (three optional skips), plus the Node check and independent code review.
+This is reusable integration, not fidelity evidence or a matched policy study.
+No private course text, new labels, training or changes to closed studies.
+
 **Implemented (2026-09-28):** [local students now run through the normal browser command](docs/2026-09-28-local-student-backend.md#run-it).
 Explicit model/runtime/adapter paths replace private experiment launchers for one
 fresh chat. Tutor replies are typed; local calls preserve exact history, tokens,

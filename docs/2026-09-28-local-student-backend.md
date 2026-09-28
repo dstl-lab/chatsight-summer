@@ -1,5 +1,9 @@
 # Run a local student through the normal browser workspace
 
+For automatic tutor replies, use the subsequent
+[explicit Gemini tutor setup](2026-09-28-local-student-tutor.md#run-it).
+The default local workflow below still uses typed tutor replies.
+
 The saved adapters work, but using them currently requires private experiment
 launchers. Make the existing structured-reply callback usable from the repository
 with explicit local model, Python runtime and optional adapter paths. This is a

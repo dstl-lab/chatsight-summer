@@ -4,6 +4,7 @@ from contextlib import ExitStack, contextmanager
 import difflib
 import fcntl
 from hashlib import sha256
+from functools import partial
 import json
 from pathlib import Path
 import re
@@ -364,7 +365,13 @@ def _teaching_comparison(folder, expected_pin):
         'conditions':conditions}]}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None):
+    if gemini_tutor_model is not None and (not isinstance(gemini_tutor_model, str)
+            or not gemini_tutor_model.strip() or not chat_mode or chat_sessions
+            or not callable(generate_reply) or not callable(generate_tutor) or manual_tutor
+            or any(value is not None for value in (comparison, policy_comparison, policy_workspace,
+                fidelity_comparison, teaching_comparison, next_exercise_file, next_exercise_output))):
+        raise ValueError('An explicit Gemini tutor requires one chat with student and tutor callbacks.')
     if type(manual_tutor) is not bool or (manual_tutor and (
             not (chat_mode or chat_sessions) or generate_tutor is not None or policy_workspace is not None)):
         raise ValueError('Manual tutor mode requires chat without a tutor callback or policy workspace.')
@@ -634,6 +641,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         frame = result['encounters'][-1]['frames'][-1]
         result = result | {'scenario_id':scenario_id, 'controls':{'send_enabled':send is True,
             'tutor_generation_enabled':not manual_tutor,
+            **({'gemini_tutor_model':gemini_tutor_model} if gemini_tutor_model is not None else {}),
             'policy':exercise['policy'] if is_next else policy,
             'reference':{key:reference[key] for key in ('library', 'library_version', 'source')}
                         if reference is not None else None,
@@ -883,7 +891,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             if body.mode == 'policy':
                 runner.respond(selected, binding=binding, policy=body.text, send=True,
                     generate_tutor=generate_tutor, generate_student=generate,
-                    **({'generate_reply':generate_reply} if chat_mode else {'check':check, 'reference':reference}))
+                    **({'generate_reply':generate_reply, 'gemini_tutor_model':gemini_tutor_model}
+                       if chat_mode else {'check':check, 'reference':reference}))
             else:
                 runner.advance(selected, binding=binding,
                     tutor_reply=body.text if body.mode == 'reply' else None,
@@ -929,9 +938,10 @@ def main():
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
     parser.add_argument('--next-exercise-file', type=Path, help='One supported exercise JSON to assign after this notebook task ends.')
     parser.add_argument('--next-exercise-output', type=Path, help='Separate directory for that one saved next exercise and policy.')
-    parser.add_argument('--student-model', type=Path, help='Existing local MLX model directory; single --chat with typed tutor replies only.')
+    parser.add_argument('--student-model', type=Path, help='Existing local MLX model directory for one --chat; tutor replies are typed unless --gemini-tutor-model is supplied.')
     parser.add_argument('--student-python', type=Path, help='Existing Python executable with MLX-LM installed; required with --student-model.')
     parser.add_argument('--student-adapter', type=Path, help='Optional local adapter directory for --student-model.')
+    parser.add_argument('--gemini-tutor-model', help='Explicit Gemini tutor model for a local student. Generated tutor replies send conversation and instructions to Google Gemini.')
     args = parser.parse_args()
     try:
         if args.folder is None and (args.chat or args.chat_sessions or args.send or args.policy_file or args.reference_file):
@@ -939,13 +949,21 @@ def main():
         if (args.chat or args.chat_sessions) and args.reference_file:
             raise ValueError('A library reference is only available for notebook sessions.')
         reply = None
+        tutor = None
+        if args.gemini_tutor_model is not None and (not args.gemini_tutor_model.strip()
+                or not args.student_model or not args.student_python):
+            raise ValueError('--gemini-tutor-model requires a nonblank model and local student model/runtime paths.')
         if any((args.student_model, args.student_python, args.student_adapter)):
             if not (args.folder and args.chat and args.student_model and args.student_python) or any((
                     args.comparison, args.policy_comparison, args.policy_workspace, args.fidelity_comparison,
-                    args.teaching_comparison, args.next_exercise_file, args.next_exercise_output, args.policy_file)):
-                raise ValueError('Local students require one --chat, --student-model and --student-python, without comparison, exercise or policy options.')
+                    args.teaching_comparison, args.next_exercise_file, args.next_exercise_output)):
+                raise ValueError('Local students require one --chat, --student-model and --student-python, without comparison or exercise options.')
+            if args.policy_file and args.gemini_tutor_model is None:
+                raise ValueError('A local student policy file requires --gemini-tutor-model.')
             from src.agents.local_student import make_reply
             reply = make_reply(args.folder, model=args.student_model, python=args.student_python, adapter=args.student_adapter)
+            if args.gemini_tutor_model is not None:
+                tutor = partial(student_workspace._generate_model, args.gemini_tutor_model, single_attempt=True)
         policy = args.policy_file.read_text(encoding='utf-8') if args.policy_file else None
         reference = notebook_tutor.LibraryReference.model_validate_json(
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
@@ -955,7 +973,8 @@ def main():
                          teaching_comparison=args.teaching_comparison,
                          next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
                          send=args.send, policy=policy, reference=reference,
-                         generate_reply=reply, manual_tutor=reply is not None)
+                         generate_reply=reply, generate_tutor=tutor,
+                         manual_tutor=reply is not None and tutor is None, gemini_tutor_model=args.gemini_tutor_model)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')
     uvicorn.run(app, host='127.0.0.1', port=args.port)

@@ -67,11 +67,15 @@ def advance(folder, *, binding, tutor_reply=None, send=False, generate=None, gen
     return snapshot(folder)
 
 
-def respond(folder, *, binding, policy, send=False, generate_tutor=None, generate_student=None, generate_reply=None):
+def respond(folder, *, binding, policy, send=False, generate_tutor=None, generate_student=None, generate_reply=None,
+            gemini_tutor_model=None):
     """Save one policy reply before delivering it to the exact displayed chat state."""
     _require_binding(binding, send)
     if generate_reply is not None and (generate_student is not None or not callable(generate_reply)):
         raise ValueError('Choose one callable student backend: generate_student or generate_reply.')
+    if gemini_tutor_model is not None and (not isinstance(gemini_tutor_model, str)
+            or not gemini_tutor_model.strip() or not callable(generate_tutor)):
+        raise ValueError('An explicit Gemini tutor model requires a nonblank model and tutor callback.')
     if not isinstance(policy, str) or not policy.strip():
         raise ValueError('Write a tutor policy first.')
     folder = Path(folder)
@@ -93,7 +97,8 @@ def respond(folder, *, binding, policy, send=False, generate_tutor=None, generat
                     for module in (chat, store.llm)},
         'source_sha256': store.digest(Path(__file__).read_text()),
         'request': {'prompt': prompt, 'schema': Reply.model_json_schema(), 'policy': policy,
-                    'model': store._read(folder / 'session.json')['model'], 'binding': binding},
+                    'model': gemini_tutor_model or store._read(folder / 'session.json')['model'], 'binding': binding,
+                    **({'provider': 'google-gemini'} if gemini_tutor_model is not None else {})},
         'continuation': {'status': 'not-started'},
     }
     path = output / 'receipt.json'

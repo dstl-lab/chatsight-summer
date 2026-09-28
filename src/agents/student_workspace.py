@@ -19,13 +19,17 @@ def _require_binding(binding, send):
 def _generate(folder, prompt, schema):
     if (Path(folder) / 'local-student').exists():
         raise ValueError('This session is bound to a local student. Configure its local backend; provider fallback is disabled.')
+    return _generate_model(student._read(folder / 'session.json')['model'], prompt, schema)
+
+
+def _generate_model(model, prompt, schema, *, single_attempt=False):
     from dotenv import load_dotenv
 
     # Both submission paths validate the displayed state before reaching this callback.
     load_dotenv(Path.cwd() / '.env')
     load_dotenv(Path(__file__).resolve().parents[3] / 'main/.env')
-    model = student._read(folder / 'session.json')['model']
-    return student.llm.make_generate(os.environ['GEMINI_API_KEY'], model=model)(prompt, schema)
+    options = {'single_attempt': True} if single_attempt else {}
+    return student.llm.make_generate(os.environ['GEMINI_API_KEY'], model=model, **options)(prompt, schema)
 
 
 def advance(folder, *, binding, tutor_reply=None, send=False, generate=None, check=None):

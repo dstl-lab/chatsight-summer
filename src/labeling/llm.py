@@ -55,10 +55,18 @@ def gen_config(response_model: type[BaseModel],
 
 def make_generate(api_key: str, model: str = DEFAULT_MODEL,
                   on_retry: Callable[[dict | None], None] | None = None,
-                  temperature: float | None = None) -> Generate:
+                  temperature: float | None = None, *,
+                  single_attempt: bool = False) -> Generate:
+    """Use single_attempt for saved operations that must never resend a request."""
+    if type(single_attempt) is not bool:
+        raise ValueError('single_attempt must be a boolean.')
     from google import genai
 
-    client = genai.Client(api_key=api_key)
+    if single_attempt:
+        client = genai.Client(api_key=api_key, http_options=genai.types.HttpOptions(
+            timeout=120000, retry_options={'attempts': 1}))
+    else:
+        client = genai.Client(api_key=api_key)
 
     def generate(prompt: str, response_model: type[BaseModel]) -> BaseModel:
         response = client.models.generate_content(
@@ -66,6 +74,9 @@ def make_generate(api_key: str, model: str = DEFAULT_MODEL,
             contents=prompt,
             config=gen_config(response_model, temperature),
         )
+        if single_attempt and (not response.candidates or len(response.candidates) != 1
+                or response.candidates[0].finish_reason != genai.types.FinishReason.STOP):
+            raise ValueError('Single-attempt generation requires exactly one completed STOP candidate.')
         return response_model.model_validate_json(response.text)
 
-    return with_retries(generate, on_retry=on_retry)
+    return generate if single_attempt else with_retries(generate, on_retry=on_retry)
