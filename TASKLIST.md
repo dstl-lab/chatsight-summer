@@ -1,5 +1,14 @@
 # Simulated students: task list
 
+**Completed (2026-09-28):** [earlier dialogue helps predict recorded replies](docs/2026-09-28-student-history-value-status.md).
+One fixed local diagnostic scored the existing targets with only the current
+exchange, reusing saved full-history scores. History helps the full-pass adapter
+in 15 of 18 affected conversations, but its average history benefit is smaller
+than the base model's. Training gains persist without earlier dialogue; this does
+not establish personalized students. All 36 new scores complete; ten unchanged
+inputs reuse cached scores. No generation, labels, training or simulator change.
+The diagnostic is closed; generated behavior remains the unresolved fidelity gap.
+
 **Implemented (2026-09-28):** [inspect saved base and full-pass student replies](docs/2026-09-28-student-reply-comparison.md).
 The read-only Compare workspace shows two saved first replies beside their shared
 recorded chat, with case search and source/model inspection. All 13 common starts
