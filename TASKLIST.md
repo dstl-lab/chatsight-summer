@@ -1,5 +1,12 @@
 # Simulated students: task list
 
+**In progress (2026-09-28):** [one full local training pass](docs/2026-09-28-training-coverage.md)
+uses all eligible recorded training examples with the original model and settings.
+The fixed development replies are unchanged; compare against both base weights
+and the saved small-subset adapter. One epoch or 90 minutes, no retries, new
+labels, generated conversations or automatic adoption. Training-target inspection
+does not support deleting duplicates as a fix for the saved repeated replies.
+
 **Completed (2026-09-28):** the [trained student now works through actual browser submissions](docs/2026-09-28-local-browser-check-status.md).
 Initial and typed-tutor continuation both complete locally and reload read-only.
 The saved model repeated its question despite receiving the new tutor text;

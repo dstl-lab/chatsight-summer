@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-28 | [Full training coverage](2026-09-28-training-coverage.md) | One bounded local epoch over eligible existing replies; same development references and settings, no new labels or automatic adoption |
 | 2026-09-28 | [Local browser check result](2026-09-28-local-browser-check-status.md) | Actual initial/typed-reply controls verified with two local requests; repetition retained, read-only reload and token/receipt audit pass; zero cloud calls or labels |
 | 2026-09-28 | [Local browser check scope](2026-09-28-local-browser-check.md) | Fixed two-request browser smoke check with authored tutor reply and cloud generation disabled |
 | 2026-09-28 | [Structured student replies in the browser](2026-09-28-structured-student-replies.md) | Exact-history callback implemented; saved workers connected privately, read-only setup verified; 699 tests pass, no new model calls or labels |
