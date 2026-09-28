@@ -153,3 +153,104 @@ def test_failed_reply_remains_an_error_and_cannot_resend(tmp_path, failure):
         with pytest.raises(ValueError):
             workspace.advance(folder, binding=binding, send=True, generate_reply=failed)
     assert files(folder) == before and calls == [QUERY['prefix']]
+
+
+def test_manual_tutor_blocks_policy_before_reserving_and_keeps_typed_history(tmp_path, monkeypatch):
+    folder = tmp_path / 'local'
+    initial = chat.create(folder, query=QUERY, max_decisions=2)
+    chat.show(folder)
+    calls = []
+    monkeypatch.setattr(store.llm, 'make_generate', lambda *a, **kw: pytest.fail('Provider dispatch'))
+
+    def reply(prefix):
+        calls.append(deepcopy(prefix))
+        return 'a short authored question'
+
+    before = files(folder)
+    browser = TestClient(browser_workspace.create_app(folder, chat_mode=True, send=True,
+        generate_reply=reply, manual_tutor=True), base_url='http://127.0.0.1')
+    assert browser.get('/api/workspace').json()['controls']['tutor_generation_enabled'] is False
+    assert files(folder) == before and calls == []
+    first = browser.post('/api/continue', json={'binding': initial['binding'], 'mode': 'advance'})
+    assert first.status_code == 200 and calls == [QUERY['prefix']]
+    binding = chat.show(folder)['binding']
+    before = files(folder)
+    refused = browser.post('/api/continue', json={'binding': binding, 'mode': 'policy', 'text': 'Hint only.'})
+    assert refused.status_code == 403 and files(folder) == before and len(calls) == 1
+    text = '  Try one value.\n\n中文\n'
+    response = browser.post('/api/continue', json={'binding': binding, 'mode': 'reply', 'text': text})
+    assert response.status_code == 200 and calls[-1] == QUERY['prefix'] + [
+        {'role': 'student', 'text': 'a short authored question'}, {'role': 'tutor', 'text': text}]
+    before = files(folder)
+    closed = TestClient(browser_workspace.create_app(folder, chat_mode=True,
+        generate_reply=reply, manual_tutor=True), base_url='http://127.0.0.1')
+    assert closed.get('/api/workspace').status_code == 200
+    assert closed.post('/api/continue', json={'binding': chat.show(folder)['binding'],
+        'mode': 'reply', 'text': text}).status_code == 403
+    assert files(folder) == before and len(calls) == 2
+    for options in ({'chat_mode': False}, {'generate_tutor': lambda *_: None},
+                    {'policy_workspace': tmp_path / 'policies'}, {'manual_tutor': 'yes'}):
+        with pytest.raises(ValueError):
+            browser_workspace.create_app(folder, **(dict(chat_mode=True,
+                generate_reply=reply, manual_tutor=True) | options))
+
+
+def test_cli_local_student_paths_are_explicit_and_never_enable_a_tutor(tmp_path, monkeypatch):
+    import sys
+    import uvicorn
+    from src.agents import local_student
+
+    folder = tmp_path / 'session'
+    chat.create(folder, query=QUERY, max_decisions=2)
+    chat.show(folder)
+    calls, apps = [], []
+    def factory(session, **options):
+        calls.append((session, options))
+        return lambda _: 'An authored reply.'
+    monkeypatch.setattr(local_student, 'make_reply', factory)
+    monkeypatch.setattr(uvicorn, 'run', lambda app, **options: apps.append(app))
+    arguments = ['browser_workspace', str(folder), '--chat', '--student-model', str(tmp_path / 'model'),
+                 '--student-python', sys.executable, '--student-adapter', str(tmp_path / 'adapter')]
+    monkeypatch.setattr(sys, 'argv', arguments)
+    before = files(folder)
+    browser_workspace.main()
+    from pathlib import Path
+    assert calls == [(folder, {'model': tmp_path / 'model', 'python': Path(sys.executable),
+                              'adapter': tmp_path / 'adapter'})]
+    client = TestClient(apps[0], base_url='http://127.0.0.1')
+    controls = client.get('/api/workspace').json()['controls']
+    assert controls['send_enabled'] is False and controls['tutor_generation_enabled'] is False
+    assert files(folder) == before
+    for bad in [arguments[:2] + arguments[3:], arguments + ['--policy-workspace', str(tmp_path / 'pair')],
+                arguments + ['--policy-file', str(tmp_path / 'policy')],
+                arguments[:3] + arguments[5:], arguments[:5]]:
+        monkeypatch.setattr(sys, 'argv', bad)
+        with pytest.raises(SystemExit) as error:
+            browser_workspace.main()
+        assert error.value.code == 2
+    assert len(calls) == len(apps) == 1 and files(folder) == before
+
+
+def test_bound_local_session_cannot_fall_through_provider_entry_points(tmp_path, monkeypatch):
+    import sys
+    from src.agents.student_workspace import _generate
+
+    folder = tmp_path / 'bound'
+    initial = chat.create(folder, query=QUERY)
+    chat.show(folder)
+    (folder / 'local-student').mkdir()  # Also protect incomplete first-call binding.
+    monkeypatch.setattr(store.llm, 'make_generate', lambda *a, **kw: pytest.fail('Provider fallback'))
+    before = files(folder)
+    client = TestClient(browser_workspace.create_app(folder, chat_mode=True, send=True),
+                        base_url='http://127.0.0.1')
+    assert 'local student' in client.get('/api/workspace').json()['controls']['blocked_reason']
+    assert client.post('/api/continue', json={'binding': initial['binding'], 'mode': 'advance'}).status_code == 409
+    with pytest.raises(ValueError):
+        _generate(folder, 'Do not send', object)
+    with pytest.raises(ValueError):
+        browser_workspace.create_app(folder, chat_mode=True, policy_workspace=tmp_path / 'policies')
+    monkeypatch.setattr(sys, 'argv', ['chat_student', 'step', str(folder), '--send',
+        '--context-file', str(tmp_path / 'context.json')])
+    with pytest.raises(SystemExit) as error:
+        chat.main()
+    assert error.value.code == 2 and files(folder) == before

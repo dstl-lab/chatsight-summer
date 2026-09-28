@@ -364,12 +364,15 @@ def _teaching_comparison(folder, expected_pin):
         'conditions':conditions}]}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False):
+    if type(manual_tutor) is not bool or (manual_tutor and (
+            not (chat_mode or chat_sessions) or generate_tutor is not None or policy_workspace is not None)):
+        raise ValueError('Manual tutor mode requires chat without a tutor callback or policy workspace.')
     if generate_reply is not None:
         if not (chat_mode or chat_sessions) or policy_workspace is not None:
             raise ValueError('A reply backend requires chat mode without a policy workspace.')
-        if generate is not None or not callable(generate_reply) or not callable(generate_tutor):
-            raise ValueError('Supply one callable reply backend and an explicit tutor callback.')
+        if generate is not None or not callable(generate_reply) or (not manual_tutor and not callable(generate_tutor)):
+            raise ValueError('Supply one callable reply backend and an explicit tutor callback or manual tutor mode.')
     if (next_exercise_file is None) != (next_exercise_output is None):
         raise ValueError('Configure both the next exercise file and its output directory.')
     exercise = None
@@ -441,6 +444,9 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         if not scenarios:
             raise ValueError('No saved conversation scenarios were found.')
         chat_mode = True
+    if policy_workspace is not None and any((path / 'local-student').exists()
+                                            for path in (scenarios.values() if scenarios else [folder])):
+        raise ValueError('Local student sessions do not support automatic policy-comparison runs.')
     titles = {key:f'Conversation {index:02d}' for index, key in enumerate(scenarios, 1)}
     if policy is not None and (not isinstance(policy, str) or not policy.strip()):
         raise ValueError('The tutor policy must contain nonblank text.')
@@ -605,6 +611,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         return scenario_id, selected
 
     def blocked(selected, frame):
+        if chat_mode and generate_reply is None and (selected / 'local-student').exists():
+            return 'Configure the saved local student model and runtime paths to continue this session.'
         if (selected / 'tutor-exchanges' / frame['binding']['state_sha256']).exists():
             return ('A tutor exchange already exists for this saved state. It will not be resent; '
                     'inspect its saved receipt before continuing.')
@@ -625,6 +633,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             result['encounters'][0]['title'] = titles[scenario_id]
         frame = result['encounters'][-1]['frames'][-1]
         result = result | {'scenario_id':scenario_id, 'controls':{'send_enabled':send is True,
+            'tutor_generation_enabled':not manual_tutor,
             'policy':exercise['policy'] if is_next else policy,
             'reference':{key:reference[key] for key in ('library', 'library_version', 'source')}
                         if reference is not None else None,
@@ -850,6 +859,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         scenario_id, selected = selection(request)
         if send is not True:
             raise HTTPException(403, 'This workspace was opened without sending enabled.')
+        if manual_tutor and body.mode == 'policy':
+            raise HTTPException(403, 'Automatic tutor generation is disabled. Write a tutor reply instead.')
         if not running.acquire(blocking=False):
             raise HTTPException(409, 'The workspace is busy. Reload to inspect its current state; do not resend.')
         is_next = exercise is not None and selected == next_exercise_output / 'session'
@@ -918,12 +929,23 @@ def main():
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
     parser.add_argument('--next-exercise-file', type=Path, help='One supported exercise JSON to assign after this notebook task ends.')
     parser.add_argument('--next-exercise-output', type=Path, help='Separate directory for that one saved next exercise and policy.')
+    parser.add_argument('--student-model', type=Path, help='Existing local MLX model directory; single --chat with typed tutor replies only.')
+    parser.add_argument('--student-python', type=Path, help='Existing Python executable with MLX-LM installed; required with --student-model.')
+    parser.add_argument('--student-adapter', type=Path, help='Optional local adapter directory for --student-model.')
     args = parser.parse_args()
     try:
         if args.folder is None and (args.chat or args.chat_sessions or args.send or args.policy_file or args.reference_file):
             raise ValueError('Chat, sending and tutor configuration options require a session folder.')
         if (args.chat or args.chat_sessions) and args.reference_file:
             raise ValueError('A library reference is only available for notebook sessions.')
+        reply = None
+        if any((args.student_model, args.student_python, args.student_adapter)):
+            if not (args.folder and args.chat and args.student_model and args.student_python) or any((
+                    args.comparison, args.policy_comparison, args.policy_workspace, args.fidelity_comparison,
+                    args.teaching_comparison, args.next_exercise_file, args.next_exercise_output, args.policy_file)):
+                raise ValueError('Local students require one --chat, --student-model and --student-python, without comparison, exercise or policy options.')
+            from src.agents.local_student import make_reply
+            reply = make_reply(args.folder, model=args.student_model, python=args.student_python, adapter=args.student_adapter)
         policy = args.policy_file.read_text(encoding='utf-8') if args.policy_file else None
         reference = notebook_tutor.LibraryReference.model_validate_json(
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
@@ -932,7 +954,8 @@ def main():
                          fidelity_comparison=args.fidelity_comparison,
                          teaching_comparison=args.teaching_comparison,
                          next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
-                         send=args.send, policy=policy, reference=reference)
+                         send=args.send, policy=policy, reference=reference,
+                         generate_reply=reply, manual_tutor=reply is not None)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')
     uvicorn.run(app, host='127.0.0.1', port=args.port)

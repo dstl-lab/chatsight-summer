@@ -5,6 +5,11 @@ and open its two saved scenarios in the browser workspace. No student data, API
 key, database or Docker is needed for this first walkthrough. Private sessions and live Gemini
 generation are separate, optional steps below.
 
+For a downloaded local model and optional student adapter, see the
+[local student browser guide](2026-09-28-local-student-backend.md#run-it).
+It uses typed tutor replies and needs no Gemini key. Use the revision containing
+that guide; it is separate from the merged offline walkthrough below.
+
 ## 1. Set up the checkout
 
 Use macOS, Linux, or Windows through WSL; session locking currently requires

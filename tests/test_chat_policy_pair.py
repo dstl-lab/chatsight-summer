@@ -30,6 +30,17 @@ def _source(folder):
                      generate=lambda *_: Continuation(decision='reply', text='7?'))
 
 
+def test_local_backend_cannot_be_dropped_when_copying_a_policy_source(tmp_path, monkeypatch):
+    pair = _pair(monkeypatch)
+    source, output = tmp_path / 'source', tmp_path / 'pair'
+    _source(source)
+    (source / 'local-student').mkdir()
+    before = files(source)
+    with pytest.raises(ValueError, match='local student'):
+        pair.create(output, source=source, policies=POLICIES)
+    assert not output.exists() and files(source) == before
+
+
 def test_common_cached_start_continues_independently_with_fixed_policies_and_budget(tmp_path, monkeypatch):
     pair = _pair(monkeypatch)
     source, folder = tmp_path/'source', tmp_path/'pair'

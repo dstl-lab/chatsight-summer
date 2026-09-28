@@ -149,8 +149,6 @@ def step(folder, *, binding, generate, tutor_reply=None):
 
 def main():
     import argparse
-    import os
-    from dotenv import load_dotenv
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['create', 'show', 'step'])
@@ -173,17 +171,16 @@ def main():
     else:
         if not args.send or not args.context_file or args.query or args.max_decisions is not None:
             parser.error('step requires --send and --context-file, without --query.')
+        if (args.folder / 'local-student').exists():
+            parser.error('This session uses a local student. Continue through the browser with its local model/runtime paths.')
         context = store._read(args.context_file)
         if (not isinstance(context.get('binding'), dict)
                 or context['binding'].get('state_sha256') != store.digest(context.get('state'))):
             parser.error('The context state or binding changed; export show again.')
 
         def generate(prompt, schema):
-            load_dotenv(Path.cwd() / '.env')
-            load_dotenv(Path(__file__).resolve().parents[3] / 'main/.env')
-            provider = llm.make_generate(os.environ['GEMINI_API_KEY'],
-                                         model=store._read(args.folder / 'session.json')['model'])
-            return provider(prompt, schema)
+            from src.agents.student_workspace import _generate
+            return _generate(args.folder, prompt, schema)
 
         result = step(args.folder, binding=context['binding'], generate=generate,
                       tutor_reply=args.tutor_file.read_text(encoding='utf-8') if args.tutor_file else None)

@@ -17,6 +17,8 @@ def _require_binding(binding, send):
 
 
 def _generate(folder, prompt, schema):
+    if (Path(folder) / 'local-student').exists():
+        raise ValueError('This session is bound to a local student. Configure its local backend; provider fallback is disabled.')
     from dotenv import load_dotenv
 
     # Both submission paths validate the displayed state before reaching this callback.

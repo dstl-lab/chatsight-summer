@@ -478,7 +478,7 @@ function render(){
   $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
   renderCases();
   renderModeButtons();
-  $('instructions').hidden=false;$('instructions').textContent='Run context';$('tutor-controls').textContent='Tutor instructions';
+  $('instructions').hidden=false;$('instructions').textContent='Run context';$('tutor-controls').textContent=state.controls.tutor_generation_enabled===false?'Tutor replies':'Tutor instructions';
   $('tutor-controls').hidden=false;$('run-details').hidden=false;
   $('continue-run').hidden=!state.controls.send_enabled;
   $('continue-run').textContent=f.status==='awaiting-tutor'?'Reply to student':'Continue run';
@@ -561,12 +561,13 @@ async function prepareNextExercise(){
 }
 function renderControls(){
   const waiting=frame().status==='awaiting-tutor';
+  const tutorGeneration=state.controls.tutor_generation_enabled!==false;
   const manual=waiting&&state.replyMode==='reply';
   const backends=waiting&&!manual?'tutor and student backends':'student backend';
-  $('inspector').innerHTML=`<div class="inspector-title">Tutor and student controls</div><h2>${waiting?'Reply to the student':'Continue the student'}</h2><p>${waiting?'The reply will be followed by one student decision.':'Continue one decision using the current '+(state.kind==='chat'?'conversation':'task and conversation')+'. Tutor instructions are used only when replying to a student message.'}</p>${waiting?'<label for="tutor-mode">Reply mode</label><select id="tutor-mode"><option value="policy">Generate from instructions</option><option value="reply">Write a reply</option></select>':''}<div${manual?' hidden':''}><label for="policy">Tutor instructions</label><textarea id="policy" maxlength="64000">${esc(state.policyDraft||'')}</textarea></div><div${manual?'':' hidden'}><label for="manual-reply">Your tutor reply</label><textarea id="manual-reply" maxlength="64000">${esc(state.replyDraft)}</textarea></div><p class="draft-status">Drafts stay in this page. Reload saved run preserves them; refreshing the browser or switching scenarios resets them.</p>${state.controls.reference?`<p>Configured tutor reference: ${esc(state.controls.reference.library)} ${esc(state.controls.reference.library_version)}. Used only for generated tutor replies.</p>`:''}<div class="divider"></div><p id="continuation-reason">${esc(continuationReason())}</p><button class="primary" id="submit-operation">${esc(submitLabel())}</button><p class="tiny" style="margin-top:12px">${state.controls.send_enabled?`Sends the visible ${state.kind==='chat'?'conversation':'task, work and conversation'} to the configured ${backends}. ${state.kind==='chat'?'This mode cannot execute notebook code.':'A local check runs only if the student requests it.'} Playback sends nothing.`:'Viewing only. No request can be sent from this workspace.'}</p>`;
+  $('inspector').innerHTML=`<div class="inspector-title">Tutor and student controls</div><h2>${waiting?'Reply to the student':'Continue the student'}</h2><p>${waiting?'The reply will be followed by one student decision.':'Continue one decision using the current '+(state.kind==='chat'?'conversation':'task and conversation')+'.'+(tutorGeneration?' Tutor instructions are used only when replying to a student message.':'')}</p>${!tutorGeneration?'<p>Tutor replies are written by you in this workspace.</p>':''}${waiting&&tutorGeneration?'<label for="tutor-mode">Reply mode</label><select id="tutor-mode"><option value="policy">Generate from instructions</option><option value="reply">Write a reply</option></select>':''}<div${manual||!tutorGeneration?' hidden':''}><label for="policy">Tutor instructions</label><textarea id="policy" maxlength="64000">${esc(state.policyDraft||'')}</textarea></div><div${manual?'':' hidden'}><label for="manual-reply">Your tutor reply</label><textarea id="manual-reply" maxlength="64000">${esc(state.replyDraft)}</textarea></div><p class="draft-status">Drafts stay in this page. Reload saved run preserves them; refreshing the browser or switching scenarios resets them.</p>${state.controls.reference?`<p>Configured tutor reference: ${esc(state.controls.reference.library)} ${esc(state.controls.reference.library_version)}. Used only for generated tutor replies.</p>`:''}<div class="divider"></div><p id="continuation-reason">${esc(continuationReason())}</p><button class="primary" id="submit-operation">${esc(submitLabel())}</button><p class="tiny" style="margin-top:12px">${state.controls.send_enabled?`Sends the visible ${state.kind==='chat'?'conversation':'task, work and conversation'} to the configured ${backends}. ${state.kind==='chat'?'This mode cannot execute notebook code.':'A local check runs only if the student requests it.'} Playback sends nothing.`:'Viewing only. No request can be sent from this workspace.'}</p>`;
   $('policy').oninput=e=>{state.policyDraft=e.target.value;updateSubmitButton()};
   $('manual-reply').oninput=e=>{state.replyDraft=e.target.value;updateSubmitButton()};
-  if(waiting){$('tutor-mode').value=state.replyMode;$('tutor-mode').onchange=e=>{state.replyMode=e.target.value;renderControls();$('tutor-mode').focus()}}
+  if(waiting&&tutorGeneration){$('tutor-mode').value=state.replyMode;$('tutor-mode').onchange=e=>{state.replyMode=e.target.value;renderControls();$('tutor-mode').focus()}}
   $('submit-operation').onclick=submitOperation;updateSubmitButton();
 }
 function renderOperationStatus(){
@@ -596,6 +597,7 @@ function applyWorkspace(packet,{openNext=false}={}){
   const previousId=openNext?null:current()?.id;
   if(openNext){state.openingExercise=false;state.exercise='next';state.policyDraft=null;state.replyDraft='';state.replyMode='policy';state.selected='step';state.showInspector=false;state.chatKey=null}
   state.kind=packet.kind||'notebook';state.encounters=packet.encounters;state.controls=packet.controls||{send_enabled:false};state.operation=packet.operation||{status:'idle',message:''};state.monitoring=false;
+  if(state.controls.tutor_generation_enabled===false)state.replyMode='reply';
   if(state.policyDraft===null)state.policyDraft=state.controls.policy||'';
   const found=state.encounters.findIndex(c=>c.id===previousId);
   state.caseIndex=found>=0?found:state.encounters.length-1;state.step=current().frames.length-1;

@@ -9,6 +9,8 @@ from src.agents import chat_student as chat, chat_workspace, notebook_student as
 
 
 def _source(folder):
+    if (folder / 'local-student').exists():
+        raise ValueError('Policy comparisons do not support a local student backend.')
     if folder.is_symlink() or any(path.is_symlink() for path in folder.rglob('*')):
         raise ValueError('Source files and directories must not be symbolic links.')
     if sorted(p.name for p in folder.glob('step-*.json')) != ['step-0001.json'] or (folder / 'tutor-exchanges').exists():

@@ -1,5 +1,14 @@
 # Simulated students: task list
 
+**Implemented (2026-09-28):** [local students now run through the normal browser command](docs/2026-09-28-local-student-backend.md#run-it).
+Explicit model/runtime/adapter paths replace private experiment launchers for one
+fresh chat. Tutor replies are typed; local calls preserve exact history, tokens,
+backend identity and failures. Default provider and policy-copy paths cannot drop
+a local binding. Both fictional browser submissions completed and reopen read-only.
+721 Python tests pass (three optional skips), with Node, independent review and
+saved-token checks. This is integration progress, not new fidelity evidence;
+no private course text, cloud calls, training or labeling was used.
+
 **Completed (2026-09-28):** [saved replies can now be traced to earlier matching messages](docs/2026-09-28-student-history-matches.md).
 The offline diagnostic identifies every matching student/tutor turn and separates
 latest-message repeats from older reuse. The private report covers the recorded
