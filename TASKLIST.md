@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Implemented (2026-09-28):** [start a workspace from an existing recorded query](docs/2026-09-28-recorded-chat-starts.md#run-it).
+The offline command lists answer-free query IDs, preserves the selected prefix
+and saves its source/session hashes. Existing split validation and chat creation
+are reused; recorded next answers and training targets stay out of the session.
+A recorded start opens read-only in the browser, with no model calls or new labels.
+All 772 Python tests pass (three optional skips); independent review passes.
+This removes manual JSON preparation, not the remaining fidelity limitations.
+
 **Implemented (2026-09-28):** [compare two tutor policies from the same local student message](docs/2026-09-28-local-policy-comparison.md).
 The existing comparison workspace now preserves the cached starting call, binds
 each arm to its own local backend and pins the explicit Gemini tutor model.

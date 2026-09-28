@@ -13,6 +13,8 @@ To generate tutor replies from editable instructions alongside that local studen
 use the [explicit Gemini tutor setup](2026-09-28-local-student-tutor.md#run-it).
 For two policies starting from the same local student message, see the
 [local policy comparison guide](2026-09-28-local-policy-comparison.md#run-it).
+To start from an existing answer-free recorded query, use the
+[offline recorded-start importer](2026-09-28-recorded-chat-starts.md#run-it).
 
 ## 1. Set up the checkout
 
