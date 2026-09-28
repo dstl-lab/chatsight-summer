@@ -1,5 +1,11 @@
 # Simulated students: task list
 
+**Completed (2026-09-28):** the [trained student now works through actual browser submissions](docs/2026-09-28-local-browser-check-status.md).
+Initial and typed-tutor continuation both complete locally and reload read-only.
+The saved model repeated its question despite receiving the new tutor text;
+the result is retained without rerolling. Receipt/token audits and the JavaScript
+check pass. Zero cloud calls or labels; the two-request browser check is closed.
+
 **Implemented (2026-09-28):** [structured student replies now use the browser controls](docs/2026-09-28-structured-student-replies.md).
 The trained-student callback receives exact selected-conversation history for
 initial, typed-tutor and generated-tutor replies. The private launcher reuses the

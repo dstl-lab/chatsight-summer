@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-28 | [Local browser check result](2026-09-28-local-browser-check-status.md) | Actual initial/typed-reply controls verified with two local requests; repetition retained, read-only reload and token/receipt audit pass; zero cloud calls or labels |
+| 2026-09-28 | [Local browser check scope](2026-09-28-local-browser-check.md) | Fixed two-request browser smoke check with authored tutor reply and cloud generation disabled |
 | 2026-09-28 | [Structured student replies in the browser](2026-09-28-structured-student-replies.md) | Exact-history callback implemented; saved workers connected privately, read-only setup verified; 699 tests pass, no new model calls or labels |
 | 2026-09-28 | [Student evidence and hybrid result](2026-09-28-student-tutor-separation-status.md) | Offline synthesis verified; approved Gemini tutor/local student exchange complete, saved replay and local tokens verified; no new training or labels |
 | 2026-09-28 | [Student/tutor separation protocol](2026-09-28-student-tutor-separation.md) | Recorded-tutor evidence separated from one bounded Gemini/local-student integration check |
