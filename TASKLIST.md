@@ -1,5 +1,11 @@
 # Simulated students: task list
 
+**Prepared scope (2026-09-28):** [compare the full adapter on fixed saved inputs](docs/2026-09-28-full-adapter-replies.md).
+Replay the existing trained-arm student requests once, changing only the adapter.
+Keep recorded-history first replies separate from later synthetic-history probes;
+reuse cached outputs and existing text metrics. No new tutor calls, labels, rollout
+or automatic browser-model replacement; stop after this fixed comparison.
+
 **Completed (2026-09-28):** [the full recorded-reply training pass](docs/2026-09-28-training-coverage-status.md)
 saved a separate adapter with lower prediction loss than both the base model and
 the previous small-subset adapter on the unchanged development references. Most
