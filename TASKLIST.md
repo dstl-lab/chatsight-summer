@@ -1,11 +1,11 @@
 # Simulated students: task list
 
-**Prepared (2026-09-28):** [student evidence and tutor integration are now separated](docs/2026-09-28-student-tutor-separation-status.md).
+**Completed (2026-09-28):** [student evidence and tutor integration are now separated](docs/2026-09-28-student-tutor-separation-status.md).
 The offline summary uses recorded-tutor contexts and keeps prediction and
-generation diagnostics separate. One exchange between the trained local student
-and Gemini tutor is frozen and passes offline routing/failure checks. Automatic
-approval review blocked its private eight-turn payload before dispatch; specific
-payload approval is the remaining input. No new calls, training or labels.
+generation diagnostics separate. After exact-payload approval, one Gemini tutor
+response and one new trained local student reply completed with no retries.
+Exact histories and local tokens verify; the saved exchange opens read-only.
+The fixed budget is exhausted. No further calls, training or labels are queued.
 
 **Closed (2026-09-28):** the [local tutor-format comparison](docs/2026-09-28-local-tutor-role-status.md)
 completed every fixed request and passed independent token/source verification.
