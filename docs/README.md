@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-28 | [Full-adapter reply result](2026-09-28-full-adapter-replies-status.md) | Every fixed request completed and verified; mixed generation evidence, candidate remains experimental; no new labels or further tuning |
 | 2026-09-28 | [Full-adapter reply check](2026-09-28-full-adapter-replies.md) | Fixed saved inputs and seeds, cached comparison replies; recorded and synthetic contexts kept separate, no labels or tutor calls |
 | 2026-09-28 | [Full training pass result](2026-09-28-training-coverage-status.md) | Separate adapter saved; development prediction improves over the previous adapter; full-pass and score checks verified; closed without new labels or automatic adoption |
 | 2026-09-28 | [Full training coverage](2026-09-28-training-coverage.md) | One bounded local epoch over eligible existing replies; same development references and settings, no new labels or automatic adoption |

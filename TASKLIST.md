@@ -1,10 +1,11 @@
 # Simulated students: task list
 
-**Prepared scope (2026-09-28):** [compare the full adapter on fixed saved inputs](docs/2026-09-28-full-adapter-replies.md).
-Replay the existing trained-arm student requests once, changing only the adapter.
-Keep recorded-history first replies separate from later synthetic-history probes;
-reuse cached outputs and existing text metrics. No new tutor calls, labels, rollout
-or automatic browser-model replacement; stop after this fixed comparison.
+**Completed (2026-09-28):** [the fixed-input full-adapter comparison](docs/2026-09-28-full-adapter-replies-status.md)
+finished every request and passed exact input, identity, output-token and score
+checks. Generated results are mixed: fewer repeats on fixed synthetic histories,
+but a new recorded-context repeat and worse median character-count error. Keep
+the candidate experimental; this does not establish improved conversation realism.
+The comparison is closed, with no further tuning, generation or labeling queued.
 
 **Completed (2026-09-28):** [the full recorded-reply training pass](docs/2026-09-28-training-coverage-status.md)
 saved a separate adapter with lower prediction loss than both the base model and
