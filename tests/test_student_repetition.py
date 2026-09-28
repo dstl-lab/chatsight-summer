@@ -50,3 +50,31 @@ def test_exact_pairs_weighting_and_boundaries():
     for invalid in [rows + [rows[0]], [rows[0] | {'prefix': rows[0]['prefix'][:-2]}]]:
         with pytest.raises(ValueError):
             summarize(invalid)
+
+
+def test_history_matches_preserve_locations_roles_and_literal_boundaries():
+    from src.eval.student_repetition import history_matches
+
+    row = {'id': 'authored', 'conversation_id': 'authored', 'prefix': [
+        {'role': 'student', 'text': 'help with this'},
+        {'role': 'tutor', 'text': 'help with this'},
+        {'role': 'student', 'text': ' \nhelp with this\t'},
+        {'role': 'student', 'text': 'a different request'},
+        {'role': 'tutor', 'text': 'What have you tried?'}], 'response': 'help with this'}
+    before = deepcopy(row)
+    assert history_matches(row) == [
+        {'prefix_index': 0, 'role': 'student', 'latest_student': False, 'exact': True},
+        {'prefix_index': 1, 'role': 'tutor', 'latest_student': False, 'exact': True},
+        {'prefix_index': 2, 'role': 'student', 'latest_student': False, 'exact': False}]
+    assert row == before
+    assert history_matches(row | {'response': 'a different request'}) == [
+        {'prefix_index': 3, 'role': 'student', 'latest_student': True, 'exact': True}]
+    assert history_matches(row | {'response': 'What have you tried?'}) == [
+        {'prefix_index': 4, 'role': 'tutor', 'latest_student': False, 'exact': True}]
+    for response in ('', ' \n', 'Help with this', 'help  with this', 'help with this!',
+                     'help with', 'help with this plus a changed header'):
+        assert history_matches(row | {'response': response}) == []
+    assert len(history_matches(row | {'response': '\thelp with this\n'})) == 3
+    assert 'help with this' not in json.dumps(history_matches(row))
+    with pytest.raises(ValueError):
+        history_matches(row | {'prefix': row['prefix'][:-1]})

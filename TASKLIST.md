@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Completed (2026-09-28):** [saved replies can now be traced to earlier matching messages](docs/2026-09-28-student-history-matches.md).
+The offline diagnostic identifies every matching student/tutor turn and separates
+latest-message repeats from older reuse. The private report covers the recorded
+library and all saved comparison outputs without altering the closed studies.
+Authored boundary/counting checks and independent review pass. Recorded messages
+also repeat; this supports inspection, not a copy penalty or model change.
+No new generation, training or human review is queued by this check.
+
 **Completed (2026-09-28):** [the fixed-input full-adapter comparison](docs/2026-09-28-full-adapter-replies-status.md)
 finished every request and passed exact input, identity, output-token and score
 checks. Generated results are mixed: fewer repeats on fixed synthetic histories,

@@ -5,6 +5,23 @@ from fractions import Fraction
 from src.eval.retrieval_baseline import Example
 
 
+def history_matches(value):
+    """Locate whole-turn matches in a response's visible prefix, without judging them.
+
+    Indexes are zero-based. Every returned match is equal after outer stripping;
+    ``exact`` distinguishes literal equality. One response can match several turns.
+    """
+    row = Example.model_validate(value)
+    response = row.response.strip()
+    if not response:
+        return []
+    latest = max(i for i, turn in enumerate(row.prefix) if turn.role == 'student')
+    # ponytail: whole turns only; partial-copy inspection needs a separate metric.
+    return [{'prefix_index': i, 'role': turn.role, 'latest_student': i == latest,
+             'exact': row.response == turn.text}
+            for i, turn in enumerate(row.prefix) if response == turn.text.strip()]
+
+
 def _rates(groups):
     groups = [pairs for pairs in groups if pairs]
     count = sum(len(pairs) for pairs in groups)
