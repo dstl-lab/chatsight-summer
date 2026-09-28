@@ -22,6 +22,23 @@ def history_matches(value):
             for i, turn in enumerate(row.prefix) if response == turn.text.strip()]
 
 
+def contained_matches(value):
+    """Find the entire stripped reply inside earlier turns; not a copying-quality label.
+
+    Only casefolding and outer stripping are applied. Short fragments also match;
+    callers must keep response length and multiple matching roles visible.
+    """
+    row = Example.model_validate(value)
+    response = row.response.strip()
+    if not response:
+        return []
+    folded = response.casefold()
+    return [{'prefix_index': i, 'role': turn.role,
+             'whole_turn': folded == turn.text.strip().casefold(),
+             'case_sensitive': response in turn.text}
+            for i, turn in enumerate(row.prefix) if folded in turn.text.casefold()]
+
+
 def _rates(groups):
     groups = [pairs for pairs in groups if pairs]
     count = sum(len(pairs) for pairs in groups)

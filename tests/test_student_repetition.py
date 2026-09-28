@@ -78,3 +78,31 @@ def test_history_matches_preserve_locations_roles_and_literal_boundaries():
     assert 'help with this' not in json.dumps(history_matches(row))
     with pytest.raises(ValueError):
         history_matches(row | {'prefix': row['prefix'][:-1]})
+
+
+def test_contained_replies_keep_roles_and_do_not_fuzz_internal_text():
+    from src.eval import student_repetition
+    assert hasattr(student_repetition, 'contained_matches'), 'Contained-reply matcher is missing'
+    matches = student_repetition.contained_matches
+    row = {'id': 'authored', 'conversation_id': 'authored', 'prefix': [
+        {'role': 'student', 'text': 'Can you help? What changed?'},
+        {'role': 'tutor', 'text': 'Inspect the variable. What changed?'},
+        {'role': 'student', 'text': ' what changed?\n'},
+        {'role': 'tutor', 'text': 'What  changed?'}], 'response': 'what changed?'}
+    before = deepcopy(row)
+    assert matches(row) == [
+        {'prefix_index': 0, 'role': 'student', 'whole_turn': False, 'case_sensitive': False},
+        {'prefix_index': 1, 'role': 'tutor', 'whole_turn': False, 'case_sensitive': False},
+        {'prefix_index': 2, 'role': 'student', 'whole_turn': True, 'case_sensitive': True}]
+    assert matches(row | {'response': '\twhat changed?\n'}) == matches(row)
+    assert row == before and 'changed' not in json.dumps(matches(row))
+    for response in ('', ' \n', 'what\nchanged?', 'what changed!', 'what changed? extra'):
+        assert matches(row | {'response': response}) == []
+    # Short common fragments are counted, not silently treated as role errors or removed.
+    assert len(matches(row | {'response': 'changed'})) == 4
+    unicode = row | {'prefix': [{'role':'student','text':'help'},
+                               {'role':'tutor','text':'Straße'}], 'response':'STRASSE'}
+    assert matches(unicode) == [
+        {'prefix_index': 1, 'role': 'tutor', 'whole_turn': True, 'case_sensitive': False}]
+    with pytest.raises(ValueError):
+        matches(row | {'prefix': row['prefix'][:-1]})

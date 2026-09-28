@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Completed (2026-09-28):** [the saved-output tutor-wording diagnosis](docs/2026-09-28-tutor-wording-status.md)
+finds both copied tutor questions/explanations and legitimate or ambiguous overlap.
+The new containment helper links matches to earlier turns without assigning a
+quality label. Recorded-prefix first replies and later synthetic histories remain
+separate; no automatic copy filter or adapter adoption is justified. The report
+reproduces, all 773 Python tests pass (three optional skips), and no new generation,
+training or manual labeling was needed. The diagnostic is closed.
+
 **Completed (2026-09-28):** [one recorded conversation now runs through the local browser workflow](docs/2026-09-28-recorded-student-smoke.md).
 The one-decision base-model check completed and reopens read-only. Exact prefix,
 preflight tokens, source pins and exhausted budget verify; no cloud/tutor calls,
