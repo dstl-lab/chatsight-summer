@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Implemented (2026-09-28):** [inspect saved base and full-pass student replies](docs/2026-09-28-student-reply-comparison.md).
+The read-only Compare workspace shows two saved first replies beside their shared
+recorded chat, with case search and source/model inspection. All 13 common starts
+are included; later synthetic histories remain excluded. Exact replies, contexts
+and source hashes verify. 787 Python tests pass (three optional skips), with the
+browser controller check, desktop checks and independent review. No new generation,
+labels, training or adapter adoption; this makes existing evidence easier to use.
+
 **Closed without adoption (2026-09-28):** [one final student-role reminder](docs/2026-09-28-student-role-reminder-status.md)
 completed 40 fixed local replies and one scoring pass over the same 28 exposed
 recorded targets. It fixed the copied-question example and reduced literal

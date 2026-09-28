@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_example, notebook_next_task, notebook_student as student, notebook_teaching_pair, notebook_tutor, policy_comparison_setup, student_workspace, workspace_history
-from src.eval import fidelity_comparison as fidelity
+from src.eval import fidelity_comparison as fidelity, student_reply_comparison as student_replies
 from src.eval.saved_comparison import load_comparison
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -366,7 +366,13 @@ def _teaching_comparison(folder, expected_pin):
         'conditions':conditions}]}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+    if student_comparison is not None and (folder is not None or chat_mode or chat_sessions or send
+            or manual_tutor or any(value is not None for value in (comparison, policy_comparison,
+                policy_workspace, fidelity_comparison, teaching_comparison, policy, reference,
+                next_exercise_file, next_exercise_output, generate_reply, generate_tutor,
+                generate, check, gemini_tutor_model, make_student_reply))):
+        raise ValueError('Student reply comparison is read-only and requires no session or tutor configuration.')
     if make_student_reply is not None and (not callable(make_student_reply) or policy_workspace is None
             or gemini_tutor_model is None or not callable(generate_reply)):
         raise ValueError('A local comparison factory requires an explicit tutor model and policy workspace.')
@@ -411,9 +417,9 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             source_manifest_pin = student.digest(ancestors[-1][1])
     if sum(value is not None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)) > 1:
         raise ValueError('Choose one comparison: communication review, tutor policies, student fidelity or notebook teaching.')
-    if folder is None and ((comparison is None and fidelity_comparison is None and teaching_comparison is None) or chat_sessions or chat_mode or send
+    if folder is None and ((comparison is None and fidelity_comparison is None and student_comparison is None and teaching_comparison is None) or chat_sessions or chat_mode or send
                            or policy is not None or reference is not None):
-        raise ValueError('A session folder is required unless only a read-only communication, fidelity or teaching comparison is configured.')
+        raise ValueError('A session folder is required unless only a read-only comparison is configured.')
     folder = Path(folder).resolve() if folder is not None else None
     if policy_workspace is not None:
         if not (chat_mode or chat_sessions):
@@ -435,11 +441,15 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
     comparison_pin = sha256((comparison / 'closure.json').read_bytes()).hexdigest() if comparison else None
     fidelity_comparison = Path(fidelity_comparison).absolute() if fidelity_comparison is not None else None
     fidelity_pins = fidelity.evidence_hashes(fidelity_comparison) if fidelity_comparison is not None else None
+    student_comparison = Path(student_comparison).absolute() if student_comparison is not None else None
+    student_reply_pins = student_replies.evidence_hashes(student_comparison) if student_comparison is not None else None
     teaching_comparison = _exercise_path(teaching_comparison) if teaching_comparison is not None else None
     teaching_pin = sha256((teaching_comparison / 'comparison.json').read_bytes()).hexdigest() if teaching_comparison is not None else None
     workspace_paths = (folder, comparison, policy_comparison, policy_workspace)
     if fidelity_comparison is not None:
         workspace_paths += (fidelity_comparison,)
+    if student_comparison is not None:
+        workspace_paths += (student_comparison,)
     if teaching_comparison is not None:
         workspace_paths += (teaching_comparison,)
     if exercise is not None:
@@ -719,10 +729,12 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             entries.append({'id':key, 'title':titles[key], 'summary':summary})
         return {'version':1, 'workspace_id':workspace_id, 'scenarios':entries,
                 **({'comparison_available':True} if any(value is not None for value in
-                   (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)) else {}),
+                   (comparison, policy_comparison, policy_workspace, fidelity_comparison, student_comparison, teaching_comparison)) else {}),
                 **({'replay_available':False} if comparison is not None and folder is None else {}),
                 **({'fidelity_comparison_available':True, 'replay_available':folder is not None}
                    if fidelity_comparison is not None else {}),
+                **({'student_comparison_available':True, 'replay_available':False}
+                   if student_comparison is not None else {}),
                 **({'teaching_comparison_available':True, 'replay_available':folder is not None}
                    if teaching_comparison is not None else {}),
                 **({'policy_workspace_available':True} if policy_workspace is not None else {})}
@@ -731,7 +743,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
     def comparison_view(request: Request):
         if request.query_params:
             raise HTTPException(400, 'The comparison uses only the saved evidence selected at launch.')
-        if all(value is None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)):
+        if all(value is None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison, student_comparison, teaching_comparison)):
             raise HTTPException(404, 'No saved comparison is configured.')
         if policy_workspace is not None and not running.acquire(blocking=False):
             operation = (dict(comparison_operation) if comparison_operation['status'] == 'running' else
@@ -743,6 +755,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             result = (policy_packet() if policy_workspace is not None else
                       _policy_comparison(policy_comparison, policy_comparison_pin) if policy_comparison is not None
                       else fidelity.load_comparison(fidelity_comparison, expected_files=fidelity_pins) if fidelity_comparison is not None
+                      else student_replies.load_comparison(student_comparison, expected_files=student_reply_pins) if student_comparison is not None
                       else _teaching_comparison(teaching_comparison, teaching_pin) if teaching_comparison is not None
                       else load_comparison(comparison, expected_closure=comparison_pin))
             return comparison_html(result)
@@ -944,6 +957,7 @@ def main():
     compare.add_argument('--policy-comparison', type=Path, help='Saved one-decision tutor-policy pair for read-only Compare.')
     compare.add_argument('--policy-workspace', type=Path, help='Directory for creating saved policy pairs from eligible chat starts.')
     compare.add_argument('--fidelity-comparison', type=Path, help='Completed fixed help/work benchmark for read-only student fidelity comparison.')
+    compare.add_argument('--student-comparison', type=Path, help='Saved base and trained student replies; read-only, without a session folder.')
     compare.add_argument('--teaching-comparison', type=Path, help='Saved notebook teaching-pair sessions directory containing a, b and comparison.json.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
@@ -968,7 +982,7 @@ def main():
             raise ValueError('--gemini-tutor-model requires a nonblank model and local student model/runtime paths.')
         if any((args.student_model, args.student_python, args.student_adapter)):
             if not (args.folder and args.chat and args.student_model and args.student_python) or any((
-                    args.comparison, args.policy_comparison, args.fidelity_comparison,
+                    args.comparison, args.policy_comparison, args.fidelity_comparison, args.student_comparison,
                     args.teaching_comparison, args.next_exercise_file, args.next_exercise_output)):
                 raise ValueError('Local students require one --chat, --student-model and --student-python, without comparison or exercise options.')
             if args.policy_file and args.gemini_tutor_model is None:
@@ -986,7 +1000,7 @@ def main():
             args.reference_file.read_text(encoding='utf-8')).model_dump() if args.reference_file else None
         app = create_app(args.folder, chat_sessions=args.chat_sessions, chat_mode=args.chat, comparison=args.comparison,
                          policy_comparison=args.policy_comparison, policy_workspace=args.policy_workspace,
-                         fidelity_comparison=args.fidelity_comparison,
+                         fidelity_comparison=args.fidelity_comparison, student_comparison=args.student_comparison,
                          teaching_comparison=args.teaching_comparison,
                          next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
                          send=args.send, policy=policy, reference=reference,

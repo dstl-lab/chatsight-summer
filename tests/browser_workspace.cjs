@@ -15,11 +15,11 @@ const node = id => {
 const modes = ['inspect','simulate','compare'].map(mode=>Object.assign(node(mode),{dataset:{mode}}));
 const chatJumps = ['first','last'].map(chatJump=>Object.assign(node('chat-'+chatJump),{dataset:{chatJump}}));
 const teachingButtons=['shared','a','b'].map(teachingChat=>Object.assign(node('teaching-'+teachingChat),{dataset:{teachingChat}}));
-let sidebarButtons=[];
+let sidebarButtons=[],reviewButtons=[];
 const replyNote={set textContent(value){node('conversation-messages').innerHTML=node('conversation-messages').innerHTML.replace(/(<p class="reply-note">)[\s\S]*?(<\/p>)/,(_match,start,end)=>start+value+end)}};
 const document = {activeElement:null, body:node('body'), getElementById:node,
   querySelector:selector=>node(selector),
-  querySelectorAll:selector=>selector==='[data-mode]'?modes:selector==='[data-chat-jump]'?chatJumps:selector==='[data-teaching-chat]'?teachingButtons:selector==='[data-scenario]'?sidebarButtons:selector==='#conversation-messages .reply-note'?[replyNote]:[]};
+  querySelectorAll:selector=>selector==='[data-mode]'?modes:selector==='[data-chat-jump]'?chatJumps:selector==='[data-teaching-chat]'?teachingButtons:selector==='[data-scenario]'?sidebarButtons:selector==='[data-review-case]'?reviewButtons:selector==='#conversation-messages .reply-note'?[replyNote]:[]};
 const initial = {label:'Initial state',status:'active',decisions_remaining:3,
   work:{cell_index:1,revision:0,source:'count = 0'},dialogue:[],pending_message:null,
   feedback:null,changes:{baseline_revision:0,baseline_kind:'initial-work',unified_diff:''},actions:[],binding:{}};
@@ -38,7 +38,7 @@ let workspaceId='test-workspace';
 const draftStorage=new Map();
 let comparisonAvailable=false, policyWorkspaceAvailable=false, fidelityComparisonAvailable=false, replayAvailable=true, comparisonFail=false;
 let comparisonReadBusy=false,comparisonPostError='',comparisonPostThrow=false,finishComparisonPost;
-let teachingComparisonAvailable=false;
+let teachingComparisonAvailable=false,studentComparisonAvailable=false;
 let successorPacket=null,nextExerciseThrow=false,nextReadBusy=false,finishNextExercise;
 const review={help_request:'yes',work_present:'no',note:null};
 const comparison={version:1,kind:'saved-communication-comparison',rubric_id:'help-work-v1',status:'complete-review',
@@ -63,7 +63,7 @@ const makeContext=()=>{
   get location(){return savedUrl},history:{replaceState:(_a,_b,url)=>{savedUrl=new URL(url,savedUrl)}}},
   URL,URLSearchParams,AbortController,setTimeout:(fn,ms)=>ms===1500?(pollCallbacks.push(fn),0):setTimeout(fn,ms),clearTimeout,fetch:async(url,options)=>{
     requests.push({url,options});
-    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,workspace_id:workspaceId,comparison_available:comparisonAvailable,policy_workspace_available:policyWorkspaceAvailable,fidelity_comparison_available:fidelityComparisonAvailable,teaching_comparison_available:teachingComparisonAvailable,replay_available:replayAvailable})};
+    if(url==='/api/scenarios')return {ok:true,status:200,json:async()=>({version:1,scenarios:catalog,workspace_id:workspaceId,comparison_available:comparisonAvailable,policy_workspace_available:policyWorkspaceAvailable,fidelity_comparison_available:fidelityComparisonAvailable,teaching_comparison_available:teachingComparisonAvailable,student_comparison_available:studentComparisonAvailable,replay_available:replayAvailable})};
     if(url==='/api/next-exercise'){
       if(nextExerciseThrow){nextExerciseThrow=false;packet.controls.next_exercise.status='saved';throw new Error('Save response lost')}
       return new Promise(resolve=>{finishNextExercise=()=>resolve({ok:true,status:200,json:async()=>successorPacket})});
@@ -827,6 +827,50 @@ const run=code=>vm.runInContext(code,context);
   assert.doesNotMatch(node('conversation-messages').innerHTML,/Count only pears\./);
   assert.doesNotMatch(node('canvas').innerHTML,/Passed · local check/);
   assert.ok(requests.every(r=>!r.options.method&&r.url!=='/api/workspace'));
+  teachingComparisonAvailable=false;studentComparisonAvailable=true;comparisonFail=false;requests=[];
+  Object.assign(comparison,{kind:'saved-student-reply-comparison',controls:undefined,
+    study:{cases:2,saved_replies:4,model:{repo_id:'authored/model',revision:'test-revision'},limits:['Authored controller fixture; no measured fidelity.']},
+    cases:['Fraction','Sorting'].map((topic,i)=>({id:'student-'+i,title:'Student case '+(i+1),summary:topic+' question',context_status:'Only saved dialogue is known.',
+      prefix:{context:[{role:'student',text:'earlier <context>\n  exactly'}],turns:[{role:'student',text:topic+'?'},{role:'tutor',text:'Try `<x>`.'}]},
+      conditions:[{id:'base',title:'Base model',status:'reply',text:'base <script>\n  `literal` **text**',model_details:{base:{repo_id:'authored/model',revision:'test-revision'},adapter:false}},
+        {id:'full',title:'Full-pass adapter (experimental)',status:'reply',text:'full <img src=x> reply '+i,model_details:{base:{repo_id:'authored/model',revision:'test-revision'},adapter:true,training_receipt_sha256:'authored-receipt'}}]}))});
+  reviewButtons=[0,1].map(i=>Object.assign(node('student-case-'+i),{dataset:{reviewCase:String(i)}}));
+  delete node('message-#tested-question').scrolled;
+  const studentContext=makeContext(),student=code=>vm.runInContext(code,studentContext);
+  student(fs.readFileSync(script,'utf8'));await student('ready');
+  assert.equal(node('compare').textContent,'Student models');assert.equal(node('simulate').hidden,true);
+  assert.match(node('canvas').innerHTML,/Base model/);assert.match(node('canvas').innerHTML,/Full-pass adapter \(experimental\)/);
+  assert.equal((node('canvas').innerHTML.match(/<article class="comparison">/g)||[]).length,2);
+  assert.match(node('canvas').innerHTML,/base &lt;script&gt;\n  `literal` \*\*text\*\*/);
+  assert.match(node('canvas').innerHTML,/full &lt;img src=x&gt; reply 0/);
+  assert.match(node('canvas').innerHTML,/Experimental/);assert.match(node('canvas').innerHTML,/one saved reply/i);
+  assert.match(node('canvas').innerHTML,/no established fidelity improvement/i);
+  assert.doesNotMatch(node('canvas').innerHTML,/<script>|<img|Recorded student|Recorded next|review-flags|Brier|winner|Draw [1-9]/);
+  assert.match(node('conversation-messages').innerHTML,/Earlier dialogue · both models/);
+  assert.match(node('conversation-messages').innerHTML,/Current exchange · both models/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/history condition only|full &lt;img|base &lt;script/);
+  assert.equal(node('message-#tested-question').scrolled.block,'start');
+  assert.ok(['new-comparison','run-comparison','reuse-comparison','continue-run','next-exercise'].every(id=>node(id).hidden));
+  student("selectEvidence('turn:0')");
+  assert.match(node('inspector').innerHTML,/<pre>earlier &lt;context&gt;\n  exactly<\/pre>/);
+  assert.match(node('inspector').innerHTML,/supplied to both models/);
+  node('tutor-controls').onclick();
+  assert.match(node('inspector').innerHTML,/authored\/model/);assert.match(node('inspector').innerHTML,/authored-receipt/);
+  assert.match(node('inspector').innerHTML,/no measured fidelity/);
+  assert.doesNotMatch(node('inspector').innerHTML,/Existing human review|history condition|href=/);
+  node('search').value='sorting';node('search').oninput();
+  assert.match(node('cases').innerHTML,/Student case 2/);assert.doesNotMatch(node('cases').innerHTML,/Student case 1/);
+  node('search').value='';node('search').oninput();reviewButtons[1].onclick();
+  assert.equal(node('case-title').textContent,'Student case 2');assert.equal(student('state.showInspector'),false);
+  assert.match(node('canvas').innerHTML,/full &lt;img src=x&gt; reply 1/);
+  assert.match(node('conversation-messages').innerHTML,/Sorting\?/);assert.doesNotMatch(node('conversation-messages').innerHTML,/Fraction\?/);
+  await node('reset').onclick();assert.equal(node('case-title').textContent,'Student case 2');
+  comparisonFail=true;await node('reset').onclick();
+  assert.match(node('canvas').innerHTML,/could not be verified/);assert.doesNotMatch(node('canvas').innerHTML,/base &lt;script/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/earlier &lt;context/);
+  assert.equal(node('compare').textContent,'Student models');
+  assert.ok(requests.every(r=>['/api/scenarios','/api/comparison'].includes(r.url)&&!r.options.method));
+  studentComparisonAvailable=false;reviewButtons=[];
   comparisonAvailable=false;teachingComparisonAvailable=false;replayAvailable=true;comparisonFail=false;
   savedUrl=new URL('http://127.0.0.1/');requests=[];
   packet.kind='notebook';packet.exercise='current';packet.encounters=[{id:'1',title:'Task 1',task:'Finished task',frames:[initial,finished]}];
@@ -943,5 +987,5 @@ const run=code=>vm.runInContext(code,context);
   await hybrid('reloadWorkspace()');hybrid("selectEvidence('controls')");
   assert.match(node('inspector').innerHTML,/Viewing only/);
   assert.doesNotMatch(node('inspector').innerHTML,/Sends the visible conversation/);
-  console.log('Saved workspace: playback, drafts, fidelity, standalone review, next exercise, manual tutor, and recovery pass.');
+  console.log('Saved workspace: playback, drafts, fidelity, student models, standalone review, next exercise, manual tutor, and recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});
