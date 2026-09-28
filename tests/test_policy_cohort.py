@@ -55,6 +55,24 @@ def test_freezes_multiple_cases_offline_and_reopens_without_changes(tmp_path, mo
             "not-comparable": 3,
         },
         "different_reply_status": 0,
+        "statistics": {
+            "condition_coverage": {
+                "a": {"terminal_cases": 0, "coverage_rate": 0.0,
+                      "reply_rate": None},
+                "b": {"terminal_cases": 0, "coverage_rate": 0.0,
+                      "reply_rate": None},
+            },
+            "paired": {
+                "comparable_cases": 0,
+                "coverage_rate": 0.0,
+                "current_reply_rate": None,
+                "proposed_reply_rate": None,
+                "reply_rate_difference": None,
+                "changed_cases": 0,
+                "changed_rate": None,
+                "net_follow_up_change": 0,
+            },
+        },
     }
     assert [case["case_id"] for case in saved["cases"]] == [
         "case-0001", "case-0002", "case-0003",
@@ -107,6 +125,22 @@ def test_runs_each_case_once_and_summarizes_reply_status(tmp_path):
     assert saved["summary"]["conditions"]["b"]["no-follow-up"] == 2
     assert saved["summary"]["different_reply_status"] == 2
     assert saved["summary"]["comparisons"]["proposed-lost-follow-up"] == 2
+    assert saved["summary"]["statistics"] == {
+        "condition_coverage": {
+            "a": {"terminal_cases": 2, "coverage_rate": 1.0, "reply_rate": 1.0},
+            "b": {"terminal_cases": 2, "coverage_rate": 1.0, "reply_rate": 0.0},
+        },
+        "paired": {
+            "comparable_cases": 2,
+            "coverage_rate": 1.0,
+            "current_reply_rate": 1.0,
+            "proposed_reply_rate": 0.0,
+            "reply_rate_difference": -1.0,
+            "changed_cases": 2,
+            "changed_rate": 1.0,
+            "net_follow_up_change": -2,
+        },
+    }
     complete = files(folder)
     assert policy_cohort.run(
         folder,

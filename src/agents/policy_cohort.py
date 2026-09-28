@@ -148,6 +148,50 @@ def _comparison_outcome(a, b):
     return "proposed-lost-follow-up"
 
 
+def _rate(numerator, denominator):
+    return numerator / denominator if denominator else None
+
+
+def _statistics(case_count, counts, comparison_counts):
+    """Return descriptive rates with explicit saved-outcome denominators."""
+    condition_coverage = {}
+    for name in ("a", "b"):
+        replied = counts[name]["student-replied"]
+        terminal = replied + counts[name]["no-follow-up"]
+        condition_coverage[name] = {
+            "terminal_cases": terminal,
+            "coverage_rate": _rate(terminal, case_count),
+            "reply_rate": _rate(replied, terminal),
+        }
+
+    gained = comparison_counts["proposed-gained-follow-up"]
+    lost = comparison_counts["proposed-lost-follow-up"]
+    both = comparison_counts["both-replied"]
+    comparable = case_count - comparison_counts["not-comparable"]
+    current_replied = both + lost
+    proposed_replied = both + gained
+    current_rate = _rate(current_replied, comparable)
+    proposed_rate = _rate(proposed_replied, comparable)
+    changed = gained + lost
+    return {
+        "condition_coverage": condition_coverage,
+        "paired": {
+            "comparable_cases": comparable,
+            "coverage_rate": _rate(comparable, case_count),
+            "current_reply_rate": current_rate,
+            "proposed_reply_rate": proposed_rate,
+            "reply_rate_difference": (
+                proposed_rate - current_rate
+                if proposed_rate is not None and current_rate is not None
+                else None
+            ),
+            "changed_cases": changed,
+            "changed_rate": _rate(changed, comparable),
+            "net_follow_up_change": gained - lost,
+        },
+    }
+
+
 def show(folder):
     """Reopen the fixed cohort and compute objective lifecycle counts offline."""
     folder = Path(folder)
@@ -215,6 +259,7 @@ def show(folder):
                 comparison_counts["proposed-gained-follow-up"]
                 + comparison_counts["proposed-lost-follow-up"]
             ),
+            "statistics": _statistics(len(cases), counts, comparison_counts),
         },
     }
 
