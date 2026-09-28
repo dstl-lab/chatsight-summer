@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-09-28 | [Structured student replies in the browser](2026-09-28-structured-student-replies.md) | Exact-history callback implemented; saved workers connected privately, read-only setup verified; 699 tests pass, no new model calls or labels |
 | 2026-09-28 | [Student evidence and hybrid result](2026-09-28-student-tutor-separation-status.md) | Offline synthesis verified; approved Gemini tutor/local student exchange complete, saved replay and local tokens verified; no new training or labels |
 | 2026-09-28 | [Student/tutor separation protocol](2026-09-28-student-tutor-separation.md) | Recorded-tutor evidence separated from one bounded Gemini/local-student integration check |
 | 2026-09-28 | [Local tutor-format result](2026-09-28-local-tutor-role-status.md) | Fixed candidate closed; all calls and token audits complete, contextual limits prevent validated-tutor adoption; no student updates or labels |

@@ -37,17 +37,41 @@ def snapshot(folder):
     }
 
 
-def advance(folder, *, binding, tutor_reply=None, send=False, generate=None):
+def _reply_generator(folder, binding, tutor_reply, generate_reply):
+    # Capture verified state before chat.step holds the session lock.
+    saved = chat.show(folder)
+    if saved['binding'] != binding:
+        raise ValueError('Stale student context: reload the saved session before replying.')
+    episode = chat._prepare(saved['state'], tutor_reply)['episode']
+    expected = chat.continuation.make_prompt(episode)
+    prefix = [{key: turn[key] for key in ('role', 'text')}
+              for turn in [*episode['context'], *episode['turns']]]
+
+    def generate(prompt, schema):
+        if prompt != expected:
+            raise ValueError('The prepared student context changed.')
+        return schema(decision='reply', text=generate_reply(prefix))
+
+    return generate
+
+
+def advance(folder, *, binding, tutor_reply=None, send=False, generate=None, generate_reply=None):
     _require_binding(binding, send)
+    if generate_reply is not None and (generate is not None or not callable(generate_reply)):
+        raise ValueError('Choose one callable student backend: generate or generate_reply.')
     folder = Path(folder)
+    if generate_reply is not None:
+        generate = _reply_generator(folder, binding, tutor_reply, generate_reply)
     chat.step(folder, binding=binding, tutor_reply=tutor_reply,
               generate=generate or partial(_generate, folder))
     return snapshot(folder)
 
 
-def respond(folder, *, binding, policy, send=False, generate_tutor=None, generate_student=None):
+def respond(folder, *, binding, policy, send=False, generate_tutor=None, generate_student=None, generate_reply=None):
     """Save one policy reply before delivering it to the exact displayed chat state."""
     _require_binding(binding, send)
+    if generate_reply is not None and (generate_student is not None or not callable(generate_reply)):
+        raise ValueError('Choose one callable student backend: generate_student or generate_reply.')
     if not isinstance(policy, str) or not policy.strip():
         raise ValueError('Write a tutor policy first.')
     folder = Path(folder)
@@ -87,6 +111,8 @@ def respond(folder, *, binding, policy, send=False, generate_tutor=None, generat
                    finished_at=datetime.now(timezone.utc).isoformat(), continuation={'status': 'pending'})
     store._save(path, receipt)
     try:
+        if generate_reply is not None:
+            generate_student = _reply_generator(folder, binding, reply.text, generate_reply)
         result = chat.step(folder, binding=binding, tutor_reply=reply.text,
                            generate=generate_student or partial(_generate, folder))
     except Exception as error:

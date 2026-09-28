@@ -1,5 +1,12 @@
 # Simulated students: task list
 
+**Implemented (2026-09-28):** [structured student replies now use the browser controls](docs/2026-09-28-structured-student-replies.md).
+The trained-student callback receives exact selected-conversation history for
+initial, typed-tutor and generated-tutor replies. The private launcher reuses the
+saved workers; a fresh three-decision session is prepared read-only with zero
+new calls. All 699 Python tests pass (three optional skips), including five new
+routing/history/failure checks. Closed studies and their source files are unchanged.
+
 **Completed (2026-09-28):** [student evidence and tutor integration are now separated](docs/2026-09-28-student-tutor-separation-status.md).
 The offline summary uses recorded-tutor contexts and keeps prediction and
 generation diagnostics separate. After exact-payload approval, one Gemini tutor

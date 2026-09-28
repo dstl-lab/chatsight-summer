@@ -364,7 +364,12 @@ def _teaching_comparison(folder, expected_pin):
         'conditions':conditions}]}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None):
+    if generate_reply is not None:
+        if not (chat_mode or chat_sessions) or policy_workspace is not None:
+            raise ValueError('A reply backend requires chat mode without a policy workspace.')
+        if generate is not None or not callable(generate_reply) or not callable(generate_tutor):
+            raise ValueError('Supply one callable reply backend and an explicit tutor callback.')
     if (next_exercise_file is None) != (next_exercise_output is None):
         raise ValueError('Configure both the next exercise file and its output directory.')
     exercise = None
@@ -867,11 +872,12 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             if body.mode == 'policy':
                 runner.respond(selected, binding=binding, policy=body.text, send=True,
                     generate_tutor=generate_tutor, generate_student=generate,
-                    **({} if chat_mode else {'check':check, 'reference':reference}))
+                    **({'generate_reply':generate_reply} if chat_mode else {'check':check, 'reference':reference}))
             else:
                 runner.advance(selected, binding=binding,
                     tutor_reply=body.text if body.mode == 'reply' else None,
-                    send=True, generate=generate, **({} if chat_mode else {'check':check}))
+                    send=True, generate=generate,
+                    **({'generate_reply':generate_reply} if chat_mode else {'check':check}))
             result = packet(scenario_id, selected)
             failed = result['encounters'][-1]['frames'][-1]['status'] in ('error', 'environment-error', 'execution-limit')
             operation.update(status='error' if failed else 'complete', message=(
