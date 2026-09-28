@@ -1,5 +1,12 @@
 # Simulated students: task list
 
+**Closed without adoption (2026-09-28):** [one final student-role reminder](docs/2026-09-28-student-role-reminder-status.md)
+completed 40 fixed local replies and one scoring pass over the same 28 exposed
+recorded targets. It fixed the copied-question example and reduced literal
+matching, but worsened recorded-response prediction and failed the predeclared
+criteria. Exact tokens, sources and saved scores verify. Keep the live simulator
+unchanged; no additional reminder variant, training or human labeling is queued.
+
 **Completed (2026-09-28):** [the saved-output tutor-wording diagnosis](docs/2026-09-28-tutor-wording-status.md)
 finds both copied tutor questions/explanations and legitimate or ambiguous overlap.
 The new containment helper links matches to earlier turns without assigning a
