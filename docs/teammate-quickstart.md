@@ -440,6 +440,46 @@ ready, incomplete and failed pairs remain explicitly not comparable. The develop
 source contract still starts from a cached simulated student question after recorded
 history; it is not a real-student policy-effect estimate.
 
+The cohort lab selects all available eligible scenarios by default, up to the fixed
+24-scenario cap, and displays the complete logical-request budget before freezing.
+The **Class summary** tab reports completion coverage, follow-up rates, paired A/B
+rate differences and gained/lost follow-ups. Coverage uses every frozen scenario;
+paired rates use only scenarios where both conditions reached either a follow-up or
+no-follow-up outcome. **Individual scenario** selects one case and shows its shared
+starting context, policy-specific tutor replies and simulated student outcomes.
+Scenario numbers are local pseudonymous positions, not stable student identifiers;
+the current source catalog does not establish that each scenario is a unique student.
+
+For a recorded-baseline screen that simulates only the proposed-policy branch:
+
+```sh
+.venv/bin/marimo run apps/observed_policy_cohort_lab.py \
+  --host 127.0.0.1 --port 8462 --headless -- \
+  --snapshot data/snapshots/SNAPSHOT_ID \
+  --workspace data/workspace/OBSERVED_POLICY_RUNS --send=true
+```
+
+This workflow deterministically reserves 12 eligible conversations for development
+and selects 8, 16 or 24 different conversations from the remaining holdout. The
+development partition is reserved only; this code does not train or fine-tune Gemini.
+For each holdout case, the recorded student request, historical tutor response and
+next recorded student contribution remain the baseline. The historical tutor response
+and next student contribution are excluded from both proposed-policy prompts. Gemini
+generates one proposed tutor response and one possible student continuation, for at
+most two logical requests per case.
+
+The summary compares recorded and simulated follow-up presence. It does not claim
+that the historical tutor used one verified deployment policy, that generated text is
+what the student would have written, or that the proposed policy caused a change.
+The **Gemini behavior in this run** panel records the model and the distribution of
+its one generated student decision per completed scenario. An all-reply or all-no-follow-up
+result is reported as concentrated one-draw model behavior, not a calibrated probability
+or an observed response rate. This workflow does not use the reserved development
+conversations to train, fine-tune or calibrate Gemini.
+The snapshot has conversation identifiers but no stable learner identity, so the split
+is conversation-held-out rather than student-held-out. Every selected conversation and
+result contains private course data and must stay under ignored local `data/` storage.
+
 ```sh
 .venv/bin/marimo run apps/student_workspace.py \
   --host 127.0.0.1 --port 8426 --headless -- \
@@ -503,7 +543,7 @@ Node 22 in addition to the setup above, then run:
 
 ```sh
 .venv/bin/python -m pytest -q
-.venv/bin/marimo check apps/student_workspace.py apps/chat_policy_comparison.py apps/notebook_replay.py apps/continuation_comparison.py apps/policy_comparison_setup.py apps/policy_simulation_lab.py apps/policy_cohort_lab.py
+.venv/bin/marimo check apps/student_workspace.py apps/chat_policy_comparison.py apps/notebook_replay.py apps/continuation_comparison.py apps/policy_comparison_setup.py apps/policy_simulation_lab.py apps/policy_cohort_lab.py apps/observed_policy_cohort_lab.py
 node tests/episode_review_navigation.cjs
 node tests/workspace_prototype.cjs
 node tests/browser_workspace.cjs

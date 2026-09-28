@@ -42,8 +42,8 @@ def _(mo, policy_cohort, policy_comparison_setup, source_root):
     source_selector = (
         mo.ui.multiselect(
             available_sources,
-            value=list(available_sources),
-            label="Conversation scenarios",
+            value=list(available_sources)[:policy_cohort.MAX_CASES],
+            label="Class scenario cohort",
             full_width=True,
             max_selections=policy_cohort.MAX_CASES,
         )
@@ -88,8 +88,8 @@ def _(mo, policy_cohort, workspace_path):
 
 @app.cell
 def _(available_sources, get_result, history_error, history_picker, html, mo,
-      policy_cohort, policy_comparison_setup, policy_inputs, send_enabled, set_result,
-      source_error, source_selector, workspace_path):
+      individual_selector, policy_cohort, policy_comparison_setup, policy_inputs,
+      send_enabled, set_result, source_error, source_selector, workspace_path):
     _result_path, _state_saved, _error = get_result()
     if _result_path is not None:
         try:
@@ -187,18 +187,26 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
 
     _heading = mo.md("# Tutor policy cohort lab")
     _scope = mo.callout(
-        "This development cohort uses eligible saved scenarios with a starting conversation and a "
-        "cached simulated starting question. It does not yet branch directly from a set of "
-        "recorded student questions and cannot estimate a real-student policy effect.",
+        "This view summarizes independent simulations over the selected saved conversation scenarios. "
+        "A scenario is not a verified unique student, and this development source starts from a cached "
+        "simulated question after recorded history. The results cannot estimate a real class policy effect.",
         kind="warn",
     )
     _error_text = _error or source_error or history_error
     _error_view = mo.callout(mo.plain_text(_error_text), kind="danger") if _error_text else mo.md("")
     _source_count = len(available_sources)
-    _request_count = len(source_selector.value) * 4 if source_selector is not None else 0
+    _selected_count = len(source_selector.value) if source_selector is not None else 0
+    _request_count = _selected_count * 4
+    _selection_note = (
+        f"All {_source_count} available scenarios are selected."
+        if _source_count and _selected_count == _source_count
+        else f"{_selected_count} of {_source_count} available scenarios are selected; "
+             f"one saved cohort is limited to {policy_cohort.MAX_CASES}."
+    )
     _controls = mo.vstack([
         mo.md(f"**{_source_count} eligible scenario{'s' if _source_count != 1 else ''} available.**"),
         source_selector if source_selector is not None else mo.md("No eligible scenarios found."),
+        mo.md(_selection_note),
         policy_inputs["current"],
         mo.callout(mo.md(
             "The current policy is prefilled with a summary of the packaged DSC 10 baseline at "
@@ -223,9 +231,10 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
         _results = mo.callout("Freeze a cohort plan to create the overview.", kind="neutral")
     else:
         _summary = _saved["summary"]
+        _statistics = _summary["statistics"]
         _comparison_labels = {
-            "both-replied": "Both students replied",
-            "both-no-follow-up": "Neither student followed up",
+            "both-replied": "Both conditions produced a follow-up",
+            "both-no-follow-up": "Neither condition produced a follow-up",
             "proposed-gained-follow-up": "Proposed policy gained a follow-up",
             "proposed-lost-follow-up": "Proposed policy lost a follow-up",
             "not-comparable": "Not comparable",
@@ -249,7 +258,7 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
             _comparison_outcome = _case.get("comparison_outcome", _comparison_key(_a, _b))
             _comparison_counts[_comparison_outcome] += 1
             _rows.append({
-                "Case": _case["case_id"].replace("case-", "Question "),
+                "Scenario": _case["case_id"].replace("case-", "Scenario "),
                 "Condition A": _a.replace("-", " ").title(),
                 "Condition B": _b.replace("-", " ").title(),
                 "A/B comparison": _comparison_labels[_comparison_outcome],
@@ -268,6 +277,70 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
         _comparison_rows = [
             {"Saved A/B outcome": _comparison_labels[key], "Cases": count}
             for key, count in _comparison_counts.items()
+        ]
+
+        def _percent(value):
+            return "Not available" if value is None else f"{value:.1%}"
+
+        def _fraction(count, total, rate):
+            return f"{count} / {total} ({_percent(rate)})"
+
+        _a_stats = _statistics["condition_coverage"]["a"]
+        _b_stats = _statistics["condition_coverage"]["b"]
+        _paired = _statistics["paired"]
+        _rate_rows = [
+            {
+                "Measure": "Completed outcome coverage",
+                "Current policy": _fraction(
+                    _a_stats["terminal_cases"], _summary["case_count"],
+                    _a_stats["coverage_rate"],
+                ),
+                "Proposed policy": _fraction(
+                    _b_stats["terminal_cases"], _summary["case_count"],
+                    _b_stats["coverage_rate"],
+                ),
+            },
+            {
+                "Measure": "Follow-up rate among completed outcomes",
+                "Current policy": _percent(_a_stats["reply_rate"]),
+                "Proposed policy": _percent(_b_stats["reply_rate"]),
+            },
+        ]
+        _paired_rows = [
+            {
+                "Paired measure": "Comparable A/B scenarios",
+                "Result": _fraction(
+                    _paired["comparable_cases"], _summary["case_count"],
+                    _paired["coverage_rate"],
+                ),
+            },
+            {
+                "Paired measure": "Current policy follow-up rate",
+                "Result": _percent(_paired["current_reply_rate"]),
+            },
+            {
+                "Paired measure": "Proposed policy follow-up rate",
+                "Result": _percent(_paired["proposed_reply_rate"]),
+            },
+            {
+                "Paired measure": "Proposed minus current",
+                "Result": (
+                    "Not available"
+                    if _paired["reply_rate_difference"] is None
+                    else f'{_paired["reply_rate_difference"]:+.1%}'
+                ),
+            },
+            {
+                "Paired measure": "Different follow-up outcomes",
+                "Result": _fraction(
+                    _paired["changed_cases"], _paired["comparable_cases"],
+                    _paired["changed_rate"],
+                ),
+            },
+            {
+                "Paired measure": "Net gained minus lost follow-ups",
+                "Result": f'{_paired["net_follow_up_change"]:+d}',
+            },
         ]
         _ready_conditions = sum(
             _summary["conditions"][name]["ready"] for name in ("a", "b")
@@ -352,17 +425,49 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
                 }),
             ], gap=0.75)
 
-        _case_views = {
-            f'{case["case_id"].replace("case-", "Question ")} · '
-            f'A: {case["outcomes"]["a"].replace("-", " ")} · '
-            f'B: {case["outcomes"]["b"].replace("-", " ")}': _case_view(case)
-            for case in _saved["cases"]
-        }
+        _selected_case = next((
+            case for case in _saved["cases"]
+            if individual_selector is not None
+            and case["case_id"] == individual_selector.value
+        ), _saved["cases"][0])
+        _class_summary = mo.vstack([
+            mo.md("### Outcome coverage and follow-up rates"),
+            mo.ui.table(
+                _rate_rows, selection=None, pagination=False,
+                show_data_types=False, show_download=False,
+                wrapped_columns=["Measure"],
+            ),
+            mo.md("### Paired policy comparison"),
+            mo.ui.table(
+                _paired_rows, selection=None, pagination=False,
+                show_data_types=False, show_download=False,
+                wrapped_columns=["Paired measure"],
+            ),
+            mo.md("### Saved A/B outcome categories"),
+            mo.ui.table(
+                _comparison_rows, selection=None, pagination=False,
+                show_data_types=False, show_download=False,
+            ),
+            mo.md("### Scenario-by-scenario status"),
+            mo.ui.table(
+                _rows, selection=None, pagination=False,
+                show_data_types=False, show_download=False,
+                wrapped_columns=["Scenario"],
+            ),
+        ], gap=1)
+        _individual = mo.vstack([
+            individual_selector,
+            mo.callout(
+                "This is one saved conversation scenario, not a named or verified unique student.",
+                kind="neutral",
+            ),
+            _case_view(_selected_case),
+        ], gap=1)
         _results = mo.vstack([
-            mo.md(f"## Cohort overview · `{_result_path.name}`"),
+            mo.md(f"## Class scenario cohort · `{_result_path.name}`"),
             mo.md(
-                f'**{_summary["case_count"]} fixed cases** · '
-                f'**{_summary["different_reply_status"]} different reply statuses** · '
+                f'**{_summary["case_count"]} fixed scenarios** · '
+                f'**{_summary["different_reply_status"]} different follow-up outcomes** · '
                 f'**up to {_summary["logical_requests_if_fully_run"]} logical requests in the complete plan**'
             ),
             mo.ui.table(
@@ -370,19 +475,10 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
                 show_data_types=False, show_download=False,
             ),
             _run_control,
-            mo.md("### Saved A/B outcome categories"),
-            mo.ui.table(
-                _comparison_rows, selection=None, pagination=False,
-                show_data_types=False, show_download=False,
-            ),
-            mo.md("### Question-by-question status"),
-            mo.ui.table(
-                _rows, selection=None, pagination=False,
-                show_data_types=False, show_download=False,
-                wrapped_columns=["Case"],
-            ),
-            mo.md("### Inspect individual comparisons"),
-            mo.accordion(_case_views),
+            mo.ui.tabs({
+                "Class summary": _class_summary,
+                "Individual scenario": _individual,
+            }),
         ], gap=1)
 
     cohort_view = mo.vstack([
@@ -394,6 +490,35 @@ def _(available_sources, get_result, history_error, history_picker, html, mo,
     ], gap=1.5)
     cohort_view
     return (cohort_view,)
+
+
+@app.cell
+def _(get_result, mo, policy_cohort):
+    _path, _saved_state, _ = get_result()
+    try:
+        _saved_for_picker = policy_cohort.show(_path) if _path is not None else _saved_state
+    except (OSError, ValueError, KeyError, TypeError):
+        _saved_for_picker = _saved_state
+    _case_options = {}
+    if _saved_for_picker is not None:
+        for _case in _saved_for_picker["cases"]:
+            _label = (
+                f'{_case["case_id"].replace("case-", "Scenario ")} · '
+                f'A: {_case["outcomes"]["a"].replace("-", " ")} · '
+                f'B: {_case["outcomes"]["b"].replace("-", " ")}'
+            )
+            _case_options[_label] = _case["case_id"]
+    individual_selector = (
+        mo.ui.dropdown(
+            _case_options,
+            value=next(iter(_case_options)),
+            allow_select_none=False,
+            label="Individual scenario",
+            full_width=True,
+        )
+        if _case_options else None
+    )
+    return (individual_selector,)
 
 
 if __name__ == "__main__":

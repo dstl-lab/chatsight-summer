@@ -1,5 +1,6 @@
 """Saved starts and generated continuations must remain distinct in the lab views."""
 import html
+import os
 from types import SimpleNamespace
 
 import pytest
@@ -33,6 +34,7 @@ def _render(app, folder, saved, **bindings):
                 "policy_comparison_setup": policy_comparison_setup,
                 "policy_inputs": {"current": mo.md("Current policy"),
                                   "proposed": mo.md("Proposed policy")},
+                "individual_selector": None,
                 "send_enabled": False, "workspace_path": folder.parent,
                 **bindings,
             })
@@ -92,7 +94,7 @@ def test_cohort_can_show_shared_start_from_valid_b_when_a_cannot_load(tmp_path):
 
     rendered = _render(
         app, folder, saved, available_sources={}, source_selector=None,
-        policy_cohort=SimpleNamespace(show=lambda _: saved),
+        policy_cohort=SimpleNamespace(show=lambda _: saved, MAX_CASES=24),
     )
 
     assert "Saved A is damaged." in rendered
@@ -101,3 +103,53 @@ def test_cohort_can_show_shared_start_from_valid_b_when_a_cannot_load(tmp_path):
     assert "No starting question was available" not in rendered
     assert "Recorded context" not in rendered
     assert "total provider requests" not in rendered
+
+
+def test_observed_cohort_explains_concentrated_gemini_behavior(tmp_path):
+    from apps.observed_policy_cohort_lab import app
+    from src.eval import observed_policy_cohort
+    from tests.test_observed_policy_cohort import _snapshot
+
+    snapshot, folder = tmp_path / "snapshot", tmp_path / "run-0001"
+    _snapshot(snapshot, count=4)
+    observed_policy_cohort.prepare(
+        snapshot,
+        folder,
+        proposed_policy="Ask the student to explain their next step.",
+        development_conversations=1,
+        case_count=3,
+    )
+    saved = observed_policy_cohort.run(
+        folder,
+        send=True,
+        generate_tutor=lambda _prompt, schema: schema(text="Tutor response"),
+        generate_student=lambda _prompt, schema: schema(
+            decision="reply", text="Student response"
+        ),
+    )
+    setup_inputs = mo.ui.dictionary({
+        "proposed_policy": mo.ui.text_area(value="Proposed policy"),
+        "case_count": mo.ui.dropdown(
+            {"3 conversations": 3}, value="3 conversations",
+            allow_select_none=False,
+        ),
+    })
+
+    rendered = _render(
+        app,
+        folder,
+        saved,
+        observed_policy_cohort=observed_policy_cohort,
+        llm=SimpleNamespace(make_generate=lambda *_args, **_kwargs: None),
+        load_dotenv=lambda *_args, **_kwargs: None,
+        os=os,
+        setup_inputs=setup_inputs,
+        snapshot_path=snapshot,
+    )
+
+    assert "Gemini behavior in this run" in rendered
+    assert "gemini-2.5-pro" in rendered
+    assert "One generated student decision per completed scenario" in rendered
+    assert "Gemini selected reply for all 3 completed branches" in rendered
+    assert "not a calibrated 100% probability" in rendered
+    assert "Course-specific training" in rendered
