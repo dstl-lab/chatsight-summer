@@ -1,5 +1,12 @@
 # Simulated students: task list
 
+**Completed (2026-09-28):** [one recorded conversation now runs through the local browser workflow](docs/2026-09-28-recorded-student-smoke.md).
+The one-decision base-model check completed and reopens read-only. Exact prefix,
+preflight tokens, source pins and exhausted budget verify; no cloud/tutor calls,
+adapter, new labels or retry. The reply copied the tutor's final question, so the
+integration succeeds while the observed student behavior remains unconvincing.
+The check is closed; investigate existing saved outputs before another model change.
+
 **Implemented (2026-09-28):** [start a workspace from an existing recorded query](docs/2026-09-28-recorded-chat-starts.md#run-it).
 The offline command lists answer-free query IDs, preserves the selected prefix
 and saves its source/session hashes. Existing split validation and chat creation
