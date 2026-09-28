@@ -1,4 +1,5 @@
 """Policy setup freezes authored plans without provider calls."""
+from copy import deepcopy
 import pytest
 
 from src.agents import chat_student, notebook_student as store
@@ -212,3 +213,146 @@ def test_rejects_missing_or_identical_policies(tmp_path, current, proposed):
     with pytest.raises(ValueError):
         setup.freeze(destination, source=source, current_policy=current, proposed_policy=proposed)
     assert not destination.exists()
+
+
+def test_local_discovery_and_freeze_forward_explicit_tutor_model(tmp_path, monkeypatch):
+    from src.agents import policy_comparison_setup as setup
+
+    source = tmp_path / 'source'
+    source.mkdir()
+    (source / 'session.json').write_text('{}')
+    checked, created = [], []
+    def read_source(path, *, local=False):
+        checked.append((path, local))
+        return {}, {}, {}
+    def create(destination, **options):
+        created.append((destination, options))
+        return {'authored': 'frozen'}
+    monkeypatch.setattr(setup.chat_policy_pair, '_source', read_source)
+    monkeypatch.setattr(setup.chat_policy_pair, 'create', create)
+    before = files(tmp_path)
+    assert setup.sources(tmp_path, gemini_tutor_model='gemini-authored') == {'source': source.resolve()}
+    assert checked == [(source, True)]
+    result = setup.freeze(tmp_path / 'pair', source=source, current_policy='Current.',
+        proposed_policy='Proposed.', gemini_tutor_model='gemini-authored')
+    assert result == {'authored': 'frozen'}
+    assert created == [(tmp_path / 'pair', dict(source=source, policies={'a': 'Current.', 'b': 'Proposed.'},
+        max_new_decisions=1, gemini_tutor_model='gemini-authored'))]
+    assert files(tmp_path) == before
+
+
+def test_local_duplicate_identity_includes_tutor_model(tmp_path, monkeypatch):
+    from src.agents import policy_comparison_setup as setup
+
+    source, workspace = tmp_path / 'source', tmp_path / 'workspace'
+    workspace.mkdir()
+    existing = workspace / 'run-0001'
+    existing.mkdir()
+    store._save(existing / 'comparison.json', {'plan': {'version': 2,
+        'source': {'session_sha256': store.digest({'authored': 'source'})},
+        'policies': {'a': 'Current.', 'b': 'Proposed.'}, 'gemini_tutor_model': 'gemini-first'}})
+    def read_source(path, *, local=False):
+        assert path == source and local is True
+        return {'authored': 'source'}, {}, {}
+    monkeypatch.setattr(setup.chat_policy_pair, '_source', read_source)
+    monkeypatch.setattr(setup, 'runs', lambda _: {'run-0001': existing})
+    created = []
+    monkeypatch.setattr(setup.chat_policy_pair, 'create',
+        lambda destination, **options: created.append((destination, options)) or {'frozen': True})
+    before = files(workspace)
+    with pytest.raises(ValueError, match='already exists as run-0001'):
+        setup.freeze_next(workspace, source=source, current_policy='Current.',
+            proposed_policy='Proposed.', gemini_tutor_model='gemini-first')
+    assert files(workspace) == before and created == []
+    path, _ = setup.freeze_next(workspace, source=source, current_policy='Current.',
+        proposed_policy='Proposed.', gemini_tutor_model='gemini-second')
+    assert path == (workspace / 'run-0002').resolve()
+    assert created[0][1]['gemini_tutor_model'] == 'gemini-second'
+
+
+@pytest.fixture
+def local_plan(tmp_path, monkeypatch):
+    from src.agents import policy_comparison_setup as setup
+
+    plan = {'version': 2, 'gemini_tutor_model': 'gemini-authored'}
+    saved = {'conditions': {name: {'error': '', 'lifecycle': 'ready', 'snapshot': {
+        'status': 'awaiting-tutor', 'decisions_remaining': 1, 'binding': {'condition': name}}}
+        for name in ('a', 'b')}}
+    monkeypatch.setattr(setup.chat_policy_pair, '_comparison', lambda _: {'plan': plan})
+    monkeypatch.setattr(setup, 'reopen', lambda _: deepcopy(saved))
+    return setup, tmp_path / 'pair', plan, saved
+
+
+def test_local_run_binds_each_eligible_child_once_and_skips_finished_arms(local_plan, monkeypatch):
+    setup, destination, _, saved = local_plan
+    calls = []
+    def factory(child):
+        calls.append(('factory', child))
+        return lambda prefix: f'Authored student {child.name}: {prefix[-1]["text"]}'
+    tutor = lambda *_: None
+    def respond(folder, name, *, binding, send, generate_tutor, generate_reply, gemini_tutor_model):
+        assert folder == destination and binding == {'condition': name} and send is True
+        assert generate_tutor is tutor and gemini_tutor_model == 'gemini-authored'
+        assert generate_reply([{'role': 'tutor', 'text': 'Exact tutor text.'}]) == (
+            f'Authored student {name}: Exact tutor text.')
+        calls.append(('respond', name))
+        saved['conditions'][name]['snapshot']['decisions_remaining'] = 0
+        saved['conditions'][name]['lifecycle'] = 'student-replied'
+    monkeypatch.setattr(setup.chat_policy_pair, 'respond', respond)
+    setup.run_both(destination, send=True, generate_tutor=tutor,
+        make_student_reply=factory, gemini_tutor_model='gemini-authored')
+    assert calls == [('factory', destination / 'sessions' / 'a'), ('respond', 'a'),
+        ('factory', destination / 'sessions' / 'b'), ('respond', 'b')]
+    before = list(calls)
+    setup.run_both(destination, send=True, generate_tutor=tutor,
+        make_student_reply=factory, gemini_tutor_model='gemini-authored')
+    assert calls == before
+
+
+@pytest.mark.parametrize('lifecycle', ['failed', 'incomplete'])
+def test_local_run_never_constructs_backend_for_saved_failure(local_plan, monkeypatch, lifecycle):
+    setup, destination, _, saved = local_plan
+    saved['conditions']['a'].update(lifecycle=lifecycle, error='Saved request unavailable', snapshot=None)
+    saved['conditions']['b']['snapshot']['decisions_remaining'] = 0
+    def forbidden(*_):
+        pytest.fail('A stopped arm must not construct a backend or dispatch')
+    monkeypatch.setattr(setup.chat_policy_pair, 'respond', forbidden)
+    assert setup.run_both(destination, send=True, generate_tutor=forbidden,
+        make_student_reply=forbidden, gemini_tutor_model='gemini-authored') == saved
+
+
+def test_local_runner_rejects_missing_or_mismatched_backends_before_calls(local_plan, monkeypatch):
+    setup, destination, plan, _ = local_plan
+    def forbidden(*_):
+        pytest.fail('Invalid configuration must not dispatch or construct a backend')
+    monkeypatch.setattr(setup.chat_policy_pair, 'respond', forbidden)
+    options = dict(send=True, generate_tutor=forbidden, make_student_reply=forbidden,
+        gemini_tutor_model='gemini-authored')
+    for change in ({'send': False}, {'make_student_reply': None}, {'make_student_reply': 'invalid'},
+            {'gemini_tutor_model': None}, {'gemini_tutor_model': 'different'},
+            {'generate_tutor': None}, {'generate_student': forbidden}):
+        with pytest.raises(ValueError):
+            setup.run_both(destination, **(options | change))
+    plan['version'] = 1
+    with pytest.raises(ValueError):
+        setup.run_both(destination, **options)
+
+
+def test_noncallable_local_factory_result_cannot_dispatch_a_tutor(local_plan, monkeypatch):
+    setup, destination, _, _ = local_plan
+    def forbidden(*_):
+        pytest.fail('Invalid local callback must fail before tutor dispatch')
+    monkeypatch.setattr(setup.chat_policy_pair, 'respond', forbidden)
+    with pytest.raises(ValueError):
+        setup.run_both(destination, send=True, generate_tutor=forbidden,
+            make_student_reply=lambda _: None, gemini_tutor_model='gemini-authored')
+
+
+@pytest.mark.parametrize('model', ['', ' \n', False, 3])
+def test_invalid_tutor_model_cannot_create_workspace(tmp_path, model):
+    from src.agents import policy_comparison_setup as setup
+
+    with pytest.raises(ValueError):
+        setup.freeze_next(tmp_path / 'new', source=tmp_path / 'missing', current_policy='Current.',
+            proposed_policy='Proposed.', gemini_tutor_model=model)
+    assert not (tmp_path / 'new').exists()

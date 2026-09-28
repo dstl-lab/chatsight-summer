@@ -11,6 +11,8 @@ It uses typed tutor replies and needs no Gemini key. Use the revision containing
 that guide; it is separate from the merged offline walkthrough below.
 To generate tutor replies from editable instructions alongside that local student,
 use the [explicit Gemini tutor setup](2026-09-28-local-student-tutor.md#run-it).
+For two policies starting from the same local student message, see the
+[local policy comparison guide](2026-09-28-local-policy-comparison.md#run-it).
 
 ## 1. Set up the checkout
 

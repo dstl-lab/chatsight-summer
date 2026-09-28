@@ -292,6 +292,7 @@ def _policy_comparison(folder, expected_pin, *, sources=None):
               'The original saved start is unavailable or no longer eligible in this workspace.')
     return {'version':1, 'kind':'saved-policy-comparison', 'cases':[{
         'id':plan['comparison_id'], 'title':'Tutor policy comparison', 'model':plan['model'],
+        **({'gemini_tutor_model':plan['gemini_tutor_model']} if plan['version'] == 2 else {}),
         'summary':_question_summary(first['result']),
         'source':source, 'reuse_unavailable_reason':reason,
         'context_status':'Both policies start from this supplied conversation and the same cached simulated question. '
@@ -365,18 +366,22 @@ def _teaching_comparison(folder, expected_pin):
         'conditions':conditions}]}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+    if make_student_reply is not None and (not callable(make_student_reply) or policy_workspace is None
+            or gemini_tutor_model is None or not callable(generate_reply)):
+        raise ValueError('A local comparison factory requires an explicit tutor model and policy workspace.')
     if gemini_tutor_model is not None and (not isinstance(gemini_tutor_model, str)
             or not gemini_tutor_model.strip() or not chat_mode or chat_sessions
             or not callable(generate_reply) or not callable(generate_tutor) or manual_tutor
-            or any(value is not None for value in (comparison, policy_comparison, policy_workspace,
+            or (policy_workspace is not None and make_student_reply is None)
+            or any(value is not None for value in (comparison, policy_comparison,
                 fidelity_comparison, teaching_comparison, next_exercise_file, next_exercise_output))):
         raise ValueError('An explicit Gemini tutor requires one chat with student and tutor callbacks.')
     if type(manual_tutor) is not bool or (manual_tutor and (
             not (chat_mode or chat_sessions) or generate_tutor is not None or policy_workspace is not None)):
         raise ValueError('Manual tutor mode requires chat without a tutor callback or policy workspace.')
     if generate_reply is not None:
-        if not (chat_mode or chat_sessions) or policy_workspace is not None:
+        if not (chat_mode or chat_sessions) or (policy_workspace is not None and make_student_reply is None):
             raise ValueError('A reply backend requires chat mode without a policy workspace.')
         if generate is not None or not callable(generate_reply) or (not manual_tutor and not callable(generate_tutor)):
             raise ValueError('Supply one callable reply backend and an explicit tutor callback or manual tutor mode.')
@@ -451,7 +456,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         if not scenarios:
             raise ValueError('No saved conversation scenarios were found.')
         chat_mode = True
-    if policy_workspace is not None and any((path / 'local-student').exists()
+    if policy_workspace is not None and make_student_reply is None and any((path / 'local-student').exists()
                                             for path in (scenarios.values() if scenarios else [folder])):
         raise ValueError('Local student sessions do not support automatic policy-comparison runs.')
     titles = {key:f'Conversation {index:02d}' for index, key in enumerate(scenarios, 1)}
@@ -528,11 +533,12 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             raise ValueError('The source files changed.')
         with (selected / '.lock').open('rb') as stream:
             fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            manifest, state, _ = chat_policy_pair._source(selected)
+            manifest, state, _ = chat_policy_pair._source(selected, local=make_student_reply is not None)
             binding = {'session_sha256':student.digest(manifest), 'state_sha256':student.digest(state)}
             pinned = policy_sources[source_id].get('binding')
             if pinned is not None and binding != pinned:
                 raise ValueError('The source changed after this workspace opened.')
+            policy_sources[source_id].setdefault('binding', binding)
             yield {'id':source_id, 'title':policy_sources[source_id]['title'], 'binding':binding,
                    'summary':_question_summary(state),
                    'prefix':_policy_prefix(state),
@@ -551,6 +557,10 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         if path.is_symlink() or (path / 'comparison.json').is_symlink():
             raise ValueError('Saved comparisons must not be symlinks.')
         pin = sha256((path / 'comparison.json').read_bytes()).hexdigest()
+        plan = chat_policy_pair._comparison(path)['plan']
+        if ((plan['version'] == 2) != (make_student_reply is not None)
+                or plan.get('gemini_tutor_model') != gemini_tutor_model):
+            raise ValueError('The saved comparison requires its original tutor and student configuration.')
         case = _policy_comparison(path, pin)['cases'][0]
         if case['id'] in policy_runs:
             raise ValueError('Saved comparison identifiers must be unique.')
@@ -572,7 +582,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             case = _policy_comparison(item['path'], item['pin'], sources=sources)['cases'][0]
             cases.append(case | {'title':f'Policy comparison {index:02d}', 'comparison_sha256':item['pin']})
         return {'version':1, 'kind':'saved-policy-comparison', 'cases':cases,
-                'controls':{'create_enabled':True, 'send_enabled':send is True, 'sources':sources},
+                'controls':{'create_enabled':True, 'send_enabled':send is True, 'sources':sources,
+                    **({'gemini_tutor_model':gemini_tutor_model} if make_student_reply is not None else {})},
                 'operation':dict(comparison_operation)}
 
     if policy_workspace is not None:
@@ -583,7 +594,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
                 with policy_source(source_id) as source:
                     policy_sources[source_id]['binding'] = source['binding']
             except (OSError, ValueError, KeyError, TypeError):
-                del policy_sources[source_id]
+                pass  # A fresh chat can become eligible after its first saved reply.
         for path in run_paths():
             register_run(path)
 
@@ -758,7 +769,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
                     comparison_operation.update(status='running', message='Saving this policy comparison.', comparison_id=None)
                     path, _ = policy_comparison_setup.freeze_next(policy_workspace,
                         source=policy_sources[body.source_id]['path'], current_policy=body.current_policy,
-                        proposed_policy=body.proposed_policy)
+                        proposed_policy=body.proposed_policy, gemini_tutor_model=gemini_tutor_model)
                 selected_id = register_run(path)
                 comparison_operation.update(status='complete', message='The policy comparison is saved. No requests were sent.',
                                             comparison_id=selected_id)
@@ -797,7 +808,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
                 comparison_operation.update(status='running', message='Running the saved tutor policies and student responses.',
                                             comparison_id=body.comparison_id)
                 policy_comparison_setup.run_both(item['path'], send=True,
-                    generate_tutor=generate_tutor, generate_student=generate)
+                    generate_tutor=generate_tutor, generate_student=generate,
+                    make_student_reply=make_student_reply, gemini_tutor_model=gemini_tutor_model)
                 result = policy_packet()
                 case = next(case for case in result['cases'] if case['id'] == body.comparison_id)
                 failed = any(condition['status'] in ('failed', 'incomplete') for condition in case['conditions'])
@@ -950,18 +962,23 @@ def main():
             raise ValueError('A library reference is only available for notebook sessions.')
         reply = None
         tutor = None
+        reply_factory = None
         if args.gemini_tutor_model is not None and (not args.gemini_tutor_model.strip()
                 or not args.student_model or not args.student_python):
             raise ValueError('--gemini-tutor-model requires a nonblank model and local student model/runtime paths.')
         if any((args.student_model, args.student_python, args.student_adapter)):
             if not (args.folder and args.chat and args.student_model and args.student_python) or any((
-                    args.comparison, args.policy_comparison, args.policy_workspace, args.fidelity_comparison,
+                    args.comparison, args.policy_comparison, args.fidelity_comparison,
                     args.teaching_comparison, args.next_exercise_file, args.next_exercise_output)):
                 raise ValueError('Local students require one --chat, --student-model and --student-python, without comparison or exercise options.')
             if args.policy_file and args.gemini_tutor_model is None:
                 raise ValueError('A local student policy file requires --gemini-tutor-model.')
+            if args.policy_workspace and args.gemini_tutor_model is None:
+                raise ValueError('Local policy comparisons require --gemini-tutor-model.')
             from src.agents.local_student import make_reply
-            reply = make_reply(args.folder, model=args.student_model, python=args.student_python, adapter=args.student_adapter)
+            configured_reply = partial(make_reply, model=args.student_model, python=args.student_python, adapter=args.student_adapter)
+            reply = configured_reply(args.folder)
+            reply_factory = configured_reply if args.policy_workspace else None
             if args.gemini_tutor_model is not None:
                 tutor = partial(student_workspace._generate_model, args.gemini_tutor_model, single_attempt=True)
         policy = args.policy_file.read_text(encoding='utf-8') if args.policy_file else None
@@ -974,7 +991,8 @@ def main():
                          next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
                          send=args.send, policy=policy, reference=reference,
                          generate_reply=reply, generate_tutor=tutor,
-                         manual_tutor=reply is not None and tutor is None, gemini_tutor_model=args.gemini_tutor_model)
+                         manual_tutor=reply is not None and tutor is None, gemini_tutor_model=args.gemini_tutor_model,
+                         make_student_reply=reply_factory)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')
     uvicorn.run(app, host='127.0.0.1', port=args.port)

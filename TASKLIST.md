@@ -1,5 +1,15 @@
 # Simulated students: task list
 
+**Implemented (2026-09-28):** [compare two tutor policies from the same local student message](docs/2026-09-28-local-policy-comparison.md).
+The existing comparison workspace now preserves the cached starting call, binds
+each arm to its own local backend and pins the explicit Gemini tutor model.
+Both new student calls use the same next seed; completed or failed arms cannot
+resend or fall back to a cloud student. Fresh starts become eligible in the browser
+without restarting. All 768 Python tests pass (three optional skips), along with
+Node checks, independent code review and an offline browser display check.
+No real model calls, private cloud payloads, new labels, training or study reruns.
+This enables exploratory comparison; it does not establish real policy effects.
+
 **Implemented (2026-09-28):** [tutor instructions can now drive an explicitly selected Gemini tutor beside the local student](docs/2026-09-28-local-student-tutor.md).
 The single-chat browser command records each model's role separately and shows
 the destination before generation. Typed replies remain the default; failed or

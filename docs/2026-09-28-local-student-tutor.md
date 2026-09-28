@@ -1,5 +1,9 @@
 # Test tutor instructions with an explicitly selected local student
 
+For independent branches from the same starting message, use the subsequent
+[local policy comparison workflow](2026-09-28-local-policy-comparison.md#run-it).
+This guide describes the original single-conversation path.
+
 The normal browser command can run the trained student, but requires every tutor
 reply to be typed. Add an explicit Gemini tutor model to that same single-chat
 command. Reuse the existing tutor-instructions editor, saved tutor exchange and

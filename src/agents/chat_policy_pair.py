@@ -5,11 +5,11 @@ from pathlib import Path
 import tempfile
 from uuid import uuid4
 
-from src.agents import chat_student as chat, chat_workspace, notebook_student as store, workspace_history
+from src.agents import chat_student as chat, chat_workspace, local_student, notebook_student as store, workspace_history
 
 
-def _source(folder):
-    if (folder / 'local-student').exists():
+def _source(folder, *, local=False):
+    if (folder / 'local-student').exists() and not local:
         raise ValueError('Policy comparisons do not support a local student backend.')
     if folder.is_symlink() or any(path.is_symlink() for path in folder.rglob('*')):
         raise ValueError('Source files and directories must not be symbolic links.')
@@ -20,24 +20,40 @@ def _source(folder):
     first = store._read(folder / 'step-0001.json')
     if decisions != 1 or state['status'] != 'awaiting-tutor' or first['status'] != 'complete':
         raise ValueError('The source needs one completed cached student reply.')
+    if local:
+        local_student.validate_start(folder)
     return manifest, state, first
 
 
-def create(folder, *, source, policies, max_new_decisions=1):
+def _local_pins(child):
+    root = child / 'local-student'
+    if root.is_symlink() or any(path.is_symlink() for path in root.rglob('*')):
+        raise ValueError('Local comparison records must not be symlinks.')
+    return {name: value for name, value in local_student._files(root).items()
+            if name == 'backend.json' or name.startswith('cached-start/')}
+
+
+def create(folder, *, source, policies, max_new_decisions=1, gemini_tutor_model=None):
     """Import the same cached reply twice; never generate or fork later progress."""
     if (not isinstance(policies, dict) or set(policies) != {'a', 'b'} or
             any(not isinstance(p, str) or not p.strip() for p in policies.values())):
         raise ValueError('Supply two nonblank policies, named a and b.')
     if type(max_new_decisions) is not int or not 1 <= max_new_decisions <= 99:
         raise ValueError('Set between 1 and 99 new student decisions per condition.')
+    local = gemini_tutor_model is not None
+    if local and (not isinstance(gemini_tutor_model, str) or not gemini_tutor_model.strip()
+                  or max_new_decisions != 1):
+        raise ValueError('Local comparisons require an explicit Gemini tutor model and one new decision per arm.')
     folder, source = Path(folder), Path(source)
     if folder.exists() or folder.is_symlink():
         raise FileExistsError(folder)
     if folder.resolve().is_relative_to(source.resolve()):
         raise ValueError('Keep the comparison outside its frozen source.')
-    manifest, state, first = _source(source)
+    manifest, state, first = _source(source, local=local)
+    source_local = local_student._files(source / 'local-student') if local else None
     plan = {
-        'version': 1, 'comparison_id': uuid4().hex, 'policies': dict(policies),
+        'version': 2 if local else 1, 'comparison_id': uuid4().hex, 'policies': dict(policies),
+        **({'gemini_tutor_model': gemini_tutor_model} if local else {}),
         'model': manifest['model'], 'max_new_decisions': max_new_decisions,
         'source': {'session_sha256': store.digest(manifest), 'first_step_sha256': store.digest(first),
                    'state_sha256': store.digest(state), 'saved_started_at': first['started_at'],
@@ -65,8 +81,13 @@ def create(folder, *, source, policies, max_new_decisions=1):
                 'manifest_sha256': store.digest(store._read(child / 'session.json')),
                 'first_step_sha256': store.digest(store._read(child / 'step-0001.json')),
             }
-        if _source(source) != (manifest, state, first):
+            if local:
+                local_student.import_start(source, child)
+                receipt['sessions'][name]['local_files'] = _local_pins(child)
+        if _source(source, local=local) != (manifest, state, first):
             raise ValueError('The frozen source changed during preparation.')
+        if local and local_student._files(source / 'local-student') != source_local:
+            raise ValueError('The source local backend changed during preparation.')
         store._save(staged / 'comparison.json', receipt, exclusive=True)
         # Reserve the destination before publishing; never replace an existing comparison.
         folder.mkdir(exist_ok=False)
@@ -78,8 +99,16 @@ def _comparison(folder):
     receipt = store._read(folder / 'comparison.json')
     try:
         plan = receipt['plan']
-        valid = (set(plan) == {'version', 'comparison_id', 'policies', 'model', 'max_new_decisions', 'source'} and
-                 receipt['plan_sha256'] == store.digest(plan) and plan['version'] == 1 and
+        local = plan['version'] == 2
+        keys = {'version', 'comparison_id', 'policies', 'model', 'max_new_decisions', 'source'}
+        if local:
+            keys.add('gemini_tutor_model')
+        valid = (set(plan) == keys and
+                 receipt['plan_sha256'] == store.digest(plan) and plan['version'] in (1, 2) and
+                 (not local or (isinstance(plan['gemini_tutor_model'], str)
+                    and bool(plan['gemini_tutor_model'].strip()) and plan['max_new_decisions'] == 1
+                    and all(isinstance(item.get('local_files'), dict)
+                        and 'backend.json' in item['local_files'] for item in receipt['sessions'].values()))) and
                  isinstance(plan['comparison_id'], str) and bool(plan['comparison_id']) and
                  isinstance(plan['model'], str) and bool(plan['model'].strip()) and
                  isinstance(plan['source'], dict) and
@@ -105,6 +134,8 @@ def _startup(folder, receipt, name):
             manifest['max_decisions'] != plan['max_new_decisions'] + 1 or manifest['model'] != plan['model'] or
             store.digest(first['result']) != plan['source']['state_sha256']):
         raise ValueError('The comparison startup files changed.')
+    if plan['version'] == 2 and _local_pins(child) != pins['local_files']:
+        raise ValueError('The local student backend or cached start changed.')
     initial = chat._initial(manifest['query'])
     if (manifest.get('version') != 1 or manifest.get('engine') != chat._engine()
             or not isinstance(manifest.get('session_id'), str) or not manifest['session_id']
@@ -161,7 +192,9 @@ def _condition_lifecycle(folder, receipt, name):
         if (before['status'] != 'awaiting-tutor' or request['binding'] != binding
                 or context['binding'] != binding or any(context[key] != value for key, value in visible.items())
                 or request['policy'] != receipt['plan']['policies'][name]
-                or request['model'] != manifest['model'] or request['prompt'] != prompt
+                or request['model'] != receipt['plan'].get('gemini_tutor_model', manifest['model'])
+                or (receipt['plan']['version'] == 2 and request.get('provider') != 'google-gemini')
+                or request['prompt'] != prompt
                 or request['schema'] != chat_workspace.Reply.model_json_schema()):
             raise ValueError('A saved tutor request does not reproduce the fixed policy and context.')
         linked = steps.get(directory.name)
@@ -234,14 +267,22 @@ def show(folder):
     return result
 
 
-def respond(folder, condition, *, binding, send=False, generate_tutor=None, generate_student=None):
+def respond(folder, condition, *, binding, send=False, generate_tutor=None, generate_student=None,
+            generate_reply=None, gemini_tutor_model=None):
     """Apply only the frozen policy to one explicitly selected, bound condition."""
     chat_workspace._require_binding(binding, send)
     folder = Path(folder)
     receipt = _comparison(folder)
+    if receipt['plan']['version'] == 2:
+        if (gemini_tutor_model != receipt['plan']['gemini_tutor_model'] or not callable(generate_reply)
+                or not callable(generate_tutor) or generate_student is not None):
+            raise ValueError('Use the frozen Gemini tutor model and a bound local student callback.')
+    elif generate_reply is not None or gemini_tutor_model is not None:
+        raise ValueError('Local callbacks require a saved local comparison.')
     child = _condition(folder, receipt, condition)
     chat_workspace.respond(child, binding=binding, policy=receipt['plan']['policies'][condition], send=send,
-                           generate_tutor=generate_tutor, generate_student=generate_student)
+                           generate_tutor=generate_tutor, generate_student=generate_student,
+                           generate_reply=generate_reply, gemini_tutor_model=gemini_tutor_model)
     return show(folder)
 
 

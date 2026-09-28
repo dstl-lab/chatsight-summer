@@ -201,7 +201,6 @@ def test_invalid_cli_options_reject_before_backend_or_app_start(setup, monkeypat
     args = s.arguments
     bad = [args[:3] + ['--gemini-tutor-model', MODEL], args + ['--gemini-tutor-model', '  '],
         args[:2] + args[3:] + ['--gemini-tutor-model', MODEL],
-        args + ['--gemini-tutor-model', MODEL, '--policy-workspace', str(s.folder.parent / 'pair')],
         args + ['--gemini-tutor-model', MODEL, '--comparison', str(s.folder.parent / 'comparison')],
         args + ['--gemini-tutor-model', MODEL, '--next-exercise-file', str(s.folder.parent / 'exercise')],
         args + ['--policy-file', str(s.folder.parent / 'policy')]]

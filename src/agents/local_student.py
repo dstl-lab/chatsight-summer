@@ -4,6 +4,7 @@ from importlib.metadata import version
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import time
@@ -59,13 +60,18 @@ def _configuration(session, model, python, adapter):
     student_training.messages(value['query']['prefix'])
     if not python.is_file() or not os.access(python, os.X_OK):
         raise ValueError('Supply an existing executable Python runtime.')
-    return {'version': 1, 'role': 'student', 'session_sha256': _digest(manifest),
+    config = {'version': 1, 'role': 'student', 'session_sha256': _digest(manifest),
             'model': str(model), 'adapter': str(adapter) if adapter else None,
             'python': str(python), 'python_sha256': _digest(python),
             'model_files': _files(model), 'adapter_files': _files(adapter) if adapter else None,
             'sources': {str(Path(path).resolve()): _digest(Path(path))
                         for path in (__file__, student_training.__file__)},
             'settings': SETTINGS, 'tokenizer_config': TOKENIZER_CONFIG}
+    backend = session / 'local-student/backend.json'
+    if backend.exists() and 'cached_start' in (saved := _read(backend)):
+        _check_import(session, config, saved['cached_start'])
+        config['cached_start'] = saved['cached_start']
+    return config
 
 
 def _complete(folder):
@@ -79,6 +85,126 @@ def _complete(folder):
             or len(tokens) > SETTINGS['max_tokens']):
         raise ValueError('Local student did not complete a nonblank message at EOS; inspect its saved call.')
     return result['text']
+
+
+def _no_symlinks(folder):
+    if folder.is_symlink() or any(path.is_symlink() for path in folder.rglob('*')):
+        raise ValueError('Cached local starts cannot contain symbolic links.')
+
+
+def _identity(config):
+    # A copied start has a new session and current worker, but the same generation setup.
+    return {key: value for key, value in config.items()
+            if key not in ('session_sha256', 'sources', 'cached_start')}
+
+
+def _original_backend(source, current=None):
+    root = source / 'local-student'
+    backend = _read(root / 'backend.json')
+    if 'cached_start' in backend or {path.name for path in root.iterdir()} != {'backend.json', 'call-0001'}:
+        raise ValueError('Use one original local call, without nested imports or later calls.')
+    if current is None:
+        current = _configuration(source, Path(backend['model']), Path(backend['python']),
+                                 Path(backend['adapter']) if backend['adapter'] else None)
+    if (_identity(backend) != _identity(current)
+            or backend['session_sha256'] != _digest(source / 'session.json')
+            or {Path(path).name for path in backend['sources']} != {'local_student.py', 'student_training.py'}
+            or any(_digest(Path(path)) != expected for path, expected in backend['sources'].items())):
+        raise ValueError('The original local model, runtime, settings or sources changed.')
+    call = root / 'call-0001'
+    request, result = _read(call / 'request.json'), _read(call / 'result.json')
+    step, manifest = _read(source / 'step-0001.json'), _read(source / 'session.json')
+    prepared, started = _read(call / 'prepared.json'), _read(call / 'started.json')
+    request_hash, backend_hash = _digest(call / 'request.json'), _digest(root / 'backend.json')
+    expected_request = {'role': 'student', 'prefix': manifest['query']['prefix'],
+        'messages': student_training.messages(manifest['query']['prefix']), 'backend_sha256': backend_hash,
+        'seed': SETTINGS['seed_base'], 'max_tokens': SETTINGS['max_tokens']}
+    if (request != expected_request or _read(call / 'returncode.json') != {'returncode': 0, 'timeout': False}
+            or step['status'] != 'complete' or step['response'] != {'decision': 'reply', 'text': _complete(call)}
+            or result.get('backend_sha256') != backend_hash or result.get('settings') != SETTINGS
+            or result.get('role') != 'student' or result.get('seed') != SETTINGS['seed_base']
+            or result.get('model') != backend['model'] or result.get('adapter') != backend['adapter']
+            or started.get('request_sha256') != request_hash
+            or prepared != {'request_sha256': request_hash, 'backend_sha256': backend_hash,
+                'runtime': result['runtime'], 'settings': SETTINGS, 'seed': SETTINGS['seed_base'],
+                'messages': request['messages'], 'prompt_tokens': result['prompt_tokens']}):
+        raise ValueError('The original local call does not match its saved student reply.')
+    chunks = [json.loads(line) for line in (call / 'chunks.jsonl').read_text(encoding='utf-8').splitlines()]
+    if (not chunks or [chunk['token'] for chunk in chunks] != result['generated_token_ids']
+            or chunks[-1]['finish_reason'] != 'stop'
+            or [chunk['generation_tokens'] for chunk in chunks] != list(range(1, len(chunks) + 1))):
+        raise ValueError('The original local token receipts changed.')
+    return backend
+
+
+def _single_start(folder):
+    # Parent-side validation only; the MLX child never imports the chat engine.
+    from src.agents import chat_student
+
+    _no_symlinks(folder)
+    if list(sorted(path.name for path in folder.glob('step-*.json'))) != ['step-0001.json'] or (folder / 'tutor-exchanges').exists():
+        raise ValueError('Use exactly one completed student step without a tutor intervention.')
+    manifest, state, decisions = chat_student._load(folder)
+    if decisions != 1 or state['status'] != 'awaiting-tutor':
+        raise ValueError('A cached local start needs one completed pending student reply.')
+    return manifest, state, _read(folder / 'step-0001.json')
+
+
+def validate_start(source):
+    """Read-only verification of one original local student call for a policy pair."""
+    source = Path(source).absolute()
+    _single_start(source)
+    return _original_backend(source)
+
+
+def _check_import(session, current, record):
+    archive = session / 'local-student/cached-start'
+    _no_symlinks(session / 'local-student')
+    if (set(record) != {'files', 'first_step_sha256'} or _files(archive) != record['files']
+            or _digest(session / 'step-0001.json') != record['first_step_sha256']):
+        raise ValueError('The archived local start or imported first step changed.')
+    _original_backend(archive, current)
+    original, imported = _read(archive / 'step-0001.json'), _read(session / 'step-0001.json')
+    if (original['result'] != imported['result'] or original['response'] != imported['response']
+            or original['request']['prompt'] != imported['request']['prompt']
+            or imported['request']['tutor_reply'] is not None):
+        raise ValueError('The imported first step differs from the archived local reply.')
+
+
+def import_start(source, child):
+    """Archive one original local call beside an already imported first chat step."""
+    source, child = Path(source).absolute(), Path(child).absolute()
+    root = child / 'local-student'
+    if root.exists() or root.is_symlink():
+        raise FileExistsError(root)
+    backend = validate_start(source)
+    source_manifest, source_state, first = _single_start(source)
+    child_manifest, child_state, imported = _single_start(child)
+    if (child.resolve().is_relative_to(source.resolve()) or source.resolve().is_relative_to(child.resolve())
+            or child_manifest['session_id'] == source_manifest['session_id']
+            or child_manifest['query'] != source_manifest['query'] or child_state != source_state
+            or imported['response'] != first['response'] or imported['request']['prompt'] != first['request']['prompt']):
+        raise ValueError('Import the same first reply into a separate fresh child session.')
+    current = _configuration(child, Path(backend['model']), Path(backend['python']),
+                             Path(backend['adapter']) if backend['adapter'] else None)
+    original_files = {name: _digest(source / name) for name in ('session.json', 'step-0001.json')}
+    original_files.update({'local-student/' + path: digest for path, digest in _files(source / 'local-student').items()})
+    root.mkdir()
+    archive = root / 'cached-start'
+    archive.mkdir()
+    for name in ('session.json', 'step-0001.json'):
+        shutil.copyfile(source / name, archive / name)
+    shutil.copytree(source / 'local-student', archive / 'local-student')
+    record = {'files': original_files, 'first_step_sha256': _digest(child / 'step-0001.json')}
+    _check_import(child, current, record)
+    _save(root / 'backend.json', current | {'cached_start': record})
+    return _read(root / 'backend.json')
+
+
+def _previous_call(root, index):
+    if index == 1 and 'cached_start' in _read(root / 'backend.json'):
+        return root / 'cached-start/local-student/call-0001'
+    return root / f'call-{index:04}'
 
 
 def make_reply(session, *, model: Path, python: Path, adapter: Path | None = None):
@@ -114,7 +240,7 @@ def make_reply(session, *, model: Path, python: Path, adapter: Path | None = Non
             root.mkdir(exist_ok=False)
             _save(backend, config)
         for earlier in range(1, index):
-            _complete(root / f'call-{earlier:04}')
+            _complete(_previous_call(root, earlier))
         folder = root / f'call-{index:04}'
         folder.mkdir(exist_ok=False)
         _save(folder / 'request.json', {'role': 'student', 'prefix': prefix, 'messages': messages,
@@ -183,7 +309,7 @@ def worker(folder):
                       runtime={'python': sys.version, 'prefix': sys.prefix,
                                'packages': {name: version(name) for name in
                                             ('mlx', 'mlx-lm', 'transformers', 'tokenizers')}})
-        if index > 1 and result['runtime'] != _read(folder.parent / f'call-{index - 1:04}' / 'result.json')['runtime']:
+        if index > 1 and result['runtime'] != _read(_previous_call(folder.parent, index - 1) / 'result.json')['runtime']:
             raise ValueError('The local runtime changed since the earlier call.')
         import mlx.core as mx
         from mlx_lm import load, stream_generate

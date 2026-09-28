@@ -25,30 +25,40 @@ DEFAULT_CURRENT_POLICY = """Use the DSC 10 tutor's Socratic teaching approach:
 """
 
 
-def sources(root):
+def _local_mode(gemini_tutor_model):
+    if gemini_tutor_model is not None and (not isinstance(gemini_tutor_model, str)
+            or not gemini_tutor_model.strip()):
+        raise ValueError("Supply a nonblank Gemini tutor model.")
+    return gemini_tutor_model is not None
+
+
+def sources(root, *, gemini_tutor_model=None):
     """Return verified direct-child source sessions without changing them."""
     root = Path(root)
+    local = _local_mode(gemini_tutor_model)
     found = {}
     for path in sorted(root.iterdir()):
         if not path.is_dir() or path.is_symlink() or not (path / "session.json").is_file():
             continue
         try:
-            chat_policy_pair._source(path)
+            chat_policy_pair._source(path, local=local)
         except (OSError, ValueError, KeyError, TypeError):
             continue
         found[path.name] = path.resolve()
     return found
 
 
-def freeze(destination, *, source, current_policy, proposed_policy):
+def freeze(destination, *, source, current_policy, proposed_policy, gemini_tutor_model=None):
     """Create a fixed one-decision pair; this function never dispatches a provider."""
     policies = {"a": current_policy, "b": proposed_policy}
+    _local_mode(gemini_tutor_model)
     if any(not isinstance(value, str) or not value.strip() for value in policies.values()):
         raise ValueError("Enter both the confirmed current policy and the proposed policy.")
     if current_policy.strip() == proposed_policy.strip():
         raise ValueError("The proposed policy must differ from the current policy.")
     return chat_policy_pair.create(
-        destination, source=source, policies=policies, max_new_decisions=1
+        destination, source=source, policies=policies, max_new_decisions=1,
+        gemini_tutor_model=gemini_tutor_model,
     )
 
 
@@ -57,24 +67,39 @@ def reopen(destination):
     return chat_policy_pair.show(destination)
 
 
-def run_both(destination, *, send=False, generate_tutor=None, generate_student=None):
+def run_both(destination, *, send=False, generate_tutor=None, generate_student=None,
+             make_student_reply=None, gemini_tutor_model=None):
     """Run each untouched condition once; completed or failed conditions are never resent."""
     if send is not True:
         raise ValueError("Running the comparison requires explicit sending permission.")
     destination = Path(destination)
+    plan = chat_policy_pair._comparison(destination)["plan"]
+    local = plan["version"] == 2
+    if local:
+        if (not callable(make_student_reply) or not callable(generate_tutor)
+                or generate_student is not None or gemini_tutor_model != plan["gemini_tutor_model"]):
+            raise ValueError("Use the frozen Gemini tutor model and explicit tutor/local student callbacks.")
+    elif make_student_reply is not None or gemini_tutor_model is not None:
+        raise ValueError("Local student overrides require a local comparison plan.")
     for name in ("a", "b"):
         saved = reopen(destination)
         condition = saved["conditions"][name]
         snapshot = condition["snapshot"]
-        if condition["error"] or snapshot is None:
+        if condition["error"] or snapshot is None or condition["lifecycle"] != "ready":
             continue
         if not (snapshot["status"] == "awaiting-tutor"
                 and snapshot["decisions_remaining"] > 0):
             continue
+        options = {"generate_student": generate_student}
+        if local:
+            reply = make_student_reply(destination / "sessions" / name)
+            if not callable(reply):
+                raise ValueError("The local student factory must return a callable reply backend.")
+            options = {"generate_reply": reply, "gemini_tutor_model": gemini_tutor_model}
         try:
             chat_policy_pair.respond(
                 destination, name, binding=snapshot["binding"], send=True,
-                generate_tutor=generate_tutor, generate_student=generate_student,
+                generate_tutor=generate_tutor, **options,
             )
         except Exception:
             # Continue only if an actual saved failure explains this exception.
@@ -106,20 +131,22 @@ def runs(workspace):
     return found
 
 
-def freeze_next(workspace, *, source, current_policy, proposed_policy):
+def freeze_next(workspace, *, source, current_policy, proposed_policy, gemini_tutor_model=None):
     """Freeze the next numbered run while refusing an exact policy/source reroll."""
     workspace, source = Path(workspace), Path(source)
+    local = _local_mode(gemini_tutor_model)
     workspace.mkdir(parents=True, exist_ok=True)
     if workspace.is_symlink() or not workspace.is_dir():
         raise ValueError("The policy workspace must be a local directory.")
-    source_manifest, _, _ = chat_policy_pair._source(source)
+    source_manifest, _, _ = chat_policy_pair._source(source, local=local)
     source_sha256 = store.digest(source_manifest)
     with store._locked(workspace):
         existing = runs(workspace)
         for path in existing.values():
             plan = store._read(path / "comparison.json")["plan"]
             if (plan["source"]["session_sha256"] == source_sha256
-                    and plan["policies"] == {"a": current_policy, "b": proposed_policy}):
+                    and plan["policies"] == {"a": current_policy, "b": proposed_policy}
+                    and plan.get("gemini_tutor_model") == gemini_tutor_model):
                 raise ValueError(
                     f"This exact scenario and policy pair already exists as {path.name}."
                 )
@@ -128,5 +155,6 @@ def freeze_next(workspace, *, source, current_policy, proposed_policy):
         saved = freeze(
             destination, source=source,
             current_policy=current_policy, proposed_policy=proposed_policy,
+            gemini_tutor_model=gemini_tutor_model,
         )
     return destination.resolve(), saved
