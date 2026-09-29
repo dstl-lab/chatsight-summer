@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Evidence-card example prepared; provider permission pending (2026-09-30):**
+One baseline and one guided reply will use the same first conversation and model
+settings. The private side-by-side view and exact requests are ready, with no
+recorded target or new labeling. Offline checks pass. Automatic approval review
+blocked the private conversation's export to Gemini; a specific two-call question
+is pending. Zero requests sent, zero results claimed. See the
+[prepared example](docs/2026-09-30-student-evidence-card.md#one-pair-illustration-prepared).
+
 **Student evidence card implemented (2026-09-30):**
 [Feature and usage](docs/2026-09-30-student-evidence-card.md).
 The workbench now shows automatic counts, lengths, formatting and source excerpts

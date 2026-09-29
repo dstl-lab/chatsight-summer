@@ -67,6 +67,35 @@ for this feature. It establishes an inspectable input mechanism; improved
 student realism remains untested. Separate action selection is not part of this
 increment.
 
+## One-pair illustration prepared
+
+Following the user's request for a concrete example, the first conversation was
+selected in its original order before seeing outputs. Two fresh one-decision
+sessions share the exact five-message prefix, Gemini 2.5 Pro, temperature 1.0 and
+an 8,192-token output limit. One uses the existing prompt; one adds the evidence
+card through the actual workbench adapter. Recorded next messages are excluded.
+This is one sample per condition, not an improvement test or another labeling pass.
+
+Private inputs, a single-use runner, and a side-by-side HTML view are prepared
+under `data/student-evidence-example-v1/`. The frozen plan SHA-256 is
+`f09d28cbd34a921cc76498db5e6b44cdd0fd18709cae903d2b20c5190889a856`.
+The runner reuses the existing raw Gemini callback and parser, saves raw responses
+before parsing, preserves errors and blocks reruns. Its authored pair/no-resend
+check and seven evidence-adapter tests pass; independent pre-dispatch review passes.
+
+Automatic approval review rejected dispatch because it required explicit
+authorization for this private conversation's export to Google Gemini despite
+the standing authorization and accepted comparison. A specific two-request
+permission question is pending. **Zero provider requests have been sent for this
+example; no comparison result exists yet.** Original workbench sessions and the
+closed 100-call study remain untouched.
+
+Offline check (no provider request):
+
+```sh
+PYTHONPATH=. python -P data/student-evidence-example-v1/run_pair.py check
+```
+
 ```sh
 PYTHONPATH=. python -P -m src.agents.browser_workspace \
   data/student-evidence-v1/sessions --chat-sessions --send --port 8451
