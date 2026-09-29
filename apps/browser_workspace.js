@@ -444,7 +444,7 @@ function recordedNotebook(){
   const r=frame().recorded,e=r.event,c=r.notebook_capture,execution=r.execution,result=r.execution_result;
   const input=source=>`<pre class="notebook-input" tabindex="0" aria-label="Recorded code, read only"><code>${esc(source)||'\n'}</code></pre>`;
   const prompt='<span class="notebook-prompt" title="Execution count not recorded" aria-label="Execution count not recorded">[—]</span>';
-  let body='<section class="notebook-document" aria-label="Recorded notebook"><div class="notebook-filebar"><b>Notebook</b><span class="tag">Read only</span><span class="spacer"></span><button class="text-action" data-evidence="context">Recording details</button></div>';
+  let body=`<section class="notebook-document" aria-label="Recorded notebook"><div class="notebook-filebar"><b>Notebook</b><span class="tag">Read only</span><span class="spacer"></span>${e.diff||execution?.diff?'<button class="text-action" data-evidence="work">View code change</button>':''}<button class="text-action" data-evidence="context">Recording details</button></div>`;
   body+=`<div class="notebook-caption"><span>${c?`Capture at event ${esc(c.sequence)} · ${c.cells.length} cells`:'No notebook capture yet'}</span><span>Probable test activity</span></div>`;
   if(c){
     body+='<div class="notebook-cells">'+c.cells.map((cell,i)=>`<section class="notebook-cell" aria-label="Captured ${esc(cell.cell_type)} cell ${cell.index+1}">${cell.cell_type==='code'?prompt:'<span aria-hidden="true"></span>'}<div class="notebook-cell-body"><div class="notebook-cell-label"><span>Cell ${cell.index+1} · ${esc(cell.cell_type)}</span><button class="text-action" data-evidence="cell:${i}">Source</button></div>${cell.cell_type==='markdown'&&typeof cell.display_html==='string'?`<div class="notebook-markdown">${cell.display_html}</div>`:input(cell.source)}</div></section>`).join('')+'</div>';
@@ -453,7 +453,7 @@ function recordedNotebook(){
   if(e.event_type==='notebook_cell_source_changed')body+='<p class="notebook-caption">A source change was logged; its changed code was not captured.</p>';
   body+='</section>';
   if(execution){
-    body+=`<section class="notebook-execution" aria-label="Separately recorded execution"><div class="notebook-filebar"><b>Execution · event ${esc(execution.sequence)}</b><span class="spacer"></span>${execution.diff?'<button class="text-action" data-evidence="work">View code change</button>':''}</div><p class="notebook-caption">Recorded separately; its position in the captured notebook is unavailable.</p><section class="notebook-cell" aria-label="Submitted execution source">${prompt}<div class="notebook-cell-body">${input(execution.source)}`;
+    body+=`<section class="notebook-execution" aria-label="Separately recorded execution"><div class="notebook-filebar"><b>Execution · event ${esc(execution.sequence)}</b></div><p class="notebook-caption">Recorded separately; its position in the captured notebook is unavailable.</p><section class="notebook-cell" aria-label="Submitted execution source">${prompt}<div class="notebook-cell-body">${input(execution.source)}`;
     body+=result?`<div class="notebook-result${result.status==='error'?' notebook-error':''}"><div class="notebook-cell-label">Recorded ${esc(result.status)} · not an assignment grade</div><pre tabindex="0" aria-label="Recorded execution output">${esc(result.output||'No text output was recorded.')}</pre></div>`:'<div class="notebook-result muted">Result not yet recorded at this event.</div>';
     body+='</div></section></section>';
   }
