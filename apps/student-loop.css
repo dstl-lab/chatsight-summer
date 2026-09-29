@@ -1,8 +1,17 @@
-/* The one-case replay keeps notebook and chat beside a compact event timeline. */
+/* One captured case, with notebook and chat beside a compact event timeline. */
 #app{grid-template-columns:minmax(0,1fr)}
 #app>.explorer{display:none}
 #app>.workbench{grid-column:1}
 #playback .playback-buttons{display:none}
+#loop-policy-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;font-size:12px}
+#loop-policy-row[hidden]{display:none}
+#loop-policy-row label{font-weight:600}
+#loop-policy{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:4px 8px;min-height:32px}
+#loop-policy:hover{border-color:var(--muted)}
+#loop-policy:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+#loop-policy:active{background:var(--mint)}
+#loop-policy:disabled{opacity:.6;cursor:wait}
+#loop-policy-note{color:var(--muted)}
 #trail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;overflow:visible;padding:4px 0;isolation:isolate}
 #trail>button{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;width:100%;padding:4px 4px 8px;border:0;border-radius:4px;background:transparent;color:var(--ink);white-space:normal;text-align:center;line-height:1.4}
 #trail>button::before{content:"";position:absolute;top:18px;left:0;width:100%;height:1px;background:var(--line);z-index:0}

@@ -107,6 +107,9 @@ def project(report, continuation=None):
 
 def student_loop(packet, sampling, condition_id):
     """Expose one verified saved sequence without treating local execution as a student action."""
+    if condition_id == 'both':
+        return {**packet, 'encounters': [student_loop(packet, sampling, name)['encounters'][0]
+                                        for name in ('direct', 'hint')]}
     condition = next((c for c in sampling['conditions'] if c['id'] == condition_id), None)
     if condition is None or not sampling['continuation'] or not condition.get('reaction'):
         raise ValueError('A student loop requires a condition with a saved execution and reaction.')
@@ -129,7 +132,8 @@ def student_loop(packet, sampling, condition_id):
             ('captured', 'tutor', 'edit', 'execution', 'reaction'),
             ('Captured start', 'Tutor reply', 'Student edit', 'Local execution', 'Next action')):
         frame.update(loop_stage=stage, label=label, decisions_remaining=0)
-    encounter.update(loop_example=True, title='Student loop · '+condition['label'],
+    encounter.update(loop_example=True, loop_policy_label=condition['label'], loop_sample=selected,
+        title='Student loop · '+condition['label'],
         saved_results_html=workspace._tutor_html(
             f'Saved {condition["label"]} sample {selected}. One tutor reply, one student edit, '
             'a researcher-triggered local execution, and one student decision after its result. '
@@ -137,7 +141,9 @@ def student_loop(packet, sampling, condition_id):
             'viewing makes no new model or execution requests. The source came from a historical '
             'capture; the continuation is simulated. Local results are not course grades or '
             'evidence of learning. Historical dataset bytes and kernel are not established. '
-            'No evidence-card guidance was used in this earlier saved sequence.'))
+            'No evidence-card guidance was used in this earlier saved sequence. These paths do not '
+            'establish a general policy advantage or real-student fidelity.'
+            f'\n\nTutor instructions:\n\n{condition["policy"]}'))
     return {**packet, 'encounters': [encounter]}
 
 
@@ -185,7 +191,8 @@ def create_app(*, notebook_branch, comparison, authored_demo, continuation=None,
         packet, sampling = snapshot(request)
         if loop_condition is not None:
             packet = student_loop(packet, sampling, loop_condition)
-            packet['encounters'][0]['loop_authored_demo'] = authored_demo
+            for encounter in packet['encounters']:
+                encounter['loop_authored_demo'] = authored_demo
         return packet
 
     @app.get('/api/policy-sampling')
@@ -237,8 +244,8 @@ def main():
     parser.add_argument('--branch', type=Path, required=True)
     parser.add_argument('--comparison', type=Path, required=True)
     parser.add_argument('--continuation', type=Path, help='Verified saved execution and reaction attachment; read only.')
-    parser.add_argument('--student-loop', choices=('direct', 'hint'),
-                        help='Show only the predetermined saved sample as a five-stage notebook loop.')
+    parser.add_argument('--student-loop', choices=('direct', 'hint', 'both'),
+                        help='Replay predetermined samples as five-stage loops; both enables policy switching.')
     parser.add_argument('--port', type=int, default=8450)
     provenance = parser.add_mutually_exclusive_group(required=True)
     provenance.add_argument('--authored-demo', action='store_true', dest='authored_demo',

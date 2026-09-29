@@ -179,6 +179,20 @@ def test_optional_verified_attachment_api_redacts_changed_reactions(tmp_path):
         assert '/student-loop.js' in client.get('/').text
         assert '/policy-sampling.js' not in client.get('/').text
         assert not any('POST' in getattr(route, 'methods', ()) for route in loop_app.routes)
+    both_app = create_app(notebook_branch=tmp_path/'source', comparison=comparison,
+                         authored_demo=True, continuation=continuation, loop_condition='both')
+    with TestClient(both_app, base_url='http://127.0.0.1') as client:
+        packet = client.get('/api/workspace').json()
+        direct, hint = packet['encounters']
+        assert [c['id'] for c in packet['encounters']] == ['direct', 'hint']
+        assert direct['frames'][0] == hint['frames'][0]
+        for encounter in packet['encounters']:
+            assert encounter['loop_authored_demo'] is True
+            assert encounter['loop_sample'] == 1
+            assert encounter['loop_policy_label']
+            assert len(encounter['frames']) == 5
+            assert 'Tutor instructions:' in encounter['saved_results_html']
+        assert not any('POST' in getattr(route, 'methods', ()) for route in both_app.routes)
     with TestClient(app, base_url='http://127.0.0.1') as client:
         packet = client.get('/api/policy-sampling').json()
         assert packet['continuation'] is True
@@ -198,5 +212,8 @@ def test_optional_verified_attachment_api_redacts_changed_reactions(tmp_path):
             assert response.status_code == 409
             assert 'ALTERED_PRIVATE_REACTION' not in response.text and 'AUTHORED_REACTION' not in response.text
     with TestClient(loop_app, base_url='http://127.0.0.1') as client:
+        response = client.get('/api/workspace')
+        assert response.status_code == 409 and 'ALTERED_PRIVATE_REACTION' not in response.text
+    with TestClient(both_app, base_url='http://127.0.0.1') as client:
         response = client.get('/api/workspace')
         assert response.status_code == 409 and 'ALTERED_PRIVATE_REACTION' not in response.text

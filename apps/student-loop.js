@@ -1,5 +1,5 @@
 'use strict';
-// One verified saved loop, using the workspace's existing stages and renderers.
+// Verified saved loops, using the workspace's existing stages and renderers.
 (() => {
   let encounters;
   const descriptions={
@@ -15,13 +15,26 @@
     reaction:['Next action','Student','student']
   };
   $('canvas').before($('playback'));
+  $('playback').insertAdjacentHTML('afterbegin','<div id="loop-policy-row" hidden><label for="loop-policy">Tutor policy</label><select id="loop-policy" aria-describedby="loop-policy-note"></select><span id="loop-policy-note">Same captured start · One saved path per policy</span></div>');
+  $('loop-policy').onchange=()=>{
+    if(state.refreshing){$('loop-policy').value=current()?.id||'';return}
+    const index=state.encounters.findIndex(c=>c.id===$('loop-policy').value);
+    if(index<0||!state.encounters[index].loop_example)return;
+    state.caseIndex=index;state.selected='step';state.showInspector=false;state.chatKey=null;
+    $('run-details').open=false;
+    render();
+    notify(`${current().loop_policy_label} · ${current().frames[state.step].label}. Saved results; no generation or execution.`);
+  };
 
   function decorate(){
     const encounter=current(),selected=encounter?.frames?.[state.step];
+    $('loop-policy-row').hidden=!encounter?.loop_example||!selected||state.encounters.length<2;
+    $('loop-policy').disabled=!selected||Boolean(state.refreshing);
+    $('loop-policy').value=encounter?.id||'';
     document.querySelector('.prototype-note').textContent=encounter?.loop_authored_demo===true?'Authored test data · Saved student loop':'Saved student loop';
     if(!encounter?.loop_example||!selected){$('playback').hidden=true;return}
     $('trail-title').textContent='Interaction timeline';
-    $('trail-hint').textContent=`Step ${state.step+1} of ${encounter.frames.length}`;
+    $('trail-hint').textContent=`Step ${state.step+1} of ${encounter.frames.length} · Saved sample ${encounter.loop_sample}`;
     $('trail').setAttribute('role','group');
     $('trail').setAttribute('aria-label','Saved interaction timeline');
     $('trail').querySelectorAll('button[data-trail]').forEach(button=>{
@@ -47,7 +60,11 @@
 
   const workspaceRender=render;
   render=function(){
-    if(encounters!==state.encounters){encounters=state.encounters;if(current()?.loop_example)state.step=0}
+    if(encounters!==state.encounters){
+      encounters=state.encounters;
+      $('loop-policy').innerHTML=encounters.map(c=>`<option value="${esc(c.id)}">${esc(c.loop_policy_label)}</option>`).join('');
+      if(current()?.loop_example)state.step=0;
+    }
     if(state.encounters.length)workspaceRender();
     decorate();
   };

@@ -2,12 +2,15 @@
 
 **Notebook loop is directly replayable (2026-09-30):**
 [Saved sequence and limits](docs/2026-09-30-notebook-loop-replay.md).
-Port 8452 shows the existing hint sample 1 as a connected, selectable timeline: captured start,
-tutor reply, student edit, researcher-triggered local execution (2,850), then the
-saved no-action decision. Notebook and chat stay together; execution feedback
-first appears at its own stage. No new model calls, code runs or labels. Seven
+Port 8452 now switches between existing direct-answer and guided-hint sample 1
+with a Tutor policy selector above the connected timeline, preserving the stage.
+Direct: local error → unexecuted repair. Hint: local result 2,850 → no action.
+Notebook and chat stay together; researcher-triggered execution feedback first
+appears at its own stage. No new model calls, notebook runs or labels. Seven
 Python checks, three Node checks, independent review and browser inspection pass.
 This connects existing evidence in the UI; it does not establish student fidelity.
+Student-selected Run already exists for small supplied tables; this full archival
+case needs a file-backed runtime adapter before it can use that loop honestly.
 
 **Evidence-card example completed (2026-09-30):**
 After specific approval, exactly two Gemini replies completed from the same first

@@ -1,16 +1,20 @@
-# One saved notebook loop in the workbench
+# Saved notebook loops in the workbench
 
-The workbench now presents one existing sequence directly as five stages:
+The workbench presents each existing sequence directly as five stages:
 **Captured start → Tutor reply → Student edit → Local execution → Next action**.
 The connected event timeline sits above the notebook, with the shared chat alongside it.
-The single-example view hides the unnecessary task picker; the ordinary policy
+The single-case view hides the unnecessary task picker; the ordinary policy
 sampling view is unchanged.
 
-The displayed case is the previously saved **guided-hint sample 1** from the
-closed policy-sampling study and its execution follow-up. The student generated
-an edit using `len(...unique())`; a local run returned **2,850**; the next saved
-model decision was **no further action**, with no message or additional edit.
-This turn made **zero model requests, zero code executions and zero new labels**.
+The preview now includes the previously saved **sample 1 from each policy** in
+the closed study and its execution follow-up. A native **Tutor policy** selector
+above the timeline preserves the selected stage while updating notebook, output,
+and chat together. Guided hint produced `len(...unique())`, a local result of
+**2,850**, and a saved **no further action** decision. Direct answer produced
+`.nunique()`, a local **AttributeError**, and a saved repair that **has not been
+executed**. This UI change made **zero model requests, zero notebook executions
+and zero new labels**. Each path has one predetermined follow-up; neither is a
+policy-level success estimate or a finding about real-student fidelity.
 
 The execution was researcher-triggered, not a model-selected Run action. The UI
 names that distinction. The output first appears at Local execution, attached
@@ -25,18 +29,22 @@ evidence-card guidance. The card remains display-only for this notebook example.
 The source history is sparse; historical dataset bytes/kernel are unverified;
 the archived-data output is not a course grade or evidence of learning.
 
-`--student-loop hint` reuses the existing verified comparison and continuation
-loaders. It selects only that condition's predetermined reaction sample, rejects
+`--student-loop both` reuses the existing verified comparison and continuation
+loaders. It selects each condition's predetermined reaction sample, rejects
 incomplete sequences, and verifies source/runtime/raw-result/provider-response
 attribution on each read. The view exposes no POST/send/execution endpoint.
 Authored test data retains its explicit banner. Original artifacts are unchanged.
+The `direct` and `hint` options still expose just one path without a selector.
+The selector rejects switching during reload and is hidden when evidence is
+unavailable; switching closes any old inspector selection. Policy instructions and limits are
+available under Saved results. Mouse and native keyboard selection retain focus.
 
 ```sh
 PYTHONPATH=. python -P apps/policy_sampling_preview.py \
   --branch data/notebook-source-branch-v1/branch \
   --comparison data/notebook-policy-sampling-v1 \
   --continuation data/notebook-policy-execution-v1 \
-  --live-results --student-loop hint --port 8452
+  --live-results --student-loop both --port 8452
 ```
 
 Validation: seven focused Python tests, three Node controller checks and browser
@@ -49,6 +57,23 @@ deprecation warning remains.
 
 The local preview is <http://127.0.0.1:8452/>. This increment ends with the verified
 replay; no additional student generation or kernel execution is queued.
+
+Policy-switch validation: seven focused Python checks and three Node controller
+checks pass. The browser preserves Local run / Next action when switching,
+displays the correct error or value, keeps the repair unexecuted, and maintains
+native keyboard focus. Changed receipts still redact both paths. All five glyphs
+remain centered in their nodes.
+
+## Next simulation boundary
+
+The existing `notebook_student` engine already supports student-selected
+`request-check` actions. This archival charts task cannot use its runtime
+unchanged: the runtime takes at most 2,048 one-column values, while the archive
+has 70,183 rows and 2,850 distinct URIs. The archive worker also uses a different,
+ungraded output protocol. Raising the value limit would put the whole table into
+the model prompt. Future student-selected execution on this exact case therefore
+needs an explicit file-backed runtime adapter; truncating the table or substituting
+placeholder values would change the task. That adapter is not implemented here.
 
 ## Timeline refinement
 
