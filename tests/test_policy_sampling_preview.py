@@ -1,5 +1,6 @@
 """Authored source-only comparison: no inherited fix, output, or original tutor."""
 from copy import deepcopy
+from hashlib import sha256
 import json
 
 from fastapi.testclient import TestClient
@@ -8,6 +9,56 @@ import pytest
 from apps.policy_sampling_preview import project
 from src.agents.notebook_branch import action
 from tests.test_notebook_branch import recovered
+
+
+def test_saved_execution_is_shared_by_source_but_reaction_belongs_to_one_sample():
+    from src.agents.notebook_student import digest
+    shared = action.initial_task(recovered(), instruction_cells=[0], work_cell=1)
+    shared['dialogue'] = shared['dialogue'][:1]
+    task = deepcopy(shared)
+    task['dialogue'].append({'role':'tutor', 'text':'AUTHORED_TUTOR'})
+    choice = {'decision':'revise-work', 'text':'First edit', 'source':'total = 7'}
+    report = dict(model='authored', plan_sha256='a'*64, shared_task=shared, scope='Authored',
+        conditions={'direct':dict(label='Direct', policy='Authored', task=task,
+            records=[{'index':index, 'status':'complete', 'response':choice} for index in (1,2)],
+            valid=2, failed=0, requested=30, status='complete', categories=[])})
+    reaction_task = deepcopy(task)
+    reaction_task['work'] = {'cell_index':1, 'source':'total = 7', 'revision':1}
+    response = {'decision':'revise-work', 'text':'After feedback', 'source':'total = 8'}
+    check = dict(revision=1, source_sha256=sha256(b'total = 7').hexdigest(), status='ok',
+        execution='completed', value=7, error=None, output='', runtime={'python':'3.12',
+        'libraries':{'authored':'1'}, 'image_id':'sha256:'+'b'*64})
+    attachment = dict(comparison_sha256=digest(report), dataset={'provenance':'authored'},
+        image_id='sha256:'+'b'*64, checks={check['source_sha256']:check},
+        reactions={'direct':dict(sample_index=1, status='complete', model='authored', task=reaction_task,
+            response=response, applied=action.apply_action(reaction_task, action.Action.model_validate(response)),
+            started_at='2026-09-29T00:00:00+00:00', finished_at='2026-09-29T00:00:01+00:00')})
+    before = deepcopy((report, attachment))
+    packet, sampling = project(report, attachment)
+    assert (report, attachment) == before
+    assert all('external_execution' not in frame for frame in packet['encounters'][0]['frames'])
+    first, duplicate = sampling['conditions'][0]['samples']
+    assert first['frame']['external_execution'] == duplicate['frame']['external_execution']
+    assert first['frame']['external_execution']['value'] == 7
+    assert 'reaction_frame' not in duplicate
+    reacted = first['reaction_frame']
+    assert reacted['work']['source'] == 'total = 8' and reacted['work']['revision'] == 2
+    assert 'external_execution' not in reacted
+    assert [turn['text'] for turn in reacted['dialogue']] == ['check?', 'AUTHORED_TUTOR', 'First edit', 'After feedback']
+    assert reacted['reaction']['observed_revision'] == 1
+    assert reacted['reaction']['observation']['value'] == 7
+    assert '+total = 8' in reacted['changes']['unified_diff']
+    attachment['reactions']['direct'] = {'sample_index':1, 'status':'error', 'model':'authored'}
+    _, failed = project(report, attachment)
+    assert failed['conditions'][0]['reaction']['status'] == 'error'
+    assert all('reaction_frame' not in sample for sample in failed['conditions'][0]['samples'])
+    attachment['checks'] = {}
+    _, pending = project(report, attachment)
+    assert pending['execution_count'] == 0
+    assert all('external_execution' not in sample['frame'] for sample in pending['conditions'][0]['samples'])
+    attachment['comparison_sha256'] = 'c'*64
+    with pytest.raises(ValueError, match='comparison'):
+        project(report, attachment)
 
 
 def test_policy_samples_use_their_own_tutor_and_shared_captured_work():
@@ -81,3 +132,34 @@ def test_saved_comparison_api_is_read_only_and_redacts_changed_receipts(tmp_path
             response = client.get(endpoint)
             assert response.status_code == 409
             assert 'ALTERED_PRIVATE_TEXT' not in response.text and 'AUTHORED_STUDENT' not in response.text
+
+
+def test_optional_verified_attachment_api_redacts_changed_reactions(tmp_path):
+    from apps.policy_sampling_preview import create_app
+    from src.agents.notebook_student import _read, _save
+    from tests.test_policy_execution import prepared_followup, raw
+    module, comparison, continuation, _ = prepared_followup(tmp_path)
+    module.execute(continuation)
+    module.prepare_reactions(continuation)
+    module.send(continuation, send=True, generate=lambda *_:raw(
+        {'decision':'reply', 'text':'AUTHORED_REACTION', 'source':None}))
+    app = create_app(notebook_branch=tmp_path/'source', comparison=comparison,
+                     authored_demo=True, continuation=continuation)
+    with TestClient(app, base_url='http://127.0.0.1') as client:
+        packet = client.get('/api/policy-sampling').json()
+        assert packet['continuation'] is True
+        assert 'raw_response' not in json.dumps(packet)
+        for condition in packet['conditions']:
+            first, second = condition['samples'][:2]
+            assert first['reaction_frame']['dialogue'][-1]['text'] == 'AUTHORED_REACTION'
+            assert 'reaction_frame' not in second
+            assert first['frame']['external_execution'] == second['frame']['external_execution']
+        assert client.get('/api/workspace').status_code == 200
+        path = continuation/'reaction-direct.json'
+        receipt = _read(path)
+        receipt['response']['text'] = 'ALTERED_PRIVATE_REACTION'
+        _save(path, receipt)
+        for endpoint in ['/api/workspace', '/api/policy-sampling']:
+            response = client.get(endpoint)
+            assert response.status_code == 409
+            assert 'ALTERED_PRIVATE_REACTION' not in response.text and 'AUTHORED_REACTION' not in response.text

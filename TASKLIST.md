@@ -1,5 +1,15 @@
 # Simulated students: task list
 
+**Saved edits executed; two reactions prepared (2026-09-29):**
+[Policy execution follow-up](docs/2026-09-29-policy-execution.md).
+Three distinct source checks cover all 60 saved samples. The direct-answer code
+raises a BabyPandas AttributeError; both hint-derived forms return 2,850. Results
+now appear in the existing port-8450 workbench. Prepared sample 1 per condition
+for one reaction each, chosen before execution. Automatic approval review blocked
+the two new Gemini requests pending explicit payload/destination approval; zero
+were sent. Course setup/API context is prepared for existing future tutor calls.
+No new labels, tutor rerolls, changed studies, or inferred student reactions.
+
 **Live tutor-policy comparison completed (2026-09-29):**
 [Fixed tutor-reply comparison](docs/2026-09-29-notebook-policy-sampling.md).
 Three live requests saved and replayed successfully (two no-action, one message).
@@ -10,8 +20,8 @@ The direct answer used an API absent from the documented course-library interfac
 and all its samples copied that suggestion. These edits remain unexecuted.
 The port-8450 workspace now displays verified live results, with shared glyphs
 across navigation, notebook controls, chat identities, and comparison actions.
-Next: supply the tutor's course-library context before interpreting broader policy
-comparisons. This run is closed; no additional samples or labels are queued.
+Course-library context and retrospective execution are now covered by the
+separate follow-up above. This run is closed; no additional samples or labels are queued.
 
 **Sampling workspace connected (2026-09-29):**
 [Inspect sampled next actions in the notebook/chat workspace](docs/2026-09-29-next-actions-preview.md).

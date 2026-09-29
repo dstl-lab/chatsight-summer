@@ -33,13 +33,15 @@
     $('policy-sampling-toggle').focus({preventScroll:true});
   }
 
-  function open(id,index=null,keepOpen=false){
+  function open(id,index=null,keepOpen=false,step=1){
     const c=comparison.data?.conditions.find(c=>c.id===id),caseIndex=state.encounters.findIndex(c=>c.id===id);
     const baseline=comparison.originals.get(id),sample=c?.samples.find(s=>s.index===index);
     if(!c||tutorUnavailable(c)||caseIndex<0||!baseline||comparison.loading||index!==null&&!sample)return;
     if(sample)comparison.selected.set(id,index);else comparison.selected.delete(id);
-    state.caseIndex=caseIndex;current().frames[1]=structuredClone(sample?sample.frame:baseline);
-    state.step=1;state.showInspector=false;state.selected='step';state.chatOpen=true;state.chatKey=null;
+    state.caseIndex=caseIndex;
+    current().frames=[current().frames[0],structuredClone(sample?sample.frame:baseline),
+      ...(sample?.reaction_frame?[structuredClone(sample.reaction_frame)]:[])];
+    state.step=step===2&&sample?.reaction_frame?2:1;state.showInspector=false;state.selected='step';state.chatOpen=true;state.chatKey=null;
     render();if(!keepOpen)closePanel();
     document.querySelector('#canvas [aria-label="Selected code cell, read only"]')?.scrollIntoView({block:'start'});
     document.querySelector('#conversation-messages .chat-turn:last-of-type')?.scrollIntoView({block:'nearest'});
@@ -48,7 +50,7 @@
 
   function outcome(c,key){
     const category=c.categories.find(row=>row.decision===key),count=category?.count||0;
-    const selected=current()?.id===c.id&&state.step===1&&selectedSample()?.decision===key;
+    const selected=current()?.id===c.id&&state.step>0&&selectedSample()?.decision===key;
     const available=!tutorUnavailable(c)&&count>0&&c.samples.some(s=>s.decision===key)&&comparison.originals.has(c.id)&&!comparison.loading;
     const frequency=category?.proportion,interval=category?.interval?.map(percent).join(' – ');
     return `<td><button class="policy-outcome" data-policy="${esc(c.id)}" data-outcome="${key}" aria-pressed="${selected}"${available?'':' disabled'} aria-label="${esc(c.label+': '+labels[key]+', '+count+' of '+c.valid+' valid samples'+(available?', inspect saved outcome':', none available'))}"${interval?` title="95% sampling interval: ${interval}"`:''}>
@@ -61,7 +63,8 @@
     const sample=selectedSample(),c=condition();
     if(!sample)return '<p class="sampling-hint">Choose an outcome to see its saved notebook and chat in Generated.</p>';
     const samples=group(),position=samples.findIndex(s=>s.index===sample.index);
-    return `<div class="sample-selection"><span class="sample-selection-label"><span class="sample-dot" aria-hidden="true"></span>${esc(c.label)} · sample <b>${sample.index}</b></span><span class="sample-position">${position+1} of ${samples.length} in this action</span><div class="sample-nav" role="group" aria-label="Browse samples within this action"><button id="policy-sample-previous" aria-label="Previous saved sample"${position===0?' disabled':''}>‹</button><button id="policy-sample-next" aria-label="Next saved sample"${position===samples.length-1?' disabled':''}>›</button></div>${state.step!==1?'<button id="policy-open-selected" class="text-action">Open Generated</button>':''}<button id="policy-original-reply" class="text-action">${glyph('tutor')}Tutor reply</button></div>`;
+    const reactionStatus=!sample.reaction_frame&&c.reaction?.sample_index===sample.index?{prepared:'Reaction not generated',pending:'Reaction pending',error:'Reaction unavailable'}[c.reaction.status]:null;
+    return `<div class="sample-selection"><span class="sample-selection-label"><span class="sample-dot" aria-hidden="true"></span>${esc(c.label)} · sample <b>${sample.index}</b></span><span class="sample-position">${position+1} of ${samples.length} in this action</span>${reactionStatus?`<span class="sample-position">${reactionStatus}</span>`:''}<div class="sample-nav" role="group" aria-label="Browse samples within this action"><button id="policy-sample-previous" aria-label="Previous saved sample"${position===0?' disabled':''}>‹</button><button id="policy-sample-next" aria-label="Next saved sample"${position===samples.length-1?' disabled':''}>›</button></div>${state.step!==1?'<button id="policy-open-selected" class="text-action">Open Generated</button>':''}${sample.reaction_frame&&state.step!==2?'<button id="policy-open-reaction" class="text-action">View reaction</button>':''}<button id="policy-original-reply" class="text-action">${glyph('tutor')}Tutor reply</button></div>`;
   }
 
   function renderPanel(){
@@ -85,7 +88,7 @@
     if(!data){replaceHTML($('policy-sampling-distribution'),'');replaceHTML($('policy-sampling-footer'),'');return}
     replaceHTML($('policy-sampling-distribution'),`<table class="policy-frequency-table"><caption>${data.authored_demo?'Authored example action counts':'Observed model action frequencies'}</caption><thead><tr><th scope="col">Next action</th>${data.conditions.map(c=>`<th scope="col"><strong>${esc(c.label)}</strong><span class="policy-condition-count">${c.valid} valid · ${c.failed} failed</span><span class="policy-condition-count">${tutorUnavailable(c)?c.status==='tutor-error'?'Tutor failed · No student samples':'Tutor reply pending · No student samples':`${c.valid+c.failed} / ${c.requested} finished · ${esc(c.status)}`}</span><button class="text-action" data-tutor-policy="${esc(c.id)}"${comparison.loading||tutorUnavailable(c)||!comparison.originals.has(c.id)?' disabled':''}>${glyph('tutor')}${tutorUnavailable(c)?'Tutor reply unavailable':'View tutor reply'}</button></th>`).join('')}</tr></thead><tbody>${Object.keys(labels).map(key=>`<tr><th scope="row"><span class="policy-action-label">${glyph(actionGlyph[key])}<span>${labels[key]}</span></span></th>${data.conditions.map(c=>outcome(c,key)).join('')}</tr>`).join('')}</tbody></table>`);
     const detailsOpen=panel.querySelector('.sampling-details')?.open;
-    replaceHTML($('policy-sampling-footer'),`${selection()}<details class="sampling-details"><summary>Policies and limits</summary><div><p><b>${data.authored_demo?'Configured model (not called)':'Student model'}:</b> ${esc(data.model)}</p><p>${data.authored_demo?'Tutor replies and student actions are authored examples for testing this interface. Counts and intervals are illustrative; no live comparison was run.':'Each available policy has one generated tutor reply, followed by independent student samples. Differences are conditional on those replies; they do not establish a general policy effect.'}</p><p>Percentages use valid samples only. ${data.authored_demo?'Example frequencies':'Model frequencies'} are not probabilities of real student behavior. A notebook edit may also include a message.</p><p>Source only: sampled edits are not executed or graded. Captured shows the shared state before either tutor reply.</p>${data.conditions.map(c=>`<p><b>${esc(c.label)}:</b> ${esc(c.policy)}</p>`).join('')}<table><caption>${data.authored_demo?'Illustrative 95% intervals':'Marginal 95% sampling intervals'}</caption><thead><tr><th scope="col">Action</th>${data.conditions.map(c=>`<th scope="col">${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${Object.keys(labels).map(key=>`<tr><th scope="row">${labels[key]}</th>${data.conditions.map(c=>`<td>${c.categories.find(row=>row.decision===key)?.interval?.map(percent).join(' – ')||'Unavailable'}</td>`).join('')}</tr>`).join('')}</tbody></table><p>Intervals assume independent, stable sampling. Zero observed does not mean impossible. Selecting an outcome makes no model request.</p></div></details>`);
+    replaceHTML($('policy-sampling-footer'),`${selection()}<details class="sampling-details"><summary>Policies and limits</summary><div><p><b>${data.authored_demo?'Configured model (not called)':'Student model'}:</b> ${esc(data.model)}</p><p>${data.authored_demo?'Tutor replies and student actions are authored examples for testing this interface. Counts and intervals are illustrative; no live comparison was run.':'Each available policy has one generated tutor reply, followed by independent student samples. Differences are conditional on those replies; they do not establish a general policy effect.'}</p><p>Percentages use valid samples only. ${data.authored_demo?'Example frequencies':'Model frequencies'} are not probabilities of real student behavior. A notebook edit may also include a message.</p><p>${data.continuation?`${data.execution_count} local source checks saved. Results attach to matching edits; repeated edits share one execution. Only the selected first sample per policy has a separate reaction request. Reactions are excluded from these counts, and any new edit is unexecuted. No course grade is established.`:'Source only: sampled edits are not executed or graded.'} Captured shows the shared state before either tutor reply.</p>${data.conditions.filter(c=>c.reaction).map(c=>`<p><b>${esc(c.label)} after execution:</b> sample ${c.reaction.sample_index} · ${esc(c.reaction.status)}${c.reaction.status==='error'?' · No reaction action saved.':''}</p>`).join('')}${data.conditions.map(c=>`<p><b>${esc(c.label)}:</b> ${esc(c.policy)}</p>`).join('')}<table><caption>${data.authored_demo?'Illustrative 95% intervals':'Marginal 95% sampling intervals'}</caption><thead><tr><th scope="col">Action</th>${data.conditions.map(c=>`<th scope="col">${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${Object.keys(labels).map(key=>`<tr><th scope="row">${labels[key]}</th>${data.conditions.map(c=>`<td>${c.categories.find(row=>row.decision===key)?.interval?.map(percent).join(' – ')||'Unavailable'}</td>`).join('')}</tr>`).join('')}</tbody></table><p>Intervals assume independent, stable sampling. Zero observed does not mean impossible. Selecting an outcome makes no model request.</p></div></details>`);
     if(detailsOpen)panel.querySelector('.sampling-details').open=true;
     panel.querySelectorAll('[data-outcome]').forEach(button=>button.onclick=()=>{
       const c=data.conditions.find(c=>c.id===button.dataset.policy),sample=c?.samples.find(s=>s.decision===button.dataset.outcome);
@@ -99,12 +102,13 @@
       $('policy-sample-next').onclick=()=>{if(position<samples.length-1)open(c.id,samples[position+1].index,true)};
       $('policy-original-reply').onclick=()=>open(c.id);
       if($('policy-open-selected'))$('policy-open-selected').onclick=()=>open(c.id,sample.index);
+      if($('policy-open-reaction'))$('policy-open-reaction').onclick=()=>open(c.id,sample.index,false,2);
     }
     if(c){
       $('version-captured').title='Shared captured notebook and conversation before either tutor reply';
       $('version-generated-description').textContent=tutorUnavailable(c)?'Tutor reply unavailable':sample?'Sampled student action':'Tutor reply · before student action';
-      $('view-description').textContent=state.step===0?'Shared captured starting point · Before tutor reply':tutorUnavailable(c)?`${c.label} · ${c.status==='tutor-error'?'Tutor generation failed':'Tutor reply pending'} · No student action sampled`:sample?`${c.label} · Sample ${sample.index} · ${labels[sample.decision]} · Code not executed`:`${c.label} · Tutor reply · Student has not acted`;
-      $('chat-caption').textContent=state.step===0?'Shared conversation · Before tutor reply':`${c.label} · ${tutorUnavailable(c)?'Tutor reply unavailable':sample?'Sample '+sample.index:'Tutor reply'}`;
+      $('view-description').textContent=state.step===0?'Shared captured starting point · Before tutor reply':state.step===2?`${c.label} · Sample ${sample.index} · After execution · New edits are unexecuted`:tutorUnavailable(c)?`${c.label} · ${c.status==='tutor-error'?'Tutor generation failed':'Tutor reply pending'} · No student action sampled`:sample?`${c.label} · Sample ${sample.index} · ${labels[sample.decision]} · ${sample.frame.external_execution?'Saved local execution · No course grade':'Code not executed'}`:`${c.label} · Tutor reply · Student has not acted`;
+      $('chat-caption').textContent=state.step===0?'Shared conversation · Before tutor reply':`${c.label} · ${tutorUnavailable(c)?'Tutor reply unavailable':sample?'Sample '+sample.index+(state.step===2?' · After execution':''):'Tutor reply'}`;
     }
     if(focused?.id&&document.activeElement!==focused){
       const target=$(focused.id);
