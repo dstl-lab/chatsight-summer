@@ -56,14 +56,33 @@ and interruption handling, fixed budgets, message-only stopping and provenance.
 Independent review found and resolved timestamp-validation and dependency-pin
 gaps. The existing Starlette/httpx deprecation warning remains.
 
-## Live dispatch status
+## Completed bounded run
 
-The fresh plan is prepared in ignored `data/archived-student-loop-v1/`, bound by
+The plan and completed run are in ignored `data/archived-student-loop-v1/`, bound by
 SHA-256 `f07deed298a34d7d4f451e0115510670e9e14ab84a055b4c0bf0fb6bde753524`.
 Automatic approval review rejected the actual live command before process creation:
 the private captured notebook and tutor context require specific approval for
-transmission to Google Gemini. `dispatch-block.json` retains that decision and
-the plan binding. There is no `run.json`: **zero provider requests and zero new
-notebook executions**. No workaround or resend was attempted. The current
-port-8452 workbench continues to show the earlier saved policy paths; it does not
-present this unstarted loop as a new result.
+transmission to Google Gemini. That rejection remains in `dispatch-block.json`.
+Minchan then explicitly answered **“Yes, approved”** to this exact payload,
+destination and six-decision/three-execution scope. `approval-response.json` binds
+that answer and the earlier rejection to the unchanged plan before dispatch.
+
+**One Gemini 2.5 Pro request completed; zero code executions occurred.** The model
+chose `revise-work`, copied the supplied tutor's code into revision 1, and sent the
+same code as a chat message. The runner correctly stopped at `awaiting-tutor`.
+There was no `request-check`, no current observation, no provider error, no retry
+and no replacement draw. Usage: 771 prompt tokens, 57 output tokens and 681
+thinking tokens, totaling 1,509. No additional tutor reply was authorized or sent.
+
+The edit repeats `.nunique()`, the method that raised an AttributeError in the
+earlier saved archival execution. This new revision **has not been executed**.
+The model's decision to paste code back is not a human realism judgment or proof
+of the real account's behavior. The full archived execution path remains tested
+with authored callbacks, but was not exercised by this live model choice.
+
+Offline replay verifies the raw response, exact prompt and revised state.
+`completion.json` binds the receipt and approval with counts and limitations;
+an independent check confirms approval preceded the request and no previous
+sample, reaction or table rows entered the initial prompt. The run ends here:
+unused decision/check budget does not authorize a tutor turn, resume or reroll.
+Port 8452 continues to show the earlier saved policy paths, not this new result.
