@@ -1,0 +1,104 @@
+{
+  "plan_sha256": "a40786f932f189c582664b9779e71643ed4b07ce8ace7efff3e25ccc7a976e0b",
+  "model": "gemini-2.5-pro",
+  "prompt_sha256": "fd4c4a421395044ec9ab471f6c05c1b86002b852f65ee0ab161b14cbccf3c18f",
+  "attempts": 30,
+  "valid": 30,
+  "failed": 0,
+  "actions": {
+    "revise-work": {
+      "count": 0,
+      "proportion": 0.0,
+      "wilson_95_marginal": [
+        1.3877787807814457e-17,
+        0.11351339317396869
+      ]
+    },
+    "reply": {
+      "count": 1,
+      "proportion": 0.03333333333333333,
+      "wilson_95_marginal": [
+        0.005908590381612441,
+        0.16670390991409167
+      ]
+    },
+    "no-reply": {
+      "count": 29,
+      "proportion": 0.9666666666666667,
+      "wilson_95_marginal": [
+        0.8332960900859084,
+        0.9940914096183876
+      ]
+    }
+  },
+  "unique_valid_outputs": 2,
+  "responses_with_message": 1,
+  "model_versions": {
+    "gemini-2.5-pro": 30
+  },
+  "usage_totals": {
+    "candidates_token_count": 770,
+    "prompt_token_count": 31110,
+    "thoughts_token_count": 29147,
+    "total_token_count": 61027
+  },
+  "first_request": "2026-09-29T09:36:05.470238+00:00",
+  "last_completion": "2026-09-29T09:37:55.057831+00:00",
+  "interpretation": "Model sampling conditional on this one input and valid output; not real-student probabilities. Marginal intervals assume stationary independent draws.",
+  "input_sha256": "a38a5ab27d2cfa3994c70a07123464d9051cd5391ceaa3488358572c20d8ecaf",
+  "raw_report_sha256": "de2e3428ed12765476acbe7d5ab9b4e3a120a269f24fcdb998a5f608b4410317",
+  "generation_config": {
+    "response_mime_type": "application/json",
+    "response_schema": {
+      "properties": {
+        "decision": {
+          "enum": [
+            "revise-work",
+            "reply",
+            "no-reply"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source"
+        }
+      },
+      "required": [
+        "decision",
+        "text",
+        "source"
+      ],
+      "title": "Action",
+      "type": "object"
+    }
+  },
+  "omitted_settings": [
+    "temperature",
+    "top_p",
+    "top_k",
+    "seed",
+    "thinking_config",
+    "max_output_tokens"
+  ],
+  "sdk_version": "2.16.0",
+  "workers": 3,
+  "sdk_attempts": 1,
+  "distinct_contexts": 1,
+  "unique_provider_response_ids": 30,
+  "subsequent_tutor_calls": 0,
+  "subsequent_executions": 0,
+  "applied_actions": 0
+}

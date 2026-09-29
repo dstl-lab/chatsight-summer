@@ -1,12 +1,14 @@
 # Simulated students: task list
 
-**Prepared; explicit send authorization pending (2026-09-29):**
+**Completed (2026-09-29):**
 [Monte Carlo sampling of the saved reaction](docs/2026-09-29-next-action-monte-carlo.md).
-Thirty fresh Gemini 2.5 Pro requests will share one unchanged pre-reaction input;
-saved actions and marginal uncertainty intervals require no manual labels. Local
-checks pass. Automatic approval review blocked dispatch before process launch and
-requires specific approval of the private payload/provider/30-request count.
-Zero requests/results so far; original trajectory and workbench remain unchanged.
+After explicit payload/provider/count approval, all 30 fresh Gemini 2.5 Pro draws
+completed: 29 no-further-action, one message, zero edits and zero failures.
+The no-action sample share is 96.7%, with a marginal 95% Wilson interval of
+83.3–99.4%. This measures one model's sampling at one fixed input, not real-student
+probabilities or cohort realism. Raw responses reproduce the report, original
+evidence remains intact, and no action was applied to the workbench. No new labels,
+tutor requests, executions, retries or additional draws. The batch is closed.
 
 **Execution and one reaction completed (2026-09-29):** [run the captured task on archived course data](docs/2026-09-29-archived-notebook-execution.md).
 Recovered a matching full course CSV from local archives. In a separately declared

@@ -57,16 +57,77 @@ deprecation warning remains. Independent review verifies the original task/promp
 reconstruction, all code/input/schema/SDK pins, failure accounting, and absence
 of launch or draw receipts. No remaining runner blocker was identified.
 
-Automatic approval review rejected launch before process creation: it requires
+Automatic approval review initially rejected launch before process creation: it required
 specific approval for sending the same private input to Google Gemini in 30 new
-requests, and does not treat the prior one-request approval or the new general
-Monte Carlo instruction as sufficient. No model request was made. The separate
-`send-blocked.json` records the rejection and exact pins; an explicit question
-identifying the payload, provider, and count is pending. Do not run indirectly,
-substitute another provider, or invent simulation results.
+requests, and did not treat the prior one-request approval or the new general
+Monte Carlo instruction as sufficient. No model request was made by that attempt.
+The separate `send-blocked.json` preserves the rejection and exact pins.
+
+Minchan subsequently answered **“Approved”** to the explicit question naming the
+private course task, two recorded turns, simulated code edit, execution feedback,
+Gemini 2.5 Pro destination, and 30-request limit. `authorization.json` binds that
+approval to the unchanged plan and prior rejection before dispatch; its SHA-256 is
+`efa82023afa7fadf1b381d341f559f4f7b4c06d07a1658a996b16c52922f8c78`.
+The approved batch runs once, with no substitutions, retries, or additional draws.
 
 From the worktree root, the offline authored check is:
 
 ```sh
 PYTHONPATH=. python -P experiments/2026-09-29-next-action-monte-carlo/run.py self-test
 ```
+
+## Completed results
+
+All 30 fresh requests completed with a valid STOP response. None failed,
+reached a token cap, retried, or required a replacement. Each request returned
+a distinct provider response ID and the same model version, `gemini-2.5-pro`.
+The batch ran from 09:36:05 to 09:37:55 UTC on 2026-09-29 (109.59 seconds).
+
+| Next action | Draws | Sample share | Marginal 95% Wilson interval |
+| --- | ---: | ---: | ---: |
+| No further observable action | 29/30 | 96.7% | 83.3–99.4% |
+| Message only | 1/30 | 3.3% | 0.6–16.7% |
+| Edit notebook, with or without a message | 0/30 | 0.0% | 0.0–11.4% |
+
+These are complete-action frequencies, not token probabilities. All intervals
+are marginal, not a simultaneous confidence region. There are **30 draws from
+one context**, not 30 students or contexts; provider independence/stationarity
+is an assumption, not established by distinct request identities.
+
+The earlier saved no-action result was representative of the model's behavior
+in this batch. It was not the only possible continuation: the single message
+explained the code correction back to the tutor. That reflective wording is
+relevant to the previously identified tendency to over-explain, but this
+observation is not a newly labeled plausibility judgment. The 29 identical
+no-action outputs remain in the denominator; deduplicating would destroy the
+frequency estimate. Two distinct action objects were observed overall.
+
+This experiment does **not** establish that the real student would stop with
+96.7% probability, that they understood the fix, or that the answer passed the
+course grader. One researcher-selected encounter with a researcher-triggered
+execution result cannot establish cohort fidelity. Omitted sampling parameters
+retain request parity with the original run; their effective provider values
+are not known. No comparison with trained Qwen or a newer Gemini model was made.
+
+Recorded API usage: 31,110 prompt tokens, 770 candidate tokens, and 29,147
+thinking tokens (61,027 total). No token-level probabilities were requested or
+inferred. No generated action was applied, and no tutor message or code execution
+was triggered. The live workbench and its original single reaction remain intact.
+
+The private raw report SHA-256 is
+`de2e3428ed12765476acbe7d5ab9b4e3a120a269f24fcdb998a5f608b4410317`.
+The [aggregate results](../experiments/2026-09-29-next-action-monte-carlo/results.json)
+retain the plan/input/model/configuration references without conversation text.
+Offline analysis reproduces the report from all 30 raw responses, and the
+original preparation, source branch, execution result and saved reaction still
+verify unchanged. Approval precedes every request.
+Independent review also recounts all raw actions, verifies the 30 distinct
+provider IDs, every receipt hash, marginal intervals, usage and timestamp
+arithmetic, and 36 original/source/code/input pins. The separate private
+`verification.json` records closure checks. No issues were found.
+
+The stopping rule is met; this batch is closed. The useful UI representation is
+“29 of 30 sampled continuations” with the interval and exact input/model details.
+It should not say “96.7% chance the student is finished.” More draws at this same
+checkpoint are not queued; they would refine model-frequency precision without
+establishing real-student realism.
