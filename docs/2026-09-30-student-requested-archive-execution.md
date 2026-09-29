@@ -86,3 +86,34 @@ an independent check confirms approval preceded the request and no previous
 sample, reaction or table rows entered the initial prompt. The run ends here:
 unused decision/check budget does not authorize a tutor turn, resume or reroll.
 Port 8452 continues to show the earlier saved policy paths, not this new result.
+
+## Inspect the actual message stop
+
+The separate read-only workbench at <http://127.0.0.1:8453/> shows this completed
+draw as **Captured start → Saved tutor reply → Student edit + message**, opening
+at the final event. The chat contains the generated message exactly once, alongside
+revision 1 and its source diff. The status names the pending tutor turn without
+implying a request is running. All three stages remain unexecuted in this run;
+the older matching-source error is deliberately excluded.
+
+`apps/archive_message_preview.py` reuses the existing notebook/chat renderer,
+timeline styles, localhost security middleware and saved-run verification. It
+accepts only the one-action, message-ending outcome implemented here, and rejects
+execution/failure/other terminal paths rather than assigning them misleading
+labels. Every data read replays and verifies the frozen run; changed receipts
+return a redacted error. There are no sending or execution endpoints. The original
+runner, receipts and port-8452 policy comparison remain unchanged.
+
+```sh
+PYTHONPATH=. python -P apps/archive_message_preview.py \
+  data/archived-student-loop-v1 \
+  --branch data/notebook-source-branch-v1/branch --port 8453
+```
+
+Validation: 16 focused Python checks pass across the new preview, frozen archive
+runner and existing policy preview. The new adapter, shared workspace and existing
+timeline Node checks pass. Live browser inspection confirms all three stages,
+keyboard focus/navigation, one pending message, the correct revision diff, final
+stage after reload, and no browser errors. Timeline glyph centers match their
+frames exactly on both axes. Independent review found no remaining blockers.
+No model or execution requests were made for this UI integration.

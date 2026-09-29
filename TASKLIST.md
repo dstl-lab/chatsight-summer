@@ -11,6 +11,9 @@ cell and sent it back in chat, then stopped awaiting a tutor. Zero executions,
 retries or rerolls; raw replay and approval timing verify. The new revision is
 unexecuted, and student-chosen Run was not exercised by this draw. This bounded
 run is closed; no new labels or further calls are queued.
+The latest draw is now inspectable in the port-8453 notebook/chat workbench:
+captured start → saved tutor reply → student edit + message. It opens at the
+message stop, shows no inherited execution result, and remains read only.
 
 **Notebook loop is directly replayable (2026-09-30):**
 [Saved sequence and limits](docs/2026-09-30-notebook-loop-replay.md).
@@ -21,8 +24,8 @@ Notebook and chat stay together; researcher-triggered execution feedback first
 appears at its own stage. No new model calls, notebook runs or labels. Seven
 Python checks, three Node checks, independent review and browser inspection pass.
 This connects existing evidence in the UI; it does not establish student fidelity.
-Student-selected Run already exists for small supplied tables; this full archival
-case needs a file-backed runtime adapter before it can use that loop honestly.
+The full archival adapter is implemented above. This older replay still labels
+its executions as researcher-triggered.
 
 **Evidence-card example completed (2026-09-30):**
 After specific approval, exactly two Gemini replies completed from the same first
