@@ -77,6 +77,27 @@ are in `data/notebook-source-branch-v1/`.
 
 Automatic approval review rejected dispatch before process launch because this
 specific private course payload and the Google Gemini destination require explicit
-approval. The rejection is retained locally, no provider call or pending decision
-receipt exists, and the prepared workspace is read-only pending that response.
-No alternate provider, payload or retry was used to bypass the rejection.
+approval. The rejection is retained locally. Minchan then explicitly approved
+sending the pinned instruction cell, code cell and two dialogue turns to Google
+Gemini 2.5 Pro for exactly one student decision. `approval-response.json` binds
+that response to the unchanged checkpoint, prompt and preparation before dispatch.
+
+## Completed continuation
+
+The single-attempt request completed in 9.93 seconds with `revise-work`: the
+student changed the code and sent no chat message. The saved result reports
+`execution: not-run` and no observation. The browser at
+<http://127.0.0.1:8447/> reloads two frames: captured starting work and generated
+revision, with a source diff and the original two dialogue messages. Zero decisions
+remain because the request budget is exhausted; this is not a chosen student stop.
+
+`branch/decision.json` retains the result, and `completion-verification.json`
+records artifact hashes and verification. All eight original source/preparation
+files are unchanged. Independent verification confirms engine/input pins,
+approval timing, exact offline reconstruction and the two-frame browser projection.
+The live read-only endpoint also serves the completed result with sending disabled.
+
+The one-continuation stopping rule is satisfied. No further provider request,
+tutor reply, notebook execution, grade or label is needed. This demonstrates that
+captured course work can feed a saved, inspectable simulated source edit; one
+exposed example does not establish realistic student behavior or learning gains.
