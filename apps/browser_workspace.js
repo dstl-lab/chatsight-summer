@@ -442,16 +442,22 @@ function notebook(){
 }
 function recordedNotebook(){
   const r=frame().recorded,e=r.event,c=r.notebook_capture,execution=r.execution,result=r.execution_result;
-  const code=(source,label)=>`<div class="cell"><div class="cell-head"><span>${esc(label)}</span><span>Read only</span></div>${source.split('\n').map((line,i)=>`<div class="code-line"><span class="line-number">${i+1}</span><code>${esc(line)}</code></div>`).join('')}</div>`;
-  let body=`<section class="notebook" aria-label="Recorded notebook observations"><div class="pane-title">${esc(e.title)}<span class="spacer"></span><button class="text-action" data-evidence="step">Source</button></div><div class="task"><b>Recorded activity · probable instrumentation test</b><p>Prediction cutoff: event ${esc(state.recordedSummary.boundary_sequence)}. ${r.later_evidence?'This is later reference evidence.':'Only observations through this event are shown.'}</p><p>${esc(e.detail)}</p></div>`;
-  if(e.event_type==='notebook_cell_source_changed')body+='<div class="cell"><b>Source unavailable for this change.</b><p class="quiet">Revision and length metadata do not reconstruct the edit.</p></div>';
-  if(e.diff)body+=`<div class="cell"><div class="cell-head"><b>Net difference between endpoint observations</b><button class="text-action" data-evidence="work">Source</button></div>${block(e.diff)}<p class="quiet">Intermediate edits remain unknown.</p></div>`;
-  body+=c?`<div class="task"><b>Historical notebook capture · event ${esc(c.sequence)}</b><p>The latest retained request-time capture; later editor contents are unknown.</p></div><details${c.cells.length<=5?' open':''}><summary class="pane-title">Captured cells (${c.cells.length})</summary>${c.cells.map(cell=>code(cell.source,`${cell.cell_type} · cell ${cell.index}`)).join('')}</details>`:'<div class="cell"><p class="quiet">No notebook capture is recorded through this event.</p></div>';
+  const input=source=>`<pre class="notebook-input" tabindex="0" aria-label="Recorded code, read only"><code>${esc(source)||'\n'}</code></pre>`;
+  const prompt='<span class="notebook-prompt" title="Execution count not recorded" aria-label="Execution count not recorded">[—]</span>';
+  let body='<section class="notebook-document" aria-label="Recorded notebook"><div class="notebook-filebar"><b>Notebook</b><span class="tag">Read only</span><span class="spacer"></span><button class="text-action" data-evidence="context">Recording details</button></div>';
+  body+=`<div class="notebook-caption"><span>${c?`Capture at event ${esc(c.sequence)} · ${c.cells.length} cells`:'No notebook capture yet'}</span><span>Probable test activity</span></div>`;
+  if(c){
+    body+='<div class="notebook-cells">'+c.cells.map((cell,i)=>`<section class="notebook-cell" aria-label="Captured ${esc(cell.cell_type)} cell ${cell.index+1}">${cell.cell_type==='code'?prompt:'<span aria-hidden="true"></span>'}<div class="notebook-cell-body"><div class="notebook-cell-label"><span>Cell ${cell.index+1} · ${esc(cell.cell_type)}</span><button class="text-action" data-evidence="cell:${i}">Source</button></div>${cell.cell_type==='markdown'&&typeof cell.display_html==='string'?`<div class="notebook-markdown">${cell.display_html}</div>`:input(cell.source)}</div></section>`).join('')+'</div>';
+    body+='<p class="notebook-caption">This capture stays as recorded; later edits are not filled in.</p>';
+  }else body+='<p class="quiet">No notebook cells were captured through this event.</p>';
+  if(e.event_type==='notebook_cell_source_changed')body+='<p class="notebook-caption">A source change was logged; its changed code was not captured.</p>';
+  body+='</section>';
   if(execution){
-    body+=`<div class="task"><b>Submitted execution source · event ${esc(execution.sequence)}</b><p>This source was submitted to the kernel; it does not update the historical capture above.</p></div>${code(execution.source,'Submitted source')}`;
-    body+=result?`<div class="cell"><b>Recorded execution: ${esc(result.status)} · not an assignment grade</b>${block(result.output||'')}</div>`:'<div class="cell"><p>Result not yet recorded at this event.</p></div>';
+    body+=`<section class="notebook-execution" aria-label="Separately recorded execution"><div class="notebook-filebar"><b>Execution · event ${esc(execution.sequence)}</b><span class="spacer"></span>${execution.diff?'<button class="text-action" data-evidence="work">View code change</button>':''}</div><p class="notebook-caption">Recorded separately; its position in the captured notebook is unavailable.</p><section class="notebook-cell" aria-label="Submitted execution source">${prompt}<div class="notebook-cell-body">${input(execution.source)}`;
+    body+=result?`<div class="notebook-result${result.status==='error'?' notebook-error':''}"><div class="notebook-cell-label">Recorded ${esc(result.status)} · not an assignment grade</div><pre tabindex="0" aria-label="Recorded execution output">${esc(result.output||'No text output was recorded.')}</pre></div>`:'<div class="notebook-result muted">Result not yet recorded at this event.</div>';
+    body+='</div></section></section>';
   }
-  return body+'</section><p class="note">Playback follows recorded client events. Missing intermediate work stays unknown. <button class="text-action" data-evidence="context">Recording details and gaps</button></p>';
+  return body;
 }
 function renderRecordedInspector(){
   const r=frame().recorded,key=state.selected;
@@ -460,10 +466,14 @@ function renderRecordedInspector(){
     const turn=turns()[Number(key.split(':')[1])];
     title='Recorded conversation source';body=`<p>Recorded event ${esc(turn.sequence)} · ${esc(turn.role)}.</p>${block(turn.text)}`;
     if(turn.effective_text!==undefined&&turn.effective_text!==turn.text)body+='<h3>Effective request sent to the tutor</h3>'+block(turn.effective_text)+'<p>The typed question and effective request are retained separately.</p>';
+  }else if(key.startsWith('cell:')){
+    const cell=r.notebook_capture?.cells[Number(key.split(':')[1])];
+    title='Captured cell source';body=cell?`<p>Cell ${cell.index+1} · capture at event ${esc(r.notebook_capture.sequence)}.</p>${block(cell.source)}`:'<p>This cell is not available at the selected event.</p>';
   }else if(key==='context'||['controls','results','next-exercise'].includes(key)){
     title='Recording details';body=`<p>${esc(state.recordedProvenance||current().initialization)}</p><p>Prediction cutoff: event ${esc(state.recordedSummary.boundary_sequence)}. Later records are reference evidence, not input to an earlier prediction.</p><p>Recorded activity is read-only. Probable instrumentation test; natural student behavior is not established.</p><h3>Observation gaps and limits</h3><ul>${[...(state.recordedSummary.summary.gaps||[]),...state.recordedSummary.limitations].map(value=>`<li>${esc(value)}</li>`).join('')}</ul><p>Server arrival reversals: ${esc(state.recordedSummary.summary.server_order_reversals)}. The replay uses verified client ordering.</p>`;
   }else if(key==='work'){
-    title='Endpoint source difference';body='<p>This is a net difference between two recorded sources, not a complete edit chain.</p>'+(r.event.diff?block(r.event.diff):'<p>No source difference is retained for this event.</p>');
+    const diff=r.event.diff||r.execution?.diff;
+    title='Endpoint source difference';body='<p>This is a net difference between two recorded sources, not a complete edit chain.</p>'+(diff?block(diff):'<p>No source difference is retained for this event.</p>');
   }else{
     const metadata=Object.fromEntries(Object.entries(r.event).filter(([key])=>!['student_question','effective_question','tutor_reply','cells','source','output','diff'].includes(key)));
     body=block(metadata)+'<p>Source-change metadata alone cannot recover changed code. Execution success is not an assignment grade.</p>';

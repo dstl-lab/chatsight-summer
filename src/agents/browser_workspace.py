@@ -370,6 +370,10 @@ def _recorded_snapshot(replay):
     frames = []
     for index, event in enumerate(replay['events']):
         recorded = notebook_replay.recorded_frame(replay, index)
+        if recorded['notebook_capture']:
+            for cell in recorded['notebook_capture']['cells']:
+                if cell['cell_type'] == 'markdown':
+                    cell['display_html'] = _tutor_html(cell['source'])
         dialogue = [{**turn, 'origin':'source',
                      **({'display_html':_tutor_html(turn['text'])} if turn['role'] == 'tutor' else {})}
                     for turn in recorded['dialogue']]

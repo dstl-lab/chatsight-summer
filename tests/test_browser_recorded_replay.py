@@ -13,6 +13,8 @@ from tests.test_notebook_replay import recorded_projection
 def test_recorded_browser_preserves_prefixes_and_readonly_boundary(tmp_path, monkeypatch):
     replay = recorded_projection()
     replay['events'][1]['tutor_reply'] = '**Try** <script>unsafe()</script>'
+    replay['events'][0]['cells'].append(dict(index=1, id='text-cell', cell_type='markdown',
+        source='# Exercise\n\n**Find** a value. <img src=x onerror=unsafe()>'))
     path = tmp_path / 'private.json'
     raw = json.dumps(replay).encode()
     path.write_bytes(raw)
@@ -34,6 +36,10 @@ def test_recorded_browser_preserves_prefixes_and_readonly_boundary(tmp_path, mon
     frame = frames[3]
     assert frame['recorded']['event']['diff'] == '-x = 1\n+x = 2'
     assert frame['recorded']['notebook_capture']['cells'][0]['source'] == 'x = 1'
+    markdown = frame['recorded']['notebook_capture']['cells'][1]
+    assert '<h1>Exercise</h1>' in markdown['display_html']
+    assert '<strong>Find</strong>' in markdown['display_html'] and '<img' not in markdown['display_html']
+    assert markdown['source'] == replay['events'][0]['cells'][1]['source']
     assert frame['recorded']['execution']['source'] == 'x = 2'
     assert frame['recorded']['execution_result'] is None
     assert 'FUTURE_' not in json.dumps(frame)

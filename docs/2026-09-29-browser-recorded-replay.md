@@ -51,3 +51,22 @@ Local HTTP checks verify the native workspace and API; no browser visual inspect
 was performed. This integration does not turn probable test activity into evidence
 of realistic student behavior. Changes remain committed locally; private artifacts
 remain ignored and are not published.
+
+## Notebook presentation correction
+
+The initial browser integration still looked like an event report: generic code
+blocks, collapsed larger captures, and diffs before notebook content. Minchan
+asked why it did not look like a notebook. Captured cells now appear first and
+remain expanded, with read-only code inputs, a gutter that explicitly marks missing
+execution counts, and Markdown rendered through the existing restricted formatter.
+Original Markdown stays available under each cell's Source control. Execution
+source and its output form a separate cell block because the projection omits
+the execution's cell identity; attaching it to a captured cell would be unsupported.
+Code changes and evidence details remain available on demand.
+
+The actual retained capture has two code cells, one empty; no assignment text or
+additional cells are invented to make it appear fuller. The 16 focused backend
+tests, full Node controller suite, syntax and diff checks pass. A separate six-cell
+authored fixture was visually inspected in the browser to verify Markdown, code
+spacing, the empty cell and persistent chat. No private recording was opened for
+that visual check. All previously pinned private input files remain unchanged.
