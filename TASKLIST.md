@@ -1,13 +1,15 @@
 # Simulated students: task list
 
-**Design preview ready (2026-09-29):**
+**Sampling workspace connected (2026-09-29):**
 [Inspect sampled next actions in the notebook/chat workspace](docs/2026-09-29-next-actions-preview.md).
 The completed 30-draw batch is visible as clickable action frequencies in a floating
 panel opened from the top-right toolbar. Selecting a saved sample closes the panel
 and opens its Reaction in the existing notebook and chat; the original
-reaction can be restored. New-batch setup defaults to 30, with generation explicitly
-disabled in this preview. No provider requests or code execution. Next: review
-this interaction before connecting a bounded sampling job.
+reaction can be restored. New batches default to 30, with progress, cancellation,
+and a saved-batch picker. An explicit Run click starts Gemini sampling when enabled
+at launch; no automatic retries/resume or further notebook execution. Implementation
+is verified with authored provider responses. No new paid batch is part of this
+change. Next: inspect a user-started batch, then add a fixed comparison of tutor policies.
 
 **Completed (2026-09-29):**
 [Monte Carlo sampling of the saved reaction](docs/2026-09-29-next-action-monte-carlo.md).

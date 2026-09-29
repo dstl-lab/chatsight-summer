@@ -3,6 +3,7 @@ from hashlib import sha256
 import importlib.util
 import json
 from pathlib import Path
+from threading import Event
 
 import pytest
 from fastapi.testclient import TestClient
@@ -154,3 +155,52 @@ def test_rejects_rehashed_false_counts(saved_batch):
     options['report_sha256'] = save(path, report)
     with pytest.raises(ValueError, match='does not reproduce'):
         preview.create_app(**options)
+
+
+def test_live_batch_api_guards_start_and_preserves_partial_results(saved_batch, tmp_path):
+    from apps import next_actions_preview as preview
+    entered, release = Event(), Event()
+    def generate(plan, prompt):
+        entered.set()
+        assert release.wait(5)
+        return {'candidates':[{'finish_reason':'STOP', 'content':{'parts':[{'text':json.dumps(
+            {'decision':'reply','text':'NEW_AUTHORED_REPLY','source':None})}]}}]}
+    _, options = saved_batch
+    app = preview.create_app(**options, sampling_dir=tmp_path/'jobs', generate=generate)
+    try:
+        with TestClient(app, base_url='http://127.0.0.1') as client:
+            initial = client.get('/api/next-actions').json()
+            assert initial['enabled'] and initial['selected_batch'] == 'saved'
+            assert len(initial['batches']) == 1
+            body = {'request_id':'5a3a05e5-c9d8-4aa4-bc59-2892f683f8dc', 'runs':3,
+                    'input_sha256':initial['binding']['input_sha256']}
+            headers = {'X-Workspace-Token':initial['csrf_token']}
+            assert client.post('/api/next-actions/batches', json=body).status_code == 403
+            assert client.post('/api/next-actions/batches', json=body,
+                headers={**headers,'Origin':'https://unrelated.example'}).status_code == 403
+            assert client.post('/api/next-actions/batches', json={**body,'runs':0}, headers=headers).status_code == 422
+            assert client.post('/api/next-actions/batches', json={**body,'input_sha256':'0'*64}, headers=headers).status_code == 409
+            response = client.post('/api/next-actions/batches', json=body, headers=headers)
+            assert response.status_code == 200
+            active = response.json()
+            assert active['selected_batch'] == body['request_id']
+            assert active['active_batch']['requested'] == 3 and active['valid'] == 0
+            assert entered.wait(2)
+            again = client.post('/api/next-actions/batches', json=body, headers=headers).json()
+            assert again['selected_batch'] == active['selected_batch']
+            assert len(again['batches']) == 2
+            cancelled = client.post(f'/api/next-actions/batches/{body["request_id"]}/cancel', headers=headers)
+            assert cancelled.status_code == 200 and cancelled.json()['active_batch']['cancel_requested']
+            release.set()
+        # Lifespan waits for the in-flight receipt before releasing the folder.
+        with TestClient(preview.create_app(**options, sampling_dir=tmp_path/'jobs', generate=generate),
+                        base_url='http://127.0.0.1') as client:
+            saved = client.get('/api/next-actions?batch='+body['request_id']).json()
+            assert (saved['valid'],saved['failed']) == (1,0)
+            assert saved['active_batch'] is None
+            assert saved['samples'][0]['frame']['dialogue'][-1]['text'] == 'NEW_AUTHORED_REPLY'
+            assert saved['samples'][0]['frame']['reaction']['observation']['revision'] == 1
+            assert len(client.get('/api/next-actions').json()['batches']) == 2
+            assert client.get('/api/next-actions?batch=../../input.json').status_code == 404
+    finally:
+        release.set()

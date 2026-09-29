@@ -18,10 +18,18 @@ Captured and Generated remain available. A no-action sample adds no message or
 code change. Any execution result is the observation supplied before the sample,
 not a new execution of sampled code.
 
-**New batch** previews a run-count input with default 30 and range 1–100. Its Run
-button is disabled and explains that generation is not connected. Changing the
-input does not relabel the saved 30-draw batch. There is no POST route, provider
-request, tutor continuation, or notebook execution in this preview.
+**New batch** defaults to 30 runs, with range 1–100. When launched with
+`--sampling-dir` and a configured Gemini key, clicking Run starts independent
+student decisions from the fixed, verified after-execution input. Choosing another
+displayed sample does not change that starting point. The form names the model,
+context sent to Google Gemini, and number of requests before submission.
+
+The panel and toolbar show progress. Cancel stops future requests after the one
+in flight finishes; that request has a 120-second provider timeout. Valid outcomes
+remain inspectable in partial batches. Failed draws are reported separately and
+excluded from action-frequency denominators. Requests are not retried or replaced.
+The batch picker preserves prior results, including the original saved 30 draws.
+Notebook code and further tutor replies are not executed or generated.
 
 ## Run locally
 
@@ -35,15 +43,35 @@ PYTHONPATH=. ../episode-pilot/.venv/bin/python -P apps/next_actions_preview.py \
   --reaction data/notebook-course-execution-v2/reaction.json \
   --reaction-sha256 f66d7f0d7e3f092c2a6f3b7457843086b2e9b1eda7a0ba10cc9835c9ead6316a \
   --batch data/notebook-action-monte-carlo-v1 \
-  --report-sha256 de2e3428ed12765476acbe7d5ab9b4e3a120a269f24fcdb998a5f608b4410317
+  --report-sha256 de2e3428ed12765476acbe7d5ab9b4e3a120a269f24fcdb998a5f608b4410317 \
+  --sampling-dir data/notebook-action-batches
 ```
 
-Open `http://127.0.0.1:8449/`. Only this launcher adds the preview assets; the
-normal workspace is unchanged. Saved samples must match the pinned report,
-pre-reaction input, raw provider responses, and frozen report implementation.
+Open `http://127.0.0.1:8449/`. The launcher reads `GEMINI_API_KEY` from the environment,
+the worktree `.env`, or the repository's `main/.env`, following the existing
+workspace convention. It does not start sampling on launch. Omit `--sampling-dir`
+for the original read-only mode with no POST routes. The normal workspace remains
+unchanged. Saved samples must match their input and raw provider responses.
+
+One local process owns the output directory and runs one request at a time.
+Each UUID identifies one submission; duplicate submissions with that UUID return
+the saved job. Atomic local receipts retain the frozen prompt/settings and every
+raw response, including failed output. On restart, unfinished jobs become
+interrupted; they never resume or resend. Private prompts and samples stay in the
+ignored data directory. HTTP submissions require the local origin/host checks and
+a workspace token; request bodies cannot select input files or arbitrary prompts.
 
 ## Checked
 
+- Functional follow-up: 890 Python tests pass, three optional skips; the existing
+  Starlette/httpx deprecation warning remains. The 23 runtime and eight API tests
+  cover bounds, input binding, idempotency, cancellation, restart interruption,
+  failed-output preservation and tampering. Both Node controller checks pass.
+- Browser stub: completed three requests, inspected an earlier batch's message,
+  cancelled another batch with its in-flight sample preserved, and reopened saved
+  batch history. Starting a batch collapses setup into progress. No paid model
+  calls were made by these checks. The configured real workspace exposes Run but
+  remains idle until explicit submission.
 - 65 focused Python tests pass, including seven authored preview tests covering
   projection, failed draws, read-only behavior, unchanged evidence, and tampering.
 - JavaScript syntax check passes.
@@ -55,6 +83,6 @@ pre-reaction input, raw provider responses, and frozen report implementation.
   outside dismissal, setup, sample selection and focus restoration. Notebook
   position and height remain identical with the panel open and closed.
 
-Next step is review of this layout. Connecting new sampling requires a bounded
-background job, visible progress/cancellation, and saved batches bound to the
-starting state; none of that is implied by this visual preview.
+The functional path is checked with an authored provider stub; implementation and
+browser verification do not submit a paid batch. Cross-policy sampling remains a
+future task: this version holds the starting point and model fixed.

@@ -1,12 +1,17 @@
-"""Local, read-only design preview of a completed next-action sampling batch."""
+"""Local next-action workspace over verified notebook context and saved batches."""
 import argparse
+import asyncio
+from contextlib import asynccontextmanager
 from copy import deepcopy
 from hashlib import sha256
 import importlib.util
+import os
 from pathlib import Path
+import secrets
 
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.agents import browser_workspace as workspace
 from src.agents import notebook_branch as branch
@@ -17,6 +22,13 @@ from src.labeling import llm
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT/'experiments/2026-09-29-next-action-monte-carlo/run.py'
+
+
+class StartBatch(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    request_id: str = Field(min_length=36, max_length=36)
+    runs: int = Field(ge=1, le=100)
+    input_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
 
 
 def _batch(folder, report_pin, preparation_path, preparation_pin, prepared):
@@ -54,7 +66,8 @@ def _batch(folder, report_pin, preparation_path, preparation_pin, prepared):
 
 
 def create_app(*, notebook_branch, notebook_execution, notebook_execution_sha256,
-               notebook_reaction, notebook_reaction_sha256, batch, report_sha256):
+               notebook_reaction, notebook_reaction_sha256, batch, report_sha256,
+               sampling_dir=None, generate=None):
     options = dict(notebook_branch=notebook_branch, notebook_execution=notebook_execution,
         notebook_execution_sha256=notebook_execution_sha256, notebook_reaction=notebook_reaction,
         notebook_reaction_sha256=notebook_reaction_sha256)
@@ -63,12 +76,60 @@ def create_app(*, notebook_branch, notebook_execution, notebook_execution_sha256
     folder = Path(batch).absolute()
     preparation = Path(notebook_reaction).with_name('reaction-preparation.json')
 
-    def snapshot():
+    def source():
         packet = workspace._source_branch_snapshot(notebook_branch, checkpoint_pin,
             notebook_execution, notebook_execution_sha256, notebook_reaction, notebook_reaction_sha256)
         saved = workspace._branch_artifact(notebook_reaction, notebook_reaction_sha256)
         prepared = workspace._branch_artifact(preparation, saved['preparation_sha256'])
-        report, records = _batch(folder, report_sha256, preparation, saved['preparation_sha256'], prepared)
+        return packet, prepared
+
+    def get_input():
+        return source()[1]
+
+    # Verify the legacy batch before opening the optional write-enabled job store.
+    _, first_input = source()
+    saved_receipt = workspace._branch_artifact(notebook_reaction, notebook_reaction_sha256)
+    _batch(folder, report_sha256, preparation, saved_receipt['preparation_sha256'], first_input)
+    jobs = None
+    csrf_token = secrets.token_urlsafe(32)
+    if sampling_dir is not None:
+        from src.agents.next_action_sampling import SamplingJobs
+        jobs = SamplingJobs(sampling_dir, get_input, generate=generate)
+        previous_lifespan = app.router.lifespan_context
+
+        @asynccontextmanager
+        async def lifespan(application):
+            try:
+                async with previous_lifespan(application):
+                    yield
+            finally:
+                await asyncio.to_thread(jobs.close)
+        app.router.lifespan_context = lifespan
+
+    def sending_enabled():
+        return jobs is not None and (generate is not None or bool(os.environ.get('GEMINI_API_KEY')))
+
+    def snapshot(selected='saved'):
+        packet, prepared = source()
+        report, records = _batch(folder, report_sha256, preparation, saved_receipt['preparation_sha256'], prepared)
+        batches = [{'id':'saved', 'request_id':None, 'status':'complete',
+            'requested':report['attempts'], 'finished':report['attempts'],
+            'valid':report['valid'], 'failed':report['failed'], 'cancel_requested':False,
+            'created_at':report['first_request']}]
+        if jobs is not None:
+            batches += jobs.list()
+        active = next((item for item in batches if item['status'] == 'running'), None)
+        categories = [{'decision':key, 'count':value['count'], 'proportion':value['proportion'],
+                       'interval':value['wilson_95_marginal']} for key,value in report['actions'].items()]
+        if selected != 'saved':
+            if jobs is None or not any(item['id'] == selected for item in batches):
+                raise KeyError(selected)
+            result = jobs.snapshot(selected)
+            if result['input_sha256'] != store.digest(prepared):
+                raise ValueError('Saved batch belongs to another starting point.')
+            records, categories = result['records'], result['categories']
+            report = {'model':result['model'], 'attempts':result['finished'],
+                      'valid':result['valid'], 'failed':result['failed']}
         before, original = packet['encounters'][0]['frames'][1:]
         samples = []
         for record in records:
@@ -92,20 +153,54 @@ def create_app(*, notebook_branch, notebook_execution, notebook_execution_sha256
         return {'model':report['model'],
             'input_label':f'Executed revision {before["work"]["revision"]}, before the saved reaction',
             'attempts':report['attempts'], 'valid':report['valid'], 'failed':report['failed'],
-            'categories':[{'decision':key, 'count':value['count'], 'proportion':value['proportion'],
-                           'interval':value['wilson_95_marginal']} for key,value in report['actions'].items()],
-            'samples':samples}
-
-    snapshot()  # Fail closed at startup as well as on every saved-data reload.
+            'categories':categories, 'samples':samples,
+            'binding':{'input_sha256':store.digest(prepared)},
+            'enabled':sending_enabled(),
+            'disabled_reason':None if sending_enabled() else (
+                'This workspace was opened without sampling enabled.' if jobs is None else
+                'The Gemini API key is not configured on this server.'),
+            'csrf_token':csrf_token if jobs is not None else None,
+            'batches':batches, 'selected_batch':selected, 'active_batch':active}
 
     @app.get('/api/next-actions')
     def next_actions(request: Request):
-        if request.query_params:
-            raise HTTPException(400, 'This preview uses only the saved batch selected at launch.')
+        if set(request.query_params)-{'batch'} or len(request.query_params.getlist('batch')) > 1:
+            raise HTTPException(400, 'Select one saved batch.')
         try:
-            return snapshot()
-        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+            return snapshot(request.query_params.get('batch', 'saved'))
+        except KeyError as exc:
+            raise HTTPException(404, 'That saved batch is unavailable.') from exc
+        except (OSError, ValueError, TypeError, AttributeError) as exc:
             raise HTTPException(409, 'The saved samples could not be verified. Their contents are not displayed.') from exc
+
+    if jobs is not None:
+        def require_submission(request):
+            if not secrets.compare_digest(request.headers.get('X-Workspace-Token', ''), csrf_token):
+                raise HTTPException(403, 'Reload this workspace before submitting a batch.')
+            if request.query_params:
+                raise HTTPException(400, 'Batch submissions do not accept query parameters.')
+
+        @app.post('/api/next-actions/batches')
+        def start_batch(request: Request, body: StartBatch):
+            require_submission(request)
+            if not sending_enabled():
+                raise HTTPException(503, 'Configure the Gemini API key before starting a batch.')
+            try:
+                result = jobs.start(body.request_id, body.runs, body.input_sha256)
+                return snapshot(result['id'])
+            except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
+                raise HTTPException(409, 'The starting point changed, a batch is already running, or the saved request conflicts. Refresh batch status before trying again.') from exc
+
+        @app.post('/api/next-actions/batches/{batch_id}/cancel')
+        def cancel_batch(batch_id: str, request: Request):
+            require_submission(request)
+            try:
+                jobs.cancel(batch_id)
+                return snapshot(batch_id)
+            except KeyError as exc:
+                raise HTTPException(404, 'That saved batch is unavailable.') from exc
+            except (OSError, ValueError, TypeError, RuntimeError) as exc:
+                raise HTTPException(409, 'Cancellation could not be confirmed. Refresh batch status.') from exc
 
     # Leave the normal workspace and its legacy page unchanged outside this app.
     app.router.routes[:] = [route for route in app.router.routes if route.path != '/']
@@ -143,11 +238,18 @@ def main():
     parser.add_argument('--reaction-sha256', required=True)
     parser.add_argument('--batch', type=Path, required=True)
     parser.add_argument('--report-sha256', required=True)
+    parser.add_argument('--sampling-dir', type=Path,
+        help='Enable explicit browser submissions and save new batches in this private directory.')
     parser.add_argument('--port', type=int, default=8449)
     args = parser.parse_args()
+    if args.sampling_dir is not None:
+        from dotenv import load_dotenv
+        load_dotenv(ROOT/'.env')
+        load_dotenv(ROOT.parent/'main/.env')
     app = create_app(notebook_branch=args.branch, notebook_execution=args.execution,
         notebook_execution_sha256=args.execution_sha256, notebook_reaction=args.reaction,
-        notebook_reaction_sha256=args.reaction_sha256, batch=args.batch, report_sha256=args.report_sha256)
+        notebook_reaction_sha256=args.reaction_sha256, batch=args.batch, report_sha256=args.report_sha256,
+        sampling_dir=args.sampling_dir)
     import uvicorn
     uvicorn.run(app, host='127.0.0.1', port=args.port)
 
