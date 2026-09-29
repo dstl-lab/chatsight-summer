@@ -2,7 +2,7 @@
 
 **Notebook loop is directly replayable (2026-09-30):**
 [Saved sequence and limits](docs/2026-09-30-notebook-loop-replay.md).
-Port 8452 shows the existing hint sample 1 as five visible stages: captured start,
+Port 8452 shows the existing hint sample 1 as a connected, selectable timeline: captured start,
 tutor reply, student edit, researcher-triggered local execution (2,850), then the
 saved no-action decision. Notebook and chat stay together; execution feedback
 first appears at its own stage. No new model calls, code runs or labels. Seven

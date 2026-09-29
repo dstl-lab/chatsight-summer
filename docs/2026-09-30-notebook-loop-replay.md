@@ -2,7 +2,7 @@
 
 The workbench now presents one existing sequence directly as five stages:
 **Captured start → Tutor reply → Student edit → Local execution → Next action**.
-The stage controls sit above the notebook, with the shared chat alongside it.
+The connected event timeline sits above the notebook, with the shared chat alongside it.
 The single-example view hides the unnecessary task picker; the ordinary policy
 sampling view is unchanged.
 
@@ -49,3 +49,19 @@ deprecation warning remains.
 
 The local preview is <http://127.0.0.1:8452/>. This increment ends with the verified
 replay; no additional student generation or kernel execution is queued.
+
+## Timeline refinement
+
+The five events now share a continuous neutral rail, with glyphs, short labels,
+and visible actor attribution. The researcher-triggered run uses a square node;
+model events use circles. Only the selected event is highlighted, without
+suggesting that earlier events passed a test. The redundant Previous/Next row is
+hidden. Each event retains the existing native button, click handler, pressed
+state and focus restoration, so keyboard users can tab between events and select
+them with Enter or Space. The authored example still identifies its source as
+authored. No replay data, prompts or generation behavior changed.
+
+The refinement passes four Python checks, three Node controller checks, and
+browser verification of layout, Tab/Shift+Tab navigation, Enter/Space selection,
+preserved focus and the matching output/reaction. Independent review also checked
+actor attribution and the neutral timeline state.

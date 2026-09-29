@@ -1,12 +1,14 @@
 // Authored adapter check: navigation stays in the existing workspace; no requests.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const nodes=new Map();
-const node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',hidden:false,attributes:{},before(child){this.beforeNode=child},setAttribute(name,value){this.attributes[name]=value}});return nodes.get(id)};
+const node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',innerHTML:'',hidden:false,dataset:{},attributes:{},before(child){this.beforeNode=child},setAttribute(name,value){this.attributes[name]=value},querySelectorAll(){return buttons}});return nodes.get(id)};
 const stages=['captured','tutor','edit','execution','reaction'];
+const buttons=stages.map((_,i)=>{const button=node('stage-'+i);button.dataset.trail=String(i);button.onclick=()=>{};return button});
+const handlers=buttons.map(b=>b.onclick);
 const saved={loop_example:true,frames:stages.map(loop_stage=>({loop_stage,label:loop_stage}))};
 const state={encounters:[saved],step:4};
 let calls=0;
-const context=vm.createContext({state,$:node,current:()=>state.encounters[0],document:{querySelector:node},
+const context=vm.createContext({state,$:node,current:()=>state.encounters[0],document:{querySelector:node},glyph:()=>'<svg aria-hidden="true"></svg>',
   render(){calls++;node('#canvas .notebook-document > .notebook-caption').textContent='Workspace caption';node('#canvas .notebook-prompt').attributes={title:'Workspace prompt'}},
   renderOperationStatus(){node('.prototype-note').textContent='Generic status'},fetch(){throw Error('Adapter sent a request')}});
 vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../apps/student-loop.js'),'utf8'),context);
@@ -14,6 +16,11 @@ context.render();
 assert.equal(state.step,0);
 assert.equal(node('canvas').beforeNode,node('playback'));
 assert.equal(node('trail-hint').textContent,'Step 1 of 5');
+assert.equal(node('trail-title').textContent,'Interaction timeline');
+assert.equal(buttons[3].attributes['aria-label'],'4. Local run · Researcher');
+assert.equal(buttons[3].dataset.loopStage,'execution');
+assert.match(buttons[0].innerHTML,/timeline-node/);
+assert.deepEqual(buttons.map(b=>b.onclick),handlers,'Timeline preserves base playback handlers');
 assert.equal(node('.prototype-note').textContent,'Saved student loop');
 assert.match(node('#canvas .notebook-document > .notebook-caption').textContent,/No execution result at this stage/);
 assert.equal(node('#canvas .notebook-prompt').attributes.title,'No execution result at this stage');
@@ -27,7 +34,9 @@ state.step=4;context.render();assert.match(node('view-description').textContent,
 saved.frames[4].status='no-reply';context.render();assert.match(node('view-description').textContent,/No message or code change/);
 context.renderOperationStatus();assert.equal(state.step,4);assert.equal(node('.prototype-note').textContent,'Saved student loop');
 saved.loop_authored_demo=true;context.renderOperationStatus();assert.equal(node('.prototype-note').textContent,'Authored test data · Saved student loop');
+assert.equal(buttons[0].attributes['aria-label'],'1. Captured · Authored');
 saved.loop_authored_demo=false;context.renderOperationStatus();assert.equal(node('.prototype-note').textContent,'Saved student loop');
+assert.equal(buttons[0].attributes['aria-label'],'1. Captured · Recorded');
 state.encounters=[structuredClone(saved)];context.render();assert.equal(state.step,0,'New verified data starts at the captured stage');
 state.encounters=[];const previousCalls=calls;context.render();context.renderOperationStatus();
 assert.equal(calls,previousCalls,'Empty data never enters the workspace frame renderer');assert.equal(node('playback').hidden,true);

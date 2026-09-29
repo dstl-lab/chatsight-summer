@@ -195,10 +195,8 @@ def create_app(*, notebook_branch, comparison, authored_demo, continuation=None,
     @app.get('/', response_class=HTMLResponse)
     def page():
         if loop_condition is not None:
-            return workspace._page().replace('</head>', '<style>'
-                '#app{grid-template-columns:minmax(0,1fr)}#app>.explorer{display:none}'
-                '#app>.workbench{grid-column:1}#playback .trail-items{flex-wrap:wrap}'
-                '</style></head>').replace('</body>', '<script src="/student-loop.js"></script></body>')
+            return workspace._page().replace('</head>', '<link rel="stylesheet" href="/student-loop.css"></head>').replace(
+                '</body>', '<script src="/student-loop.js"></script></body>')
         return workspace._page().replace('</head>',
             '<link rel="stylesheet" href="/next-actions.css"><link rel="stylesheet" href="/policy-sampling.css"></head>').replace(
             '</body>', '<script src="/policy-sampling.js"></script></body>')
@@ -218,6 +216,10 @@ def create_app(*, notebook_branch, comparison, authored_demo, continuation=None,
     @app.get('/student-loop.js')
     def loop_script():
         return Response((ROOT/'apps/student-loop.js').read_text(), media_type='text/javascript')
+
+    @app.get('/student-loop.css')
+    def loop_style():
+        return Response((ROOT/'apps/student-loop.css').read_text(), media_type='text/css')
 
     @app.middleware('http')
     async def local_style(request: Request, call_next):

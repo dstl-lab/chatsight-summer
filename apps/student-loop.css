@@ -1,0 +1,20 @@
+/* The one-case replay keeps notebook and chat beside a compact event timeline. */
+#app{grid-template-columns:minmax(0,1fr)}
+#app>.explorer{display:none}
+#app>.workbench{grid-column:1}
+#playback .playback-buttons{display:none}
+#trail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;overflow:visible;padding:4px 0;isolation:isolate}
+#trail>button{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;width:100%;padding:4px 4px 8px;border:0;border-radius:4px;background:transparent;color:var(--ink);white-space:normal;text-align:center;line-height:1.4}
+#trail>button::before{content:"";position:absolute;top:18px;left:0;width:100%;height:1px;background:var(--line);z-index:0}
+#trail>button:first-child::before{left:50%;width:50%}
+#trail>button:last-child::before{width:50%}
+#trail .timeline-node{position:relative;z-index:1;display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--muted);border-radius:50%;background:var(--ground);color:var(--muted);margin-bottom:4px}
+#trail [data-loop-stage="execution"] .timeline-node{border-radius:4px}
+#trail .timeline-node svg{width:14px;height:14px}
+#trail .timeline-event{font-size:12px;font-weight:500}
+#trail .timeline-actor{font-size:11px;color:var(--muted)}
+#trail>button:hover .timeline-node{border-color:var(--ink);background:var(--paper);color:var(--ink)}
+#trail>button[aria-pressed="true"] .timeline-node{background:var(--mint);border:2px solid var(--green);color:var(--green)}
+#trail>button[aria-pressed="true"] .timeline-event{font-weight:650;color:var(--green)}
+#trail>button:active .timeline-node{background:var(--mint)}
+#trail>button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
