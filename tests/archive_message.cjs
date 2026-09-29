@@ -23,6 +23,8 @@ const context=vm.createContext({state,document,$:node,current:()=>state.encounte
   frame:()=>state.encounters[state.caseIndex].frames[state.step],glyph:()=>'<svg aria-hidden="true"></svg>',
   esc:value=>String(value).replaceAll('<','&lt;').replaceAll('>','&gt;'),block:value=>'<pre>'+String(value).replaceAll('<','&lt;').replaceAll('>','&gt;')+'</pre>',
   statusText:()=> 'Generic status',pendingReplyNote:()=> 'Generic pending note',continuationReason:()=> 'Generic control reason',
+  sourceOnlyNotebook:()=>'<section><pre class="notebook-input"><code>saved code</code></pre><p>caption</p></section>',
+  externalExecution:(result,title)=>`<section class="notebook-result">${title}: ${result.output}</section>`,
   renderInspector(){node('inspector').innerHTML='Generic inspector'},
   render(){renders++;node('#canvas .notebook-document > .notebook-caption').textContent='Code execution is unavailable';
     node('#canvas .notebook-prompt').attributes={title:'Code execution unavailable'};
@@ -64,6 +66,50 @@ assert.equal(node('.prototype-note').textContent,'Authored test data · Saved st
 assert.equal(buttons[0].attributes['aria-label'],'1. Captured · Authored');
 saved.frames[2].actions=[{decision:'reply'}];buttons[2].onclick();
 assert.equal(buttons[2].attributes['aria-label'],'3. Student message · Student');
+saved.archive_continuation=true;saved.execution_results=1;saved.model_decisions=4;
+saved.frames.push({archive_stage:'tutor',status:'active',actions:[]},
+  {archive_stage:'request-check',status:'active',actions:[{decision:'request-check'}],
+    archive_observation:{revision:1,output:'AUTHORED OUTPUT'},archive_observation_new:true},
+  {archive_stage:'revise-work',status:'active',actions:[{decision:'revise-work',text:''}]},
+  {archive_stage:'no-reply',status:'no-reply',actions:[{decision:'no-reply'}]});
+for(let i=3;i<saved.frames.length;i++){const button=node('button-'+i);button.dataset.trail=String(i);button.onclick=()=>{state.step=i;context.render()};buttons.push(button)}
+state.showInspector=false;state.step=4;context.render();
+assert.equal(node('trail').style.gridTemplateColumns,'repeat(7, minmax(76px, 1fr))');
+assert.equal(node('trail').style.overflowX,'auto','Longer timelines keep their native buttons readable');
+assert.equal(buttons[4].attributes['aria-label'],'5. Local run · Student');
+assert.match(context.sourceOnlyNotebook(),/saved code<\/code><\/pre><section class="notebook-result">Student-requested local execution · revision 1: AUTHORED OUTPUT/);
+assert.match(node('#canvas .notebook-document > .notebook-caption').textContent,/student requested this local run/);
+assert.doesNotMatch(node('#canvas .notebook-prompt').attributes.title,/retrospective|researcher/i);
+state.step=2;context.render();assert.match(context.pendingReplyNote(),/later saved tutor reply/);
+assert.match(node('#conversation-messages > p.quiet:last-child').textContent,/following stage/);
+state.step=5;context.render();
+assert.equal(buttons[5].attributes['aria-label'],'6. Code edit · Student');
+assert.doesNotMatch(context.sourceOnlyNotebook(),/AUTHORED OUTPUT/,'An edit does not inherit earlier execution output');
+assert.match(node('#canvas .notebook-document > .notebook-caption').textContent,/No execution result for this revision/);
+state.step=6;context.render();assert.equal(context.statusText(saved.frames[6]),'Student chose no further action');
+saved.frames[6].archive_observation=saved.frames[4].archive_observation;saved.frames[6].archive_observation_new=false;
+context.render();assert.match(context.sourceOnlyNotebook(),/Previously observed local result/);
+assert.match(node('#canvas .notebook-document > .notebook-caption').textContent,/unchanged revision/);
+for(const [status,label] of [['action-limit',/Action limit/],['check-limit',/Local run limit/],
+  ['error',/action failed/],['environment-error',/environment unavailable/],['execution-limit',/Execution limit/],
+  ['setup-error',/setup failed/],['tutor-error',/Tutor reply failed/]]){
+  saved.frames[6].status=status;assert.match(context.statusText(saved.frames[6]),label);
+}
+saved.frames[6].archive_stage='request-check';saved.frames[6].status='check-limit';context.render();
+assert.equal(buttons[6].attributes['aria-label'],'7. Run requested · Student');
+assert.doesNotMatch(node('#canvas .notebook-document > .notebook-caption').textContent,/No additional execution occurred/);
+saved.frames[6].archive_action_failed=true;saved.frames[6].status='error';state.selected='step';state.showInspector=true;context.render();
+assert.match(node('inspector').innerHTML,/attempted action did not complete/);
+saved.frames=saved.frames.slice(0,3);buttons.splice(3);
+saved.terminal_status='tutor-error';
+saved.frames.push({archive_stage:'tutor-error',status:'tutor-error',actions:[]});
+const failed=node('button-3');failed.dataset.trail='3';buttons.push(failed);
+state.showInspector=false;state.step=2;context.render();
+assert.match(context.pendingReplyNote(),/later tutor request failed/);
+assert.equal(context.statusText(saved.frames[2]),'Awaiting tutor · No reply is running');
+assert.match(node('#conversation-messages > p.quiet:last-child').textContent,/failed tutor request/);
+state.selected='context';context.renderInspector();
+assert.match(node('inspector').innerHTML,/No tutor reply or new student decision followed/);
 saved.archive_message=false;
 assert.equal(context.statusText(saved.frames[2]),'Generic status');
 assert.equal(context.pendingReplyNote(),'Generic pending note');

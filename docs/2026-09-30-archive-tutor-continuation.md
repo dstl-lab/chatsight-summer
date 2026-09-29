@@ -63,3 +63,36 @@ archive-loop checks). They cover request-only execution, feedback invalidation,
 exact replay, immutable parents, tutor failures/interruption, no resend, caps,
 message stopping and timestamp validation. Independent review found no remaining
 runner blockers. No new manual labels are required.
+
+## Workbench integration
+
+The existing preview accepts `--continuation` after the new run has completed:
+
+```sh
+PYTHONPATH=. python -P apps/archive_message_preview.py \
+  data/archived-student-loop-v1 --branch data/notebook-source-branch-v1/branch \
+  --continuation data/archived-tutor-continuation-v1 --port 8454
+```
+
+The original three events remain intact, followed by the new tutor reply and
+each student action on the same timeline. Student-requested execution output
+appears below its exact code revision, and a subsequent edit removes the current
+result. An attempted edit that fails before changing work retains the prior
+result. The UI separates no-action, budget stops, tutor failure and action failure;
+it never substitutes a successful result for an absent one. Source diffs and chat
+stay beside the timeline, and the final event opens by default. Both run inputs
+are verified on every reload. There are no sending endpoints.
+
+An explicitly authored fixture in ignored `data/continuation-ui-authored` verified
+the seven-event layout in the browser: tutor → requested local error → quiet edit
+→ no action. These are test callbacks, not provider or container executions. The
+browser confirmed keyboard navigation, one copy of each chat message, removal of
+stale output, final-stage reload and exactly centered glyphs, with no console
+errors. Port 8453 still displays the unchanged actual parent run.
+
+Final combined verification: 31 Python checks and three Node controller checks
+pass, plus JavaScript syntax and whitespace checks. The nine preview checks also
+pass after removing a stale parent execution counter from continued packets;
+the continued timeline reports saved local results, without guessing how many
+failed execution attempts reached the executor. The shared Starlette/httpx
+deprecation warning is unchanged.

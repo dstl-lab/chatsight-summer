@@ -1,12 +1,14 @@
 """Inspect the saved archive-loop edit/message that stopped for a tutor reply."""
 import argparse
 from copy import deepcopy
+from hashlib import sha256
 from pathlib import Path
 
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
-from src.agents import archived_notebook as archive, browser_workspace as workspace
+from src.agents import archived_notebook as archive, archive_tutor_continuation as continuation_store
+from src.agents import browser_workspace as workspace
 from src.agents import notebook_student as store, student_evidence
 from src.eval import notebook_replay
 
@@ -14,8 +16,8 @@ from src.eval import notebook_replay
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def project(result):
-    """This view deliberately supports only a completed, one-message stop without execution."""
+def project(result, continuation=None):
+    """Show the closed message and an optional, separately verified tutor continuation."""
     plan, state = result['plan'], result['state']
     if (result['status'] != 'awaiting-tutor' or state is None or len(state['history']) != 1
             or state['observation'] is not None):
@@ -54,17 +56,99 @@ def project(result):
             'code was checked in another study. This is a simulated continuation from captured '
             'work, not recorded future student behavior or evidence of learning. '
             'Viewing or reloading makes no model or execution requests.')}
+    if continuation is not None:
+        _append_continuation(encounter, result, continuation)
     return {'version':1, 'kind':'notebook', 'source_only':True, 'encounters':[encounter],
         'controls':{'send_enabled':False, 'tutor_generation_enabled':False,
-                    'blocked_reason':'Saved run ended awaiting a tutor. No reply is running; this view is read only.'},
+                    'blocked_reason':'This saved run is read only. No model or execution request is running.'},
         'operation':{'status':'idle', 'message':''}}
 
 
-def create_app(folder, *, notebook_branch):
+def _append_continuation(encounter, parent, saved):
+    if saved['parent'] != parent or saved['status'] == 'prepared':
+        raise ValueError('Use a completed continuation of this exact saved parent.')
+    plan, state, reply = saved['plan'], saved['state'], saved['tutor_reply']
+    if plan['authored_demo'] != parent['plan']['authored_demo']:
+        raise ValueError('Continuation provenance differs from its parent.')
+    frames = encounter['frames']
+    previous = frames[-1]
+    encounter.update(archive_continuation=True, terminal_status=saved['status'], execution_results=0)
+    del encounter['execution_calls']  # Loaded results do not expose failed executor-call counts.
+    binding = {'session_sha256':store.digest(plan), 'state_sha256':store.digest(saved)}
+    next_frame = deepcopy(previous) | {'decisions_remaining':plan['max_decisions'], 'actions':[],
+        'changes':{'baseline_revision':previous['work']['revision'],
+                   'baseline_kind':'previous-saved-step', 'unified_diff':''}, 'binding':binding}
+    if saved['status'] == 'tutor-error':
+        if state is not None or reply is not None:
+            raise ValueError('A failed tutor request cannot contain a reply or student result.')
+        frames.append(next_frame | {'label':'Tutor reply failed', 'archive_stage':'tutor-error',
+                                   'status':'tutor-error'})
+    else:
+        if state is None or reply is None or not state['history']:
+            raise ValueError('A saved tutor continuation requires a reply and student result.')
+        dialogue = deepcopy(previous['dialogue']) + [
+            {'role':'student', 'text':parent['state']['message'], 'origin':'generated'},
+            {'role':'tutor', 'text':reply['text'], 'origin':'generated',
+             'display_html':workspace._tutor_html(reply['text'])}]
+        if [{key:t[key] for key in ('role','text')} for t in dialogue] != [
+                {key:t[key] for key in ('role','text')} for t in state['dialogue']]:
+            raise ValueError('Continuation dialogue differs from its saved exchange.')
+        frames.append(next_frame | {'label':'New tutor reply', 'archive_stage':'tutor',
+            'status':'active', 'dialogue':dialogue, 'pending_message':None})
+        observed = None
+        for index, event in enumerate(state['history'], 1):
+            before, work, choice = frames[-1]['work'], event['work_after'], event.get('action')
+            decision = choice['decision'] if choice else 'error'
+            final = index == len(state['history'])
+            if decision == 'revise-work' and work['revision'] != before['revision']:
+                observed = None
+            if event.get('observation') is not None:
+                observed = deepcopy(event['observation'])
+                encounter['execution_results'] += 1
+            label = {'revise-work':'Student edit' + (' + message' if choice and choice['text'] else ''),
+                     'request-check':'Student requested local run', 'reply':'Student message',
+                     'no-reply':'No further action', 'error':'Student decision failed'}[decision]
+            if event.get('error') and choice:
+                label = 'Student action failed'
+            item = {'label':label, 'archive_stage':decision,
+                'status':state['status'] if final else 'active',
+                'decisions_remaining':plan['max_decisions']-index, 'work':deepcopy(work),
+                'dialogue':deepcopy(dialogue), 'pending_message':state['message'] if final else None,
+                'feedback':None, 'actions':[deepcopy(choice)] if choice else [],
+                'changes':{'baseline_revision':before['revision'], 'baseline_kind':'previous-saved-step',
+                           'unified_diff':notebook_replay._code_diff(before, work)},
+                'binding':{**binding, 'state_sha256':store.digest(event)}}
+            if event.get('error'):
+                item['archive_action_failed'] = True
+            if observed is not None:
+                if (observed['revision'] != work['revision'] or
+                        observed['source_sha256'] != sha256(work['source'].encode()).hexdigest()):
+                    raise ValueError('The displayed execution result is not bound to the current source.')
+                item['archive_observation'] = {**observed, 'dataset':deepcopy(plan['dataset']),
+                                               'image_id':plan['image_id']}
+                item['archive_observation_new'] = event.get('observation') is not None
+            frames.append(item)
+        encounter['model_decisions'] += len(state['history'])
+    encounter['saved_results_html'] = workspace._tutor_html(
+        ('Authored test data. ' if plan['authored_demo'] else 'Saved model continuation. ')+
+        f'Final saved status: {saved["status"]}. {encounter["model_decisions"]} student decision attempts across '
+        f'the original run and this continuation; {encounter["execution_results"]} saved local execution results. '
+        'The original message is unchanged. The new segment allows one tutor reply, at most three student '
+        'decisions, and at most two student-requested local executions. An edit clears current feedback; '
+        'a saved result belongs only to its source revision. Local execution is ungraded and does not '
+        'establish correctness or learning. Historical dataset bytes and kernel are unverified. '
+        'This is simulated behavior, not a reconstruction of the real student’s future. '
+        'Viewing or reloading sends no model or execution requests.')
+
+
+def create_app(folder, *, notebook_branch, continuation=None):
     folder = Path(folder).absolute()
     initial = archive.load(folder)
-    project(initial)
+    continuation = Path(continuation).absolute() if continuation is not None else None
+    attached = continuation_store.load(continuation) if continuation is not None else None
+    project(initial, attached)
     pin = store.digest(initial)
+    continuation_pin = store.digest(attached) if attached is not None else None
     app = workspace.create_app(notebook_branch=notebook_branch)
     # Keep the existing localhost security middleware and shared assets, not another data source.
     app.router.routes[:] = [route for route in app.routes if route.path in ('/workspace.js', '/api/scenarios')]
@@ -77,7 +161,10 @@ def create_app(folder, *, notebook_branch):
             result = archive.load(folder)
             if store.digest(result) != pin:
                 raise ValueError('Saved run changed.')
-            return project(result)
+            attached = continuation_store.load(continuation) if continuation is not None else None
+            if attached is not None and store.digest(attached) != continuation_pin:
+                raise ValueError('Saved continuation changed.')
+            return project(result, attached)
         except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
             raise HTTPException(409, 'This saved run could not be verified. Its contents are not displayed.') from exc
 
@@ -109,7 +196,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('folder', type=Path)
     parser.add_argument('--branch', type=Path, required=True)
+    parser.add_argument('--continuation', type=Path)
     parser.add_argument('--port', type=int, default=8453)
     args = parser.parse_args()
     import uvicorn
-    uvicorn.run(create_app(args.folder, notebook_branch=args.branch), host='127.0.0.1', port=args.port)
+    uvicorn.run(create_app(args.folder, notebook_branch=args.branch, continuation=args.continuation),
+                host='127.0.0.1', port=args.port)

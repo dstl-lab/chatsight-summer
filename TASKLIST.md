@@ -5,9 +5,12 @@
 The next run starts at the completed student message, gives the tutor the verified
 course API reference, and allows one tutor reply, three student decisions and two
 student-requested local executions. The closed parent and frozen runner remain
-unchanged. All 18 focused Python checks pass. Automatic approval review rejected
-dispatch before process creation; exact payload/destination approval is pending.
-No new provider call, local execution or manual labeling has occurred.
+unchanged. The read-only workbench can display the linked tutor/student segment
+on the same timeline with revision-bound results and distinct stopping reasons.
+All 31 focused Python checks, three Node checks and authored browser inspection
+pass. Automatic approval review rejected dispatch before process creation; exact
+payload/destination approval is pending. No new provider call, actual local code
+execution or manual labeling has occurred.
 
 **Student-requested archive loop completed its first live draw (2026-09-30):**
 [Bounded loop and dispatch status](docs/2026-09-30-student-requested-archive-execution.md).
