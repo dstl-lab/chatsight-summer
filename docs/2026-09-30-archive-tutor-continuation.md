@@ -52,9 +52,31 @@ Minchan accepted the bounded continuation with “Let's do it,” then resumed t
 interrupted work. The acceptance is logged in `authorization.json`. Automatic
 approval review rejected the live command before process creation because it
 requires specific authorization for the private notebook/chat/reference payload
-to Google Gemini. `dispatch-block.json` preserves that rejection. A question
-describing the exact payload, destination and bounds is pending. There is no run
-receipt, provider call or local execution yet.
+to Google Gemini. `dispatch-block.json` preserves that rejection. Minchan then
+answered **“Approved”** to the exact notebook/code/chat/reference and subsequent
+actions/feedback transfer to Google Gemini, within the one-tutor/three-student/
+two-local-execution bounds. `approval-response.json` binds that answer to the
+unchanged plan and rejection before dispatch.
+
+**The run completed with one tutor call, one student call and zero executions.**
+With the course API reference, the tutor replaced the unavailable `.nunique()`
+suggestion with `len(...unique())`. The student chose `revise-work`, copied that
+code into revision 2, and sent the same code as a chat message. The runner stopped
+at `awaiting-tutor`; no `request-check` occurred and the observation remains null.
+There were no provider failures, retries or replacement draws. Total usage was
+3,786 tokens: 2,250 prompt, 176 output and 1,360 thinking tokens.
+
+The revision remains **unexecuted in this run**. Identical code succeeding in a
+previous study does not supply this run's result. This establishes a working
+tutor-to-student continuation, but it does not establish realistic chat behavior,
+learning or student-selected execution. The student again pasted code back to the
+tutor; this is an observed model choice, not a judgment that a real learner would
+do so. The run is closed; unused budget does not authorize another tutor turn or
+reroll.
+
+Offline replay and independent audit verify the exact raw responses, prompts,
+parent/reference/code bindings, limits and approval-before-dispatch chronology.
+`completion.json` binds the run and approval receipts, counts, usage and limits.
 
 ## Validation
 
@@ -89,6 +111,13 @@ the seven-event layout in the browser: tutor → requested local error → quiet
 browser confirmed keyboard navigation, one copy of each chat message, removal of
 stale output, final-stage reload and exactly centered glyphs, with no console
 errors. Port 8453 still displays the unchanged actual parent run.
+
+The completed live continuation is now at <http://127.0.0.1:8454/>. Browser
+inspection confirms five timeline events, one copy of each of five chat messages,
+the revision-1-to-2 diff, no borrowed execution output and the final awaiting-tutor
+state. The new tutor event still shows revision 1; only the following student
+event introduces revision 2. No extra model or execution request was made by
+opening or navigating the workbench.
 
 Final combined verification: 31 Python checks and three Node controller checks
 pass, plus JavaScript syntax and whitespace checks. The nine preview checks also

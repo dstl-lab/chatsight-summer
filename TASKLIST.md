@@ -1,16 +1,17 @@
 # Simulated students: task list
 
-**One tutor continuation prepared (2026-09-30):**
+**One tutor continuation completed (2026-09-30):**
 [Bounded exchange and dispatch status](docs/2026-09-30-archive-tutor-continuation.md).
-The next run starts at the completed student message, gives the tutor the verified
-course API reference, and allows one tutor reply, three student decisions and two
-student-requested local executions. The closed parent and frozen runner remain
-unchanged. The read-only workbench can display the linked tutor/student segment
-on the same timeline with revision-bound results and distinct stopping reasons.
+After exact-payload approval, one tutor reply used the verified course API
+reference to suggest `len(...unique())`. One student decision copied that code
+into revision 2 and sent it in chat, stopping at awaiting-tutor. Zero executions,
+failures, retries or rerolls; the new revision remains unexecuted. Raw replay,
+approval chronology and unchanged parent/input/code bindings verify. The linked
+five-event notebook/chat timeline is visible at port 8454. The closed parent and
+frozen runner remain unchanged; student realism is not established.
 All 31 focused Python checks, three Node checks and authored browser inspection
-pass. Automatic approval review rejected dispatch before process creation; exact
-payload/destination approval is pending. No new provider call, actual local code
-execution or manual labeling has occurred.
+pass; the actual completed timeline was also checked in the browser. The bounded
+continuation is closed. No additional tutor turn, run or manual labeling is queued.
 
 **Student-requested archive loop completed its first live draw (2026-09-30):**
 [Bounded loop and dispatch status](docs/2026-09-30-student-requested-archive-execution.md).
