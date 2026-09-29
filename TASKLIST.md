@@ -5,6 +5,8 @@ Recovered a matching full course CSV from local archives. In a separately declar
 isolated environment, captured work raises an error and the saved simulated edit
 returns 2,850. Both results are visible beside their code in the browser workspace;
 they are retrospective checks, not historical observations or course grades.
+Captured / Generated controls now sit above the notebook and remain visible while
+scrolling, replacing the bottom timeline for this two-version branch.
 Original inputs and the first setup failure remain unchanged. All 832 Python tests
 pass (three optional skips), with Node, HTTP and independent review checks. One
 student reaction to the actual result is prepared; automatic approval review

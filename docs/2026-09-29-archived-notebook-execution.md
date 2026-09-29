@@ -79,6 +79,22 @@ versions and preserved source/branch/asset hashes. The frozen test file briefly
 received additional assertions during preparation; its exact pinned bytes were
 restored before execution and the extended authored check retained separately.
 
+## Notebook version selection
+
+The one-decision branch now has a fixed Captured / Generated button group above
+the notebook. Captured identifies the recorded starting point; Generated is the
+simulated continuation, not the student's actual later answer. The redundant
+bottom timeline is hidden for these one- or two-frame branches. Other replays
+retain their timeline, and version details remain accessible beside the switch.
+Missing, pending and failed generation states are explicitly identified.
+
+Switching reuses saved frames and makes no requests. Controller regression checks
+cover selection, focus, missing results and restoring ordinary playback. Mouse,
+keyboard and scrolling were checked in the browser using authored examples only.
+Both Node suites and syntax checks pass; independent review found and verified the
+fix for focus returning to hidden duplicate controls. No evidence or model calls
+changed.
+
 ## Remaining student reaction
 
 One separate reaction is prepared in the ignored V2 directory. Its 4,024-character

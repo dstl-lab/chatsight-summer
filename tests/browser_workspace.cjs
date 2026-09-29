@@ -15,11 +15,22 @@ const node = id => {
 const modes = ['inspect','simulate','compare'].map(mode=>Object.assign(node(mode),{dataset:{mode}}));
 const chatJumps = ['first','last'].map(chatJump=>Object.assign(node('chat-'+chatJump),{dataset:{chatJump}}));
 const teachingButtons=['shared','a','b'].map(teachingChat=>Object.assign(node('teaching-'+teachingChat),{dataset:{teachingChat}}));
+const versionButtons=['captured','generated'].map((name,i)=>Object.assign(node('version-'+name),{
+  dataset:{trail:String(i)},hasAttribute:attribute=>attribute==='data-trail',getAttribute:()=>String(i)}));
 let sidebarButtons=[],reviewButtons=[];
 const replyNote={set textContent(value){node('conversation-messages').innerHTML=node('conversation-messages').innerHTML.replace(/(<p class="reply-note">)[\s\S]*?(<\/p>)/,(_match,start,end)=>start+value+end)}};
 const document = {activeElement:null, body:node('body'), getElementById:node,
-  querySelector:selector=>node(selector),
-  querySelectorAll:selector=>selector==='[data-mode]'?modes:selector==='[data-chat-jump]'?chatJumps:selector==='[data-teaching-chat]'?teachingButtons:selector==='[data-scenario]'?sidebarButtons:selector==='[data-review-case]'?reviewButtons:selector==='#conversation-messages .reply-note'?[replyNote]:[]};
+  querySelector:selector=>{
+    const visible=selector.endsWith(':not([hidden], [hidden] *)');
+    const match=selector.replace(':not([hidden], [hidden] *)','');
+    if(!visible||!node('notebook-versions').hidden){
+      if(match==='[data-evidence="step"]')return node('version-details');
+      const version=versionButtons.find(button=>match===`[data-trail="${button.dataset.trail}"]`);
+      if(version)return version;
+    }
+    return node(match);
+  },
+  querySelectorAll:selector=>selector==='[data-trail]'?versionButtons:selector==='[data-mode]'?modes:selector==='[data-chat-jump]'?chatJumps:selector==='[data-teaching-chat]'?teachingButtons:selector==='[data-scenario]'?sidebarButtons:selector==='[data-review-case]'?reviewButtons:selector==='#conversation-messages .reply-note'?[replyNote]:[]};
 const initial = {label:'Initial state',status:'active',decisions_remaining:3,
   work:{cell_index:1,revision:0,source:'count = 0'},dialogue:[],pending_message:null,
   feedback:null,changes:{baseline_revision:0,baseline_kind:'initial-work',unified_diff:''},actions:[],binding:{}};
@@ -82,6 +93,13 @@ const context=makeContext();
 const run=code=>vm.runInContext(code,context);
 (async()=>{
   run(fs.readFileSync(script,'utf8'));await run('ready');
+  assert.equal(node('notebook-versions').hidden,true,'Ordinary notebook playback retains its timeline');
+  const timelineStart=Object.assign(node('[data-trail="0"]'),{hasAttribute:a=>a==='data-trail',getAttribute:()=> '0'});
+  timelineStart.focus();run('selectFrame(0)');
+  assert.equal(document.activeElement,timelineStart,'Playback focus must not move to hidden version buttons');
+  run("selectEvidence('step')");node('inspector-toggle').onclick();
+  assert.equal(document.activeElement,node('[data-evidence="step"]'),'Closing details returns focus to the visible playback control');
+  run('selectFrame(1)');
   assert.match(node('canvas').innerHTML,/Find the fraction of blue rows/);
   assert.match(node('canvas').innerHTML,/&lt;script&gt;never execute/);
   assert.doesNotMatch(node('canvas').innerHTML,/<script>|<img src=x/);
@@ -1061,6 +1079,24 @@ const run=code=>vm.runInContext(code,context);
   requests=[];
   const branchContext=makeContext(),branch=code=>vm.runInContext(code,branchContext);
   branch(fs.readFileSync(script,'utf8'));await branch('ready');
+  assert.equal(node('notebook-versions').hidden,false);
+  assert.equal(node('playback').hidden,true,'Version selection replaces the duplicate bottom timeline');
+  assert.equal(node('trail').innerHTML,'');
+  assert.equal(node('version-generated').attributes['aria-pressed'],'true');
+  const requestsBeforeVersions=requests.length;
+  node('canvas').scrollTop=120;
+  node('version-captured').focus();node('version-captured').onclick();
+  assert.equal(branch('state.step'),0);
+  assert.equal(node('version-captured').attributes['aria-pressed'],'true');
+  assert.equal(document.activeElement,node('version-captured'));
+  assert.equal(node('canvas').scrollTop,120);
+  assert.match(node('canvas').innerHTML,/Captured source/);
+  node('version-generated').focus();node('version-generated').onclick();
+  assert.equal(branch('state.step'),1);
+  assert.equal(document.activeElement,node('version-generated'));
+  assert.equal(requests.length,requestsBeforeVersions,'Version switching is entirely local');
+  branch("selectEvidence('step')");node('inspector-toggle').onclick();
+  assert.equal(document.activeElement,node('version-details'),'Branch details return focus beside the version switch');
   assert.match(node('canvas').innerHTML,/class="notebook-document"/);
   assert.match(node('canvas').innerHTML,/<h1>Selected instructions<\/h1>/);
   assert.match(node('canvas').innerHTML,/Generated revision/);
@@ -1099,9 +1135,11 @@ const run=code=>vm.runInContext(code,context);
   assert.doesNotMatch(node('view-description').textContent,/limit reached/);
   assert.equal(node('chat-count').textContent,'2 messages');
   branchResult.status='pending';await branch('reloadWorkspace()');
+  assert.equal(node('version-generated-label').textContent,'Pending request');
   assert.match(node('view-description').textContent,/outcome unknown/);
   assert.doesNotMatch(node('view-description').textContent,/limit reached|Historical starting/);
   branchResult.status='error';await branch('reloadWorkspace()');
+  assert.equal(node('version-generated-label').textContent,'Failed request');
   assert.match(node('view-description').textContent,/Generation failed/);
   assert.doesNotMatch(node('view-description').textContent,/chose no reply|limit reached/);
   assert.ok(requests.every(r=>!r.options.method),'Source-only playback must use GET only');
@@ -1145,6 +1183,15 @@ const run=code=>vm.runInContext(code,context);
   await branch('reloadWorkspace()');
   assert.match(node('canvas').innerHTML,/Environment unavailable · not-started/);
   assert.match(node('canvas').innerHTML,/Runtime metadata unavailable/);
+  packet.encounters[0].frames=[branchStart];await branch('reloadWorkspace()');
+  assert.equal(node('version-generated').disabled,true);
+  assert.equal(node('version-generated-description').textContent,'Not generated yet');
+  assert.equal(node('version-captured').attributes['aria-pressed'],'true');
+  fail=true;await branch('reloadWorkspace()');
+  assert.equal(node('notebook-versions').hidden,true,'A failed reload clears stale version controls');
+  fail=false;packet.source_only=false;await branch('reloadWorkspace()');
+  assert.equal(node('notebook-versions').hidden,true);
+  assert.equal(node('playback').hidden,false,'Switching away restores ordinary playback');
   assert.ok(requests.every(r=>!r.options.method),'Retrospective execution display must use GET only');
   console.log('Saved workspace: playback, drafts, fidelity, student models, standalone review, next exercise, manual tutor, and recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

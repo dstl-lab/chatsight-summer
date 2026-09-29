@@ -312,7 +312,7 @@ function renderComparison(){
   const data=state.comparison,c=comparisonContext(),editable=data?.controls?.create_enabled===true;
   $('next-exercise').hidden=true;
   renderCases();renderModeButtons();
-  $('playback').hidden=true;$('next-step').hidden=true;
+  $('playback').hidden=true;$('notebook-versions').hidden=true;$('next-step').hidden=true;
   $('saved-results').hidden=true;$('continue-run').hidden=true;
   $('instructions').hidden=true;$('tutor-controls').textContent=isStudentComparison()?'Model and source details':isFidelityComparison()?'Study details':isPolicyComparison()?'Comparison details':'Review details';
   $('instructions').disabled=!c;$('tutor-controls').disabled=!c||state.comparisonEditing;
@@ -530,13 +530,21 @@ function renderInspector(){
   $('inspector').innerHTML=`<div class="inspector-title">Saved evidence</div><h2>${esc(title)}</h2>${body}`;
 }
 function renderTrail(){
-  $('playback').hidden=state.mode!=='simulate';
+  const versions=isSourceOnly()&&current().frames.length<=2;
+  $('notebook-versions').hidden=!versions;
+  $('playback').hidden=state.mode!=='simulate'||versions;
+  $('version-captured').setAttribute('aria-pressed',String(state.step===0));
+  $('version-generated').setAttribute('aria-pressed',String(state.step===1));
+  $('version-generated').disabled=current().frames.length<2;
+  const generated=current().frames[1];
+  $('version-generated-label').textContent=generated?.status==='pending'?'Pending request':generated?.status==='error'?'Failed request':'Generated';
+  $('version-generated-description').textContent=!generated?'Not generated yet':['pending','error'].includes(generated.status)?'No result available':'Simulated continuation';
   $('playback').setAttribute('aria-label',state.kind==='chat'?'Conversation playback':'Notebook playback');
   $('trail-title').textContent=hasExternalExecution()?'Source revisions · retrospective checks':isRecordedNotebook()?'Observed events':'Saved playback';
   $('trail-hint').textContent=hasExternalExecution()?`Revision ${frame().work.revision} · checked after generation`:isRecordedNotebook()?`Event ${frame().recorded.event.sequence} · ${state.step+1} of ${current().frames.length} observations`:(state.kind==='chat'?frame().label:`State ${state.step+1} of ${current().frames.length}`)+' · no new generation';
   $('previous-step').disabled=state.step===0;
   $('trail').hidden=state.kind==='chat';
-  $('trail').innerHTML=state.kind==='chat'?'':current().frames.map((f,i)=>`<button data-trail="${i}" aria-pressed="${i===state.step}"><span class="count">${i+1}</span>${esc(f.label)}</button>`).join('');
+  $('trail').innerHTML=state.kind==='chat'||versions?'':current().frames.map((f,i)=>`<button data-trail="${i}" aria-pressed="${i===state.step}"><span class="count">${i+1}</span>${esc(f.label)}</button>`).join('');
   document.querySelectorAll('[data-trail]').forEach(b=>b.onclick=()=>selectFrame(Number(b.dataset.trail)));
 }
 function render(){
@@ -545,7 +553,7 @@ function render(){
   const value=attr?focused.getAttribute(attr):null;
   if(state.mode==='compare'){
     renderComparison();
-    if(attr)document.querySelector(`[${attr}="${value}"]`)?.focus({preventScroll:true});
+    if(attr)document.querySelector(`[${attr}="${value}"]:not([hidden], [hidden] *)`)?.focus({preventScroll:true});
     return;
   }
   const c=current(),f=frame();
@@ -576,7 +584,7 @@ function render(){
   $('inspector-toggle').hidden=!state.showInspector;
   if(state.showInspector)renderInspector();else $('inspector').innerHTML='';
   renderTrail();renderChat();renderOperationStatus();
-  if(attr)document.querySelector(`[${attr}="${value}"]`)?.focus({preventScroll:true});
+  if(attr)document.querySelector(`[${attr}="${value}"]:not([hidden], [hidden] *)`)?.focus({preventScroll:true});
 }
 function continuationReason(){
   if(isRecordedNotebook())return 'Recorded evidence is read-only.';
@@ -701,7 +709,7 @@ function applyWorkspace(packet,{openNext=false}={}){
 }
 function clearWorkspaceView(message){
   $('next-exercise').hidden=true;
-  state.encounters=[];state.showInspector=false;$('cases').innerHTML='';$('inspector').innerHTML='';$('playback').hidden=true;
+  state.encounters=[];state.showInspector=false;$('cases').innerHTML='';$('inspector').innerHTML='';$('playback').hidden=true;$('notebook-versions').hidden=true;
   $('instructions').disabled=true;$('tutor-controls').disabled=true;$('next-step').hidden=true;$('inspector-toggle').hidden=true;
   $('saved-results').disabled=true;$('continue-run').hidden=true;
   $('new-comparison').hidden=true;$('run-comparison').hidden=true;$('reuse-comparison').hidden=true;
@@ -787,6 +795,7 @@ $('canvas').after($('inspector'));
 document.querySelector('.trail-label').insertAdjacentHTML('beforeend','<div class="playback-buttons" id="playback-buttons"><button id="previous-step">Previous</button></div>');
 $('playback-buttons').append($('next-step'));
 $('canvas').insertAdjacentHTML('beforebegin','<div id="operation-status" role="status" aria-live="polite" hidden></div>');
+$('canvas').insertAdjacentHTML('beforebegin','<div class="notebook-versions" id="notebook-versions" hidden><div class="version-options" role="group" aria-label="Notebook version"><button id="version-captured" type="button" data-trail="0" aria-controls="canvas conversation-messages" aria-pressed="false"><b>Captured</b><span>Recorded starting point</span></button><button id="version-generated" type="button" data-trail="1" aria-controls="canvas conversation-messages" aria-pressed="false"><b id="version-generated-label">Generated</b><span id="version-generated-description">Simulated continuation</span></button></div><button class="text-action" data-evidence="step">Version details</button></div>');
 $('case-title').tabIndex=-1;$('operation-status').tabIndex=-1;
 document.querySelector('.prototype-note').textContent='Saved simulation · Read only';
 document.querySelector('.breadcrumb').textContent='Notebook simulation';
@@ -817,7 +826,7 @@ $('saved-results').onclick=()=>selectEvidence('results');
 $('chat-toggle').onclick=()=>{state.chatOpen=!state.chatOpen;if(state.chatOpen)state.chatKey=null;renderChat();if(!state.chatOpen&&state.selected.startsWith('turn:'))$('chat-toggle').focus()};
 document.querySelectorAll('[data-chat-jump]').forEach(b=>b.onclick=()=>{const messages=$('conversation-messages'),first=b.dataset.chatJump==='first';messages.scrollTop=first?0:messages.scrollHeight;messages.querySelector(first?'.chat-turn':'.chat-turn:last-of-type')?.focus({preventScroll:true})});
 $('next-step').onclick=()=>{if(state.step<current().frames.length-1)selectFrame(state.step+1)};
-$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen&&(state.kind!=='chat'||state.mode==='compare')?$('chat-toggle'):state.selected==='results'?$('saved-results'):state.selected==='controls'?($('tutor-controls').hidden?$('continue-run'):$('tutor-controls')):state.selected==='review'?$('tutor-controls'):state.selected==='next-exercise'?$('next-exercise'):state.selected==='context'?$('run-details-toggle'):document.querySelector(`[data-evidence="${state.selected}"]`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
+$('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen&&(state.kind!=='chat'||state.mode==='compare')?$('chat-toggle'):state.selected==='results'?$('saved-results'):state.selected==='controls'?($('tutor-controls').hidden?$('continue-run'):$('tutor-controls')):state.selected==='review'?$('tutor-controls'):state.selected==='next-exercise'?$('next-exercise'):state.selected==='context'?$('run-details-toggle'):document.querySelector(`[data-evidence="${state.selected}"]:not([hidden], [hidden] *)`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
 $('explorer-toggle').onclick=()=>{const shown=$('app').classList.toggle('show-explorer');$('explorer-toggle').setAttribute('aria-expanded',String(shown))};
 $('reset').onclick=()=>state.mode==='compare'?reloadComparison({monitor:state.comparisonSubmitting||state.comparisonMonitoring}):reloadWorkspace();
 window.addEventListener('beforeunload',event=>{if(state.comparisonDirty){event.preventDefault();event.returnValue=''}});
