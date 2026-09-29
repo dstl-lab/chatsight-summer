@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Prepared; explicit send authorization pending (2026-09-29):**
+[Monte Carlo sampling of the saved reaction](docs/2026-09-29-next-action-monte-carlo.md).
+Thirty fresh Gemini 2.5 Pro requests will share one unchanged pre-reaction input;
+saved actions and marginal uncertainty intervals require no manual labels. Local
+checks pass. Automatic approval review blocked dispatch before process launch and
+requires specific approval of the private payload/provider/30-request count.
+Zero requests/results so far; original trajectory and workbench remain unchanged.
+
 **Execution and one reaction completed (2026-09-29):** [run the captured task on archived course data](docs/2026-09-29-archived-notebook-execution.md).
 Recovered a matching full course CSV from local archives. In a separately declared
 isolated environment, captured work raises an error and the saved simulated edit
