@@ -1,14 +1,18 @@
 # Next-actions workspace preview — 2026-09-29
 
-The desktop preview adds a collapsible **Next actions** panel above the existing
-notebook, alongside Captured / Generated / Reaction. It reads the completed
+The desktop preview adds **Next actions** to the top-right toolbar. Its floating
+panel opens over the chat side without resizing or covering the notebook, using
+no additional sidebar tab. It reads the completed
 [Monte Carlo batch](2026-09-29-next-action-monte-carlo.md): 29 no-action draws,
 one message, and zero edits. Counts, sample shares, and sampling intervals come
 from the verified report. These are model frequencies at one input, not calibrated
 student probabilities.
 
-Selecting an action opens a saved sample as Reaction, brings its code into view,
-and highlights a sampled message in the chat when present. Previous/next browse
+Selecting an action closes the panel, opens a saved sample as Reaction, brings
+its code into view, and highlights a sampled message in the chat when present.
+The toolbar button reopens the panel; Escape and outside clicks dismiss it.
+Keyboard focus returns to the toolbar button after choosing an outcome.
+Previous/next browse
 samples within that action; **Original reaction** restores the existing receipt.
 Captured and Generated remain available. A no-action sample adds no message or
 code change. Any execution result is the observation supplied before the sample,
@@ -47,6 +51,9 @@ pre-reaction input, raw provider responses, and frozen report implementation.
   original restoration, Captured switching, run counts 30/50/invalid 0, and panel
   hide/reopen. Expanded details stay contained; selected code and chat remain
   visible together. No browser console warnings or errors were observed.
+- After the floating-panel revision, checked native keyboard opening, Escape,
+  outside dismissal, setup, sample selection and focus restoration. Notebook
+  position and height remain identical with the panel open and closed.
 
 Next step is review of this layout. Connecting new sampling requires a bounded
 background job, visible progress/cancellation, and saved batches bound to the
