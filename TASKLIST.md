@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Design preview ready (2026-09-29):**
+[Inspect sampled next actions in the notebook/chat workspace](docs/2026-09-29-next-actions-preview.md).
+The completed 30-draw batch is visible as clickable action frequencies. Selecting
+a saved sample opens its Reaction in the existing notebook and chat; the original
+reaction can be restored. New-batch setup defaults to 30, with generation explicitly
+disabled in this preview. No provider requests or code execution. Next: review
+this interaction before connecting a bounded sampling job.
+
 **Completed (2026-09-29):**
 [Monte Carlo sampling of the saved reaction](docs/2026-09-29-next-action-monte-carlo.md).
 After explicit payload/provider/count approval, all 30 fresh Gemini 2.5 Pro draws
