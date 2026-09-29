@@ -1,14 +1,16 @@
 # Simulated students: task list
 
-**Saved edits executed; two reactions prepared (2026-09-29):**
+**Saved edits executed; two reactions completed (2026-09-29):**
 [Policy execution follow-up](docs/2026-09-29-policy-execution.md).
 Three distinct source checks cover all 60 saved samples. The direct-answer code
 raises a BabyPandas AttributeError; both hint-derived forms return 2,850. Results
-now appear in the existing port-8450 workbench. Prepared sample 1 per condition
-for one reaction each, chosen before execution. Automatic approval review blocked
-the two new Gemini requests pending explicit payload/destination approval; zero
-were sent. Course setup/API context is prepared for existing future tutor calls.
-No new labels, tutor rerolls, changed studies, or inferred student reactions.
+now appear in the existing port-8450 workbench. After explicit approval, exactly
+two Gemini reactions completed from sample 1, selected before execution. The
+direct condition revised code after the error without chatting; the hint condition
+chose no further action after 2,850. Both appear in Reaction; the repair remains
+unexecuted. Course setup/API context is prepared for future tutor calls. This
+bounded follow-up is closed: no new labels, tutor rerolls or further execution.
+Real-student fidelity and policy advantage remain unestablished.
 
 **Live tutor-policy comparison completed (2026-09-29):**
 [Fixed tutor-reply comparison](docs/2026-09-29-notebook-policy-sampling.md).

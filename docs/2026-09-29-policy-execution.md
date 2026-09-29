@@ -39,15 +39,32 @@ reply and copied edits. It does not establish that hints are generally better:
 each condition contains only one generated tutor reply. The duplicate samples
 share one source check, rather than 60 independent executions.
 
-The two new reaction inputs are prepared: direct sample 1 receives its actual
-error; hint sample 1 receives its actual returned value. Automatic approval review
-blocked the send before process launch, requiring explicit consent for the new
-private payload and Google Gemini destination. **Zero new model requests were
-sent.** There are no generated reactions or inferred silence. The read-only UI
-identifies the selected requests as “Reaction not generated.”
+Both new reactions completed after explicit user approval of the two prepared
+Google Gemini requests. The initial automatic approval rejection remains recorded;
+it occurred before any provider call. The subsequent authorization binds the
+unchanged prepared inputs and precedes the launch receipt.
 
-Private artifacts: `data/notebook-policy-execution-v1/{plan.json,execution.json,
-checks/,reaction-inputs.json,send-blocked.json}`. The comparison digest is
+| Condition, sample 1 | Feedback supplied | One simulated reaction |
+| --- | --- | --- |
+| Direct answer | Actual missing-method error | Replaced the call with `len(...unique())`, without chat |
+| Guided hint | Actual value 2,850 | No further action; no message or code change |
+
+The direct reaction is revision 2 and **has not been executed**. Its view shows the
+revision-1 error separately as the feedback it received. The hint reaction retains
+revision 1 and is an explicit model choice, not an inference from missing logs.
+Neither response establishes real-student fidelity, learning, understanding or a
+general policy advantage. In particular, the repair may reflect the model's own
+coding ability rather than this student's knowledge.
+
+Exactly two requests completed, with distinct provider response IDs and 4,068
+reported tokens, in about 21 seconds. Both report `gemini-2.5-pro`. Raw responses
+reproduce the accepted actions; original comparison artifacts and all three
+execution checks remain unchanged. No retries, tutor requests, further execution
+or new human labels occurred. This bounded follow-up is closed.
+
+Private artifacts: `data/notebook-policy-execution-v1/` contains the plan, checks,
+prepared inputs, initial blocked-send record, authorization, launch, both raw
+reaction receipts, and completion verification. The comparison digest is
 `0db2d8a4bc46ff7c233e03d934c9053a4e5ef5949f1e38840da9f62a6c6066f2`.
 All original study/probe files and receipts still verify unchanged. Private code,
 messages, raw outputs and data remain ignored.
@@ -57,11 +74,15 @@ Generated edit. Captured remains the shared pre-tutor state. Sample navigation
 keeps the floating comparison open; later reaction edits cannot inherit a previous
 execution result. The optional attachment is verified on startup and every read;
 the viewer has no provider-send or code-execution endpoint.
+Select sample 1 from either condition, then **Reaction / After execution** to see
+its saved follow-up. Other samples have execution checks but no generated reaction.
 
 Validation: 21 focused Python tests and three Node controller checks pass.
 Browser inspection verifies the direct error, both hint values, continuous sample
-navigation and the explicit not-generated status. Independent review covers source
-binding and no-resend behavior. The existing Starlette/httpx warning remains.
+navigation, the unexecuted repair and the hint's explicit no-action note.
+Independent review verifies approval ordering, raw response replay, two distinct
+provider receipts and unchanged prior artifacts. The existing Starlette/httpx
+warning remains.
 
 ```sh
 PYTHONPATH=. python -P apps/policy_sampling_preview.py \
