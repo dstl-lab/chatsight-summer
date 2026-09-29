@@ -1,5 +1,14 @@
 # Simulated students: task list
 
+**History comparison protocol prepared, not run (2026-09-29):**
+[Frozen comparison and automatic scoring](docs/2026-09-29-course-account-history-protocol.md).
+Ten provisional accounts × two context conditions × five draws = 100 planned
+requests. Twenty exact prompts and the order/settings are saved; only earlier
+dialogue differs. Primary: corrected categorical error for literal length/newline/
+backtick form, with a visible-history frequency baseline and explicit missing
+outcomes. No semantic/realism winner, manual labels, model calls or simulator
+change. Next: one bounded run and report; no retries, replacements or tuning.
+
 **Ten provisional course-account checkpoints frozen (2026-09-29):**
 [Selection and preparation](docs/2026-09-29-course-account-checkpoints.md).
 Minchan declined student eligibility verification; these are course accounts,
