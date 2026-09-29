@@ -2,6 +2,7 @@
 from contextlib import ExitStack
 from copy import deepcopy
 import difflib
+from hashlib import sha256
 from html import escape
 import json
 from pathlib import Path
@@ -120,6 +121,104 @@ def load_replay(folder, *, previous=None):
     not a de-identified or shareable artifact.
     """
     return _read_replay(Path(folder).resolve(), previous=previous)[0]
+
+
+def load_recorded(path, expected_sha256):
+    """Read a pinned display projection, without importing raw logs or running code.
+
+    The pin verifies the supplied projection, not the underlying database joins.
+    Those must be checked by the producer before choosing this digest.
+    """
+    path = Path(path)
+    if (path.is_symlink() or not isinstance(expected_sha256, str)
+            or len(expected_sha256) != 64
+            or any(c not in '0123456789abcdef' for c in expected_sha256)):
+        raise ValueError('Supply a regular projection file and its SHA-256.')
+    with path.open('rb') as stream:
+        raw = stream.read(4_000_001)
+    if len(raw) > 4_000_000 or sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError('Recorded projection size or SHA-256 does not match.')
+    try:
+        replay = json.loads(raw)
+        if replay['origin'] != 'recorded-notebook-events' or replay['probable_test_activity'] is not True:
+            raise ValueError('Expected the recorded, probable-test observation projection.')
+        events = replay['events']
+        if not isinstance(events, list) or not 0 < len(events) <= 100:
+            raise ValueError('Expected 1–100 recorded events.')
+        sequences = [event['sequence'] for event in events]
+        if (any(type(value) is not int or value < 1 for value in sequences)
+                or sequences != sorted(set(sequences))):
+            raise ValueError('Recorded client sequences must be unique and increasing.')
+        by_sequence = {event['sequence']: event for event in events}
+        boundary = replay['boundary_sequence']
+        if type(boundary) is not int or by_sequence[boundary]['event_type'] != 'tutor_response':
+            raise ValueError('The prediction cutoff must be a recorded tutor reply.')
+        if (replay['summary']['event_count'] != len(events)
+                or not isinstance(replay['limitations'], list)
+                or not all(isinstance(value, str) for value in replay['limitations'])):
+            raise ValueError('Recorded summary or limitations are malformed.')
+        for event in events:
+            for key in ('event_type', 'title', 'detail', 'server_at', 'client_at'):
+                if not isinstance(event[key], str):
+                    raise ValueError('Recorded event metadata must be text.')
+            for key in ('source', 'diff', 'output', 'status', 'student_question', 'effective_question', 'tutor_reply'):
+                if key in event and not isinstance(event[key], str):
+                    raise ValueError('Recorded content must be text.')
+            required = {'tutor_query': ('student_question', 'cells', 'paired_sequence'),
+                        'tutor_response': ('tutor_reply',),
+                        'notebook_execution_requested': ('source', 'paired_sequence'),
+                        'notebook_execution_finished': ('output', 'status')}.get(event['event_type'], ())
+            if any(key not in event for key in required):
+                raise ValueError('Recorded event content is incomplete.')
+            if 'cells' in event:
+                cells = event['cells']
+                if not isinstance(cells, list) or any(
+                        type(cell['index']) is not int or cell['index'] < 0
+                        or not isinstance(cell['id'], str) or not cell['id']
+                        or cell['cell_type'] not in ('code', 'markdown', 'raw')
+                        or not isinstance(cell['source'], str) for cell in cells):
+                    raise ValueError('Notebook capture cells are malformed.')
+                if len({cell['id'] for cell in cells}) != len(cells):
+                    raise ValueError('Notebook capture cell IDs must be unique.')
+            if 'paired_sequence' in event:
+                paired = event['paired_sequence']
+                expected = {'tutor_query': ('tutor_response', 'tutor_request_failed'),
+                            'notebook_execution_requested': ('notebook_execution_finished',)}
+                if (type(paired) is not int or paired <= event['sequence']
+                        or by_sequence[paired]['event_type'] not in expected.get(event['event_type'], ())):
+                    raise ValueError('Recorded event pair is invalid.')
+    except (KeyError, TypeError, AttributeError) as exc:
+        raise ValueError('Recorded replay projection is malformed.') from exc
+    return replay
+
+
+def recorded_frame(replay, index):
+    """Project observations through one client event; never fill in an editor state."""
+    events = replay['events']
+    if type(index) is not int or not 0 <= index < len(events):
+        raise ValueError('Select an existing recorded event.')
+    prefix = deepcopy(events[:index + 1])
+    sequence = prefix[-1]['sequence']
+    for event in prefix:
+        if event.get('paired_sequence', sequence) > sequence:
+            event.pop('paired_sequence')
+    capture = next((event for event in reversed(prefix) if 'cells' in event), None)
+    execution = next((event for event in reversed(prefix)
+                      if event['event_type'] == 'notebook_execution_requested'), None)
+    result = (next((event for event in prefix if event['sequence'] == execution.get('paired_sequence')), None)
+              if execution else None)
+    dialogue = []
+    for event in prefix:
+        if 'student_question' in event:
+            turn = dict(sequence=event['sequence'], role='student', text=event['student_question'])
+            if event.get('effective_question', turn['text']) != turn['text']:
+                turn['effective_text'] = event['effective_question']
+            dialogue.append(turn)
+        if 'tutor_reply' in event:
+            dialogue.append(dict(sequence=event['sequence'], role='tutor', text=event['tutor_reply']))
+    return dict(event=prefix[-1], notebook_capture=capture, execution=execution,
+                execution_result=result, dialogue=dialogue,
+                later_evidence=sequence > replay['boundary_sequence'])
 
 
 def _text(value):

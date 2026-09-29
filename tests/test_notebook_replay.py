@@ -205,3 +205,73 @@ def test_replay_data_distinguishes_budget_pause_from_student_silence(tmp_path):
     assert final['status'] == 'awaiting-tutor'
     assert final['disposition'] == 'budget-exhausted'
     assert final['decisions_used'] == final['max_decisions'] == 1
+
+
+def recorded_projection():
+    """Authored observation endpoints; later source/chat must stay out of playback."""
+    def event(sequence, kind, **fields):
+        return dict(sequence=sequence, event_type=kind, title=kind, detail='Recorded observation',
+                    server_at='2026-01-01T00:00:00Z', client_at='2026-01-01T00:00:00Z', **fields)
+    return dict(origin='recorded-notebook-events', probable_test_activity=True,
+        source_sha256='1' * 64, selection_sha256='2' * 64, boundary_sequence=2,
+        summary=dict(event_count=7,query_count=2,execution_count=1,execution_ok=1,execution_error=0,
+                     gaps=[],server_order_reversals=0,net_diff_count=1),
+        limitations=['Authored test activity; intermediate edits unknown.'], events=[
+            event(1,'tutor_query',student_question='check?',effective_question='check?',paired_sequence=2,
+                  cells=[dict(index=0,id='cell-a',cell_type='code',source='x = 1')]),
+            event(2,'tutor_response',tutor_reply='Try another value.'),
+            event(3,'notebook_cell_source_changed'),
+            event(4,'notebook_execution_requested',source='x = 2',diff='-x = 1\n+x = 2',paired_sequence=5),
+            event(5,'notebook_execution_finished',status='ok',output='2'),
+            event(6,'tutor_query',student_question='FUTURE_QUESTION',effective_question='FUTURE_QUESTION',paired_sequence=7,
+                  cells=[dict(index=0,id='cell-a',cell_type='code',source='FUTURE_SOURCE')]),
+            event(7,'tutor_response',tutor_reply='FUTURE_REPLY'),
+        ])
+
+
+def test_recorded_playback_pins_content_and_limits_work_chat_and_results_to_selection(tmp_path, monkeypatch):
+    from hashlib import sha256
+    from src.eval import notebook_replay
+
+    assert hasattr(notebook_replay, 'load_recorded'), 'Recorded projection loading is missing'
+    path=tmp_path/'replay.json'
+    raw=json.dumps(recorded_projection()).encode()
+    path.write_bytes(raw)
+    monkeypatch.setattr(student.llm,'make_generate',lambda *a,**k:pytest.fail('Playback called a model'))
+    monkeypatch.setattr(runtime,'check_work',lambda *a,**k:pytest.fail('Playback executed code'))
+    packet=notebook_replay.load_recorded(path,sha256(raw).hexdigest())
+    before=deepcopy(packet)
+    unknown=notebook_replay.recorded_frame(packet,2)
+    assert unknown['event']['event_type']=='notebook_cell_source_changed'
+    assert unknown['notebook_capture']['sequence']==1
+    assert unknown['notebook_capture']['cells'][0]['source']=='x = 1'
+    assert unknown['execution'] is None
+    pending=notebook_replay.recorded_frame(packet,3)
+    assert pending['execution']['source']=='x = 2' and pending['execution_result'] is None
+    assert 'paired_sequence' not in pending['event']
+    assert pending['event']['diff']=='-x = 1\n+x = 2'
+    assert [t['text'] for t in pending['dialogue']]==['check?','Try another value.']
+    assert 'FUTURE_' not in json.dumps(pending)
+    assert pending['later_evidence'] is True
+    assert notebook_replay.recorded_frame(packet,4)['execution_result']['output']=='2'
+    assert notebook_replay.recorded_frame(packet,1)['later_evidence'] is False
+    assert packet==before and path.read_bytes()==raw
+    path.write_bytes(raw+b' ')
+    with pytest.raises(ValueError,match='hash|checksum|SHA'):
+        notebook_replay.load_recorded(path,sha256(raw).hexdigest())
+
+
+@pytest.mark.parametrize('mutation',['order','origin','pair','cell','text'])
+def test_recorded_display_refuses_invalid_projection_even_when_pinned(tmp_path,mutation):
+    from hashlib import sha256
+    from src.eval import notebook_replay
+
+    assert hasattr(notebook_replay, 'load_recorded'), 'Recorded projection loading is missing'
+    packet=recorded_projection()
+    if mutation=='order':packet['events'][2]['sequence']=2
+    if mutation=='origin':packet['origin']='saved-notebook-simulation'
+    if mutation=='pair':packet['events'][0]['paired_sequence']=5
+    if mutation=='cell':packet['events'][0]['cells'][0]['source']=123
+    if mutation=='text':packet['events'][1]['tutor_reply']=['not text']
+    raw=json.dumps(packet).encode();path=tmp_path/'bad.json';path.write_bytes(raw)
+    with pytest.raises(ValueError):notebook_replay.load_recorded(path,sha256(raw).hexdigest())
