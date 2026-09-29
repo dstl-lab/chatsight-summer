@@ -41,10 +41,11 @@ explicit launch option and button click. The existing saved-student commands
 remain available. See also the [UI direction](docs/2026-09-15-marimo-and-observation-contract.md).
 The intended interface is a notebook-focused VS Code/Cursor-style editor on the
 left with student–tutor chat on the right; the current layout is a prototype.
-The [Marimo recorded-event replay](docs/2026-09-29-marimo-recorded-replay.md)
-also displays verified notebook captures, source differences, executions and chat
-through a selected recorded event. This read-only mode keeps probable test activity
-distinct from simulated behavior.
+The [browser recorded-event replay](docs/2026-09-29-browser-recorded-replay.md)
+displays pinned notebook captures, source differences, executions and chat in that
+same workspace. It opens at the first source difference and keeps probable test
+activity distinct from simulated behavior. The earlier
+[Marimo replay](docs/2026-09-29-marimo-recorded-replay.md) remains available.
 The student workspace also [opens saved chat scenarios](docs/2026-09-20-chat-scenario-workspace.md)
 with a scenario selector and policy controls. The local preparation reuses the 29
 cached first replies in separate sessions; recorded and simulated messages stay

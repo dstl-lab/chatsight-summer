@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_example, notebook_next_task, notebook_student as student, notebook_teaching_pair, notebook_tutor, policy_comparison_setup, student_workspace, workspace_history
-from src.eval import fidelity_comparison as fidelity, student_reply_comparison as student_replies
+from src.eval import fidelity_comparison as fidelity, notebook_replay, student_reply_comparison as student_replies
 from src.eval.saved_comparison import load_comparison
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -366,7 +366,43 @@ def _teaching_comparison(folder, expected_pin):
         'conditions':conditions}]}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+def _recorded_snapshot(replay):
+    frames = []
+    for index, event in enumerate(replay['events']):
+        recorded = notebook_replay.recorded_frame(replay, index)
+        dialogue = [{**turn, 'origin':'source',
+                     **({'display_html':_tutor_html(turn['text'])} if turn['role'] == 'tutor' else {})}
+                    for turn in recorded['dialogue']]
+        frames.append({'label':f"Event {event['sequence']} · {event['title']}",
+                       'status':'recorded', 'dialogue':dialogue, 'pending_message':None,
+                       'actions':[], 'recorded':recorded})
+    boundary_index = next(i for i, event in enumerate(replay['events'])
+                          if event['sequence'] == replay['boundary_sequence'])
+    return {'version':1, 'kind':'recorded-notebook',
+            'encounters':[{'id':'1', 'title':'Recorded notebook activity',
+                           'task':'Recorded notebook observations',
+                           'initialization':'Recorded probable instrumentation test; not validated learner behavior.',
+                           'frames':frames}],
+            'default_step':next((i for i, event in enumerate(replay['events']) if event.get('diff')), boundary_index),
+            'provenance':'Recorded events · probable instrumentation test. Observations are not a complete editor history.',
+            'recorded_summary':{key:replay[key] for key in ('boundary_sequence', 'summary', 'limitations')},
+            'controls':{'send_enabled':False, 'tutor_generation_enabled':False,
+                        'blocked_reason':'Recorded evidence is read-only.'},
+            'operation':{'status':'idle', 'message':''}}
+
+
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, recorded_replay=None, recorded_sha256=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+    if (recorded_replay is None) != (recorded_sha256 is None):
+        raise ValueError('Configure both the recorded replay and its expected SHA-256.')
+    if recorded_replay is not None:
+        if chat_mode or chat_sessions or send or manual_tutor or any(value is not None for value in
+                (folder, comparison, policy_comparison, policy_workspace, fidelity_comparison,
+                 student_comparison, teaching_comparison, policy, reference, next_exercise_file,
+                 next_exercise_output, generate, generate_tutor, generate_reply, check,
+                 gemini_tutor_model, make_student_reply)):
+            raise ValueError('Recorded replay is read-only and requires no session or tutor configuration.')
+        recorded_replay = Path(recorded_replay).absolute()
+        notebook_replay.load_recorded(recorded_replay, recorded_sha256)
     if student_comparison is not None and (folder is not None or chat_mode or chat_sessions or send
             or manual_tutor or any(value is not None for value in (comparison, policy_comparison,
                 policy_workspace, fidelity_comparison, teaching_comparison, policy, reference,
@@ -417,7 +453,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             source_manifest_pin = student.digest(ancestors[-1][1])
     if sum(value is not None for value in (comparison, policy_comparison, policy_workspace, fidelity_comparison, teaching_comparison)) > 1:
         raise ValueError('Choose one comparison: communication review, tutor policies, student fidelity or notebook teaching.')
-    if folder is None and ((comparison is None and fidelity_comparison is None and student_comparison is None and teaching_comparison is None) or chat_sessions or chat_mode or send
+    if folder is None and ((comparison is None and fidelity_comparison is None and student_comparison is None and teaching_comparison is None and recorded_replay is None) or chat_sessions or chat_mode or send
                            or policy is not None or reference is not None):
         raise ValueError('A session folder is required unless only a read-only comparison is configured.')
     folder = Path(folder).resolve() if folder is not None else None
@@ -446,6 +482,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
     teaching_comparison = _exercise_path(teaching_comparison) if teaching_comparison is not None else None
     teaching_pin = sha256((teaching_comparison / 'comparison.json').read_bytes()).hexdigest() if teaching_comparison is not None else None
     workspace_paths = (folder, comparison, policy_comparison, policy_workspace)
+    if recorded_replay is not None:
+        workspace_paths += (recorded_replay,)
     if fidelity_comparison is not None:
         workspace_paths += (fidelity_comparison,)
     if student_comparison is not None:
@@ -875,6 +913,13 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
 
     @app.get('/api/workspace')
     def workspace(request: Request):
+        if recorded_replay is not None:
+            if request.query_params:
+                raise HTTPException(400, 'Recorded replay uses only the evidence selected at launch.')
+            try:
+                return _recorded_snapshot(notebook_replay.load_recorded(recorded_replay, recorded_sha256))
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                raise HTTPException(409, 'Recorded evidence could not be verified. Its contents are not displayed.') from exc
         scenario_id, selected = selection(request)
         if not running.acquire(blocking=False):
             return JSONResponse({'version':1, 'scenario_id':scenario_id, 'operation':{'status':'running',
@@ -887,7 +932,6 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         finally:
             running.release()
 
-    @app.post('/api/continue')
     def continue_session(body: Submission, request: Request):
         scenario_id, selected = selection(request)
         if send is not True:
@@ -940,6 +984,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         finally:
             running.release()
 
+    if recorded_replay is None:
+        app.post('/api/continue')(continue_session)
     return app
 
 
@@ -959,6 +1005,8 @@ def main():
     compare.add_argument('--fidelity-comparison', type=Path, help='Completed fixed help/work benchmark for read-only student fidelity comparison.')
     compare.add_argument('--student-comparison', type=Path, help='Saved base and trained student replies; read-only, without a session folder.')
     compare.add_argument('--teaching-comparison', type=Path, help='Saved notebook teaching-pair sessions directory containing a, b and comparison.json.')
+    compare.add_argument('--recorded-replay', type=Path, help='Verified recorded notebook projection; exclusive read-only playback.')
+    parser.add_argument('--recorded-sha256', help='Expected SHA-256 of the recorded replay projection; required with --recorded-replay.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
@@ -983,7 +1031,7 @@ def main():
         if any((args.student_model, args.student_python, args.student_adapter)):
             if not (args.folder and args.chat and args.student_model and args.student_python) or any((
                     args.comparison, args.policy_comparison, args.fidelity_comparison, args.student_comparison,
-                    args.teaching_comparison, args.next_exercise_file, args.next_exercise_output)):
+                    args.teaching_comparison, args.recorded_replay, args.next_exercise_file, args.next_exercise_output)):
                 raise ValueError('Local students require one --chat, --student-model and --student-python, without comparison or exercise options.')
             if args.policy_file and args.gemini_tutor_model is None:
                 raise ValueError('A local student policy file requires --gemini-tutor-model.')
@@ -1002,6 +1050,7 @@ def main():
                          policy_comparison=args.policy_comparison, policy_workspace=args.policy_workspace,
                          fidelity_comparison=args.fidelity_comparison, student_comparison=args.student_comparison,
                          teaching_comparison=args.teaching_comparison,
+                         recorded_replay=args.recorded_replay, recorded_sha256=args.recorded_sha256,
                          next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
                          send=args.send, policy=policy, reference=reference,
                          generate_reply=reply, generate_tutor=tutor,

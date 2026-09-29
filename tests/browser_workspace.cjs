@@ -987,5 +987,53 @@ const run=code=>vm.runInContext(code,context);
   await hybrid('reloadWorkspace()');hybrid("selectEvidence('controls')");
   assert.match(node('inspector').innerHTML,/Viewing only/);
   assert.doesNotMatch(node('inspector').innerHTML,/Sends the visible conversation/);
+  // Recorded notebook playback is a read-only observation view, not a synthetic run.
+  const recordedEvents=[
+    {sequence:1,event_type:'tutor_query',title:'Tutor request',detail:'Request-time capture',student_question:'RECORDED QUESTION',effective_question:'EFFECTIVE <question>',cells:[{index:0,id:'cell-a',cell_type:'code',source:'x = 1'}]},
+    {sequence:2,event_type:'tutor_response',title:'Tutor reply',detail:'Recorded reply',tutor_reply:'RECORDED REPLY'},
+    {sequence:3,event_type:'notebook_execution_requested',title:'Execution requested',detail:'Submitted code',source:'<script>x = 2</script>',diff:'-x = 1\n+<script>x = 2</script>'},
+    {sequence:4,event_type:'notebook_execution_finished',title:'Execution finished',detail:'Execution output',status:'ok',output:'RECORDED OUTPUT'},
+    {sequence:5,event_type:'tutor_query',title:'Next request',detail:'Later evidence',student_question:'FUTURE QUESTION'}];
+  packet.kind='recorded-notebook';packet.default_step=2;packet.provenance='Recorded probable test activity';
+  packet.recorded_summary={boundary_sequence:2,summary:{gaps:['Intermediate source is unavailable.'],server_order_reversals:1},limitations:['Natural student behavior is not established.']};
+  packet.controls={send_enabled:false,tutor_generation_enabled:false,blocked_reason:'Recorded evidence is read-only.'};
+  packet.operation={status:'idle',message:''};
+  packet.encounters=[{id:'recorded',title:'Recorded notebook activity',task:'Recorded observations',initialization:'Probable instrumentation test',frames:recordedEvents.map((event,i)=>({
+    label:`Event ${event.sequence} · ${event.title}`,status:'recorded',pending_message:null,actions:[],
+    dialogue:[{role:'student',origin:'source',sequence:1,text:'RECORDED QUESTION',effective_text:'EFFECTIVE <question>'},
+      ...(i>=1?[{role:'tutor',origin:'source',sequence:2,text:'RECORDED REPLY',display_html:'<p>RECORDED REPLY</p>'}]:[]),
+      ...(i>=4?[{role:'student',origin:'source',sequence:5,text:'FUTURE QUESTION'}]:[])],
+    recorded:{event,notebook_capture:recordedEvents[0],execution:i>=2?recordedEvents[2]:null,
+      execution_result:i>=3?recordedEvents[3]:null,later_evidence:i>1}}))}];
+  requests=[];
+  const recordedContext=makeContext(),recorded=code=>vm.runInContext(code,recordedContext);
+  recorded(fs.readFileSync(script,'utf8'));await recorded('ready');
+  assert.equal(recorded('state.kind'),'recorded-notebook');assert.equal(recorded('state.step'),2);
+  assert.match(node('canvas').innerHTML,/Net difference|Historical notebook capture|Submitted execution source/);
+  assert.match(node('canvas').innerHTML,/&lt;script&gt;x = 2&lt;\/script&gt;/);
+  assert.match(node('canvas').innerHTML,/Result not yet recorded/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<script>|RECORDED QUESTION|RECORDED REPLY|RECORDED OUTPUT|FUTURE QUESTION/);
+  assert.match(node('conversation-messages').innerHTML,/RECORDED QUESTION/);
+  assert.match(node('conversation-messages').innerHTML,/Recorded event 1/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/FUTURE QUESTION|Starting conversation/);
+  assert.equal(node('tutor-controls').hidden,true);assert.equal(node('continue-run').hidden,true);
+  assert.equal(node('saved-results').hidden,true);assert.equal(node('next-exercise').hidden,true);
+  assert.equal(node('new-comparison').hidden,true);assert.equal(recorded('canSubmit()'),false);
+  assert.match(node('trail-title').textContent,/Observed events/);
+  assert.match(node('view-description').textContent,/Later evidence/);
+  recorded("selectEvidence('turn:0')");
+  assert.match(node('inspector').innerHTML,/EFFECTIVE &lt;question&gt;/);
+  assert.doesNotMatch(node('inspector').innerHTML,/runner stored|<question>/);
+  recorded("selectEvidence('context')");
+  assert.match(node('inspector').innerHTML,/Intermediate source|Natural student behavior|Prediction cutoff/);
+  recorded('selectFrame(3)');assert.match(node('canvas').innerHTML,/RECORDED OUTPUT/);
+  assert.match(node('canvas').innerHTML,/not an assignment grade/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/FUTURE QUESTION/);
+  await recorded('reloadWorkspace()');assert.equal(recorded('state.step'),3,'Reload should preserve the selected observation');
+  recorded('selectFrame(0)');assert.doesNotMatch(node('canvas').innerHTML,/x = 2|RECORDED OUTPUT/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/RECORDED REPLY|FUTURE QUESTION/);
+  assert.match(node('view-description').textContent,/At or before/);
+  recorded("selectEvidence('controls')");assert.doesNotMatch(node('inspector').innerHTML,/id="submit-operation"|id="policy"/);
+  assert.ok(requests.every(r=>!r.options.method),'Recorded observation playback must use GET only');
   console.log('Saved workspace: playback, drafts, fidelity, student models, standalone review, next exercise, manual tutor, and recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

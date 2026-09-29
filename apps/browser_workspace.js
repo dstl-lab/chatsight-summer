@@ -12,6 +12,7 @@ Object.assign(state,{teachingComparisonAvailable:false,teachingArm:'shared',stud
 let pollTimer,comparisonPollTimer;
 const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
+const isRecordedNotebook = () => state.kind==='recorded-notebook';
 const notify = text => {$('status').textContent=text};
 const decisionNames = {'reply':'Student reply','revise-work':'Work edited','request-check':'Local check requested','no-reply':'Student chose no reply'};
 const isPolicyComparison = () => state.comparison?.kind==='saved-policy-comparison';
@@ -51,6 +52,7 @@ function discardComparisonDraft(){
 }
 const originNames = {authored:'Authored context',source:'Starting conversation',generated:'Simulated',supplied:'Supplied intervention',scripted:'Added tutor reply'};
 function statusText(f){
+  if(isRecordedNotebook())return f.recorded.later_evidence?'Later evidence · read only':'At or before prediction cutoff · read only';
   if(f.decisions_remaining===0&&['active','ready','awaiting-tutor'].includes(f.status))return 'Decision budget exhausted · simulation paused';
   return ({active:'Paused · student can continue', ready:'Paused · student can continue', 'awaiting-tutor':'Awaiting a tutor reply at this point', 'no-reply':'Student chose no reply',error:'Simulation stopped after an error','environment-error':'Execution unavailable · ungraded','execution-limit':'Execution limit reached · ungraded'})[f.status]||'Saved status: '+f.status;
 }
@@ -113,11 +115,11 @@ function renderCases(){
     document.querySelectorAll('[data-review-case]').forEach(b=>{b.disabled=comparisonBusy();b.onclick=()=>{if(comparisonBusy())return;state.reviewIndex=Number(b.dataset.reviewCase);state.comparisonEditing=false;state.showInspector=false;render();$('canvas').scrollTop=0;notify('Opened '+state.comparison.cases[state.reviewIndex].title)}});
     return;
   }
-  document.querySelector('.breadcrumb').textContent=state.kind==='chat'?'Conversation simulation':'Notebook simulation';
-  document.querySelector('.explorer-heading').textContent=state.scenarios?.length?'Conversations':state.kind==='chat'?'Conversation':'Tasks';
+  document.querySelector('.breadcrumb').textContent=isRecordedNotebook()?'Recorded notebook':state.kind==='chat'?'Conversation simulation':'Notebook simulation';
+  document.querySelector('.explorer-heading').textContent=isRecordedNotebook()?'Recordings':state.scenarios?.length?'Conversations':state.kind==='chat'?'Conversation':'Tasks';
   $('conversation-guide').hidden=!state.scenarios?.length;
-  const label=state.scenarios?.length?'Filter saved conversations':state.kind==='chat'?'Filter saved conversation':'Filter saved tasks';
-  $('search').placeholder=state.scenarios?.length?'Filter conversations…':state.kind==='chat'?'Filter conversation…':'Filter tasks…';
+  const label=isRecordedNotebook()?'Filter recorded activity':state.scenarios?.length?'Filter saved conversations':state.kind==='chat'?'Filter saved conversation':'Filter saved tasks';
+  $('search').placeholder=isRecordedNotebook()?'Filter recordings…':state.scenarios?.length?'Filter conversations…':state.kind==='chat'?'Filter conversation…':'Filter tasks…';
   $('search').setAttribute('aria-label',label);document.querySelector('label[for="search"]').textContent=label;
   if(state.scenarios?.length){
     $('cases').innerHTML=state.scenarios.filter(s=>(s.title+' '+(s.summary||'')).toLowerCase().includes(query)).map(s=>
@@ -126,7 +128,7 @@ function renderCases(){
     return;
   }
   $('cases').innerHTML=state.encounters.map((c,i)=>({c,i})).filter(({c})=>(c.title+' '+taskText(c.task)).toLowerCase().includes(query))
-    .map(({c,i})=>`<button class="case-button" data-case="${i}" aria-pressed="${state.caseIndex===i}"><span><b>${esc(c.title)}</b><small>${c.frames.length} saved state${c.frames.length===1?'':'s'}</small></span></button>`).join('')||'<p class="empty">No matching '+(state.kind==='chat'?'conversation':'tasks')+'.</p>';
+    .map(({c,i})=>`<button class="case-button" data-case="${i}" aria-pressed="${state.caseIndex===i}"><span><b>${esc(c.title)}</b><small>${c.frames.length} ${isRecordedNotebook()?'observed event':'saved state'}${c.frames.length===1?'':'s'}</small></span></button>`).join('')||'<p class="empty">No matching '+(state.kind==='chat'?'conversation':'tasks')+'.</p>';
   document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>selectCase(Number(b.dataset.case)));
 }
 function pendingReplyNote(){
@@ -140,7 +142,7 @@ function pendingReplyNote(){
 }
 function conversation(rows=turns(),offset=0){
   const simulationStart=state.kind==='chat'&&state.mode!=='compare'?rows.findIndex(t=>t.origin==='generated'):-1;
-  return rows.length?rows.map((turn,i)=>`${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${turn.role==='student'?'S':'T'}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button class="source-inspect" data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">Source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
+  return rows.length?rows.map((turn,i)=>`${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${turn.role==='student'?'S':'T'}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(isRecordedNotebook()&&state.mode!=='compare'?'Recorded event '+turn.sequence:originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button class="source-inspect" data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">Source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
 function renderChat(){
   const comparing=state.mode==='compare',c=comparisonContext();
@@ -434,10 +436,42 @@ function checkLabel(feedback){
   }[feedback.status]||'Saved check feedback');
 }
 function notebook(){
+  if(isRecordedNotebook())return recordedNotebook();
   const f=frame();
   return `<section class="notebook" aria-label="Saved notebook work"><div class="pane-title">Selected cell ${esc(f.work.cell_index)}<span class="spacer"></span><span class="muted small">Read only</span></div><div class="task"><b>Exercise</b><p style="white-space:pre-wrap">${esc(taskText(current().task))}</p></div><div class="cell"><div class="cell-head"><span>Python · revision ${esc(f.work.revision)}</span><button class="text-action" data-evidence="work">View changes</button></div>${f.work.source.split('\n').map((line,i)=>`<div class="code-line"><span class="line-number">${i+1}</span><code>${esc(line)}</code></div>`).join('')}</div><div class="output"${f.feedback?.success!==true?' style="background:var(--ground);color:var(--muted)"':''}><b>${esc(checkLabel(f.feedback))}</b>${f.feedback?`<br><button class="text-action" data-evidence="feedback">Inspect check result</button>`:''}</div></section>`;
 }
+function recordedNotebook(){
+  const r=frame().recorded,e=r.event,c=r.notebook_capture,execution=r.execution,result=r.execution_result;
+  const code=(source,label)=>`<div class="cell"><div class="cell-head"><span>${esc(label)}</span><span>Read only</span></div>${source.split('\n').map((line,i)=>`<div class="code-line"><span class="line-number">${i+1}</span><code>${esc(line)}</code></div>`).join('')}</div>`;
+  let body=`<section class="notebook" aria-label="Recorded notebook observations"><div class="pane-title">${esc(e.title)}<span class="spacer"></span><button class="text-action" data-evidence="step">Source</button></div><div class="task"><b>Recorded activity · probable instrumentation test</b><p>Prediction cutoff: event ${esc(state.recordedSummary.boundary_sequence)}. ${r.later_evidence?'This is later reference evidence.':'Only observations through this event are shown.'}</p><p>${esc(e.detail)}</p></div>`;
+  if(e.event_type==='notebook_cell_source_changed')body+='<div class="cell"><b>Source unavailable for this change.</b><p class="quiet">Revision and length metadata do not reconstruct the edit.</p></div>';
+  if(e.diff)body+=`<div class="cell"><div class="cell-head"><b>Net difference between endpoint observations</b><button class="text-action" data-evidence="work">Source</button></div>${block(e.diff)}<p class="quiet">Intermediate edits remain unknown.</p></div>`;
+  body+=c?`<div class="task"><b>Historical notebook capture · event ${esc(c.sequence)}</b><p>The latest retained request-time capture; later editor contents are unknown.</p></div><details${c.cells.length<=5?' open':''}><summary class="pane-title">Captured cells (${c.cells.length})</summary>${c.cells.map(cell=>code(cell.source,`${cell.cell_type} · cell ${cell.index}`)).join('')}</details>`:'<div class="cell"><p class="quiet">No notebook capture is recorded through this event.</p></div>';
+  if(execution){
+    body+=`<div class="task"><b>Submitted execution source · event ${esc(execution.sequence)}</b><p>This source was submitted to the kernel; it does not update the historical capture above.</p></div>${code(execution.source,'Submitted source')}`;
+    body+=result?`<div class="cell"><b>Recorded execution: ${esc(result.status)} · not an assignment grade</b>${block(result.output||'')}</div>`:'<div class="cell"><p>Result not yet recorded at this event.</p></div>';
+  }
+  return body+'</section><p class="note">Playback follows recorded client events. Missing intermediate work stays unknown. <button class="text-action" data-evidence="context">Recording details and gaps</button></p>';
+}
+function renderRecordedInspector(){
+  const r=frame().recorded,key=state.selected;
+  let title='Recorded event source',body='';
+  if(key.startsWith('turn:')){
+    const turn=turns()[Number(key.split(':')[1])];
+    title='Recorded conversation source';body=`<p>Recorded event ${esc(turn.sequence)} · ${esc(turn.role)}.</p>${block(turn.text)}`;
+    if(turn.effective_text!==undefined&&turn.effective_text!==turn.text)body+='<h3>Effective request sent to the tutor</h3>'+block(turn.effective_text)+'<p>The typed question and effective request are retained separately.</p>';
+  }else if(key==='context'||['controls','results','next-exercise'].includes(key)){
+    title='Recording details';body=`<p>${esc(state.recordedProvenance||current().initialization)}</p><p>Prediction cutoff: event ${esc(state.recordedSummary.boundary_sequence)}. Later records are reference evidence, not input to an earlier prediction.</p><p>Recorded activity is read-only. Probable instrumentation test; natural student behavior is not established.</p><h3>Observation gaps and limits</h3><ul>${[...(state.recordedSummary.summary.gaps||[]),...state.recordedSummary.limitations].map(value=>`<li>${esc(value)}</li>`).join('')}</ul><p>Server arrival reversals: ${esc(state.recordedSummary.summary.server_order_reversals)}. The replay uses verified client ordering.</p>`;
+  }else if(key==='work'){
+    title='Endpoint source difference';body='<p>This is a net difference between two recorded sources, not a complete edit chain.</p>'+(r.event.diff?block(r.event.diff):'<p>No source difference is retained for this event.</p>');
+  }else{
+    const metadata=Object.fromEntries(Object.entries(r.event).filter(([key])=>!['student_question','effective_question','tutor_reply','cells','source','output','diff'].includes(key)));
+    body=block(metadata)+'<p>Source-change metadata alone cannot recover changed code. Execution success is not an assignment grade.</p>';
+  }
+  $('inspector').innerHTML=`<div class="inspector-title">Recorded evidence</div><h2>${esc(title)}</h2>${body}`;
+}
 function renderInspector(){
+  if(isRecordedNotebook()){renderRecordedInspector();return}
   const f=frame(),key=state.selected;
   if(key==='controls'){renderControls();return}
   if(key==='next-exercise'){renderNextExercise();return}
@@ -464,8 +498,8 @@ function renderInspector(){
 function renderTrail(){
   $('playback').hidden=state.mode!=='simulate';
   $('playback').setAttribute('aria-label',state.kind==='chat'?'Conversation playback':'Notebook playback');
-  $('trail-title').textContent='Saved playback';
-  $('trail-hint').textContent=(state.kind==='chat'?frame().label:`State ${state.step+1} of ${current().frames.length}`)+' · no new generation';
+  $('trail-title').textContent=isRecordedNotebook()?'Observed events':'Saved playback';
+  $('trail-hint').textContent=isRecordedNotebook()?`Event ${frame().recorded.event.sequence} · ${state.step+1} of ${current().frames.length} observations`:(state.kind==='chat'?frame().label:`State ${state.step+1} of ${current().frames.length}`)+' · no new generation';
   $('previous-step').disabled=state.step===0;
   $('trail').hidden=state.kind==='chat';
   $('trail').innerHTML=state.kind==='chat'?'':current().frames.map((f,i)=>`<button data-trail="${i}" aria-pressed="${i===state.step}"><span class="count">${i+1}</span>${esc(f.label)}</button>`).join('');
@@ -484,21 +518,21 @@ function render(){
   $('next-exercise').hidden=state.kind!=='notebook'||!state.controls.next_exercise;
   $('next-exercise').disabled=state.submitting||state.monitoring||state.refreshing;
   $('next-exercise').textContent=state.controls.next_exercise?.status==='saved'?'Open next exercise':'Next exercise';
-  $('new-comparison').hidden=!state.policyWorkspaceAvailable;$('run-comparison').hidden=true;$('reuse-comparison').hidden=true;
+  $('new-comparison').hidden=isRecordedNotebook()||!state.policyWorkspaceAvailable;$('run-comparison').hidden=true;$('reuse-comparison').hidden=true;
   $('new-comparison').textContent='Compare tutor policies';
   $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
   renderCases();
   renderModeButtons();
-  $('instructions').hidden=false;$('instructions').textContent='Run context';$('tutor-controls').textContent=state.controls.tutor_generation_enabled===false?'Tutor replies':'Tutor instructions';
+  $('instructions').hidden=false;$('instructions').textContent=isRecordedNotebook()?'Recording details':'Run context';$('tutor-controls').textContent=state.controls.tutor_generation_enabled===false?'Tutor replies':'Tutor instructions';
   $('tutor-controls').hidden=false;$('run-details').hidden=false;
   $('continue-run').hidden=!state.controls.send_enabled;
   $('continue-run').textContent=f.status==='awaiting-tutor'?'Reply to student':'Continue run';
   $('continue-run').disabled=Boolean(continuationReason());
-  $('tutor-controls').hidden=!$('continue-run').hidden&&!$('continue-run').disabled;
-  $('saved-results').hidden=false;$('saved-results').disabled=false;
+  $('tutor-controls').hidden=isRecordedNotebook()||!$('continue-run').hidden&&!$('continue-run').disabled;
+  $('saved-results').hidden=isRecordedNotebook();$('saved-results').disabled=false;
   $('case-title').textContent=c.title;
   $('view-description').textContent=`${f.label} · ${statusText(f)}`;
-  $('canvas').innerHTML=state.kind==='chat'?'':`${notebook()}<p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`;
+  $('canvas').innerHTML=state.kind==='chat'?'':isRecordedNotebook()?notebook():`${notebook()}<p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`;
   $('next-step').hidden=state.mode!=='simulate';
   $('next-step').disabled=state.step===c.frames.length-1;
   $('next-step').textContent='Next';
@@ -511,6 +545,7 @@ function render(){
   if(attr)document.querySelector(`[${attr}="${value}"]`)?.focus({preventScroll:true});
 }
 function continuationReason(){
+  if(isRecordedNotebook())return 'Recorded evidence is read-only.';
   if(state.mode==='compare')return 'Saved comparisons are read only.';
   if(!state.encounters.length)return 'Load a saved session first.';
   if(!state.controls.send_enabled)return 'Sending is disabled in this workspace.';
@@ -587,7 +622,7 @@ function renderControls(){
   $('submit-operation').onclick=submitOperation;updateSubmitButton();
 }
 function renderOperationStatus(){
-  document.querySelector('.reset-label').textContent=state.mode==='compare'?'Reload saved comparison':'Reload saved run';
+  document.querySelector('.reset-label').textContent=state.mode==='compare'?'Reload saved comparison':isRecordedNotebook()?'Reload recording':'Reload saved run';
   $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
   $('next-exercise').disabled=state.submitting||state.monitoring||state.refreshing;
   renderModeButtons();
@@ -596,6 +631,12 @@ function renderOperationStatus(){
     document.querySelector('.prototype-note').textContent=comparisonBusy()?'Policy comparison · Checking saved progress':editable?(state.comparison.controls.send_enabled?'Policy comparison · Sending enabled':'Policy comparison · Save only'):'Saved comparison · Read only';
     const message=state.comparisonSubmitting?(state.comparisonEditing?'Saving comparison…':'Generating tutor and student replies · showing the last verified data.'):state.comparisonMonitoring?'Request running · showing the last verified data. Reloading checks progress without resending.':state.comparisonError||(state.comparisonEditing?'':state.comparisonOperation.message)||'';
     $('operation-status').textContent=message;$('operation-status').hidden=!message;return;
+  }
+  if(isRecordedNotebook()){
+    $('continue-run').hidden=true;$('continue-run').disabled=true;$('tutor-controls').hidden=true;
+    $('operation-status').textContent=state.clientError||'';$('operation-status').hidden=!state.clientError;
+    document.querySelector('.prototype-note').textContent='Recorded activity · Read only';
+    return;
   }
   $('continue-run').disabled=Boolean(continuationReason());
   $('tutor-controls').hidden=!$('continue-run').hidden&&!$('continue-run').disabled;
@@ -609,14 +650,17 @@ function renderOperationStatus(){
 function applyWorkspace(packet,{openNext=false}={}){
   if(state.scenarios?.length&&packet.scenario_id!==state.scenarioId)throw new Error('The response does not match the selected scenario. Reload before continuing.');
   if(((openNext||state.exercise!=='current')||packet.exercise!==undefined)&&packet.exercise!==(openNext?'next':state.exercise))throw new Error('The response does not match the selected exercise. Reload before continuing.');
-  if(!['chat','notebook'].includes(packet.kind||'notebook')||packet.version!==1||!Array.isArray(packet.encounters)||!packet.encounters.length||packet.encounters.some(c=>!Array.isArray(c.frames)||!c.frames.length))throw new Error('Unsupported saved workspace response.');
-  const previousId=openNext?null:current()?.id;
+  if(!['chat','notebook','recorded-notebook'].includes(packet.kind||'notebook')||packet.version!==1||!Array.isArray(packet.encounters)||!packet.encounters.length||packet.encounters.some(c=>!Array.isArray(c.frames)||!c.frames.length))throw new Error('Unsupported saved workspace response.');
+  if(packet.kind==='recorded-notebook'&&(!packet.recorded_summary||packet.encounters.some(c=>c.frames.some(f=>!f.recorded))||!Number.isInteger(packet.default_step)||packet.default_step<0||packet.default_step>=packet.encounters[0].frames.length))throw new Error('Unsupported recorded notebook projection.');
+  const previousId=openNext?null:current()?.id,wasRecorded=isRecordedNotebook(),previousStep=state.step;
   if(openNext){state.openingExercise=false;state.exercise='next';state.policyDraft=null;state.replyDraft='';state.replyMode='policy';state.selected='step';state.showInspector=false;state.chatKey=null}
   state.kind=packet.kind||'notebook';state.encounters=packet.encounters;state.controls=packet.controls||{send_enabled:false};state.operation=packet.operation||{status:'idle',message:''};state.monitoring=false;
+  state.recordedSummary=packet.recorded_summary;state.recordedProvenance=packet.provenance;
   if(state.controls.tutor_generation_enabled===false)state.replyMode='reply';
   if(state.policyDraft===null)state.policyDraft=state.controls.policy||'';
   const found=state.encounters.findIndex(c=>c.id===previousId);
   state.caseIndex=found>=0?found:state.encounters.length-1;state.step=current().frames.length-1;
+  if(isRecordedNotebook())state.step=wasRecorded&&found>=0?Math.min(previousStep,current().frames.length-1):packet.default_step;
   clearTimeout(pollTimer);render();
 }
 function clearWorkspaceView(message){
