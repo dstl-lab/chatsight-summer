@@ -2,6 +2,7 @@
 import importlib
 import json
 from copy import deepcopy
+from datetime import datetime, timedelta
 from hashlib import sha256
 
 import pytest
@@ -270,3 +271,141 @@ def test_execution_flags_size_and_completed_revision_required(execution_branch):
     with pytest.raises(ValueError, match='size'):
         browser_workspace.create_app(notebook_branch=folder, notebook_execution=path,
                                      notebook_execution_sha256=sha256(path.read_bytes()).hexdigest())
+
+
+@pytest.fixture
+def reaction_branch(execution_branch):
+    """Authored saved input/receipt; no private scripts, providers or cell execution."""
+    from src.agents import notebook_branch as branch
+    folder, execution, results = execution_branch
+    manifest, first = branch.load(folder)
+    task = deepcopy(manifest['task'])
+    task.update(work=deepcopy(first['applied']['work']),
+                history=[{'origin':'model', 'action':first['response']}],
+                observation={key:results['checks'][1][key] for key in ('status','value','error','output','runtime')},
+                omitted='Other cells, full table values and the historical kernel are not supplied. The actual local result above belongs to the displayed work.')
+    task['observation']['basis'] = 'Researcher-triggered local execution after the saved edit, using archived course data in a new declared environment. No course grader ran.'
+    old = 'A revision is only a source edit. No code is executed and no grader result is\navailable. Do not invent checks, outputs, unseen edits or outcomes.'
+    new = 'The displayed work was executed locally after the previous simulated edit.\nIts actual result is supplied as observation; no correctness grade is available.\nAny new revision is only a source edit and has not been executed. Do not invent\nchecks, outputs, unseen edits or outcomes. Choose one next action after seeing\nthis feedback; the earlier run was a researcher intervention, not a student choice.'
+    prompt = branch.action.PROMPT.replace(old, new) + json.dumps(task, ensure_ascii=False, sort_keys=True)
+    prepared = {'version':1, 'model':'gemini-2.5-pro', 'maximum_provider_attempts':1,
+                'results_sha256':sha256(execution.read_bytes()).hexdigest(),
+                'checkpoint_sha256':branch.store.digest(manifest),
+                'decision_sha256':sha256((folder/'decision.json').read_bytes()).hexdigest(),
+                'script_sha256':'c'*64, 'schema':branch.action.Action.model_json_schema(),
+                'task':task, 'prompt':prompt, 'prompt_sha256':sha256(prompt.encode()).hexdigest(),
+                'authorization':'Authored local fixture.'}
+    response = branch.action.Action(decision='no-reply', text='', source=None)
+    start = datetime.fromisoformat(first['finished_at']) + timedelta(seconds=1)
+    receipt = {'status':'complete', 'preparation_sha256':'', 'started_at':start.isoformat(),
+               'finished_at':(start + timedelta(seconds=1)).isoformat(),
+               'response':response.model_dump(), 'applied':branch.action.apply_action(task, response)}
+    return {'folder':folder, 'execution':execution, 'results':results,
+            'path':execution.with_name('reaction.json'), 'prepared':prepared, 'receipt':receipt}
+
+
+def reaction_options(bundle):
+    preparation = bundle['path'].with_name('reaction-preparation.json')
+    preparation.write_text(json.dumps(bundle['prepared']))
+    bundle['receipt']['preparation_sha256'] = sha256(preparation.read_bytes()).hexdigest()
+    bundle['path'].write_text(json.dumps(bundle['receipt']))
+    return {'notebook_branch':bundle['folder'], 'notebook_execution':bundle['execution'],
+            'notebook_execution_sha256':sha256(bundle['execution'].read_bytes()).hexdigest(),
+            'notebook_reaction':bundle['path'], 'notebook_reaction_sha256':sha256(bundle['path'].read_bytes()).hexdigest()}
+
+
+@pytest.mark.parametrize(('decision', 'text', 'source', 'revision', 'status'), [
+    ('reply', 'Does this result make sense?', None, 1, 'awaiting-tutor'),
+    ('no-reply', '', None, 1, 'no-reply'),
+    ('revise-work', '', 'total = 4', 2, 'active'),
+])
+def test_reaction_is_separate_from_original_edit_and_execution(reaction_branch, decision, text, source, revision, status):
+    from fastapi.testclient import TestClient
+    from src.agents import browser_workspace, notebook_branch as branch
+    bundle = reaction_branch
+    response = branch.action.Action(decision=decision, text=text, source=source)
+    bundle['receipt'].update(response=response.model_dump(), applied=branch.action.apply_action(bundle['prepared']['task'], response))
+    options = reaction_options(bundle)
+    originals = {p:p.read_bytes() for p in (*bundle['folder'].glob('*.json'), bundle['execution'], bundle['path'], bundle['path'].with_name('reaction-preparation.json'))}
+    plain = TestClient(browser_workspace.create_app(**{k:v for k,v in options.items() if not k.startswith('notebook_reaction')}), base_url='http://127.0.0.1')
+    before = plain.get('/api/workspace').json()['encounters'][0]['frames']
+    app = browser_workspace.create_app(**options)
+    browser = TestClient(app, base_url='http://127.0.0.1')
+    packet = browser.get('/api/workspace').json()
+    frames = packet['encounters'][0]['frames']
+    assert len(frames) == 3 and frames[:2] == before
+    final = frames[-1]
+    assert final['label'] == 'After execution' and final['status'] == status
+    assert final['work']['revision'] == revision
+    assert final['work']['source'] == (source if source is not None else 'total = 0')
+    assert final['feedback'] is None and 'external_execution' not in final
+    assert final['reaction']['observed_revision'] == 1
+    assert final['reaction']['observation']['value'] == 0
+    assert final['reaction']['observation']['revision'] == 1
+    assert final['reaction']['observation']['dataset'] == bundle['results']['dataset']
+    assert final['reaction']['action'] == response.model_dump()
+    assert final['dialogue'] == before[-1]['dialogue'] + ([{'role':'student', 'text':text, 'origin':'generated'}] if text else [])
+    assert 'EXECUTION_ONLY' not in json.dumps(final['dialogue'])
+    assert not any('POST' in getattr(route, 'methods', ()) for route in app.routes)
+    assert browser.post('/api/continue', json={}).status_code == 404
+    assert browser.get('/api/workspace?reaction=other').status_code == 400
+    assert {p:p.read_bytes() for p in originals} == originals
+    assert not any(key in final['reaction'] for key in ('prompt', 'authorization', 'script_sha256'))
+
+
+@pytest.mark.parametrize('change', [
+    lambda p,r:p.update(results_sha256='0'*64),
+    lambda p,r:p.update(checkpoint_sha256='0'*64),
+    lambda p,r:p.update(decision_sha256='0'*64),
+    lambda p,r:p['task']['work'].update(source='UNSEEN_SOURCE'),
+    lambda p,r:p['task']['dialogue'].append({'role':'tutor', 'text':'UNSEEN_TURN'}),
+    lambda p,r:p['task']['observation'].update(value=999),
+    lambda p,r:p['task']['observation'].update(value=False),
+    lambda p,r:p['task'].update(table_rows=['PRIVATE_ROW']),
+    lambda p,r:p['task']['history'][0]['action'].update(text='UNSEEN_ACTION'),
+    lambda p,r:p.update(prompt_sha256='0'*64),
+    lambda p,r:p.update(prompt=p['prompt']+'UNEXPECTED_PROMPT'),
+    lambda p,r:p.update(schema={}),
+    lambda p,r:r['applied']['work'].update(source='UNAPPLIED_EDIT'),
+    lambda p,r:r['applied']['work'].update(revision=True),
+    lambda p,r:r['response'].update(source='ILLEGAL_REPLY_SOURCE'),
+    lambda p,r:r.update(status='pending'),
+    lambda p,r:r.update(started_at='2000-01-01T00:00:00+00:00'),
+    lambda p,r:r.update(finished_at='2000-01-01T00:00:00+00:00'),
+    lambda p,r:r.update(finished_at='2026-01-01T00:00:00'),
+])
+def test_reaction_rejects_changed_context_or_unreproducible_action(reaction_branch, change):
+    from src.agents import browser_workspace
+    change(reaction_branch['prepared'], reaction_branch['receipt'])
+    with pytest.raises(ValueError):
+        browser_workspace.create_app(**reaction_options(reaction_branch))
+
+
+@pytest.mark.parametrize('target', ['receipt', 'preparation', 'receipt-symlink', 'preparation-symlink'])
+def test_changed_reaction_redacts_projection(reaction_branch, target):
+    from fastapi.testclient import TestClient
+    from src.agents import browser_workspace
+    options = reaction_options(reaction_branch)
+    browser = TestClient(browser_workspace.create_app(**options), base_url='http://127.0.0.1')
+    path = reaction_branch['path']
+    if target.startswith('preparation'):
+        path = path.with_name('reaction-preparation.json')
+    if target.endswith('symlink'):
+        moved = path.with_suffix('.moved')
+        path.rename(moved)
+        path.symlink_to(moved)
+    else:
+        path.write_bytes(path.read_bytes()+b'\n')
+    response = browser.get('/api/workspace')
+    assert response.status_code == 409
+    assert not any(text in response.text for text in ('EXECUTION_ONLY', str(path), 'total ='))
+
+
+def test_reaction_requires_paired_flags_and_bound_execution(reaction_branch):
+    from src.agents import browser_workspace
+    options = reaction_options(reaction_branch)
+    for missing in ('notebook_reaction', 'notebook_reaction_sha256'):
+        with pytest.raises(ValueError):
+            browser_workspace.create_app(**{k:v for k,v in options.items() if k != missing})
+    with pytest.raises(ValueError):
+        browser_workspace.create_app(**{k:v for k,v in options.items() if not k.startswith('notebook_execution')})

@@ -19,6 +19,7 @@
 .notebook-filebar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12px}
 .notebook-versions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex-shrink:0;width:100%;max-width:1160px;margin:0 auto;padding:0 24px 18px}
 .version-options{display:flex;width:354px;max-width:100%;gap:4px;padding:4px;border:1px solid var(--line);border-radius:var(--radius);background:var(--ground)}
+.version-options:has(#version-reaction:not([hidden])){width:504px}
 .version-options button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1 1 172px;min-width:0;padding:8px 14px;background:transparent;border-color:transparent;text-align:left}
 .version-options button b{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}.version-options button>span{font-size:11px;color:var(--muted)}
 .version-options button[aria-pressed=true]{background:var(--paper);border-color:var(--green);color:var(--green)}

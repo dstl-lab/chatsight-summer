@@ -97,7 +97,7 @@ Both Node suites and syntax checks pass; independent review found and verified t
 fix for focus returning to hidden duplicate controls. No evidence or model calls
 changed.
 
-## Remaining student reaction
+## Completed student reaction
 
 One separate reaction is prepared in the ignored V2 directory. Its 4,024-character
 prompt contains the selected task, two original dialogue turns, saved simulated
@@ -106,9 +106,41 @@ The existing action schema and provider helper are reused, with one provider
 attempt at most, no tutor request and no follow-on execution. The feedback is
 explicitly a researcher-triggered intervention in a declared archival environment.
 
-Automatic approval review rejected launch because this new private payload to
-Google Gemini requires specific authorization. `reaction-send-blocked.json` binds
-that rejection to the exact prepared prompt; no reaction request receipt exists
-and zero new provider calls occurred. The executable-work milestone is complete;
-the student reaction remains pending that authorization. No labels, training,
-fidelity score, remote publication or change to a closed study was made.
+Automatic approval review initially rejected launch because this new private
+payload required specific authorization. That rejection remains preserved. The
+user then explicitly approved sending the selected task, two recorded dialogue
+turns, simulated edit and execution result to Gemini for exactly one reaction.
+`reaction-authorization.json` binds that consent to the unchanged prepared input.
+
+The single Gemini 2.5 Pro request completed with `no-reply`, empty text and null
+source. After receiving the value **2,850**, the model proposed no further
+observable action in this bounded encounter. Its source remains revision 1; no
+new message, tutor call or code execution occurred. `reaction-verification.json`
+reproduces the applied action, verifies consent/request ordering and preserves
+hashes of the request, response and execution evidence. Original source and
+execution pins still verify. There was no retry or follow-on generation.
+
+The read-only workspace adds a separate **Reaction / After execution** state.
+Captured and Generated remain available. The result seen before the reaction is
+labeled with its source revision, and silence appears as an explanatory note,
+not a fabricated chat message. Any future saved reaction that edits code must
+show the earlier observation separately and mark its new revision as unexecuted.
+A receipt and its preparation must match their configured hashes and original
+branch/execution bindings before display; the viewer cannot send requests.
+
+Reopen with the existing execution flags plus `--notebook-reaction /path/to/reaction.json`
+and `--notebook-reaction-sha256 <raw-file-sha256>`. The fixed sibling
+`reaction-preparation.json` supplies the hash-bound input. The existing workspace
+at <http://127.0.0.1:8448/> now includes the saved reaction.
+
+Verification: 859 Python tests pass, three optional tests skip, and the two Node
+UI suites and syntax checks pass. Independent backend/UI review found no blocker.
+An authored desktop browser check verifies the three selectors, keyboard focus
+and explicit silence note. A separate local API check verifies that the real
+reaction preserves the first two frames and shows the exact result it received.
+The existing Starlette/httpx deprecation warning remains.
+
+This closes the bounded interaction loop: captured work → generated edit → local
+execution → one student reaction. It does not establish behavioral realism,
+understanding, completion, abandonment, or course correctness. No labels,
+training, fidelity score, remote publication or change to a closed study was made.

@@ -1,6 +1,8 @@
 """Inspect a saved notebook or chat session; continue only through explicit submissions."""
 import argparse
 from contextlib import ExitStack, contextmanager
+from copy import deepcopy
+from datetime import datetime
 import difflib
 import fcntl
 from hashlib import sha256
@@ -396,19 +398,25 @@ def _recorded_snapshot(replay):
             'operation':{'status':'idle', 'message':''}}
 
 
-def _branch_execution(path, expected_sha256, folder, manifest, receipt):
-    """Verify the separately saved checks; never follow artifact paths or execute code."""
+def _branch_artifact(path, expected_sha256):
+    """Read bounded, pinned JSON without following artifact-supplied paths."""
     path = Path(path).absolute()
     if any(part.is_symlink() for part in (path, *path.parents)) or not path.is_file():
-        raise ValueError('Notebook execution must be a regular file without symlinks.')
+        raise ValueError('Notebook attachment must be a regular file without symlinks.')
     with path.open('rb') as stream:
         raw = stream.read(1024 * 1024 + 1)
     if (len(raw) > 1024 * 1024 or not isinstance(expected_sha256, str)
             or re.fullmatch(r'[0-9a-f]{64}', expected_sha256) is None
             or sha256(raw).hexdigest() != expected_sha256):
-        raise ValueError('The notebook execution file changed or exceeds the supported size.')
+        raise ValueError('The notebook attachment changed or exceeds the supported size.')
     result = json.loads(raw)
     json.dumps(result, allow_nan=False)
+    return result
+
+
+def _branch_execution(path, expected_sha256, folder, manifest, receipt):
+    """Verify the separately saved checks; never follow artifact paths or execute code."""
+    result = _branch_artifact(path, expected_sha256)
     if (not isinstance(result, dict) or set(result) != {'version', 'checkpoint_sha256',
             'decision_sha256', 'dataset', 'image_id', 'checks', 'model_calls'}
             or type(result['version']) is not int or result['version'] != 1
@@ -467,12 +475,62 @@ def _branch_execution(path, expected_sha256, folder, manifest, receipt):
     return result
 
 
-def _source_branch_snapshot(folder, expected_pin, execution_path=None, execution_sha256=None):
+def _branch_reaction(path, expected_sha256, execution_sha256, manifest, first, execution):
+    receipt = _branch_artifact(path, expected_sha256)
+    if (not isinstance(receipt, dict) or set(receipt) != {'status', 'preparation_sha256', 'started_at',
+            'finished_at', 'response', 'applied'} or receipt['status'] != 'complete'):
+        raise ValueError('A completed saved reaction is required.')
+    prepared = _branch_artifact(Path(path).with_name('reaction-preparation.json'), receipt['preparation_sha256'])
+    if (not isinstance(prepared, dict) or set(prepared) != {'version', 'model', 'maximum_provider_attempts',
+            'results_sha256', 'checkpoint_sha256', 'decision_sha256', 'script_sha256', 'schema', 'task',
+            'prompt', 'prompt_sha256', 'authorization'}
+            or type(prepared['version']) is not int or prepared['version'] != 1
+            or type(prepared['maximum_provider_attempts']) is not int or prepared['maximum_provider_attempts'] != 1
+            or not isinstance(prepared['model'], str) or not prepared['model'].strip()
+            or prepared['results_sha256'] != execution_sha256
+            or prepared['checkpoint_sha256'] != execution['checkpoint_sha256']
+            or prepared['decision_sha256'] != execution['decision_sha256']
+            or prepared['schema'] != source_branch.action.Action.model_json_schema()
+            or not isinstance(prepared['script_sha256'], str)
+            or re.fullmatch(r'[0-9a-f]{64}', prepared['script_sha256']) is None
+            or not isinstance(prepared['authorization'], str)):
+        raise ValueError('The saved reaction is not bound to this branch and execution.')
+    times = [first.get('finished_at'), receipt['started_at'], receipt['finished_at']]
+    if not all(isinstance(value, str) for value in times):
+        raise ValueError('Saved reaction timestamps are required.')
+    times = [datetime.fromisoformat(value) for value in times]
+    if not all(value.utcoffset() is not None for value in times) or not times[0] <= times[1] <= times[2]:
+        raise ValueError('Saved reaction timestamps must follow the original decision.')
+    observed = next(check for check in execution['checks'] if check['revision'] == first['applied']['work']['revision'])
+    if observed['status'] not in ('ok', 'cell-error') or observed['execution'] != 'completed':
+        raise ValueError('The reaction requires a completed execution of the saved edit.')
+    task = deepcopy(manifest['task'])
+    task['work'] = deepcopy(first['applied']['work'])
+    task['history'] = [{'origin':'model', 'action':first['response']}]
+    task['observation'] = {key:observed[key] for key in ('status', 'value', 'error', 'output', 'runtime')}
+    task['observation']['basis'] = 'Researcher-triggered local execution after the saved edit, using archived course data in a new declared environment. No course grader ran.'
+    task['omitted'] = 'Other cells, full table values and the historical kernel are not supplied. The actual local result above belongs to the displayed work.'
+    old = 'A revision is only a source edit. No code is executed and no grader result is\navailable. Do not invent checks, outputs, unseen edits or outcomes.'
+    new = 'The displayed work was executed locally after the previous simulated edit.\nIts actual result is supplied as observation; no correctness grade is available.\nAny new revision is only a source edit and has not been executed. Do not invent\nchecks, outputs, unseen edits or outcomes. Choose one next action after seeing\nthis feedback; the earlier run was a researcher intervention, not a student choice.'
+    prompt = source_branch.action.PROMPT.replace(old, new) + json.dumps(task, ensure_ascii=False, sort_keys=True)
+    if (source_branch.action.PROMPT.count(old) != 1 or student.digest(prepared['task']) != student.digest(task) or prepared['prompt'] != prompt
+            or prepared['prompt_sha256'] != sha256(prompt.encode('utf-8')).hexdigest()):
+        raise ValueError('The saved reaction task or prompt changed.')
+    response = source_branch.action.Action.model_validate(receipt['response'])
+    if student.digest(receipt['applied']) != student.digest(source_branch.action.apply_action(task, response)):
+        raise ValueError('The saved reaction action does not reproduce.')
+    return prepared, receipt, observed
+
+
+def _source_branch_snapshot(folder, expected_pin, execution_path=None, execution_sha256=None,
+                            reaction_path=None, reaction_sha256=None):
     manifest, receipt = source_branch.load(folder)
     if student.digest(manifest) != expected_pin:
         raise ValueError('The source checkpoint changed.')
     execution = (_branch_execution(execution_path, execution_sha256, folder, manifest, receipt)
                  if execution_path is not None else None)
+    reaction = (_branch_reaction(reaction_path, reaction_sha256, execution_sha256, manifest, receipt, execution)
+                if reaction_path is not None else None)
     task = manifest['task']
     initial = {'label':'Captured starting work', 'status':'active', 'decisions_remaining':1,
                'work':task['work'], 'dialogue':[{**turn, 'origin':'source'} for turn in task['dialogue']],
@@ -502,13 +560,32 @@ def _source_branch_snapshot(folder, expected_pin, execution_path=None, execution
             frame['label'] = 'Captured revision 0' if frame['work']['revision'] == 0 else 'Generated revision 1'
         frame['dialogue'] = [{**turn, **({'display_html':_tutor_html(turn['text'])} if turn['role'] == 'tutor' else {})}
                             for turn in frame['dialogue']]
+    if reaction is not None:
+        prepared, saved, observed = reaction
+        applied, choice, previous = saved['applied'], saved['response'], frames[-1]
+        frames.append({**{key:value for key,value in previous.items() if key != 'external_execution'},
+            'label':'After execution', 'status':'no-reply' if choice['decision'] == 'no-reply'
+                else 'awaiting-tutor' if applied['message'] else 'active',
+            'work':applied['work'], 'actions':[choice], 'feedback':None,
+            'dialogue':previous['dialogue'] + ([{'role':'student', 'text':applied['message'], 'origin':'generated'}]
+                                               if applied['message'] else []),
+            'binding':{'session_sha256':expected_pin, 'state_sha256':student.digest(applied)},
+            'changes':{'baseline_revision':previous['work']['revision'], 'baseline_kind':'previous-saved-step',
+                       'unified_diff':notebook_replay._code_diff(previous['work'], applied['work'])},
+            'reaction':{'model':prepared['model'], 'status':saved['status'], 'action':choice,
+                        'observed_revision':observed['revision'],
+                        'observation':{**observed, 'dataset':execution['dataset'], 'image_id':execution['image_id']},
+                        'started_at':saved['started_at'], 'finished_at':saved['finished_at']}})
     summary = ('One student decision saved.' if receipt and receipt['status'] == 'complete' else
                'No decision requested.' if receipt is None else 'Request '+receipt['status']+'; no action established. It cannot be resent.')
     return {'version':1, 'kind':'notebook', 'source_only':True, 'encounters':[{
         'id':'1', 'title':'Student continuation from captured work', 'task':task['task'],
         'task_html':_tutor_html('\n\n'.join(cell['source'] for cell in task['task'])),
         'initialization':task['initialization'], 'activity':None, 'frames':frames,
-        'saved_results_html':_tutor_html(summary+'\n\n'+('Local execution attempts for both revisions were saved after generation on archived data. '
+        'saved_results_html':_tutor_html(summary+'\n\n'+('One additional simulated reaction was saved after seeing the local execution result of revision 1. '
+            'The original edit was generated before these results; any new edit is unexecuted. '
+            'No course grade or learning outcome is established.' if reaction is not None else
+            'Local execution attempts for both revisions were saved after generation on archived data. '
             'The simulated student did not see these results; they do not reconstruct historical execution. '
             'No course grade or learning outcome is established.' if execution is not None else
             'Code execution is unavailable. No grade or learning outcome is established.'))}],
@@ -518,11 +595,15 @@ def _source_branch_snapshot(folder, expected_pin, execution_path=None, execution
         'operation':{'status':'idle', 'message':''}}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, recorded_replay=None, recorded_sha256=None, notebook_branch=None, notebook_execution=None, notebook_execution_sha256=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, recorded_replay=None, recorded_sha256=None, notebook_branch=None, notebook_execution=None, notebook_execution_sha256=None, notebook_reaction=None, notebook_reaction_sha256=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
     if (notebook_execution is None) != (notebook_execution_sha256 is None):
         raise ValueError('Configure both the notebook execution file and its expected SHA-256.')
     if notebook_execution is not None and notebook_branch is None:
         raise ValueError('Notebook execution requires a read-only notebook branch.')
+    if (notebook_reaction is None) != (notebook_reaction_sha256 is None):
+        raise ValueError('Configure both the notebook reaction file and its expected SHA-256.')
+    if notebook_reaction is not None and notebook_execution is None:
+        raise ValueError('Notebook reaction requires bound notebook execution results.')
     if notebook_branch is not None:
         if chat_mode or chat_sessions or send or manual_tutor or any(value is not None for value in
                 (folder, comparison, policy_comparison, policy_workspace, fidelity_comparison,
@@ -534,7 +615,9 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         branch_pin = student.digest(source_branch.load(notebook_branch)[0])
         if notebook_execution is not None:
             notebook_execution = Path(notebook_execution).absolute()
-            _source_branch_snapshot(notebook_branch, branch_pin, notebook_execution, notebook_execution_sha256)
+            notebook_reaction = Path(notebook_reaction).absolute() if notebook_reaction is not None else None
+            _source_branch_snapshot(notebook_branch, branch_pin, notebook_execution, notebook_execution_sha256,
+                                    notebook_reaction, notebook_reaction_sha256)
     if (recorded_replay is None) != (recorded_sha256 is None):
         raise ValueError('Configure both the recorded replay and its expected SHA-256.')
     if recorded_replay is not None:
@@ -1062,7 +1145,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             if request.query_params:
                 raise HTTPException(400, 'The notebook branch uses only the checkpoint selected at launch.')
             try:
-                return _source_branch_snapshot(notebook_branch, branch_pin, notebook_execution, notebook_execution_sha256)
+                return _source_branch_snapshot(notebook_branch, branch_pin, notebook_execution, notebook_execution_sha256,
+                                                notebook_reaction, notebook_reaction_sha256)
             except (OSError, ValueError, KeyError, TypeError) as exc:
                 raise HTTPException(409, 'The notebook branch could not be verified. Its contents are not displayed.') from exc
         if recorded_replay is not None:
@@ -1162,6 +1246,8 @@ def main():
     parser.add_argument('--recorded-sha256', help='Expected SHA-256 of the recorded replay projection; required with --recorded-replay.')
     parser.add_argument('--notebook-execution', type=Path, help='Saved retrospective execution results for both notebook branch revisions; read-only.')
     parser.add_argument('--notebook-execution-sha256', help='Expected raw file SHA-256; required with --notebook-execution.')
+    parser.add_argument('--notebook-reaction', type=Path, help='Saved student reaction to the attached execution; read-only.')
+    parser.add_argument('--notebook-reaction-sha256', help='Expected raw file SHA-256; required with --notebook-reaction.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
@@ -1208,6 +1294,7 @@ def main():
                          recorded_replay=args.recorded_replay, recorded_sha256=args.recorded_sha256,
                          notebook_branch=args.notebook_branch,
                          notebook_execution=args.notebook_execution, notebook_execution_sha256=args.notebook_execution_sha256,
+                         notebook_reaction=args.notebook_reaction, notebook_reaction_sha256=args.notebook_reaction_sha256,
                          next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
                          send=args.send, policy=policy, reference=reference,
                          generate_reply=reply, generate_tutor=tutor,

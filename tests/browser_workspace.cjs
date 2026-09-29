@@ -15,7 +15,7 @@ const node = id => {
 const modes = ['inspect','simulate','compare'].map(mode=>Object.assign(node(mode),{dataset:{mode}}));
 const chatJumps = ['first','last'].map(chatJump=>Object.assign(node('chat-'+chatJump),{dataset:{chatJump}}));
 const teachingButtons=['shared','a','b'].map(teachingChat=>Object.assign(node('teaching-'+teachingChat),{dataset:{teachingChat}}));
-const versionButtons=['captured','generated'].map((name,i)=>Object.assign(node('version-'+name),{
+const versionButtons=['captured','generated','reaction'].map((name,i)=>Object.assign(node('version-'+name),{
   dataset:{trail:String(i)},hasAttribute:attribute=>attribute==='data-trail',getAttribute:()=>String(i)}));
 let sidebarButtons=[],reviewButtons=[];
 const replyNote={set textContent(value){node('conversation-messages').innerHTML=node('conversation-messages').innerHTML.replace(/(<p class="reply-note">)[\s\S]*?(<\/p>)/,(_match,start,end)=>start+value+end)}};
@@ -1158,7 +1158,7 @@ const run=code=>vm.runInContext(code,context);
   assert.match(node('canvas').innerHTML,/aria-label="Local execution value">0<\/pre>/);
   assert.match(node('canvas').innerHTML,/EXECUTION ONLY &lt;script&gt;inert\(\)&lt;\/script&gt;/);
   assert.match(node('canvas').innerHTML,/Python 3.11 &lt;authored&gt;/);
-  assert.match(node('canvas').innerHTML,/after generation and not seen by the simulated student/);
+  assert.match(node('canvas').innerHTML,/after the first generated edit and not available to that decision/);
   assert.match(node('canvas').innerHTML,/do not reconstruct historical execution or student decision chronology/);
   assert.match(node('canvas').innerHTML,/No course grade/);
   assert.doesNotMatch(node('canvas').innerHTML,/<script>|<authored>|Passed|Code execution unavailable/);
@@ -1172,6 +1172,44 @@ const run=code=>vm.runInContext(code,context);
   branch("selectEvidence('context')");
   assert.match(node('inspector').innerHTML,/Historical dataset bytes and version are unverified/);
   assert.doesNotMatch(node('inspector').innerHTML,/Code execution is unavailable/);
+  // A reaction has its own state, and the observed result belongs to the earlier revision.
+  const reactionFrame={...branchResult,label:'After execution',status:'no-reply',
+    actions:[{decision:'no-reply',source:null,text:''}],
+    reaction:{model:'authored-model',observed_revision:1,observation:{...branchResult.external_execution}}};
+  delete reactionFrame.external_execution;
+  packet.encounters[0].frames.push(reactionFrame);await branch('reloadWorkspace()');
+  assert.equal(node('version-reaction').hidden,false);
+  assert.equal(node('playback').hidden,true,'Three branch states retain the header selector');
+  const beforeReactionSwitch=requests.length;
+  node('version-reaction').focus();node('version-reaction').onclick();
+  assert.equal(branch('state.step'),2);
+  assert.equal(node('version-reaction').attributes['aria-pressed'],'true');
+  assert.equal(document.activeElement,node('version-reaction'));
+  assert.match(node('view-description').textContent,/After execution · No further action/);
+  assert.match(node('conversation-messages').innerHTML,/No message was sent and no code changed/);
+  assert.equal(node('chat-count').textContent,'2 messages','Silence must not become a fabricated chat message');
+  assert.match(node('canvas').innerHTML,/Result seen before reaction · revision 1/);
+  assert.match(node('canvas').innerHTML,/Code unchanged after feedback/);
+  assert.doesNotMatch(node('canvas').innerHTML,/not seen by the simulated student/);
+  node('version-generated').onclick();
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/No message was sent and no code changed/);
+  assert.equal(requests.length,beforeReactionSwitch,'Reaction playback makes no requests');
+  reactionFrame.status='active';reactionFrame.work={...branchResult.work,revision:2,source:'total = 1'};
+  reactionFrame.actions=[{decision:'revise-work',source:'total = 1',text:''}];
+  node('version-reaction').onclick();
+  assert.match(node('canvas').innerHTML,/This new code revision has not been executed/);
+  assert.match(node('canvas').innerHTML,/Result seen before reaction · revision 1/);
+  assert.match(node('conversation-messages').innerHTML,/edited the notebook after feedback without sending a message/);
+  reactionFrame.status='awaiting-tutor';reactionFrame.work=branchResult.work;
+  reactionFrame.dialogue=[...branchStart.dialogue,{role:'student',origin:'generated',text:'REACTION <question>'}];
+  reactionFrame.actions=[{decision:'reply',source:null,text:'REACTION <question>'}];
+  branch('render()');
+  assert.match(node('conversation-messages').innerHTML,/REACTION &lt;question&gt;/);
+  assert.match(node('conversation-messages').innerHTML,/No tutor reply was generated/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/after one student decision/);
+  assert.equal(branch('frame().feedback'),null);
+  packet.encounters[0].frames.pop();await branch('reloadWorkspace()');
+  assert.equal(node('version-reaction').hidden,true);
   branchResult.external_execution={...localCheck,revision:1,status:'cell-error',
     error:{type:'ValueError',message:'<img src=x onerror=bad()>failed'}};
   await branch('reloadWorkspace()');
