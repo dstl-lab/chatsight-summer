@@ -67,7 +67,7 @@ for this feature. It establishes an inspectable input mechanism; improved
 student realism remains untested. Separate action selection is not part of this
 increment.
 
-## One-pair illustration prepared
+## One-pair illustration completed
 
 Following the user's request for a concrete example, the first conversation was
 selected in its original order before seeing outputs. Two fresh one-decision
@@ -76,24 +76,42 @@ an 8,192-token output limit. One uses the existing prompt; one adds the evidence
 card through the actual workbench adapter. Recorded next messages are excluded.
 This is one sample per condition, not an improvement test or another labeling pass.
 
-Private inputs, a single-use runner, and a side-by-side HTML view are prepared
+Private inputs, a single-use runner, and a side-by-side HTML view are saved
 under `data/student-evidence-example-v1/`. The frozen plan SHA-256 is
 `f09d28cbd34a921cc76498db5e6b44cdd0fd18709cae903d2b20c5190889a856`.
 The runner reuses the existing raw Gemini callback and parser, saves raw responses
 before parsing, preserves errors and blocks reruns. Its authored pair/no-resend
 check and seven evidence-adapter tests pass; independent pre-dispatch review passes.
 
-Automatic approval review rejected dispatch because it required explicit
-authorization for this private conversation's export to Google Gemini despite
-the standing authorization and accepted comparison. A specific two-request
-permission question is pending. **Zero provider requests have been sent for this
-example; no comparison result exists yet.** Original workbench sessions and the
-closed 100-call study remain untouched.
+Automatic approval review initially rejected dispatch for lack of specific
+provider/payload permission. The user then replied **approved** to the explicit
+two-request disclosure. That authorization is saved separately and bound to the
+unchanged plan hash; the rejected attempt sent nothing.
 
-Offline check (no provider request):
+Both requests subsequently completed: two valid replies, zero failures, retries,
+replacements or follow-ups. Raw provider responses report `gemini-2.5-pro` for
+both, with 7,351 total tokens combined. The evidence preamble added 491 input
+tokens (1,913 versus 2,404). Canonical chat receipts, raw response parsing and the
+guided sidecar all verify. Independent review also confirms the saved results.
+
+The baseline reply contains 65 characters; the guided reply contains 69. Both
+acknowledge the tutor's explanation and claim the check passed, despite receiving
+no new execution result. Passing is therefore a generated claim, not an observed
+outcome. Neither reply contains line breaks or backticks. The wording changed,
+but this pair does not establish better fidelity: both use the same small source
+sample of two student messages, and sampling variation is uncontrolled.
+
+The private `comparison.html` displays both verbatim outputs, shared context and
+expandable evidence. Its text was checked against the saved responses. Automatic
+browser policy blocked opening its local file URL, so visual browser inspection
+was not completed; the file remains available locally. Original workbench
+sessions and the closed 100-call study remain untouched. The evidence option
+stays default-off; no further generation or labeling is queued.
+
+Offline verification of the completed pair (no provider request):
 
 ```sh
-PYTHONPATH=. python -P data/student-evidence-example-v1/run_pair.py check
+PYTHONPATH=. python -P data/student-evidence-example-v1/run_pair.py verify
 ```
 
 ```sh

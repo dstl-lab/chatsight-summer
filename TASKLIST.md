@@ -1,12 +1,13 @@
 # Simulated students: task list
 
-**Evidence-card example prepared; provider permission pending (2026-09-30):**
-One baseline and one guided reply will use the same first conversation and model
-settings. The private side-by-side view and exact requests are ready, with no
-recorded target or new labeling. Offline checks pass. Automatic approval review
-blocked the private conversation's export to Gemini; a specific two-call question
-is pending. Zero requests sent, zero results claimed. See the
-[prepared example](docs/2026-09-30-student-evidence-card.md#one-pair-illustration-prepared).
+**Evidence-card example completed (2026-09-30):**
+After specific approval, exactly two Gemini replies completed from the same first
+conversation and model settings, one baseline and one guided. Both acknowledge
+the explanation and claim a check passed without new execution evidence; the
+wording differs, but improved fidelity is not established. Raw responses and
+guidance receipts verify. A private side-by-side HTML file is saved; browser file
+preview was blocked. No new labels or further calls. See the
+[completed example](docs/2026-09-30-student-evidence-card.md#one-pair-illustration-completed).
 
 **Student evidence card implemented (2026-09-30):**
 [Feature and usage](docs/2026-09-30-student-evidence-card.md).
