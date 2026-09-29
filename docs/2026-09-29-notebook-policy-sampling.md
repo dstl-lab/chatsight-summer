@@ -47,6 +47,10 @@ counts, valid denominators, failures, and marginal Wilson intervals. Choosing a
 cell opens that condition's saved action in **Generated**; **Captured** always
 shows the shared pre-tutor input. **View tutor reply** restores the condition's
 unchanged notebook and generated tutor message. The preview exposes no send API.
+Previous/Next keeps the panel open while updating the notebook and chat in both
+sampling views. Keyboard focus stays on navigation, moving to the enabled arrow
+at either end. Regression checks cover both directions; live browser checks
+browsed through all 30 comparison samples without reopening the panel.
 
 The initial authored demo contains a toy addition task and deterministic stub
 responses. It remains separate under `data/notebook-policy-sampling-demo-v1`;

@@ -33,14 +33,14 @@
     $('policy-sampling-toggle').focus({preventScroll:true});
   }
 
-  function open(id,index=null){
+  function open(id,index=null,keepOpen=false){
     const c=comparison.data?.conditions.find(c=>c.id===id),caseIndex=state.encounters.findIndex(c=>c.id===id);
     const baseline=comparison.originals.get(id),sample=c?.samples.find(s=>s.index===index);
     if(!c||tutorUnavailable(c)||caseIndex<0||!baseline||comparison.loading||index!==null&&!sample)return;
     if(sample)comparison.selected.set(id,index);else comparison.selected.delete(id);
     state.caseIndex=caseIndex;current().frames[1]=structuredClone(sample?sample.frame:baseline);
     state.step=1;state.showInspector=false;state.selected='step';state.chatOpen=true;state.chatKey=null;
-    render();closePanel();
+    render();if(!keepOpen)closePanel();
     document.querySelector('#canvas [aria-label="Selected code cell, read only"]')?.scrollIntoView({block:'start'});
     document.querySelector('#conversation-messages .chat-turn:last-of-type')?.scrollIntoView({block:'nearest'});
     notify(`${c.label} · ${sample?'saved sample '+index:'tutor reply'}. No generation or execution.`);
@@ -95,8 +95,8 @@
     const sample=selectedSample(),c=condition();
     if(sample){
       const samples=group(),position=samples.findIndex(s=>s.index===sample.index);
-      $('policy-sample-previous').onclick=()=>{if(position>0)open(c.id,samples[position-1].index)};
-      $('policy-sample-next').onclick=()=>{if(position<samples.length-1)open(c.id,samples[position+1].index)};
+      $('policy-sample-previous').onclick=()=>{if(position>0)open(c.id,samples[position-1].index,true)};
+      $('policy-sample-next').onclick=()=>{if(position<samples.length-1)open(c.id,samples[position+1].index,true)};
       $('policy-original-reply').onclick=()=>open(c.id);
       if($('policy-open-selected'))$('policy-open-selected').onclick=()=>open(c.id,sample.index);
     }
@@ -106,7 +106,10 @@
       $('view-description').textContent=state.step===0?'Shared captured starting point · Before tutor reply':tutorUnavailable(c)?`${c.label} · ${c.status==='tutor-error'?'Tutor generation failed':'Tutor reply pending'} · No student action sampled`:sample?`${c.label} · Sample ${sample.index} · ${labels[sample.decision]} · Code not executed`:`${c.label} · Tutor reply · Student has not acted`;
       $('chat-caption').textContent=state.step===0?'Shared conversation · Before tutor reply':`${c.label} · ${tutorUnavailable(c)?'Tutor reply unavailable':sample?'Sample '+sample.index:'Tutor reply'}`;
     }
-    if(focused?.id&&document.activeElement!==focused)$(focused.id)?.focus({preventScroll:true});
+    if(focused?.id&&document.activeElement!==focused){
+      const target=$(focused.id);
+      (target?.disabled?panel.querySelector('.sample-nav button:not(:disabled)'):target)?.focus({preventScroll:true});
+    }
   }
 
   async function load(){

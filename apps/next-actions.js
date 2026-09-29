@@ -43,13 +43,13 @@
     $('next-actions-toggle').focus({preventScroll:true});
   }
 
-  function choose(index){
+  function choose(index,keepOpen=false){
     const sample=preview.data?.samples.find(s=>s.index===index);
     if(!sample||!preview.original||preview.loading)return;
     preview.selected=index;preview.selectedBatch=preview.batch;current().frames[2]=structuredClone(sample.frame);
     state.step=2;state.showInspector=false;state.selected='step';state.chatOpen=true;state.chatKey=null;
     render();
-    closePanel();
+    if(!keepOpen)closePanel();
     document.querySelector('#canvas [aria-label="Selected code cell, read only"]')?.scrollIntoView({block:'start'});
     if(sample.decision==='reply')document.querySelector('#conversation-messages .chat-turn:last-of-type')?.scrollIntoView({block:'nearest'});
     notify(`Showing saved sample ${index}: ${labels[sample.decision].toLowerCase()}. No generation or execution.`);
@@ -159,8 +159,8 @@
     });
     if(selectedSample()){
       const group=selectedGroup(),position=group.findIndex(s=>s.index===preview.selected);
-      $('sample-previous').onclick=()=>{if(position>0)choose(group[position-1].index)};
-      $('sample-next').onclick=()=>{if(position<group.length-1)choose(group[position+1].index)};
+      $('sample-previous').onclick=()=>{if(position>0)choose(group[position-1].index,true)};
+      $('sample-next').onclick=()=>{if(position<group.length-1)choose(group[position+1].index,true)};
       $('original-reaction').onclick=restore;
       if($('open-selected'))$('open-selected').onclick=()=>choose(preview.selected);
       if(state.step===2){
@@ -173,7 +173,10 @@
         }
       }
     }
-    if(focused?.id&&document.activeElement!==focused)$(focused.id)?.focus({preventScroll:true});
+    if(focused?.id&&document.activeElement!==focused){
+      const target=$(focused.id);
+      (target?.disabled?panel.querySelector('.sample-nav button:not(:disabled)'):target)?.focus({preventScroll:true});
+    }
   }
 
   function schedulePoll(){
