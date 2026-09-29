@@ -1,7 +1,7 @@
 # Fixed tutor-reply sampling comparison
 
-Status: implemented and tested; live comparison prepared but not sent.
-The local comparison preview uses explicitly marked authored test data.
+Status: completed. All 62 approved requests returned valid responses. The
+workspace at <http://127.0.0.1:8450/> now displays verified live results.
 
 ## Completed live smoke check
 
@@ -34,9 +34,10 @@ The maximum is two tutor requests plus 60 student requests to Google Gemini
 (`gemini-2.5-pro`). Private input, prompts, replies, and raw receipts stay in
 ignored `data/notebook-policy-sampling-v1`. The prepared plan digest is
 `fd98fe2fe3b0e568e922beb443edb40eac32da3ad895e30c1d22d00bd7d0ea62`.
-Automatic approval review blocked the launch because it requires explicit
-payload/destination/count approval. No `started.json` or comparison provider
-receipt was created for that live plan.
+Automatic approval review initially blocked the launch pending explicit
+payload/destination/count approval. The user then approved exactly those inputs,
+Google Gemini, and the 62-request maximum. The approval is recorded privately in
+`authorization.json`; `started.json` binds the launch to the unchanged plan.
 
 ## Inspection
 
@@ -47,15 +48,58 @@ cell opens that condition's saved action in **Generated**; **Captured** always
 shows the shared pre-tutor input. **View tutor reply** restores the condition's
 unchanged notebook and generated tutor message. The preview exposes no send API.
 
-The authored demo on port 8450 contains a toy addition task and deterministic
-stub responses. Its counts are UI test data, not experiment results.
+The initial authored demo contains a toy addition task and deterministic stub
+responses. It remains separate under `data/notebook-policy-sampling-demo-v1`;
+its counts are UI test data, not experiment results.
 Opening the app requires an explicit `--authored-demo` or `--live-results`
 choice; it never silently defaults test artifacts to live results.
 
-Validation: 35 focused Python tests and the policy sampling, next-action sampling,
+Validation for this follow-up: 86 focused Python tests and the policy sampling, next-action sampling,
 and existing workspace Node controller checks pass. Browser checks cover real
-three-sample saving/replay and authored comparison selection, policy switching,
-captured baseline preservation, and tutor-reply restoration.
+three-sample saving/replay, live comparison selection, policy switching, captured
+baseline preservation, and tutor-reply restoration. Glyphs preserve accessible
+control names. The existing Starlette/httpx deprecation warning remains.
+
+## Completed comparison
+
+| Observed action | Direct answer | Guided hint |
+| --- | ---: | ---: |
+| Edit notebook | 30 / 30 | 30 / 30 |
+| Chat without an edit | 0 / 30 | 0 / 30 |
+| No further action | 0 / 30 | 0 / 30 |
+| Failed student requests | 0 | 0 |
+
+No edit included a chat message. Both edit shares have a marginal 95% Wilson
+interval of 88.6–100%; the other action intervals are approximately 0–11.4%.
+Zero observations do not make an action impossible.
+
+The high-level distributions are identical, but the source differs. All 30 direct
+samples copied the complete tutor-provided code, giving one distinct action.
+The hint condition produced two source forms: 26 used `len(...)`, four used an
+array's `.size`. These are descriptive code patterns, not correctness grades.
+The source-only samples were neither executed nor compared against an actual
+student's later actions. Thus this probe shows sensitivity in the proposed edit,
+not an established improvement in realism or teaching effectiveness.
+
+The run took 326 seconds, with 62 distinct provider response IDs and 87,540
+reported total tokens. The two tutor requests are included; the earlier three
+smoke requests are excluded. All 60 scheduled student draws remain in their
+original order. No failed draws, replacement requests, extra samples, code
+execution, or new labels were needed. The fixed run is closed.
+
+Public aggregate: [results.json](../experiments/2026-09-29-notebook-policy-sampling/results.json).
+The aggregate contains counts and metadata only; raw inputs and responses remain
+private. The frozen runner reproduces action counts and intervals; descriptive
+fields count nonempty edit messages, distinct serialized actions/sources, and
+literal `.nunique(`/`len(` occurrences in the saved replacements.
+
+```sh
+PYTHONPATH=. python -P experiments/2026-09-29-notebook-policy-sampling/run.py \
+  show data/notebook-policy-sampling-v1
+PYTHONPATH=. python -P apps/policy_sampling_preview.py \
+  --branch data/notebook-source-branch-v1/branch \
+  --comparison data/notebook-policy-sampling-v1 --live-results --port 8450
+```
 
 ## Interpretation and stopping rule
 
@@ -66,7 +110,29 @@ tutor replies. They do not isolate a general policy effect, measure real-student
 fidelity, or establish learning or instructor effectiveness. The recovered source
 may be instrumentation testing, and the student history is sparse.
 
-After approval, run the frozen plan once, inspect whether the generated tutor
-replies actually follow the intended contrast, and replace the authored preview
-with verified saved results. If action frequencies are similar, report that
-result; do not begin another labeling loop.
+If action frequencies are similar, report that result; do not begin another
+labeling loop. Inspect the proposed code as well as the high-level action label.
+
+## Tutor reply check
+
+The direct reply supplies complete replacement code, while the hint explains the
+return type and asks how to determine its size. Thus the intended assistance
+contrast is present. However, the direct reply uses a method absent from the
+documented BabyPandas 1.0 Series API, while the captured setup imports BabyPandas.
+This is a library-compatibility concern, not an observed runtime result: none of
+the new code was executed. The frozen prompt omitted the setup cells and library
+reference. Keep the response unchanged in this experiment; do not reroll it to
+obtain a cleaner comparison. Source: [BabyPandas 1.0 implementation](https://babypandas.readthedocs.io/en/latest/_modules/bpd.html).
+
+The next implementation priority is supplying the tutor with the course's
+declared library/API context, then checking compatibility before treating
+policy comparisons as instructional evidence. More action labels would not
+resolve the limitation exposed here.
+
+## Glyphs
+
+Shared notebook/chat navigation, source and diff controls, results/details,
+student/tutor identities, and comparison outcomes now use consistent 14–16px
+outline glyphs. Visible text labels remain; SVGs are hidden from accessibility
+names and do not receive focus. No dependency, image request, or CSP relaxation
+was introduced. The notebook/chat rendering and action selection are unchanged.

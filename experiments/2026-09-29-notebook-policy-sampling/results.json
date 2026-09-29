@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "kind": "notebook-policy-sampling",
+  "model": "gemini-2.5-pro",
+  "scope": "Exploratory model sensitivity at one captured checkpoint. Thirty draws per fixed generated tutor reply; these are not 30 students or 30 independently generated tutor replies. Source edits are unexecuted. No real-student fidelity, learning, or tutor effectiveness is established.",
+  "conditions": {
+    "direct": {
+      "label": "Direct answer",
+      "tutor_status": "complete",
+      "status": "complete",
+      "requested": 30,
+      "valid": 30,
+      "failed": 0,
+      "categories": [
+        {
+          "decision": "revise-work",
+          "count": 30,
+          "proportion": 1.0,
+          "interval": [
+            0.8864866068260314,
+            1.0
+          ]
+        },
+        {
+          "decision": "reply",
+          "count": 0,
+          "proportion": 0.0,
+          "interval": [
+            1.3877787807814457e-17,
+            0.11351339317396869
+          ]
+        },
+        {
+          "decision": "no-reply",
+          "count": 0,
+          "proportion": 0.0,
+          "interval": [
+            1.3877787807814457e-17,
+            0.11351339317396869
+          ]
+        }
+      ],
+      "descriptive": {
+        "messages_with_edits": 0,
+        "distinct_actions": 1,
+        "distinct_replacement_sources": 1,
+        "edits_containing_nunique_call": 30,
+        "edits_containing_len_call": 0
+      }
+    },
+    "hint": {
+      "label": "Guided hint",
+      "tutor_status": "complete",
+      "status": "complete",
+      "requested": 30,
+      "valid": 30,
+      "failed": 0,
+      "categories": [
+        {
+          "decision": "revise-work",
+          "count": 30,
+          "proportion": 1.0,
+          "interval": [
+            0.8864866068260314,
+            1.0
+          ]
+        },
+        {
+          "decision": "reply",
+          "count": 0,
+          "proportion": 0.0,
+          "interval": [
+            1.3877787807814457e-17,
+            0.11351339317396869
+          ]
+        },
+        {
+          "decision": "no-reply",
+          "count": 0,
+          "proportion": 0.0,
+          "interval": [
+            1.3877787807814457e-17,
+            0.11351339317396869
+          ]
+        }
+      ],
+      "descriptive": {
+        "messages_with_edits": 0,
+        "distinct_actions": 2,
+        "distinct_replacement_sources": 2,
+        "edits_containing_nunique_call": 0,
+        "edits_containing_len_call": 26
+      }
+    }
+  },
+  "provider_requests": 62,
+  "distinct_provider_response_ids": 62,
+  "reported_models": {
+    "gemini-2.5-pro": 62
+  },
+  "usage": {
+    "prompt_token_count": 37951,
+    "candidates_token_count": 2692,
+    "thoughts_token_count": 46897,
+    "total_token_count": 87540
+  },
+  "first_request": "2026-09-29T12:13:34.723573+00:00",
+  "last_response": "2026-09-29T12:19:00.796478+00:00",
+  "elapsed_seconds": 326.072905,
+  "plan_sha256": "fd98fe2fe3b0e568e922beb443edb40eac32da3ad895e30c1d22d00bd7d0ea62",
+  "private_report_file_sha256": "1193c87e19b034e041356d3565432107f9fe8376cad3b29ab1c88fbaec2cafd9"
+}

@@ -93,6 +93,8 @@ const context=makeContext();
 const run=code=>vm.runInContext(code,context);
 (async()=>{
   run(fs.readFileSync(script,'utf8'));await run('ready');
+  assert.match(run("glyph('student')"), /class="ui-glyph"[^>]*aria-hidden="true" focusable="false"/);
+  assert.match(node('conversation-messages').innerHTML, /<span class="avatar [^"]*" aria-hidden="true"><svg class="ui-glyph"/);
   assert.equal(node('notebook-versions').hidden,true,'Ordinary notebook playback retains its timeline');
   const timelineStart=Object.assign(node('[data-trail="0"]'),{hasAttribute:a=>a==='data-trail',getAttribute:()=> '0'});
   timelineStart.focus();run('selectFrame(0)');
