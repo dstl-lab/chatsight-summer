@@ -105,9 +105,47 @@ def project(report, continuation=None):
                     'execution_count':len(continuation['checks']) if continuation else 0}
 
 
-def create_app(*, notebook_branch, comparison, authored_demo, continuation=None):
+def student_loop(packet, sampling, condition_id):
+    """Expose one verified saved sequence without treating local execution as a student action."""
+    condition = next((c for c in sampling['conditions'] if c['id'] == condition_id), None)
+    if condition is None or not sampling['continuation'] or not condition.get('reaction'):
+        raise ValueError('A student loop requires a condition with a saved execution and reaction.')
+    selected = condition['reaction']['sample_index']
+    sample = next((s for s in condition['samples'] if s['index'] == selected), None)
+    if (sample is None or sample['decision'] != 'revise-work' or
+            not sample['frame'].get('external_execution') or not sample.get('reaction_frame')):
+        raise ValueError('The predetermined sample has no complete execution and reaction.')
+    encounter = deepcopy(next(c for c in packet['encounters'] if c['id'] == condition_id))
+    captured, tutor = encounter['frames']
+    edit = deepcopy(sample['frame'])
+    execution = deepcopy(sample['frame'])
+    reaction = deepcopy(sample['reaction_frame'])
+    del edit['external_execution']
+    execution['actions'] = []  # The researcher ran this revision; the model did not choose Run.
+    execution['changes'] = {'baseline_revision': edit['work']['revision'],
+                            'baseline_kind': 'previous-saved-step', 'unified_diff': ''}
+    encounter['frames'] = [captured, tutor, edit, execution, reaction]
+    for frame, stage, label in zip(encounter['frames'],
+            ('captured', 'tutor', 'edit', 'execution', 'reaction'),
+            ('Captured start', 'Tutor reply', 'Student edit', 'Local execution', 'Next action')):
+        frame.update(loop_stage=stage, label=label, decisions_remaining=0)
+    encounter.update(loop_example=True, title='Student loop · '+condition['label'],
+        saved_results_html=workspace._tutor_html(
+            f'Saved {condition["label"]} sample {selected}. One tutor reply, one student edit, '
+            'a researcher-triggered local execution, and one student decision after its result. '
+            'The execution is not a student-selected Run action. This replays existing receipts; '
+            'viewing makes no new model or execution requests. The source came from a historical '
+            'capture; the continuation is simulated. Local results are not course grades or '
+            'evidence of learning. Historical dataset bytes and kernel are not established. '
+            'No evidence-card guidance was used in this earlier saved sequence.'))
+    return {**packet, 'encounters': [encounter]}
+
+
+def create_app(*, notebook_branch, comparison, authored_demo, continuation=None, loop_condition=None):
     if type(authored_demo) is not bool:
         raise ValueError('Explicitly identify authored test data or live results.')
+    if loop_condition is not None and continuation is None:
+        raise ValueError('The student loop requires --continuation.')
     experiment = importlib.util.module_from_spec(SPEC)
     SPEC.loader.exec_module(experiment)
     folder = Path(comparison).absolute()
@@ -122,6 +160,8 @@ def create_app(*, notebook_branch, comparison, authored_demo, continuation=None)
         attached = followup.load(continuation)
         project(initial, attached)
         continuation_pin = store.digest(attached)
+    if loop_condition is not None:
+        student_loop(*project(initial, attached), loop_condition)
     app = workspace.create_app(notebook_branch=notebook_branch)
 
     def snapshot(request):
@@ -142,7 +182,11 @@ def create_app(*, notebook_branch, comparison, authored_demo, continuation=None)
 
     @app.get('/api/workspace')
     def saved_workspace(request: Request):
-        return snapshot(request)[0]
+        packet, sampling = snapshot(request)
+        if loop_condition is not None:
+            packet = student_loop(packet, sampling, loop_condition)
+            packet['encounters'][0]['loop_authored_demo'] = authored_demo
+        return packet
 
     @app.get('/api/policy-sampling')
     def saved_sampling(request: Request):
@@ -150,6 +194,11 @@ def create_app(*, notebook_branch, comparison, authored_demo, continuation=None)
 
     @app.get('/', response_class=HTMLResponse)
     def page():
+        if loop_condition is not None:
+            return workspace._page().replace('</head>', '<style>'
+                '#app{grid-template-columns:minmax(0,1fr)}#app>.explorer{display:none}'
+                '#app>.workbench{grid-column:1}#playback .trail-items{flex-wrap:wrap}'
+                '</style></head>').replace('</body>', '<script src="/student-loop.js"></script></body>')
         return workspace._page().replace('</head>',
             '<link rel="stylesheet" href="/next-actions.css"><link rel="stylesheet" href="/policy-sampling.css"></head>').replace(
             '</body>', '<script src="/policy-sampling.js"></script></body>')
@@ -165,6 +214,10 @@ def create_app(*, notebook_branch, comparison, authored_demo, continuation=None)
     @app.get('/policy-sampling.js')
     def script():
         return Response((ROOT/'apps/policy-sampling.js').read_text(), media_type='text/javascript')
+
+    @app.get('/student-loop.js')
+    def loop_script():
+        return Response((ROOT/'apps/student-loop.js').read_text(), media_type='text/javascript')
 
     @app.middleware('http')
     async def local_style(request: Request, call_next):
@@ -182,6 +235,8 @@ def main():
     parser.add_argument('--branch', type=Path, required=True)
     parser.add_argument('--comparison', type=Path, required=True)
     parser.add_argument('--continuation', type=Path, help='Verified saved execution and reaction attachment; read only.')
+    parser.add_argument('--student-loop', choices=('direct', 'hint'),
+                        help='Show only the predetermined saved sample as a five-stage notebook loop.')
     parser.add_argument('--port', type=int, default=8450)
     provenance = parser.add_mutually_exclusive_group(required=True)
     provenance.add_argument('--authored-demo', action='store_true', dest='authored_demo',
@@ -191,7 +246,8 @@ def main():
     args = parser.parse_args()
     import uvicorn
     uvicorn.run(create_app(notebook_branch=args.branch, comparison=args.comparison,
-                          authored_demo=args.authored_demo, continuation=args.continuation),
+                          authored_demo=args.authored_demo, continuation=args.continuation,
+                          loop_condition=args.student_loop),
                 host='127.0.0.1', port=args.port)
 
 

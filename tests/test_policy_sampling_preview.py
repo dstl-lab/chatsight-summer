@@ -6,7 +6,7 @@ import json
 from fastapi.testclient import TestClient
 import pytest
 
-from apps.policy_sampling_preview import project
+from apps.policy_sampling_preview import project, student_loop
 from src.agents.notebook_branch import action
 from tests.test_notebook_branch import recovered
 
@@ -48,10 +48,27 @@ def test_saved_execution_is_shared_by_source_but_reaction_belongs_to_one_sample(
     assert reacted['reaction']['observed_revision'] == 1
     assert reacted['reaction']['observation']['value'] == 7
     assert '+total = 8' in reacted['changes']['unified_diff']
+    projection = deepcopy((packet, sampling))
+    loop = student_loop(packet, sampling, 'direct')
+    assert (packet, sampling) == projection
+    frames = loop['encounters'][0]['frames']
+    assert [f['loop_stage'] for f in frames] == ['captured', 'tutor', 'edit', 'execution', 'reaction']
+    assert [f['work']['revision'] for f in frames] == [0, 0, 1, 1, 2]
+    assert all('external_execution' not in f and 'reaction' not in f for f in frames[:3])
+    assert [len(f['dialogue']) for f in frames] == [1, 2, 3, 3, 4]
+    assert frames[2]['actions'] == [choice] and frames[3]['actions'] == []
+    assert frames[3]['changes'] == {'baseline_revision': 1, 'baseline_kind': 'previous-saved-step', 'unified_diff': ''}
+    assert frames[3]['external_execution']['value'] == 7
+    assert 'external_execution' not in frames[4] and frames[4]['reaction']['observed_revision'] == 1
+    assert not loop['controls']['send_enabled']
+    with pytest.raises(ValueError, match='condition'):
+        student_loop(packet, sampling, 'unknown')
     attachment['reactions']['direct'] = {'sample_index':1, 'status':'error', 'model':'authored'}
     _, failed = project(report, attachment)
     assert failed['conditions'][0]['reaction']['status'] == 'error'
     assert all('reaction_frame' not in sample for sample in failed['conditions'][0]['samples'])
+    with pytest.raises(ValueError, match='predetermined'):
+        student_loop(packet, failed, 'direct')
     attachment['checks'] = {}
     _, pending = project(report, attachment)
     assert pending['execution_count'] == 0
@@ -152,6 +169,16 @@ def test_optional_verified_attachment_api_redacts_changed_reactions(tmp_path):
         {'decision':'reply', 'text':'AUTHORED_REACTION', 'source':None}))
     app = create_app(notebook_branch=tmp_path/'source', comparison=comparison,
                      authored_demo=True, continuation=continuation)
+    loop_app = create_app(notebook_branch=tmp_path/'source', comparison=comparison,
+                         authored_demo=True, continuation=continuation, loop_condition='direct')
+    with TestClient(loop_app, base_url='http://127.0.0.1') as client:
+        packet = client.get('/api/workspace').json()
+        assert len(packet['encounters']) == 1 and packet['encounters'][0]['loop_example']
+        assert packet['encounters'][0]['loop_authored_demo'] is True
+        assert len(packet['encounters'][0]['frames']) == 5
+        assert '/student-loop.js' in client.get('/').text
+        assert '/policy-sampling.js' not in client.get('/').text
+        assert not any('POST' in getattr(route, 'methods', ()) for route in loop_app.routes)
     with TestClient(app, base_url='http://127.0.0.1') as client:
         packet = client.get('/api/policy-sampling').json()
         assert packet['continuation'] is True
@@ -170,3 +197,6 @@ def test_optional_verified_attachment_api_redacts_changed_reactions(tmp_path):
             response = client.get(endpoint)
             assert response.status_code == 409
             assert 'ALTERED_PRIVATE_REACTION' not in response.text and 'AUTHORED_REACTION' not in response.text
+    with TestClient(loop_app, base_url='http://127.0.0.1') as client:
+        response = client.get('/api/workspace')
+        assert response.status_code == 409 and 'ALTERED_PRIVATE_REACTION' not in response.text
