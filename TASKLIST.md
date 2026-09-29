@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Ten provisional course-account checkpoints frozen (2026-09-29):**
+[Selection and preparation](docs/2026-09-29-course-account-checkpoints.md).
+Minchan declined student eligibility verification; these are course accounts,
+not verified students. Ten distinct accounts have one fixed checkpoint each,
+with zero known training/development account overlap. Prefixes and recorded next
+messages are saved separately; no reranking, truncation, model calls or labels.
+Next: fix the baseline/history comparison and scoring rule before generation.
+
 **Pseudonymous account linkage recovered (2026-09-29):**
 [Historical linkage and exposure result](docs/2026-09-29-learner-linkage-recovery.md).
 Recovered 9,597 conversations across 388 accounts. All 262 known exposed
