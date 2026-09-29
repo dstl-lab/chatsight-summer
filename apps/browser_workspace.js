@@ -13,6 +13,7 @@ let pollTimer,comparisonPollTimer;
 const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
 const isRecordedNotebook = () => state.kind==='recorded-notebook';
+const isSourceOnly = () => state.kind==='notebook'&&state.sourceOnly;
 const notify = text => {$('status').textContent=text};
 const decisionNames = {'reply':'Student reply','revise-work':'Work edited','request-check':'Local check requested','no-reply':'Student chose no reply'};
 const isPolicyComparison = () => state.comparison?.kind==='saved-policy-comparison';
@@ -53,6 +54,13 @@ function discardComparisonDraft(){
 const originNames = {authored:'Authored context',source:'Starting conversation',generated:'Simulated',supplied:'Supplied intervention',scripted:'Added tutor reply'};
 function statusText(f){
   if(isRecordedNotebook())return f.recorded.later_evidence?'Later evidence · read only':'At or before prediction cutoff · read only';
+  if(isSourceOnly()){
+    if(f.status==='pending')return 'Generation pending · outcome unknown';
+    if(f.status==='error')return 'Generation failed · not a student no-reply decision';
+    if(f.status==='no-reply')return 'Student chose no reply';
+    if(f.decisions_remaining===0)return 'One-decision limit reached'+(f.status==='awaiting-tutor'?' · no tutor reply generated':' · no further action generated');
+    return 'Historical starting point · read only';
+  }
   if(f.decisions_remaining===0&&['active','ready','awaiting-tutor'].includes(f.status))return 'Decision budget exhausted · simulation paused';
   return ({active:'Paused · student can continue', ready:'Paused · student can continue', 'awaiting-tutor':'Awaiting a tutor reply at this point', 'no-reply':'Student chose no reply',error:'Simulation stopped after an error','environment-error':'Execution unavailable · ungraded','execution-limit':'Execution limit reached · ungraded'})[f.status]||'Saved status: '+f.status;
 }
@@ -115,7 +123,7 @@ function renderCases(){
     document.querySelectorAll('[data-review-case]').forEach(b=>{b.disabled=comparisonBusy();b.onclick=()=>{if(comparisonBusy())return;state.reviewIndex=Number(b.dataset.reviewCase);state.comparisonEditing=false;state.showInspector=false;render();$('canvas').scrollTop=0;notify('Opened '+state.comparison.cases[state.reviewIndex].title)}});
     return;
   }
-  document.querySelector('.breadcrumb').textContent=isRecordedNotebook()?'Recorded notebook':state.kind==='chat'?'Conversation simulation':'Notebook simulation';
+  document.querySelector('.breadcrumb').textContent=isRecordedNotebook()?'Recorded notebook':isSourceOnly()?'Notebook branch':state.kind==='chat'?'Conversation simulation':'Notebook simulation';
   document.querySelector('.explorer-heading').textContent=isRecordedNotebook()?'Recordings':state.scenarios?.length?'Conversations':state.kind==='chat'?'Conversation':'Tasks';
   $('conversation-guide').hidden=!state.scenarios?.length;
   const label=isRecordedNotebook()?'Filter recorded activity':state.scenarios?.length?'Filter saved conversations':state.kind==='chat'?'Filter saved conversation':'Filter saved tasks';
@@ -141,7 +149,7 @@ function pendingReplyNote(){
   return 'No tutor reply follows this student message in the saved conversation. '+next;
 }
 function conversation(rows=turns(),offset=0){
-  const simulationStart=state.kind==='chat'&&state.mode!=='compare'?rows.findIndex(t=>t.origin==='generated'):-1;
+  const simulationStart=(state.kind==='chat'||isSourceOnly())&&state.mode!=='compare'?rows.findIndex(t=>t.origin==='generated'):-1;
   return rows.length?rows.map((turn,i)=>`${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${turn.role==='student'?'S':'T'}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(isRecordedNotebook()&&state.mode!=='compare'?'Recorded event '+turn.sequence:originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button class="source-inspect" data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">Source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
 function renderChat(){
@@ -169,6 +177,7 @@ function renderChat(){
   if(!available){$('conversation-messages').innerHTML='<p class="quiet">'+(state.comparisonLoading||state.refreshing||state.monitoring?'Loading saved conversation…':'No verified conversation to display.')+'</p>';return}
   const messages=$('conversation-messages'),previousScroll=messages.scrollTop;
   messages.innerHTML=teaching?`<div class="draft-actions" role="group" aria-label="Conversation to inspect">${['shared','a','b'].map(id=>`<button data-teaching-chat="${id}" aria-pressed="${state.teachingArm===id}">${id==='shared'?'Shared start':'Reply '+id.toUpperCase()}</button>`).join('')}</div><p class="quiet chat-context-note">${condition?'Saved dialogue for this condition. Quiet edits and checks appear in its outcome column.':esc(c.context_status)}</p>${conversation(rows)}`:comparing?`<p class="quiet chat-context-note">${esc(c.context_status)}</p><h3 class="chat-section-label">${isStudentComparison()?'Earlier dialogue · both models':isFidelityComparison()?'Earlier dialogue · history condition only':'Earlier messages supplied'}</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3 class="chat-section-label"${isStudentComparison()||isPolicyComparison()||isFidelityComparison()?' id="tested-question"':''}>${isStudentComparison()?'Current exchange · both models':isFidelityComparison()?'Current exchange · both conditions':isPolicyComparison()?(c.gemini_tutor_model||state.comparisonEditing&&state.comparison?.controls?.gemini_tutor_model?'Shared starting question · cached simulation':'Question being tested · simulated'):'Current exchange'}</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
+  if(!comparing&&isSourceOnly()&&frame().status==='awaiting-tutor')messages.innerHTML+='<p class="quiet">No tutor reply was generated. This branch stops after one student decision.</p>';
   document.querySelectorAll('[data-teaching-chat]').forEach(button=>{button.onclick=()=>{state.teachingArm=button.dataset.teachingChat;state.showInspector=false;state.selected='review';render();document.querySelector(`[data-teaching-chat="${state.teachingArm}"]`)?.focus();notify('Showing '+(state.teachingArm==='shared'?'shared start':'Reply '+state.teachingArm.toUpperCase())+' conversation.')}});
   if(changed&&visibleChat){
     if(comparing&&(isStudentComparison()||isPolicyComparison()||isFidelityComparison()))messages.querySelector('#tested-question')?.scrollIntoView({block:'start'});
@@ -437,8 +446,14 @@ function checkLabel(feedback){
 }
 function notebook(){
   if(isRecordedNotebook())return recordedNotebook();
+  if(isSourceOnly())return sourceOnlyNotebook();
   const f=frame();
   return `<section class="notebook" aria-label="Saved notebook work"><div class="pane-title">Selected cell ${esc(f.work.cell_index)}<span class="spacer"></span><span class="muted small">Read only</span></div><div class="task"><b>Exercise</b><p style="white-space:pre-wrap">${esc(taskText(current().task))}</p></div><div class="cell"><div class="cell-head"><span>Python · revision ${esc(f.work.revision)}</span><button class="text-action" data-evidence="work">View changes</button></div>${f.work.source.split('\n').map((line,i)=>`<div class="code-line"><span class="line-number">${i+1}</span><code>${esc(line)}</code></div>`).join('')}</div><div class="output"${f.feedback?.success!==true?' style="background:var(--ground);color:var(--muted)"':''}><b>${esc(checkLabel(f.feedback))}</b>${f.feedback?`<br><button class="text-action" data-evidence="feedback">Inspect check result</button>`:''}</div></section>`;
+}
+function sourceOnlyNotebook(){
+  const f=frame(),c=current();
+  const origin=f.work.revision>0?'Generated revision':'Captured source';
+  return `<section class="notebook-document" aria-label="Source-only notebook branch"><div class="notebook-filebar"><b>Notebook branch</b><span class="tag">Read only</span><span class="spacer"></span><button class="text-action" data-evidence="context">Branch context</button></div><div class="notebook-cells"><section class="notebook-cell" aria-label="Selected notebook instructions"><span aria-hidden="true"></span><div class="notebook-cell-body"><div class="notebook-cell-label"><span>Selected instructions</span><button class="text-action" data-evidence="task">Source</button></div><div class="notebook-markdown">${typeof c.task_html==='string'?c.task_html:block(taskText(c.task))}</div></div></section><section class="notebook-cell" aria-label="Selected code cell, read only"><span class="notebook-prompt" title="Code execution unavailable" aria-label="Code execution unavailable">[—]</span><div class="notebook-cell-body"><div class="notebook-cell-label"><span>Cell ${esc(f.work.cell_index)} · ${origin} · revision ${esc(f.work.revision)}</span><span>${f.changes.unified_diff?'<button class="text-action" data-evidence="work">View changes</button> · ':''}<button class="text-action" data-evidence="source">Source</button></span></div><pre class="notebook-input" tabindex="0" aria-label="Selected code, read only"><code>${esc(f.work.source)||'\n'}</code></pre></div></section></div><p class="notebook-caption">Source-only branch · code execution is unavailable. No output or grade is inferred.</p></section>`;
 }
 function recordedNotebook(){
   const r=frame().recorded,e=r.event,c=r.notebook_capture,execution=r.execution,result=r.execution_result;
@@ -482,7 +497,7 @@ function renderRecordedInspector(){
 }
 function renderInspector(){
   if(isRecordedNotebook()){renderRecordedInspector();return}
-  const f=frame(),key=state.selected;
+  const f=frame(),key=isSourceOnly()&&['controls','next-exercise','feedback'].includes(state.selected)?'context':state.selected;
   if(key==='controls'){renderControls();return}
   if(key==='next-exercise'){renderNextExercise();return}
   if(key==='results'){
@@ -491,12 +506,14 @@ function renderInspector(){
     return;
   }
   let title,body;
-  if(key==='work'){
-    title='Notebook changes';body=`<p>${f.changes.baseline_kind==='initial-work'?'Initial selected-cell work.':`Net change from the previous saved state, revision ${esc(f.changes.baseline_revision)}. A saved step can contain several decisions.`}</p>`+(f.changes.unified_diff?block(f.changes.unified_diff):'<p>No source change.</p>');
+  if(isSourceOnly()&&(key==='source'||key==='task')){
+    title=key==='source'?'Selected cell source':'Selected instruction source';body=block(key==='source'?f.work.source:taskText(current().task));
+  }else if(key==='work'){
+    title='Notebook changes';body=`<p>${f.changes.baseline_kind==='initial-work'?'Initial selected-cell work.':`Net change from the previous saved state, revision ${esc(f.changes.baseline_revision)}.${isSourceOnly()?' This branch contains at most one generated decision.':' A saved step can contain several decisions.'}`}</p>`+(f.changes.unified_diff?block(f.changes.unified_diff):'<p>No source change.</p>');
   }else if(key==='feedback'){
     title='Local check result';body=`<p>${esc(checkLabel(f.feedback))}. This is the local checker, not the course autograder. A passing check does not establish learning.</p>`+block(f.feedback);
   }else if(key==='context'){
-    title='Supplied run context';body='<h3>Initialization</h3>'+block(current().initialization)+(state.kind==='chat'?'<p>Only the supplied conversation and saved continuations are available. No notebook activity or learner traits are reconstructed.</p>':'<div class="divider"></div><h3>Activity</h3>'+block(current().activity)+'<p>Only the selected cell and saved interactions are available. Additional notebook actions and learner traits are unknown.</p>');
+    title=isSourceOnly()?'Historical branch context':'Supplied run context';body='<h3>Initialization</h3>'+block(current().initialization)+(isSourceOnly()?'<p>The starting source and conversation come from a historical capture. Any simulated edit or message is a separate continuation, not recorded student behavior.</p><p>Only selected instructions and one code cell are shown. Dependencies and unobserved notebook activity are not reconstructed. Code execution is unavailable; no output or grade is inferred.</p>':state.kind==='chat'?'<p>Only the supplied conversation and saved continuations are available. No notebook activity or learner traits are reconstructed.</p>':'<div class="divider"></div><h3>Activity</h3>'+block(current().activity)+'<p>Only the selected cell and saved interactions are available. Additional notebook actions and learner traits are unknown.</p>');
   }else if(key.startsWith('turn:')){
     const turn=turns()[Number(key.split(':')[1])];
     title='Conversation source';body=`<p>${turn.origin?'Saved origin: '+esc(turn.origin):'Origin not specified in the saved record'}${turn.pending?' · pending tutor reply':''}.</p>`+block(turn.text)+'<p>The saved origin identifies how the runner stored this message; it does not by itself prove a fresh provider request.</p>';
@@ -525,24 +542,24 @@ function render(){
     return;
   }
   const c=current(),f=frame();
-  $('next-exercise').hidden=state.kind!=='notebook'||!state.controls.next_exercise;
+  $('next-exercise').hidden=isSourceOnly()||state.kind!=='notebook'||!state.controls.next_exercise;
   $('next-exercise').disabled=state.submitting||state.monitoring||state.refreshing;
   $('next-exercise').textContent=state.controls.next_exercise?.status==='saved'?'Open next exercise':'Next exercise';
-  $('new-comparison').hidden=isRecordedNotebook()||!state.policyWorkspaceAvailable;$('run-comparison').hidden=true;$('reuse-comparison').hidden=true;
+  $('new-comparison').hidden=isRecordedNotebook()||isSourceOnly()||!state.policyWorkspaceAvailable;$('run-comparison').hidden=true;$('reuse-comparison').hidden=true;
   $('new-comparison').textContent='Compare tutor policies';
   $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
   renderCases();
   renderModeButtons();
-  $('instructions').hidden=false;$('instructions').textContent=isRecordedNotebook()?'Recording details':'Run context';$('tutor-controls').textContent=state.controls.tutor_generation_enabled===false?'Tutor replies':'Tutor instructions';
+  $('instructions').hidden=false;$('instructions').textContent=isRecordedNotebook()?'Recording details':isSourceOnly()?'Branch context':'Run context';$('tutor-controls').textContent=state.controls.tutor_generation_enabled===false?'Tutor replies':'Tutor instructions';
   $('tutor-controls').hidden=false;$('run-details').hidden=false;
-  $('continue-run').hidden=!state.controls.send_enabled;
+  $('continue-run').hidden=isSourceOnly()||!state.controls.send_enabled;
   $('continue-run').textContent=f.status==='awaiting-tutor'?'Reply to student':'Continue run';
   $('continue-run').disabled=Boolean(continuationReason());
-  $('tutor-controls').hidden=isRecordedNotebook()||!$('continue-run').hidden&&!$('continue-run').disabled;
+  $('tutor-controls').hidden=isRecordedNotebook()||isSourceOnly()||!$('continue-run').hidden&&!$('continue-run').disabled;
   $('saved-results').hidden=isRecordedNotebook();$('saved-results').disabled=false;
   $('case-title').textContent=c.title;
   $('view-description').textContent=`${f.label} · ${statusText(f)}`;
-  $('canvas').innerHTML=state.kind==='chat'?'':isRecordedNotebook()?notebook():`${notebook()}<p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`;
+  $('canvas').innerHTML=state.kind==='chat'?'':isRecordedNotebook()||isSourceOnly()?notebook():`${notebook()}<p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`;
   $('next-step').hidden=state.mode!=='simulate';
   $('next-step').disabled=state.step===c.frames.length-1;
   $('next-step').textContent='Next';
@@ -556,6 +573,7 @@ function render(){
 }
 function continuationReason(){
   if(isRecordedNotebook())return 'Recorded evidence is read-only.';
+  if(isSourceOnly())return 'Source-only branch. Code execution is unavailable; this saved branch is read only.';
   if(state.mode==='compare')return 'Saved comparisons are read only.';
   if(!state.encounters.length)return 'Load a saved session first.';
   if(!state.controls.send_enabled)return 'Sending is disabled in this workspace.';
@@ -642,10 +660,10 @@ function renderOperationStatus(){
     const message=state.comparisonSubmitting?(state.comparisonEditing?'Saving comparison…':'Generating tutor and student replies · showing the last verified data.'):state.comparisonMonitoring?'Request running · showing the last verified data. Reloading checks progress without resending.':state.comparisonError||(state.comparisonEditing?'':state.comparisonOperation.message)||'';
     $('operation-status').textContent=message;$('operation-status').hidden=!message;return;
   }
-  if(isRecordedNotebook()){
+  if(isRecordedNotebook()||isSourceOnly()){
     $('continue-run').hidden=true;$('continue-run').disabled=true;$('tutor-controls').hidden=true;
     $('operation-status').textContent=state.clientError||'';$('operation-status').hidden=!state.clientError;
-    document.querySelector('.prototype-note').textContent='Recorded activity · Read only';
+    document.querySelector('.prototype-note').textContent=isSourceOnly()?'Source-only branch · Read only':'Recorded activity · Read only';
     return;
   }
   $('continue-run').disabled=Boolean(continuationReason());
@@ -665,6 +683,7 @@ function applyWorkspace(packet,{openNext=false}={}){
   const previousId=openNext?null:current()?.id,wasRecorded=isRecordedNotebook(),previousStep=state.step;
   if(openNext){state.openingExercise=false;state.exercise='next';state.policyDraft=null;state.replyDraft='';state.replyMode='policy';state.selected='step';state.showInspector=false;state.chatKey=null}
   state.kind=packet.kind||'notebook';state.encounters=packet.encounters;state.controls=packet.controls||{send_enabled:false};state.operation=packet.operation||{status:'idle',message:''};state.monitoring=false;
+  state.sourceOnly=packet.source_only===true;
   state.recordedSummary=packet.recorded_summary;state.recordedProvenance=packet.provenance;
   if(state.controls.tutor_generation_enabled===false)state.replyMode='reply';
   if(state.policyDraft===null)state.policyDraft=state.controls.policy||'';

@@ -1046,5 +1046,64 @@ const run=code=>vm.runInContext(code,context);
   assert.match(node('canvas').innerHTML,/View code change/,'Capture diffs must be accessible without an execution diff');
   recorded("selectEvidence('work')");assert.match(node('inspector').innerHTML,/CAPTURE SOURCE CHANGE/);
   assert.ok(requests.every(r=>!r.options.method),'Recorded observation playback must use GET only');
+  // A source-only generated branch preserves historical work, quiet edits, and explicit stops.
+  const branchStart={...initial,decisions_remaining:1,
+    dialogue:[{role:'student',origin:'source',text:'HISTORICAL QUESTION'},{role:'tutor',origin:'source',text:'HISTORICAL REPLY'}]};
+  const branchResult={...branchStart,label:'Saved student decision',status:'active',decisions_remaining:0,
+    work:{cell_index:1,revision:1,source:'answer = "<script>not executed</script>"'},
+    changes:{baseline_revision:0,baseline_kind:'previous-saved-step',unified_diff:'-count = 0\n+answer = "<script>not executed</script>"'},
+    actions:[{decision:'revise-work',source:'answer = "<script>not executed</script>"',text:''}]};
+  packet.kind='notebook';packet.source_only=true;
+  packet.controls={send_enabled:false,tutor_generation_enabled:false,blocked_reason:'Source-only branch. Code execution is unavailable.'};
+  packet.encounters=[{id:'branch',title:'Historical notebook branch',task:[{index:0,source:'# Selected instructions'}],
+    task_html:'<h1>Selected instructions</h1>',initialization:'Captured on 2026-06-01; source-only continuation.',activity:null,
+    frames:[branchStart,branchResult],saved_results_html:'<p>One generated edit; no execution.</p>'}];
+  requests=[];
+  const branchContext=makeContext(),branch=code=>vm.runInContext(code,branchContext);
+  branch(fs.readFileSync(script,'utf8'));await branch('ready');
+  assert.match(node('canvas').innerHTML,/class="notebook-document"/);
+  assert.match(node('canvas').innerHTML,/<h1>Selected instructions<\/h1>/);
+  assert.match(node('canvas').innerHTML,/Generated revision/);
+  assert.match(node('canvas').innerHTML,/&lt;script&gt;not executed&lt;\/script&gt;/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<script>|class="output"|Local check|Passed|several student decisions/);
+  assert.match(node('view-description').textContent,/One-decision limit/);
+  assert.doesNotMatch(node('view-description').textContent,/chose no reply/);
+  assert.equal(node('chat-count').textContent,'2 messages','A quiet edit must not invent student chat');
+  assert.equal(node('tutor-controls').hidden,true);assert.equal(node('continue-run').hidden,true);
+  assert.equal(node('next-exercise').hidden,true);assert.equal(branch('canSubmit()'),false);
+  branch("selectEvidence('work')");assert.match(node('inspector').innerHTML,/-count = 0/);
+  branch("selectEvidence('source')");assert.match(node('inspector').innerHTML,/answer = &quot;&lt;script&gt;/);
+  branch("selectEvidence('task')");assert.match(node('inspector').innerHTML,/# Selected instructions/);
+  branch("selectEvidence('controls')");
+  assert.match(node('inspector').innerHTML,/2026-06-01/);
+  assert.doesNotMatch(node('inspector').innerHTML,/id="submit-operation"|id="policy"|<pre>null<\/pre>/);
+  branch('selectFrame(0)');
+  assert.match(node('canvas').innerHTML,/Captured source/);
+  assert.doesNotMatch(node('canvas').innerHTML,/Generated revision|not executed/);
+  branchResult.work={...branchStart.work,revision:1};branchResult.changes={...branchStart.changes,unified_diff:''};
+  await branch('reloadWorkspace()');
+  assert.match(node('canvas').innerHTML,/Generated revision/,'A generated revision can preserve identical source');
+  assert.doesNotMatch(node('canvas').innerHTML,/View changes/);
+  branchResult.work=branchStart.work;branchResult.changes=branchStart.changes;
+  branchResult.status='awaiting-tutor';branchResult.dialogue=[...branchStart.dialogue,{role:'student',origin:'generated',text:'GENERATED CHAT <question>'}];
+  branchResult.actions=[{decision:'reply',source:null,text:'GENERATED CHAT <question>'}];
+  await branch('reloadWorkspace()');
+  assert.match(node('conversation-messages').innerHTML,/Simulated continuation begins/);
+  assert.match(node('conversation-messages').innerHTML,/GENERATED CHAT &lt;question&gt;/);
+  assert.match(node('conversation-messages').innerHTML,/No tutor reply was generated/);
+  assert.match(node('canvas').innerHTML,/Captured source/,'Generated chat must not relabel unchanged historical work');
+  branchResult.status='no-reply';branchResult.dialogue=branchStart.dialogue;
+  branchResult.actions=[{decision:'no-reply',source:null,text:''}];
+  await branch('reloadWorkspace()');
+  assert.match(node('view-description').textContent,/Student chose no reply/);
+  assert.doesNotMatch(node('view-description').textContent,/limit reached/);
+  assert.equal(node('chat-count').textContent,'2 messages');
+  branchResult.status='pending';await branch('reloadWorkspace()');
+  assert.match(node('view-description').textContent,/outcome unknown/);
+  assert.doesNotMatch(node('view-description').textContent,/limit reached|Historical starting/);
+  branchResult.status='error';await branch('reloadWorkspace()');
+  assert.match(node('view-description').textContent,/Generation failed/);
+  assert.doesNotMatch(node('view-description').textContent,/chose no reply|limit reached/);
+  assert.ok(requests.every(r=>!r.options.method),'Source-only playback must use GET only');
   console.log('Saved workspace: playback, drafts, fidelity, student models, standalone review, next exercise, manual tutor, and recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

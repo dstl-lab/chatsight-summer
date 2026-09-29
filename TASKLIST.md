@@ -1,5 +1,19 @@
 # Simulated students: task list
 
+**Prepared (2026-09-29):** [one student continuation from recorded notebook work](docs/2026-09-29-recorded-notebook-branch.md).
+The source-only branch reuses an existing historical checkpoint, saves at most one
+edit/chat/stop choice and reopens in the browser notebook/chat layout. Unknown
+dependencies keep execution unavailable. The full suite passes (804 tests), as do
+the Node checks. The real input is pinned and inspectable; automatic approval
+review requires specific Google Gemini disclosure approval before its single call.
+No new labels, training, tutor call or student-code execution is needed.
+
+**Completed (2026-09-29):** [recorded notebook playback in the browser workspace](docs/2026-09-29-browser-recorded-replay.md).
+One reconstructed episode shows notebook captures, code differences, recorded
+executions and chat by client-event order. It is probable instrumentation testing,
+not a learner-fidelity result. Notebook cells are visible directly; source and
+evidence details remain available without dominating the notebook view.
+
 **Completed (2026-09-28):** [earlier dialogue helps predict recorded replies](docs/2026-09-28-student-history-value-status.md).
 One fixed local diagnostic scored the existing targets with only the current
 exchange, reusing saved full-history scores. History helps the full-pass adapter

@@ -46,6 +46,10 @@ displays pinned notebook captures, source differences, executions and chat in th
 same workspace. It opens at the first source difference and keeps probable test
 activity distinct from simulated behavior. The earlier
 [Marimo replay](docs/2026-09-29-marimo-recorded-replay.md) remains available.
+The [source-only notebook branch](docs/2026-09-29-recorded-notebook-branch.md)
+connects a recovered initial capture to one saved student edit, message or stop,
+with the captured and generated work displayed separately. Unsupported notebook
+execution stays unavailable; creating or viewing the checkpoint makes no model call.
 The student workspace also [opens saved chat scenarios](docs/2026-09-20-chat-scenario-workspace.md)
 with a scenario selector and policy controls. The local preparation reuses the 29
 cached first replies in separate sessions; recorded and simulated messages stay
