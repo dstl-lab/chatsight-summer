@@ -83,7 +83,9 @@ restored before execution and the extended authored check retained separately.
 
 The one-decision branch now has a fixed Captured / Generated button group above
 the notebook. Captured identifies the recorded starting point; Generated is the
-simulated continuation, not the student's actual later answer. The redundant
+simulated continuation, not the student's actual later answer. A capture-frame
+glyph and a sparkle distinguish the two labels; decorative SVGs remain hidden
+from assistive technology. The redundant
 bottom timeline is hidden for these one- or two-frame branches. Other replays
 retain their timeline, and version details remain accessible beside the switch.
 Missing, pending and failed generation states are explicitly identified.
