@@ -1,5 +1,15 @@
 # Simulated students: task list
 
+**Student-requested archive execution implemented (2026-09-30):**
+[Bounded loop and dispatch status](docs/2026-09-30-student-requested-archive-execution.md).
+The new adapter runs the complete archived table only when the student chooses
+Run, records ungraded output/errors and clears old feedback after edits. Six
+decisions / three executions maximum; stopped or failed runs never resend.
+18 focused tests and independent review pass; existing engines/studies are intact.
+The first direct-answer continuation is prepared, but automatic approval review
+blocked its private notebook/tutor-context transmission to Gemini before launch.
+Zero model calls/executions; exact-payload send approval is the remaining input.
+
 **Notebook loop is directly replayable (2026-09-30):**
 [Saved sequence and limits](docs/2026-09-30-notebook-loop-replay.md).
 Port 8452 now switches between existing direct-answer and guided-hint sample 1
