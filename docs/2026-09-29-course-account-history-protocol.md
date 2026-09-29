@@ -127,3 +127,11 @@ fixed it before freezing the real inputs. No application engine files changed.
 No model call, new label or recorded-reference score was produced. Next execution
 must consume this exact plan and preserve raw responses, returned model versions,
 usage and terminal dispositions before the single predeclared report.
+
+## Execution completed without protocol changes
+
+The explicitly approved fixed batch completed all 100 requests with no failures,
+retries or replacements. The [closed result and automatic report](2026-09-29-course-account-history-results.md)
+contains the frozen primary/baseline scores, every case, secondary denominators
+and returned model/usage metadata. Preparation artifacts and this scoring code
+remain unchanged. No additional samples, labels or simulator changes followed.

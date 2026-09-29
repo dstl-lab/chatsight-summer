@@ -1,13 +1,15 @@
 # Simulated students: task list
 
-**History comparison protocol prepared, not run (2026-09-29):**
-[Frozen comparison and automatic scoring](docs/2026-09-29-course-account-history-protocol.md).
-Ten provisional accounts × two context conditions × five draws = 100 planned
-requests. Twenty exact prompts and the order/settings are saved; only earlier
-dialogue differs. Primary: corrected categorical error for literal length/newline/
-backtick form, with a visible-history frequency baseline and explicit missing
-outcomes. No semantic/realism winner, manual labels, model calls or simulator
-change. Next: one bounded run and report; no retries, replacements or tuning.
+**Bounded history comparison completed and closed (2026-09-29):**
+[Results and per-case report](docs/2026-09-29-course-account-history-results.md).
+Exactly 100/100 sequential Gemini requests completed: ten account-separated
+checkpoints × two conditions × five draws, zero failures/retries/replacements.
+Earlier history slightly lowered literal form error (0.430 → 0.400; difference
+−0.030), improving three cases, worsening two and tying five. The zero-call
+visible-student form-frequency baseline scored 0.155. All decisions were replies.
+Raw responses replay successfully; original inputs, prompts and scoring stayed
+fixed. No semantic/realism winner, manual labeling or simulator change. This
+experiment ends with its fixed report; no additional run is queued.
 
 **Ten provisional course-account checkpoints frozen (2026-09-29):**
 [Selection and preparation](docs/2026-09-29-course-account-checkpoints.md).
