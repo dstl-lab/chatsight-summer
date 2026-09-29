@@ -1,5 +1,14 @@
 # Simulated students: task list
 
+**One tutor continuation prepared (2026-09-30):**
+[Bounded exchange and dispatch status](docs/2026-09-30-archive-tutor-continuation.md).
+The next run starts at the completed student message, gives the tutor the verified
+course API reference, and allows one tutor reply, three student decisions and two
+student-requested local executions. The closed parent and frozen runner remain
+unchanged. All 18 focused Python checks pass. Automatic approval review rejected
+dispatch before process creation; exact payload/destination approval is pending.
+No new provider call, local execution or manual labeling has occurred.
+
 **Student-requested archive loop completed its first live draw (2026-09-30):**
 [Bounded loop and dispatch status](docs/2026-09-30-student-requested-archive-execution.md).
 The new adapter runs the complete archived table only when the student chooses
