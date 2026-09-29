@@ -1,5 +1,14 @@
 # Simulated students: task list
 
+**Pseudonymous account linkage recovered (2026-09-29):**
+[Historical linkage and exposure result](docs/2026-09-29-learner-linkage-recovery.md).
+Recovered 9,597 conversations across 388 accounts. All 262 known exposed
+conversations link to 132 accounts; conservative filtering leaves 118 candidate
+accounts. The old split shares 20 accounts between library and queries, affecting
+23/29 query conversations. Original studies remain unchanged. Next: establish
+student/staff eligibility or explicitly use provisional course accounts, then
+freeze ten account-separated checkpoints. No generation or manual labeling.
+
 **Held-out student selection checked (2026-09-29):**
 [Local eligibility audit](docs/2026-09-29-heldout-student-eligibility.md).
 The proposed ten-student cohort cannot yet be selected: the eight local exports
