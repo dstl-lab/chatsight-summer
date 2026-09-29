@@ -1105,5 +1105,46 @@ const run=code=>vm.runInContext(code,context);
   assert.match(node('view-description').textContent,/Generation failed/);
   assert.doesNotMatch(node('view-description').textContent,/chose no reply|limit reached/);
   assert.ok(requests.every(r=>!r.options.method),'Source-only playback must use GET only');
+  // Separate retrospective results must never become student feedback or chat.
+  const localCheck={revision:0,status:'ok',execution:'completed',value:null,error:null,
+    output:'EXECUTION ONLY <script>inert()</script>',image_id:'sha256:'+'a'.repeat(64),
+    runtime:{python:'3.11 <authored>',libraries:{pandas:'2.3.3',babypandas:'1.0.0',numpy:'2.3.3'}},
+    dataset:{sha256:'b'.repeat(64),rows:3,columns:2,provenance:'archived-course-asset; historical bytes/version unverified'}};
+  branchStart.external_execution=localCheck;
+  branchResult.external_execution={...localCheck,revision:1,value:0};
+  branchStart.label='Captured revision 0';branchResult.label='Generated revision 1';
+  branchResult.status='active';branchResult.work={...branchStart.work,revision:1,source:'total = 0'};
+  branchResult.actions=[{decision:'revise-work',source:'total = 0',text:''}];
+  await branch('reloadWorkspace()');
+  assert.match(node('canvas').innerHTML,/Local execution on archived data/);
+  assert.match(node('canvas').innerHTML,/aria-label="Local execution value">0<\/pre>/);
+  assert.match(node('canvas').innerHTML,/EXECUTION ONLY &lt;script&gt;inert\(\)&lt;\/script&gt;/);
+  assert.match(node('canvas').innerHTML,/Python 3.11 &lt;authored&gt;/);
+  assert.match(node('canvas').innerHTML,/after generation and not seen by the simulated student/);
+  assert.match(node('canvas').innerHTML,/do not reconstruct historical execution or student decision chronology/);
+  assert.match(node('canvas').innerHTML,/No course grade/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<script>|<authored>|Passed|Code execution unavailable/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/EXECUTION ONLY|Local execution|3.11/);
+  assert.match(node('trail-title').textContent,/Source revisions · retrospective checks/);
+  assert.equal(branch('frame().feedback'),null);
+  assert.equal(node('continue-run').hidden,true);assert.equal(branch('canSubmit()'),false);
+  branch('selectFrame(0)');
+  assert.match(node('canvas').innerHTML,/aria-label="Local execution value">null<\/pre>/);
+  assert.match(node('trail-hint').textContent,/Revision 0 · checked after generation/);
+  branch("selectEvidence('context')");
+  assert.match(node('inspector').innerHTML,/Historical dataset bytes and version are unverified/);
+  assert.doesNotMatch(node('inspector').innerHTML,/Code execution is unavailable/);
+  branchResult.external_execution={...localCheck,revision:1,status:'cell-error',
+    error:{type:'ValueError',message:'<img src=x onerror=bad()>failed'}};
+  await branch('reloadWorkspace()');
+  assert.match(node('canvas').innerHTML,/Cell error/);
+  assert.match(node('canvas').innerHTML,/&lt;img src=x onerror=bad\(\)&gt;failed/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<img|aria-label="Local execution value"/);
+  branchResult.external_execution={...branchResult.external_execution,status:'environment-error',
+    execution:'not-started',runtime:null};
+  await branch('reloadWorkspace()');
+  assert.match(node('canvas').innerHTML,/Environment unavailable · not-started/);
+  assert.match(node('canvas').innerHTML,/Runtime metadata unavailable/);
+  assert.ok(requests.every(r=>!r.options.method),'Retrospective execution display must use GET only');
   console.log('Saved workspace: playback, drafts, fidelity, student models, standalone review, next exercise, manual tutor, and recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

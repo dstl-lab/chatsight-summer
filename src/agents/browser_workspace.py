@@ -396,10 +396,83 @@ def _recorded_snapshot(replay):
             'operation':{'status':'idle', 'message':''}}
 
 
-def _source_branch_snapshot(folder, expected_pin):
+def _branch_execution(path, expected_sha256, folder, manifest, receipt):
+    """Verify the separately saved checks; never follow artifact paths or execute code."""
+    path = Path(path).absolute()
+    if any(part.is_symlink() for part in (path, *path.parents)) or not path.is_file():
+        raise ValueError('Notebook execution must be a regular file without symlinks.')
+    with path.open('rb') as stream:
+        raw = stream.read(1024 * 1024 + 1)
+    if (len(raw) > 1024 * 1024 or not isinstance(expected_sha256, str)
+            or re.fullmatch(r'[0-9a-f]{64}', expected_sha256) is None
+            or sha256(raw).hexdigest() != expected_sha256):
+        raise ValueError('The notebook execution file changed or exceeds the supported size.')
+    result = json.loads(raw)
+    json.dumps(result, allow_nan=False)
+    if (not isinstance(result, dict) or set(result) != {'version', 'checkpoint_sha256',
+            'decision_sha256', 'dataset', 'image_id', 'checks', 'model_calls'}
+            or type(result['version']) is not int or result['version'] != 1
+            or type(result['model_calls']) is not int or result['model_calls'] != 0
+            or receipt is None or receipt['status'] != 'complete'
+            or receipt['response']['decision'] != 'revise-work'):
+        raise ValueError('Notebook execution requires one completed source revision.')
+    decision_raw = (folder / 'decision.json').read_bytes()
+    if (result['checkpoint_sha256'] != student.digest(manifest)
+            or result['decision_sha256'] != sha256(decision_raw).hexdigest()
+            or json.loads(decision_raw) != receipt):
+        raise ValueError('Notebook execution does not match the saved branch.')
+    dataset = result['dataset']
+    if (not isinstance(dataset, dict) or set(dataset) != {'sha256', 'rows', 'columns', 'provenance'}
+            or type(dataset['rows']) is not int or not 0 < dataset['rows'] <= 1_000_000_000
+            or type(dataset['columns']) is not int or not 0 < dataset['columns'] <= 100_000
+            or dataset['provenance'] != 'archived-course-asset; historical bytes/version unverified'
+            or not isinstance(dataset['sha256'], str) or re.fullmatch(r'[0-9a-f]{64}', dataset['sha256']) is None
+            or not isinstance(result['image_id'], str) or re.fullmatch(r'sha256:[0-9a-f]{64}', result['image_id']) is None
+            or not isinstance(result['checks'], list) or len(result['checks']) != 2):
+        raise ValueError('Notebook execution metadata is unsupported.')
+    sources = {0:manifest['task']['work'], 1:receipt['applied']['work']}
+    executions = {'ok':('completed',), 'cell-error':('completed',), 'setup-error':('not-started',),
+                  'execution-limit':('attempted',), 'environment-error':('not-started', 'attempted')}
+    revisions = set()
+    for check in result['checks']:
+        if (not isinstance(check, dict) or set(check) != {'revision', 'source_sha256', 'status',
+                'execution', 'value', 'error', 'output', 'runtime'}
+                or type(check['revision']) is not int or check['revision'] not in sources
+                or check['revision'] in revisions or not isinstance(check['status'], str)
+                or check['execution'] not in executions.get(check['status'], ())
+                or not isinstance(check['output'], str) or len(check['output']) > 8192):
+            raise ValueError('Notebook execution checks are unsupported.')
+        revision = check['revision']
+        revisions.add(revision)
+        if (sources[revision]['revision'] != revision
+                or check['source_sha256'] != sha256(sources[revision]['source'].encode('utf-8')).hexdigest()):
+            raise ValueError('Notebook execution source changed.')
+        error, runtime = check['error'], check['runtime']
+        if check['status'] == 'ok':
+            if type(check['value']) not in (str, int, float, bool, type(None)) or error is not None:
+                raise ValueError('Successful notebook execution must report a scalar value.')
+        elif (check['value'] is not None or not isinstance(error, dict) or set(error) != {'type', 'message'}
+                or not all(isinstance(value, str) for value in error.values())):
+            raise ValueError('Failed notebook execution must report an error.')
+        if runtime is None:
+            if check['status'] in ('ok', 'cell-error'):
+                raise ValueError('Completed notebook execution requires runtime metadata.')
+        elif (not isinstance(runtime, dict) or set(runtime) != {'python', 'libraries', 'image_id'}
+                or not isinstance(runtime['python'], str) or not runtime['python'].strip()
+                or runtime['image_id'] != result['image_id']
+                or not isinstance(runtime['libraries'], dict) or not runtime['libraries']
+                or not all(isinstance(value, str) and value.strip() for pair in runtime['libraries'].items()
+                           for value in pair)):
+            raise ValueError('Notebook execution runtime is unsupported.')
+    return result
+
+
+def _source_branch_snapshot(folder, expected_pin, execution_path=None, execution_sha256=None):
     manifest, receipt = source_branch.load(folder)
     if student.digest(manifest) != expected_pin:
         raise ValueError('The source checkpoint changed.')
+    execution = (_branch_execution(execution_path, execution_sha256, folder, manifest, receipt)
+                 if execution_path is not None else None)
     task = manifest['task']
     initial = {'label':'Captured starting work', 'status':'active', 'decisions_remaining':1,
                'work':task['work'], 'dialogue':[{**turn, 'origin':'source'} for turn in task['dialogue']],
@@ -423,6 +496,10 @@ def _source_branch_snapshot(folder, expected_pin):
                                    'unified_diff':notebook_replay._code_diff(task['work'], applied['work'])})
         frames.append(result)
     for frame in frames:
+        if execution is not None:
+            check = next(check for check in execution['checks'] if check['revision'] == frame['work']['revision'])
+            frame['external_execution'] = {**check, 'dataset':execution['dataset'], 'image_id':execution['image_id']}
+            frame['label'] = 'Captured revision 0' if frame['work']['revision'] == 0 else 'Generated revision 1'
         frame['dialogue'] = [{**turn, **({'display_html':_tutor_html(turn['text'])} if turn['role'] == 'tutor' else {})}
                             for turn in frame['dialogue']]
     summary = ('One student decision saved.' if receipt and receipt['status'] == 'complete' else
@@ -431,13 +508,21 @@ def _source_branch_snapshot(folder, expected_pin):
         'id':'1', 'title':'Student continuation from captured work', 'task':task['task'],
         'task_html':_tutor_html('\n\n'.join(cell['source'] for cell in task['task'])),
         'initialization':task['initialization'], 'activity':None, 'frames':frames,
-        'saved_results_html':_tutor_html(summary+'\n\nCode execution is unavailable. No grade or learning outcome is established.')}],
+        'saved_results_html':_tutor_html(summary+'\n\n'+('Local execution attempts for both revisions were saved after generation on archived data. '
+            'The simulated student did not see these results; they do not reconstruct historical execution. '
+            'No course grade or learning outcome is established.' if execution is not None else
+            'Code execution is unavailable. No grade or learning outcome is established.'))}],
         'controls':{'send_enabled':False, 'tutor_generation_enabled':False,
-                    'blocked_reason':'Source-only branch. Code execution is unavailable.'},
+                    'blocked_reason':('Saved retrospective execution checks. This branch is read only.' if execution is not None else
+                                      'Source-only branch. Code execution is unavailable.')},
         'operation':{'status':'idle', 'message':''}}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, recorded_replay=None, recorded_sha256=None, notebook_branch=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, recorded_replay=None, recorded_sha256=None, notebook_branch=None, notebook_execution=None, notebook_execution_sha256=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+    if (notebook_execution is None) != (notebook_execution_sha256 is None):
+        raise ValueError('Configure both the notebook execution file and its expected SHA-256.')
+    if notebook_execution is not None and notebook_branch is None:
+        raise ValueError('Notebook execution requires a read-only notebook branch.')
     if notebook_branch is not None:
         if chat_mode or chat_sessions or send or manual_tutor or any(value is not None for value in
                 (folder, comparison, policy_comparison, policy_workspace, fidelity_comparison,
@@ -447,6 +532,9 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             raise ValueError('A source-only notebook branch is read-only and requires no session or tutor configuration.')
         notebook_branch = Path(notebook_branch).absolute()
         branch_pin = student.digest(source_branch.load(notebook_branch)[0])
+        if notebook_execution is not None:
+            notebook_execution = Path(notebook_execution).absolute()
+            _source_branch_snapshot(notebook_branch, branch_pin, notebook_execution, notebook_execution_sha256)
     if (recorded_replay is None) != (recorded_sha256 is None):
         raise ValueError('Configure both the recorded replay and its expected SHA-256.')
     if recorded_replay is not None:
@@ -974,7 +1062,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             if request.query_params:
                 raise HTTPException(400, 'The notebook branch uses only the checkpoint selected at launch.')
             try:
-                return _source_branch_snapshot(notebook_branch, branch_pin)
+                return _source_branch_snapshot(notebook_branch, branch_pin, notebook_execution, notebook_execution_sha256)
             except (OSError, ValueError, KeyError, TypeError) as exc:
                 raise HTTPException(409, 'The notebook branch could not be verified. Its contents are not displayed.') from exc
         if recorded_replay is not None:
@@ -1072,6 +1160,8 @@ def main():
     compare.add_argument('--recorded-replay', type=Path, help='Verified recorded notebook projection; exclusive read-only playback.')
     compare.add_argument('--notebook-branch', type=Path, help='Saved source-only notebook checkpoint and one student choice; read-only.')
     parser.add_argument('--recorded-sha256', help='Expected SHA-256 of the recorded replay projection; required with --recorded-replay.')
+    parser.add_argument('--notebook-execution', type=Path, help='Saved retrospective execution results for both notebook branch revisions; read-only.')
+    parser.add_argument('--notebook-execution-sha256', help='Expected raw file SHA-256; required with --notebook-execution.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
@@ -1117,6 +1207,7 @@ def main():
                          teaching_comparison=args.teaching_comparison,
                          recorded_replay=args.recorded_replay, recorded_sha256=args.recorded_sha256,
                          notebook_branch=args.notebook_branch,
+                         notebook_execution=args.notebook_execution, notebook_execution_sha256=args.notebook_execution_sha256,
                          next_exercise_file=args.next_exercise_file, next_exercise_output=args.next_exercise_output,
                          send=args.send, policy=policy, reference=reference,
                          generate_reply=reply, generate_tutor=tutor,

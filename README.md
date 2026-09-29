@@ -50,6 +50,9 @@ The [source-only notebook branch](docs/2026-09-29-recorded-notebook-branch.md)
 connects a recovered initial capture to one saved student edit, message or stop,
 with the captured and generated work displayed separately. Unsupported notebook
 execution stays unavailable; creating or viewing the checkpoint makes no model call.
+An optional [saved execution attachment](docs/2026-09-29-archived-notebook-execution.md)
+shows actual local results beneath each revision, separately from historical
+observations and the student feedback available when that decision was generated.
 The student workspace also [opens saved chat scenarios](docs/2026-09-20-chat-scenario-workspace.md)
 with a scenario selector and policy controls. The local preparation reuses the 29
 cached first replies in separate sessions; recorded and simulated messages stay

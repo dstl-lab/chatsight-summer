@@ -14,6 +14,7 @@ const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
 const isRecordedNotebook = () => state.kind==='recorded-notebook';
 const isSourceOnly = () => state.kind==='notebook'&&state.sourceOnly;
+const hasExternalExecution = () => isSourceOnly()&&Boolean(current()?.frames.some(f=>f.external_execution));
 const notify = text => {$('status').textContent=text};
 const decisionNames = {'reply':'Student reply','revise-work':'Work edited','request-check':'Local check requested','no-reply':'Student chose no reply'};
 const isPolicyComparison = () => state.comparison?.kind==='saved-policy-comparison';
@@ -453,7 +454,13 @@ function notebook(){
 function sourceOnlyNotebook(){
   const f=frame(),c=current();
   const origin=f.work.revision>0?'Generated revision':'Captured source';
-  return `<section class="notebook-document" aria-label="Source-only notebook branch"><div class="notebook-filebar"><b>Notebook branch</b><span class="tag">Read only</span><span class="spacer"></span><button class="text-action" data-evidence="context">Branch context</button></div><div class="notebook-cells"><section class="notebook-cell" aria-label="Selected notebook instructions"><span aria-hidden="true"></span><div class="notebook-cell-body"><div class="notebook-cell-label"><span>Selected instructions</span><button class="text-action" data-evidence="task">Source</button></div><div class="notebook-markdown">${typeof c.task_html==='string'?c.task_html:block(taskText(c.task))}</div></div></section><section class="notebook-cell" aria-label="Selected code cell, read only"><span class="notebook-prompt" title="Code execution unavailable" aria-label="Code execution unavailable">[—]</span><div class="notebook-cell-body"><div class="notebook-cell-label"><span>Cell ${esc(f.work.cell_index)} · ${origin} · revision ${esc(f.work.revision)}</span><span>${f.changes.unified_diff?'<button class="text-action" data-evidence="work">View changes</button> · ':''}<button class="text-action" data-evidence="source">Source</button></span></div><pre class="notebook-input" tabindex="0" aria-label="Selected code, read only"><code>${esc(f.work.source)||'\n'}</code></pre></div></section></div><p class="notebook-caption">Source-only branch · code execution is unavailable. No output or grade is inferred.</p></section>`;
+  const prompt=f.external_execution?'Retrospective execution; historical execution count unknown':'Code execution unavailable';
+  return `<section class="notebook-document" aria-label="${f.external_execution?'Notebook branch with retrospective checks':'Source-only notebook branch'}"><div class="notebook-filebar"><b>Notebook branch</b><span class="tag">Read only</span><span class="spacer"></span><button class="text-action" data-evidence="context">Branch context</button></div><div class="notebook-cells"><section class="notebook-cell" aria-label="Selected notebook instructions"><span aria-hidden="true"></span><div class="notebook-cell-body"><div class="notebook-cell-label"><span>Selected instructions</span><button class="text-action" data-evidence="task">Source</button></div><div class="notebook-markdown">${typeof c.task_html==='string'?c.task_html:block(taskText(c.task))}</div></div></section><section class="notebook-cell" aria-label="Selected code cell, read only"><span class="notebook-prompt" title="${prompt}" aria-label="${prompt}">[—]</span><div class="notebook-cell-body"><div class="notebook-cell-label"><span>Cell ${esc(f.work.cell_index)} · ${origin} · revision ${esc(f.work.revision)}</span><span>${f.changes.unified_diff?'<button class="text-action" data-evidence="work">View changes</button> · ':''}<button class="text-action" data-evidence="source">Source</button></span></div><pre class="notebook-input" tabindex="0" aria-label="Selected code, read only"><code>${esc(f.work.source)||'\n'}</code></pre>${f.external_execution?externalExecution(f.external_execution):''}</div></section></div><p class="notebook-caption">${f.external_execution?'Retrospective checks of two source revisions, performed after generation and not seen by the simulated student. These results do not reconstruct historical execution or student decision chronology. No course grade or learning outcome is established.':'Source-only branch · code execution is unavailable. No output or grade is inferred.'}</p></section>`;
+}
+function externalExecution(check){
+  const labels={'ok':'Completed','cell-error':'Cell error','setup-error':'Setup error','execution-limit':'Execution limit','environment-error':'Environment unavailable'};
+  const runtime=check.runtime;
+  return `<section class="notebook-result${check.status==='ok'?'':' notebook-error'}" aria-label="Local execution on archived data"><h3>Local execution on archived data</h3><p>${esc(labels[check.status])} · ${esc(check.execution)} · no course grade</p>${check.status==='ok'?`<pre tabindex="0" aria-label="Local execution value">${esc(JSON.stringify(check.value))}</pre>`:block(check.error)}<pre tabindex="0" aria-label="Local execution output">${esc(check.output||'No text output.')}</pre><p>${runtime?`Python ${esc(runtime.python)} · ${Object.entries(runtime.libraries).map(([name,version])=>`${esc(name)} ${esc(version)}`).join(' · ')}`:'Runtime metadata unavailable.'}</p><details><summary>Runtime image and archived data</summary>${block({image_id:check.image_id,dataset:check.dataset})}<p>Historical dataset bytes and version are unverified.</p></details></section>`;
 }
 function recordedNotebook(){
   const r=frame().recorded,e=r.event,c=r.notebook_capture,execution=r.execution,result=r.execution_result;
@@ -513,7 +520,7 @@ function renderInspector(){
   }else if(key==='feedback'){
     title='Local check result';body=`<p>${esc(checkLabel(f.feedback))}. This is the local checker, not the course autograder. A passing check does not establish learning.</p>`+block(f.feedback);
   }else if(key==='context'){
-    title=isSourceOnly()?'Historical branch context':'Supplied run context';body='<h3>Initialization</h3>'+block(current().initialization)+(isSourceOnly()?'<p>The starting source and conversation come from a historical capture. Any simulated edit or message is a separate continuation, not recorded student behavior.</p><p>Only selected instructions and one code cell are shown. Dependencies and unobserved notebook activity are not reconstructed. Code execution is unavailable; no output or grade is inferred.</p>':state.kind==='chat'?'<p>Only the supplied conversation and saved continuations are available. No notebook activity or learner traits are reconstructed.</p>':'<div class="divider"></div><h3>Activity</h3>'+block(current().activity)+'<p>Only the selected cell and saved interactions are available. Additional notebook actions and learner traits are unknown.</p>');
+    title=isSourceOnly()?'Historical branch context':'Supplied run context';body='<h3>Initialization</h3>'+block(current().initialization)+(isSourceOnly()?'<p>The starting source and conversation come from a historical capture. Any simulated edit or message is a separate continuation, not recorded student behavior.</p><p>Only selected instructions and one code cell are shown. Dependencies and unobserved notebook activity are not reconstructed. '+(hasExternalExecution()?'Both source revisions were checked locally on archived data after generation. The simulated student did not see these results. Historical dataset bytes and version are unverified; these checks do not reconstruct historical execution or establish a course grade.':'Code execution is unavailable; no output or grade is inferred.')+'</p>':state.kind==='chat'?'<p>Only the supplied conversation and saved continuations are available. No notebook activity or learner traits are reconstructed.</p>':'<div class="divider"></div><h3>Activity</h3>'+block(current().activity)+'<p>Only the selected cell and saved interactions are available. Additional notebook actions and learner traits are unknown.</p>');
   }else if(key.startsWith('turn:')){
     const turn=turns()[Number(key.split(':')[1])];
     title='Conversation source';body=`<p>${turn.origin?'Saved origin: '+esc(turn.origin):'Origin not specified in the saved record'}${turn.pending?' · pending tutor reply':''}.</p>`+block(turn.text)+'<p>The saved origin identifies how the runner stored this message; it does not by itself prove a fresh provider request.</p>';
@@ -525,8 +532,8 @@ function renderInspector(){
 function renderTrail(){
   $('playback').hidden=state.mode!=='simulate';
   $('playback').setAttribute('aria-label',state.kind==='chat'?'Conversation playback':'Notebook playback');
-  $('trail-title').textContent=isRecordedNotebook()?'Observed events':'Saved playback';
-  $('trail-hint').textContent=isRecordedNotebook()?`Event ${frame().recorded.event.sequence} · ${state.step+1} of ${current().frames.length} observations`:(state.kind==='chat'?frame().label:`State ${state.step+1} of ${current().frames.length}`)+' · no new generation';
+  $('trail-title').textContent=hasExternalExecution()?'Source revisions · retrospective checks':isRecordedNotebook()?'Observed events':'Saved playback';
+  $('trail-hint').textContent=hasExternalExecution()?`Revision ${frame().work.revision} · checked after generation`:isRecordedNotebook()?`Event ${frame().recorded.event.sequence} · ${state.step+1} of ${current().frames.length} observations`:(state.kind==='chat'?frame().label:`State ${state.step+1} of ${current().frames.length}`)+' · no new generation';
   $('previous-step').disabled=state.step===0;
   $('trail').hidden=state.kind==='chat';
   $('trail').innerHTML=state.kind==='chat'?'':current().frames.map((f,i)=>`<button data-trail="${i}" aria-pressed="${i===state.step}"><span class="count">${i+1}</span>${esc(f.label)}</button>`).join('');
@@ -573,7 +580,7 @@ function render(){
 }
 function continuationReason(){
   if(isRecordedNotebook())return 'Recorded evidence is read-only.';
-  if(isSourceOnly())return 'Source-only branch. Code execution is unavailable; this saved branch is read only.';
+  if(isSourceOnly())return hasExternalExecution()?'Saved retrospective execution checks. This branch is read only.':'Source-only branch. Code execution is unavailable; this saved branch is read only.';
   if(state.mode==='compare')return 'Saved comparisons are read only.';
   if(!state.encounters.length)return 'Load a saved session first.';
   if(!state.controls.send_enabled)return 'Sending is disabled in this workspace.';
@@ -663,7 +670,7 @@ function renderOperationStatus(){
   if(isRecordedNotebook()||isSourceOnly()){
     $('continue-run').hidden=true;$('continue-run').disabled=true;$('tutor-controls').hidden=true;
     $('operation-status').textContent=state.clientError||'';$('operation-status').hidden=!state.clientError;
-    document.querySelector('.prototype-note').textContent=isSourceOnly()?'Source-only branch · Read only':'Recorded activity · Read only';
+    document.querySelector('.prototype-note').textContent=hasExternalExecution()?'Retrospective execution checks · Read only':isSourceOnly()?'Source-only branch · Read only':'Recorded activity · Read only';
     return;
   }
   $('continue-run').disabled=Boolean(continuationReason());

@@ -1,5 +1,15 @@
 # Simulated students: task list
 
+**Execution completed; reaction pending (2026-09-29):** [run the captured task on archived course data](docs/2026-09-29-archived-notebook-execution.md).
+Recovered a matching full course CSV from local archives. In a separately declared
+isolated environment, captured work raises an error and the saved simulated edit
+returns 2,850. Both results are visible beside their code in the browser workspace;
+they are retrospective checks, not historical observations or course grades.
+Original inputs and the first setup failure remain unchanged. All 832 Python tests
+pass (three optional skips), with Node, HTTP and independent review checks. One
+student reaction to the actual result is prepared; automatic approval review
+requires its specific Gemini disclosure approval. No new model calls or labels.
+
 **Completed (2026-09-29):** [one student continuation from recorded notebook work](docs/2026-09-29-recorded-notebook-branch.md).
 After explicit approval, one Gemini 2.5 Pro decision changed the captured code
 without sending chat. The saved branch reopens with starting/revised work and a
