@@ -1,5 +1,15 @@
 # Simulated students: task list
 
+**Live sampling verified; policy comparison prepared (2026-09-29):**
+[Fixed tutor-reply comparison](docs/2026-09-29-notebook-policy-sampling.md).
+Three live requests saved and replayed successfully (two no-action, one message).
+The source-only direct-answer versus guided-hint comparison and its floating
+comparison UI are implemented and tested with authored responses. Both conditions
+start before the original tutor reply and exclude later generated work/results.
+The 62-request live plan is frozen but was blocked by automatic approval review
+pending explicit private-payload, Google Gemini destination, and count approval.
+The port-8450 preview is clearly marked authored test data. No new labels needed.
+
 **Sampling workspace connected (2026-09-29):**
 [Inspect sampled next actions in the notebook/chat workspace](docs/2026-09-29-next-actions-preview.md).
 The completed 30-draw batch is visible as clickable action frequencies in a floating

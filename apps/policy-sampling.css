@@ -1,0 +1,26 @@
+/* Two policy columns remain in the floating panel; notebook and chat keep their space. */
+#policy-sampling-toggle{display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap;background:var(--paper);padding:8px 12px;color:var(--ink)}
+#policy-sampling-toggle[aria-expanded=true]{border-color:var(--green);color:var(--green);background:var(--mint)}
+#policy-sampling-toggle svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.policy-sampling-panel{width:min(540px,calc(100vw - 32px))}
+.policy-frequency-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;margin:12px 0 4px;text-align:left}
+.policy-frequency-table caption{text-align:left;font-size:11px;color:var(--muted);margin-bottom:12px}
+.policy-frequency-table th{font-weight:500;vertical-align:top;line-height:1.5}
+.policy-frequency-table th:first-child{width:30%}
+.policy-frequency-table thead th{padding:0 8px 12px}
+.policy-frequency-table strong{font-weight:600;display:block;margin-bottom:4px}
+.policy-condition-count{display:block;font-size:10px;font-weight:400;color:var(--muted)}
+.policy-frequency-table thead .text-action{padding:4px 0;margin-top:4px;text-align:left}
+.policy-frequency-table tbody tr{border-top:1px solid var(--line)}
+.policy-frequency-table tbody th{vertical-align:middle;padding:12px 8px}
+.policy-frequency-table td{padding:4px;vertical-align:middle}
+.policy-sampling-panel .policy-outcome{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;padding:10px 8px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--ink);font-size:12px}
+.policy-outcome .action-count{text-align:left}
+.policy-outcome .action-meter{grid-column:1/-1}
+.policy-sampling-panel .policy-outcome:hover:not(:disabled){background:#edf3ef}
+.policy-sampling-panel .policy-outcome[aria-pressed=true]{border-color:#bfd5c9;background:var(--mint)}
+.policy-sampling-panel .policy-outcome[aria-pressed=true] .action-meter>span{background:var(--green)}
+.policy-sampling-panel .policy-outcome:disabled{opacity:1;cursor:default;color:var(--muted)}
+.policy-sampling-panel .policy-outcome:disabled .action-meter{background:#edf0ee}
+.policy-sampling-panel .sampling-details th:not(:first-child){text-align:right}
+#policy-sampling-toggle:focus-visible{outline:2px solid var(--green);outline-offset:3px}
