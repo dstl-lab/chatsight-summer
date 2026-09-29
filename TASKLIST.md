@@ -1,5 +1,13 @@
 # Simulated students: task list
 
+**Held-out student selection checked (2026-09-29):**
+[Local eligibility audit](docs/2026-09-29-heldout-student-eligibility.md).
+The proposed ten-student cohort cannot yet be selected: the eight local exports
+contain 252 conversations without learner IDs, and the existing 29-query set is
+development-exposed. No verified eligible students or replacement cohort selected;
+no generation or labels. Next: recover pseudonymous learner linkage from existing
+historical records and check student provenance and exposure before freezing a cohort.
+
 **Saved edits executed; two reactions completed (2026-09-29):**
 [Policy execution follow-up](docs/2026-09-29-policy-execution.md).
 Three distinct source checks cover all 60 saved samples. The direct-answer code
