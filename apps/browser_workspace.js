@@ -22,6 +22,7 @@ Object.assign(state,{comparisonAvailable:false,policyWorkspaceAvailable:false,fi
 Object.assign(state,{workspaceId:null,comparisonDraft:null,comparisonDirty:false,draftStored:false,comparisonEditing:false,comparisonSubmitting:false,comparisonMonitoring:false,comparisonOperation:{status:'idle',message:''}});
 Object.assign(state,{exercise:new URLSearchParams(window.location.search).get('exercise')||'current',preparingExercise:false,openingExercise:false});
 Object.assign(state,{teachingComparisonAvailable:false,teachingArm:'shared',studentComparisonAvailable:false});
+state.useEvidence=false;
 let pollTimer,comparisonPollTimer;
 const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
@@ -115,7 +116,7 @@ async function selectScenario(id){
   if(state.refreshing||state.submitting||state.monitoring||!state.scenarios?.some(s=>s.id===id))return;
   if(id===state.scenarioId&&state.encounters.length)return;
   const focused=document.activeElement,restoreFocus=focused?.dataset.scenario===id;
-  state.scenarioId=id;state.policyDraft=null;state.replyDraft='';state.replyMode='policy';state.clientError='';
+  state.scenarioId=id;state.policyDraft=null;state.replyDraft='';state.replyMode='policy';state.clientError='';state.useEvidence=false;
   state.controls={send_enabled:false};state.operation={status:'idle',message:''};state.selected='step';
   const url=new URL(window.location.href);url.searchParams.set('scenario',id);window.history.replaceState(null,'',url);
   clearWorkspaceView('<p class="quiet">Loading selected conversation…</p>');
@@ -168,10 +169,29 @@ function conversation(rows=turns(),offset=0){
   const simulationStart=(state.kind==='chat'||isSourceOnly())&&state.mode!=='compare'?rows.findIndex(t=>t.origin==='generated'):-1;
   return rows.length?rows.map((turn,i)=>`${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${glyph(turn.role==='student'?'student':'tutor')}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(isRecordedNotebook()&&state.mode!=='compare'?'Recorded event '+turn.sequence:originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button class="source-inspect" data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">${glyph('source')}Source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
+function renderStudentEvidence(){
+  const card=state.mode==='compare'?null:current()?.evidence_card;
+  const details=$('student-evidence'),content=$('student-evidence-content');
+  details.hidden=card?.version!==1;
+  if(details.hidden){content.innerHTML='';details.open=false;delete details.dataset.source;state.useEvidence=false;return}
+  const key=state.scenarioId+':'+card.source_sha256;
+  if(details.dataset.source!==key){details.dataset.source=key;details.open=false;state.useEvidence=false}
+  const n=card.student_messages,stats=card.statistics;
+  $('student-evidence-summary').textContent=`${n} student message${n===1?'':'s'} · ${stats.median_characters===null?'No median length':stats.median_characters+' characters median'}`;
+  $('student-evidence-used').textContent=frame().evidence_guidance_used===true?'Evidence guidance recorded for this decision.':'';
+  $('student-evidence-used').hidden=!$('student-evidence-used').textContent;
+  const html=`<p>${esc(card.scope)}</p><p class="muted">Length counts: ${stats.short_messages} at ≤40 · ${stats.medium_messages} at 41–300 · ${stats.long_messages} at &gt;300 characters.</p><p class="muted">${stats.newline_messages} with line breaks · ${stats.backtick_messages} with backticks</p>${card.examples.map(example=>`<figure><figcaption>Supplied message ${example.turn_index} · ${example.characters} characters${example.truncated?' · excerpt':''}</figcaption><blockquote>${esc(example.text)}</blockquote></figure>`).join('')}<ul>${card.limits.map(limit=>`<li>${esc(limit)}</li>`).join('')}</ul>`;
+  if(content.innerHTML!==html)content.innerHTML=html;
+  const enabled=state.controls.send_enabled&&state.controls.evidence_guidance_enabled===true;
+  $('student-evidence-guidance').hidden=!enabled;
+  if(!enabled)state.useEvidence=false;
+  $('use-student-evidence').checked=state.useEvidence;
+}
 function renderChat(){
   const comparing=state.mode==='compare',c=comparisonContext();
   const teaching=comparing&&isTeachingComparison(),condition=teachingCondition();
   const available=comparing?Boolean(c):Boolean(state.encounters.length);
+  renderStudentEvidence();
   const chatOnly=state.kind==='chat'&&!comparing,primaryChat=chatOnly&&available&&!state.showInspector;
   const visibleChat=chatOnly?available:state.chatOpen;
   const panel=$('conversation-panel'),parent=primaryChat?document.querySelector('.main'):$('body-grid');
@@ -688,6 +708,7 @@ function renderControls(){
   $('submit-operation').onclick=submitOperation;updateSubmitButton();
 }
 function renderOperationStatus(){
+  $('use-student-evidence').disabled=state.submitting||state.monitoring||state.refreshing;
   document.querySelector('.reset-label').textContent=state.mode==='compare'?'Reload saved comparison':isRecordedNotebook()?'Reload recording':'Reload saved run';
   $('new-comparison').disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy();
   $('next-exercise').disabled=state.submitting||state.monitoring||state.refreshing;
@@ -719,7 +740,7 @@ function applyWorkspace(packet,{openNext=false}={}){
   if(!['chat','notebook','recorded-notebook'].includes(packet.kind||'notebook')||packet.version!==1||!Array.isArray(packet.encounters)||!packet.encounters.length||packet.encounters.some(c=>!Array.isArray(c.frames)||!c.frames.length))throw new Error('Unsupported saved workspace response.');
   if(packet.kind==='recorded-notebook'&&(!packet.recorded_summary||packet.encounters.some(c=>c.frames.some(f=>!f.recorded))||!Number.isInteger(packet.default_step)||packet.default_step<0||packet.default_step>=packet.encounters[0].frames.length))throw new Error('Unsupported recorded notebook projection.');
   const previousId=openNext?null:current()?.id,wasRecorded=isRecordedNotebook(),previousStep=state.step;
-  if(openNext){state.openingExercise=false;state.exercise='next';state.policyDraft=null;state.replyDraft='';state.replyMode='policy';state.selected='step';state.showInspector=false;state.chatKey=null}
+  if(openNext){state.openingExercise=false;state.exercise='next';state.policyDraft=null;state.replyDraft='';state.replyMode='policy';state.selected='step';state.showInspector=false;state.chatKey=null;state.useEvidence=false}
   state.kind=packet.kind||'notebook';state.encounters=packet.encounters;state.controls=packet.controls||{send_enabled:false};state.operation=packet.operation||{status:'idle',message:''};state.monitoring=false;
   state.sourceOnly=packet.source_only===true;
   state.recordedSummary=packet.recorded_summary;state.recordedProvenance=packet.provenance;
@@ -787,7 +808,8 @@ async function reloadWorkspace(){
 async function submitOperation(){
   if(!canSubmit())return;
   const mode=['active','ready'].includes(frame().status)?'advance':state.replyMode;
-  const payload={binding:{...frame().binding},mode,...(mode==='advance'?{}:{text:mode==='policy'?state.policyDraft:state.replyDraft})};
+  const payload={binding:{...frame().binding},mode,...(mode==='advance'?{}:{text:mode==='policy'?state.policyDraft:state.replyDraft}),
+    ...(state.useEvidence&&state.controls.evidence_guidance_enabled===true?{use_evidence:true}:{})};
   state.submitting=true;state.clientError='';renderOperationStatus();
   try{
     // No timeout/retry: aborting an HTTP request would not cancel a saved backend operation.
@@ -807,6 +829,8 @@ async function submitOperation(){
 document.title='Student lab · Simulation workspace';
 $('app').classList.toggle('connected-workspace',true);
 $('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel" id="conversation-panel" aria-label="Student and tutor conversation"><header><h2 id="chat-title">Student–tutor chat</h2><p id="chat-caption" class="small muted"></p><div class="chat-navigation"><span id="chat-count" class="small muted"></span><button data-chat-jump="first" aria-label="Go to first message" aria-controls="conversation-messages">First</button><button data-chat-jump="last" aria-label="Go to last message" aria-controls="conversation-messages">Last</button></div></header><div id="conversation-messages"></div></aside>');
+$('conversation-messages').insertAdjacentHTML('beforebegin','<details id="student-evidence" class="student-evidence" hidden><summary><b>Student evidence</b><span id="student-evidence-summary"></span></summary><div class="student-evidence-body"><div id="student-evidence-guidance" hidden><label><input type="checkbox" id="use-student-evidence" aria-describedby="evidence-guidance-note">Use as student guidance</label><p id="evidence-guidance-note" class="guidance-note muted">Applies to the next student reply. Viewing or changing this option sends nothing.</p></div><p id="student-evidence-used" hidden></p><div id="student-evidence-content"></div></div></details>');
+$('use-student-evidence').onchange=event=>{state.useEvidence=event.target.checked};
 $('inspector-toggle').insertAdjacentHTML('beforebegin','<button id="chat-toggle" aria-controls="conversation-panel" aria-expanded="true">Hide chat</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button class="bare" id="tutor-controls">Tutor controls</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button id="saved-results">Saved results</button>');

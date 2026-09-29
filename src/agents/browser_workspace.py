@@ -24,6 +24,7 @@ from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_
 from src.eval import fidelity_comparison as fidelity, notebook_replay, student_reply_comparison as student_replies
 from src.eval.saved_comparison import load_comparison
 from src.agents import notebook_branch as source_branch
+from src.agents import student_evidence
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_POLICY = "Respond concisely to the student's current request using the visible work and check feedback."
@@ -78,6 +79,7 @@ class Submission(BaseModel):
     binding: Binding
     mode: Literal['advance', 'reply', 'policy']
     text: str | None = Field(default=None, max_length=64000)
+    use_evidence: bool = False
 
     @model_validator(mode='after')
     def mode_text(self):
@@ -176,12 +178,14 @@ def _chat_snapshot(folder):
         fcntl.flock(stream, fcntl.LOCK_SH | fcntl.LOCK_NB)
         manifest, _, _ = chat_student._load(Path(folder))
         receipts = [student._read(path) for path in sorted(Path(folder).glob('step-*.json'))]
+        evidence, guided_states = student_evidence.verify(folder, manifest, receipts)
         states = [chat_student._initial(manifest['query']), *(receipt['result'] for receipt in receipts)]
         frames = []
         for index, state in enumerate(states):
             episode = state['episode']
             receipt = receipts[index - 1] if index else None
             frames.append({'label':(f'Student decision {index}' if receipt['status'] == 'complete' else f'Failed attempt {index}') if index else 'Starting conversation',
+                'evidence_guidance_used': bool(receipt and receipt['request']['binding']['state_sha256'] in guided_states),
                 'binding':{'session_sha256':student.digest(manifest), 'state_sha256':student.digest(state)},
                 'status':state['status'], 'decisions_remaining':manifest['max_decisions'] - index,
                 'dialogue':[{key:turn[key] for key in ('role', 'text', 'origin')}
@@ -193,6 +197,7 @@ def _chat_snapshot(folder):
         saved_results = _saved_results(folder)
     return {'version':1, 'kind':'chat', 'encounters':[{
         'id':'1', 'title':'Conversation', 'task':'Conversation scenario',
+        'evidence_card': evidence,
         'initialization':'Supplied conversation prefix followed by saved simulated continuation. '
             'The prefix may be recorded or authored; its saved origin alone does not establish this. '
             'Notebook activity and outcomes are unknown. Code in a message is text only.',
@@ -215,6 +220,7 @@ def snapshot(folder, *, chat_mode=False):
                 frames.append(_frame(manifest, state, previous, decisions, index))
                 previous = state
             encounters.append({'id':str(number), 'title':f'Task {number}', 'task':initial['task'],
+                'evidence_card':student_evidence.supplied_card(initial['dialogue']),
                 'initialization':initial['initialization'],
                 'activity':{key:value for key,value in initial['activity'].items() if key != 'image_id'},
                 'frames':frames, 'saved_results_html':_saved_results(encounter_folder)})
@@ -927,6 +933,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             result['encounters'][0]['title'] = titles[scenario_id]
         frame = result['encounters'][-1]['frames'][-1]
         result = result | {'scenario_id':scenario_id, 'controls':{'send_enabled':send is True,
+            'evidence_guidance_enabled':chat_mode and generate_reply is None and not (selected / 'local-student').exists(),
             'tutor_generation_enabled':not manual_tutor,
             **({'gemini_tutor_model':gemini_tutor_model} if gemini_tutor_model is not None else {}),
             'policy':exercise['policy'] if is_next else policy,
@@ -1193,15 +1200,22 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
                 raise HTTPException(409, 'This encounter has stopped or used its decision budget.')
             if (body.mode == 'advance') != (current['status'] == ready):
                 raise HTTPException(409, 'Tutor guidance requires a pending student message; continuation does not accept it.')
+            student_generator = generate
+            if body.use_evidence:
+                if not chat_mode or generate_reply is not None or (selected / 'local-student').exists():
+                    raise HTTPException(400, 'Evidence guidance is available for the chat provider backend only.')
+                backend = generate or partial(student_workspace._generate_model,
+                    student._read(selected / 'session.json')['model'], single_attempt=True)
+                student_generator = student_evidence.guided(selected, binding, backend)
             if body.mode == 'policy':
                 runner.respond(selected, binding=binding, policy=body.text, send=True,
-                    generate_tutor=generate_tutor, generate_student=generate,
+                    generate_tutor=generate_tutor, generate_student=student_generator,
                     **({'generate_reply':generate_reply, 'gemini_tutor_model':gemini_tutor_model}
                        if chat_mode else {'check':check, 'reference':reference}))
             else:
                 runner.advance(selected, binding=binding,
                     tutor_reply=body.text if body.mode == 'reply' else None,
-                    send=True, generate=generate,
+                    send=True, generate=student_generator,
                     **({'generate_reply':generate_reply} if chat_mode else {'check':check}))
             result = packet(scenario_id, selected)
             failed = result['encounters'][-1]['frames'][-1]['status'] in ('error', 'environment-error', 'execution-limit')

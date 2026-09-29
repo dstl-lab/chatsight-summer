@@ -1,5 +1,15 @@
 # Simulated students: task list
 
+**Student evidence card implemented (2026-09-30):**
+[Feature and usage](docs/2026-09-30-student-evidence-card.md).
+The workbench now shows automatic counts, lengths, formatting and source excerpts
+from the fixed supplied starting conversation. Generated replies never become
+profile evidence. Provider-backed chat sessions offer default-off soft guidance;
+the exact augmented prompt and outcome are saved and verified separately.
+Ten fresh development sessions are open at port 8451, with zero model requests.
+70 Python checks, two Node checks and browser inspection pass. The prior 100-call
+study still verifies unchanged. No new labels or realism improvement is claimed.
+
 **Bounded history comparison completed and closed (2026-09-29):**
 [Results and per-case report](docs/2026-09-29-course-account-history-results.md).
 Exactly 100/100 sequential Gemini requests completed: ten account-separated

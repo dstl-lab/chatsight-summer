@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
-from src.agents import browser_workspace as workspace, notebook_student as store
+from src.agents import browser_workspace as workspace, notebook_student as store, student_evidence
 from src.eval import notebook_action as action, notebook_replay
 
 
@@ -22,6 +22,7 @@ CONTINUATION_SPEC = importlib.util.spec_from_file_location('policy_execution',
 def project(report, continuation=None):
     """Every sampled action branches directly from its own supplied tutor reply."""
     shared = report['shared_task']
+    evidence = student_evidence.supplied_card(shared['dialogue'])
     pin = report['plan_sha256']
     if continuation is not None and continuation['comparison_sha256'] != store.digest(report):
         raise ValueError('The continuation belongs to a different saved comparison.')
@@ -80,6 +81,7 @@ def project(report, continuation=None):
                 saved_sample['reaction_frame'] = after
             samples.append(saved_sample)
         encounters.append({'id':name, 'title':condition['label'], 'task':shared['task'],
+            'evidence_card':evidence,
             'task_html':workspace._tutor_html('\n\n'.join(cell['source'] for cell in shared['task'])),
             'initialization':shared['initialization'], 'activity':None,
             'frames':[frame(shared, 'Captured work · Before tutor reply'), baseline],

@@ -82,6 +82,8 @@ def test_policy_samples_use_their_own_tutor_and_shared_captured_work():
     first, second = sampling['conditions']
     edit, reply = first['samples'][0]['frame'], second['samples'][0]['frame']
     for encounter, condition in zip(packet['encounters'], sampling['conditions']):
+        assert encounter['evidence_card']['student_messages'] == 1
+        assert encounter['evidence_card']['examples'][0]['text'] == 'check?'
         captured, tutor = encounter['frames']
         assert captured['dialogue'] == [{'role':'student', 'origin':'source', 'text':'check?'}]
         assert captured['work'] == tutor['work'] == shared['work']
@@ -97,6 +99,11 @@ def test_policy_samples_use_their_own_tutor_and_shared_captured_work():
     assert [turn['text'] for turn in reply['dialogue']] == ['check?', 'hint AUTHORED REPLY', 'which value?']
     assert '+total = 7' in edit['changes']['unified_diff']
     assert reply['changes']['unified_diff'] == ''
+    assert packet['encounters'][0]['evidence_card'] == packet['encounters'][1]['evidence_card']
+    contaminated = deepcopy(report)
+    contaminated['shared_task']['dialogue'].append({'role':'student', 'origin':'generated', 'text':'SYNTHETIC'})
+    protected, _ = project(contaminated)
+    assert protected['encounters'][0]['evidence_card'] == packet['encounters'][0]['evidence_card']
 
 
 def test_saved_comparison_api_is_read_only_and_redacts_changed_receipts(tmp_path):
