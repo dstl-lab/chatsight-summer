@@ -1,16 +1,18 @@
 # Simulated students: task list
 
-**Behavioral measurement audit prepared; exact transfer approval needed (2026-09-30):**
+**Behavioral measurement audit closed with a transport failure (2026-09-30):**
 [Fixed audit and measurement limits](docs/2026-09-30-behavioral-measurement-readiness.md).
 Three completed reviews provide 88 distinct inputs across 16 conversation
 prefixes; no new human labeling is requested. The fixed Gemini Flash coder keeps
 the two help/work flags independent and preserves one conflicting human judgment.
-28 authored checks and independent review pass. Automatic approval review blocked
-the 88-prompt private-data transfer before execution; zero requests were sent.
-Exact prompts and verified source bindings are saved locally. After specific
-approval, consume this audit once and report; no tuning, reruns or automatic fresh
-benchmark dispatch. Work has 54 yes/34 no examples; help has only four negatives,
-so high help agreement alone cannot establish reliable measurement.
+After exact transfer approval, all 88 requests ended in API client errors; zero
+usable labels, retries or missing slots. A synthetic diagnostic found the schema
+parameter bug; changing `response_schema` to `response_json_schema` works on an
+invented message. The 28 offline checks did not catch provider compatibility.
+The failed run and its report are preserved. A separate recovery uses identical
+inputs and needs approval for another 88-request batch; it has not been sent.
+No fresh benchmark or human labeling is queued. Work has 54 yes/34 no examples;
+help has only four negatives, limiting any later reliability conclusion.
 
 **Saved history benchmark added to the workbench (2026-09-30):**
 The **History benchmark** tab at port 8454 shows all ten recorded next messages,

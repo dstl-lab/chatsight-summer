@@ -1,7 +1,10 @@
 # Behavioral measurement readiness
 
-**The existing automatic labels are not established as reliable measurements of
-`help_request` and `work_present`.** Three completed human reviews provide a
+**The approved audit completed with 88 API client errors and zero usable labels.**
+A synthetic diagnostic reproduced a schema-parameter error; the one-field
+correction succeeds with invented text. No private input has been resent.
+Automatic labels are still not established as reliable measurements of
+`help_request` and `work_present`. Three completed human reviews provide a
 bounded audit set for these exact flags. Reuse those judgments before treating
 an automatic coder as a behavioral benchmark instrument. The inventory and
 preparation inspect no new reserved targets; the separate, fixed coding audit
@@ -92,8 +95,11 @@ for measured generated behavior.
 ## Status
 
 Packet/review identities, exact common definitions and complete judgment coverage
-were checked during the inventory. The audit is prepared but dispatch is blocked;
-there are no automatic-coder results, adopted scorer or fresh-cohort findings.
+were checked during the inventory. After specific approval, the audit consumed
+all 88 scheduled requests, with 88 `ClientError` dispositions, zero usable labels
+and no missing slots. There are no accuracy estimates, adopted scorer or
+fresh-cohort findings. Both flags have zero coverage; precision, recall,
+specificity and kappa are undefined, not zero.
 Any new benchmark needs a separately frozen measurement gate and explicit handling
 of its weaker help evidence. No additional human labeling is requested here.
 All existing experiments, reports, judgments and stopping decisions remain closed
@@ -112,21 +118,68 @@ conflicts, source pins, prompt isolation, confusion arithmetic, explicit failure
 raw-response replay and refusal to resend an interrupted batch. Private source
 messages, review forms and provider responses remain ignored by Git.
 
-Independent review found no remaining dispatch, retry or replay issues. Automatic
-approval review rejected the attempted launch **before process creation** because
-general benchmark approval did not specifically authorize sending these 88 private
-course-conversation prompts to Google. There is no execution directory and zero
-requests were sent. The local `send-blocked.json` records the rejection; exact
-prompts remain in `dispatch/disclosure.md`. The only dispatch blocker is explicit
-approval for this fixed transfer to Google Gemini 2.5 Flash. Do not bypass the
-rejection or substitute another provider. This is a transfer approval, not a
-request for more human labeling. The audit remains unrun and has no results.
+Automatic approval review initially rejected dispatch before process creation.
+The user then explicitly approved the exact transfer with "Yes, you may".
+The local `approval.json` binds that answer to the plan and disclosure and
+precedes launch and every receipt. `send-blocked.json` retains the earlier
+rejection as history. The frozen runner's older standing-approval note is not
+the sole authorization record.
+
+The fixed run is closed. Its saved report replays all 88 terminal receipts;
+there are no raw model responses, retries or substitutions. Independent review
+verified approval chronology and all 127 distinct source-file pins (including
+the 120 legacy evidence bindings). The offline tests and earlier review did not
+exercise the actual provider schema conversion; they missed this integration bug.
 
 Run the offline checks from this worktree with:
 
 ```sh
 PYTHONPATH=. python -P -m pytest -q experiments/2026-09-30-help-work-measurement
 ```
+
+## Transport diagnosis and proposed recovery
+
+A model-metadata request confirmed that the key can access `gemini-2.5-flash`.
+One invented message with the frozen configuration returned HTTP 400
+`INVALID_ARGUMENT`: unknown `additional_properties` in
+`generation_config.response_schema`. The strict Pydantic JSON Schema was passed
+through `response_schema`, which this API route did not accept. Changing only
+that parameter to `response_json_schema` preserved the schema, including its
+restriction on extra fields, and returned the expected two flags for the same
+invented message. The local parser remains strict. Google's
+[structured-output documentation](https://ai.google.dev/gemini-api/docs/structured-output)
+describes JSON Schema support, including `additionalProperties`.
+
+These were **two separate authored diagnostic generation requests** and one
+metadata request, with no private conversation content. They are not audit
+observations. The original receipts retained only exception types, so the
+specific HTTP 400 is established by reproducing the frozen configuration, not
+by saved error bodies for each of the original 88 requests.
+
+A separate recovery directory retains the failed run unchanged and reuses the
+exact 88 prompts, human references, schedule, model, rubric and analysis. The
+only configuration change is:
+
+```python
+configuration['response_json_schema'] = configuration.pop('response_schema')
+```
+
+No prompt wording or human answers change. The existing runner is reused without
+copying or modifying frozen code. Source bindings now also include the failed
+plan/report, explicit approval, every failed receipt and the separate diagnostics.
+All original preparation artifacts and prompt payload bytes were copied exactly;
+the existing verifier reconstructs all 88 inputs successfully. The corrected
+synthetic output passes the same strict parser with help=yes and work=no.
+
+The prepared local directory is `data/behavioral-measurement-schema-recovery-v1`.
+Its dispatch plan SHA-256 is
+`de531030846f7918c26c68a69cc1bdabc1435c382e57ef2a321a82f72bfe4c5b`.
+The exact transfer disclosure is its `dispatch/disclosure.md`. There is no
+execution directory or provider request for this recovery.
+
+The recovery requires approval for **another batch of at most 88 private
+requests**: the previous approved budget has been consumed. It is prepared only,
+not dispatched. No fresh student benchmark or additional human review is queued.
 
 ## Fixed measurement audit protocol
 
