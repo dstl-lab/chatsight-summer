@@ -1,5 +1,17 @@
 # Simulated students: task list
 
+**Evaluator reliability defined around the research decision (2026-09-30):**
+[Proposed reliability contract](docs/2026-09-30-evaluator-reliability-contract.md).
+Recommended starting use, pending preference: identify large, recurring content
+differences between simulated and recorded messages. Require shared meaning,
+supported judgments, repeatability,
+explicit coverage and a conclusion that survives measurement uncertainty.
+The proposed 20-percentage-point resolution is a project choice, not an accepted
+threshold or a result. Current semantic scoring remains unsupported; no rerun
+is needed to reconfirm its known context/uncertainty failures. A future candidate
+gets one frozen reference/repeat panel and one report within a fixed budget,
+including an insufficient-evidence stopping outcome. No new labels or calls.
+
 **Bounded context/uncertainty revision closed; return to simulator development (2026-09-30):**
 [Fixed authored check and decision](docs/2026-09-30-message-content-context-check.md).
 Sixteen invented examples completed once: values matched 14/16 for content and
