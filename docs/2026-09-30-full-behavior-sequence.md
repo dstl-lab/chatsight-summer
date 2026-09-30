@@ -79,13 +79,15 @@ Fifteen code dependencies and the source/runtime/reference inputs verify. The
 immutable runtime image is available locally. Preparation sent no data and ran
 no candidate code.
 
-Automatic approval review rejected the live dispatch **before process creation**:
+Automatic approval review initially rejected the live dispatch **before process creation**:
 the user authorized trying the sequence, but review requires explicit approval
 of this private notebook/code/chat/reference payload to Google Gemini. The block
-is recorded in `dispatch-block.json`. There is no `run.json`, zero provider calls
-and zero executions for this trial. The next step is exact-payload authorization,
-then a single dispatch of this unchanged plan. No retry or alternative send path
-has been attempted.
+is recorded in `dispatch-block.json`. At that point there was no `run.json`, and
+zero provider calls or executions. Minchan then answered **“Yes, approved”** to
+the exact notebook/code/chat/reference and subsequent actions/feedback transfer
+to Google Gemini 2.5 Pro, with the fixed eight/three/four limits and no retries.
+`approval-response.json` binds that answer and disclosure to the unchanged plan
+and rejection before the single live dispatch. The approved run is now closed.
 
 Verification: **1,001 Python tests passed, three optional tests skipped**, with
 the existing Starlette/httpx deprecation warning. This includes the authored
@@ -95,9 +97,59 @@ The archive, policy-sampling and browser-workspace Node checks also pass.
 Independent backend review found no dispatch blocker; it clarified the budget
 wording above. These authored checks are not live model or real-student results.
 
+## Live outcome: chat proposals diverged from installed work
+
+The run completed in **53.46 seconds**, with **three student decisions, two new
+tutor replies, zero execution requests and no provider failures or retries**.
+All five provider responses were complete, valid structured outputs from
+`gemini-2.5-pro`. Usage totaled 11,206 tokens: 5,590 prompt, 241 output and
+5,375 thinking tokens. Final no-reply was an explicit model choice with budget
+remaining, not a timeout or imposed stop.
+
+| Stage | Saved behavior | Notebook / execution evidence |
+| --- | --- | --- |
+| Initial | Captured work and reused guided hint | Revision zero, no execution feedback |
+| Student 1 | Edit plus code pasted in chat | The replacement-source field contained a generic one-word placeholder, not the proposed chat code |
+| Tutor 1 | Discussed the chat proposal and asked for another approach | Saw the installed placeholder; no execution occurred |
+| Student 2 | Another edit plus revised code pasted in chat | Repeated the same placeholder; revision advanced but source did not change |
+| Tutor 2 | Praised the chat proposal as correct | Did not address its mismatch with installed work; no execution occurred |
+| Student 3 | Explicit no-reply | Placeholder still installed, no observed output or grade |
+
+This is a **failed notebook-action outcome despite a coherent-looking chat**.
+Both raw student responses contain the misplaced fields, and saved work exactly
+matches them. It is not a parser, edit-application or display corruption. The
+schema validates field types but does not establish that the model understood
+which field contains replacement code. One trial does not establish the cause
+or prevalence of that confusion.
+
+Both new tutors received the installed source as well as the chat proposal.
+Their feedback addresses the proposal without resolving the discrepancy. The
+course reference supports the described operation; this is not an established
+API hallucination or fabricated execution claim. Neither role claimed a run or
+test had actually passed. The meaningful failure is the divergence of conversation
+and notebook state, followed by termination with that divergence unresolved.
+
+The live run exercises tutor handoffs, state persistence and model-selected
+termination, but **does not exercise student-requested execution or error
+recovery**. Those paths still have authored regression coverage, not a new live
+result from this trial. No real-student action accuracy or learning outcome is
+established.
+
+Exact offline replay and independent audit verify all raw calls, action/state
+bindings, source pins, approval-before-dispatch chronology and limits. Six frames
+retain revisions 0, 1, 1, 2, 2, 2 and no execution observations. The private
+`completion.json` records the aggregate result and supporting receipt hashes.
+The run remains unchanged; no further batch or replacement draw is queued.
+
+The next development target is an explicit separation of replacement code and
+chat text, plus tutor feedback that distinguishes a pasted proposal from installed
+work. A separately versioned change should be checked against this failure before
+another live trial. Do not silently move chat code into the notebook, force a run,
+or ban ordinary student coding mistakes to make the outcome appear successful.
+
 ## Inspecting the saved result
 
-After the authorized run completes, the existing desktop workbench can attach it:
+The completed authorized run is available in the existing desktop workbench:
 
 ```sh
 PYTHONPATH=. python -P apps/archive_message_preview.py \
@@ -112,5 +164,8 @@ timeline. Its initial hint is marked as a reused reply. Earlier continuations an
 policy samples remain separate choices. The view verifies the saved run on each
 data request, displays each pending message only once, clears stale current
 output after edits and makes no generation/execution requests. Unfinished runs
-cannot appear as completed results. Browser inspection of a live result is still
-pending because dispatch has not occurred.
+cannot appear as completed results. Browser inspection at
+<http://127.0.0.1:8455/> confirmed the default final stage, all six timeline events,
+the first pending student message appearing once, the installed placeholder beside
+the proposed chat code, and no inferred execution output or grade. The final stage
+is left open for inspection. Opening and navigating the replay did not add calls.
