@@ -1,5 +1,17 @@
 # Simulated students: task list
 
+**Behavioral measurement audit prepared; exact transfer approval needed (2026-09-30):**
+[Fixed audit and measurement limits](docs/2026-09-30-behavioral-measurement-readiness.md).
+Three completed reviews provide 88 distinct inputs across 16 conversation
+prefixes; no new human labeling is requested. The fixed Gemini Flash coder keeps
+the two help/work flags independent and preserves one conflicting human judgment.
+28 authored checks and independent review pass. Automatic approval review blocked
+the 88-prompt private-data transfer before execution; zero requests were sent.
+Exact prompts and verified source bindings are saved locally. After specific
+approval, consume this audit once and report; no tuning, reruns or automatic fresh
+benchmark dispatch. Work has 54 yes/34 no examples; help has only four negatives,
+so high help agreement alone cannot establish reliable measurement.
+
 **Saved history benchmark added to the workbench (2026-09-30):**
 The **History benchmark** tab at port 8454 shows all ten recorded next messages,
 all 100 saved replies, their supplied conversation and the original form scores.
