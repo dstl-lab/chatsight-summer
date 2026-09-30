@@ -7,8 +7,12 @@ from pathlib import Path
 import pytest
 
 from src.agents import archived_notebook as archive, notebook_student as store, notebook_tutor as tutor
-from tests.test_archived_notebook import prepared, action, execution, no_execution
+from tests.test_archived_notebook import prepared, execution, no_execution
 from tests.test_policy_execution import raw
+
+
+def action(decision, source=None, text=''):
+    return {'decision':decision, 'replacement_code':source, 'chat_message':text}
 
 
 @pytest.fixture
@@ -187,3 +191,67 @@ def test_provenance_and_changed_reference_prevent_dispatch(sequence):
     store._save(manifest, value)
     with pytest.raises(ValueError):
         module.load(folder)
+
+
+def test_explicit_code_and_chat_contract_keeps_proposals_out_of_installed_work(sequence):
+    module, folder, plan = sequence
+    assert plan['version'] == 2
+    assert set(plan['schema']['properties']) == {'decision', 'replacement_code', 'chat_message'}
+    choices = iter([action('revise-work', 'missing_variable', 'result = 42'), action('no-reply')])
+
+    def generate(_, prompt, schema):
+        if schema is tutor.Reply:
+            assert 'installed' in prompt and 'proposal' in prompt
+            context = json.loads(prompt.split('POLICY AND CONTEXT JSON:\n')[1])['context']
+            assert context['work']['source'] == 'missing_variable'
+            assert context['pending_message'] == 'result = 42'
+            assert context['feedback'] is None
+            return raw({'text':'Your message and cell differ.'})
+        assert 'replacement_code' in prompt and 'chat_message' in prompt
+        return raw(next(choices))
+
+    result = module.run(folder, send=True, generate=generate, execute=no_execution)
+    assert result['status'] == 'no-reply'
+    assert result['state']['work']['source'] == 'missing_variable'
+    assert result['state']['checks'] == 0
+    assert result['state']['dialogue'][-2]['text'] == 'result = 42'
+    assert module.load(folder) == result
+    # Invalid code is still permitted. A contract cannot infer or silently repair intent.
+    assert module.Action.model_validate(action('revise-work', 'not valid python !')).source == 'not valid python !'
+    assert module.Action.model_validate(action('revise-work', '')).source == ''
+    for invalid in ({'decision':'revise-work', 'source':'x = 1', 'text':''},
+                    action('reply', 'x = 1', 'help'), action('request-check', text='run')):
+        with pytest.raises(ValueError):
+            module.Action.model_validate(invalid)
+
+
+def test_v1_receipt_replays_with_its_frozen_contract_and_cannot_dispatch(sequence):
+    module, folder, plan = sequence
+    legacy, probe = module._inputs(plan['followup_folder'], plan['reference_file'],
+                                  plan['condition'], True, version=1)
+    legacy = {'created_at':plan['created_at'], **legacy}
+    own_pin = str(Path(module.__file__).absolute())
+    assert legacy['code_pins'][own_pin] == 'e7ab2ba98bc50754ce43f4bea4697a50027e92d6a628ff107a0802cab1aa1e2f'
+    store._save(folder/'plan.json', {'sha256':store.digest(legacy), 'plan':legacy})
+    calls = []
+    def exchange(kind, request):
+        assert request['prompt'].startswith(archive.PROMPT)
+        response = raw({'decision':'no-reply', 'source':None, 'text':''})
+        now = archive._now()
+        calls.append({'kind':kind, 'request':request, 'response':response,
+                      'status':'complete', 'started_at':now, 'finished_at':now})
+        return response
+    started = archive._now()
+    result = module._simulate(legacy, probe, exchange)
+    store._save(folder/'run.json', {'plan_sha256':store.digest(legacy), 'status':'complete',
+        'started_at':started, 'finished_at':archive._now(), 'calls':calls, 'result':result})
+    assert module.load(folder) == {'plan':legacy, **result}
+    with pytest.raises(ValueError, match='read-only'):
+        module.run(folder, send=True, generate=lambda *_:None, execute=no_execution)
+    for version, pin in ((1, '0'*64), (2, legacy['code_pins'][own_pin]), (3, legacy['code_pins'][own_pin])):
+        changed = deepcopy(legacy)
+        changed['version'] = version
+        changed['code_pins'][own_pin] = pin
+        store._save(folder/'plan.json', {'sha256':store.digest(changed), 'plan':changed})
+        with pytest.raises(ValueError):
+            module.load(folder)

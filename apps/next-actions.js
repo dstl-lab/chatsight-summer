@@ -51,7 +51,6 @@
     render();
     if(!keepOpen)closePanel();
     document.querySelector('#canvas [aria-label="Selected code cell, read only"]')?.scrollIntoView({block:'start'});
-    if(sample.decision==='reply')document.querySelector('#conversation-messages .chat-turn:last-of-type')?.scrollIntoView({block:'nearest'});
     notify(`Showing saved sample ${index}: ${labels[sample.decision].toLowerCase()}. No generation or execution.`);
   }
 

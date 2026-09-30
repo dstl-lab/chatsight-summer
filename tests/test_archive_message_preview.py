@@ -11,7 +11,7 @@ from apps import archive_message_preview as preview
 from src.agents import archive_tutor_continuation as continuation
 from src.agents import archived_notebook as archive, notebook_student as store
 from tests.test_archive_tutor_continuation import child
-from tests.test_archive_sequence import sequence
+from tests.test_archive_sequence import sequence, action as sequence_action
 from tests.test_archived_notebook import prepared, action, execution, no_execution
 from tests.test_policy_execution import prepared_followup, raw
 
@@ -117,7 +117,7 @@ def test_sequence_is_appended_as_latest_and_revalidated_on_each_data_get(prepare
     parent = archive.run(parent_folder, send=True, generate=lambda *_:raw(action('reply', text='OLD MESSAGE')),
                          execute=no_execution)
     module, sequence_folder, _ = sequence
-    choices = iter([action('reply', text='NEW MESSAGE'), action('no-reply')])
+    choices = iter([sequence_action('reply', text='NEW MESSAGE'), sequence_action('no-reply')])
     def generate(_, prompt, schema):
         from src.agents import notebook_tutor
         return raw({'text':'NEW TUTOR'}) if schema is notebook_tutor.Reply else raw(next(choices))

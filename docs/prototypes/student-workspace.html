@@ -75,6 +75,11 @@
 .connected-workspace .form-feedback{margin:12px 0;font-size:13px;line-height:1.6;color:var(--ink)}.connected-workspace [aria-invalid=true]{border-color:var(--danger)}
 .connected-workspace .draft-indicator{font-size:12px;font-weight:600;line-height:1.6;color:var(--muted)}
 .connected-workspace .chat-turn .source-inspect{padding:4px 6px;min-height:24px;font-size:11px;font-weight:400;color:var(--muted);background:transparent;border-color:transparent;text-underline-offset:3px}.connected-workspace .chat-turn .source-inspect:hover:not(:disabled){text-decoration:underline;background:transparent}
+.connected-workspace .chat-turn-new .message-body{outline:1px solid var(--green);outline-offset:4px;border-radius:var(--radius)}
+.connected-workspace .chat-new-label{flex-shrink:0;padding:2px 6px;border-radius:3px;background:var(--mint);color:var(--green);font-size:11px;font-weight:600;line-height:1.5}
+.connected-workspace #chat-jump-new{margin-top:12px;min-height:32px;padding:4px 12px;font-size:12px;color:var(--green);background:var(--mint);border-color:var(--green)}
+.connected-workspace #chat-jump-new:hover{background:var(--hover)}.connected-workspace #chat-jump-new:active{background:var(--pressed)}
+@media(prefers-reduced-motion:reduce){.connected-workspace #conversation-messages{scroll-behavior:auto}}
 .connected-workspace .policy-reuse-note{margin:12px 0;font-size:12px;line-height:1.6;color:var(--muted)}
 .connected-workspace .draft-actions{flex-wrap:wrap;align-items:center;gap:8px 12px}
 .connected-workspace [data-teaching-chat][aria-pressed=true]{background:var(--mint);border-color:var(--green);color:var(--green)}

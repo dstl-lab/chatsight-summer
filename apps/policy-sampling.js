@@ -59,7 +59,6 @@
     state.showInspector=false;state.selected='step';state.chatOpen=true;state.chatKey=null;
     render();if(!keepOpen)closePanel();
     document.querySelector('#canvas [aria-label="Selected code cell, read only"]')?.scrollIntoView({block:'start'});
-    document.querySelector('#conversation-messages .chat-turn:last-of-type')?.scrollIntoView({block:'nearest'});
     notify(`${c.label} · ${sample?'saved sample '+index:'tutor reply'}. No generation or execution.`);
   }
 

@@ -7,9 +7,9 @@ const script = path.join(__dirname, '../apps/browser_workspace.js');
 assert.ok(fs.existsSync(script), 'Saved workspace controller is missing');
 const elements = new Map();
 const node = id => {
-  if (!elements.has(id)) elements.set(id, {innerHTML:'', textContent:'', value:'', hidden:false,
+  if (!elements.has(id)) elements.set(id, {innerHTML:'', textContent:'', value:'', hidden:false, scrollTop:0,scrollHeight:0,clientHeight:0,
     dataset:{}, attributes:{}, classList:{toggle(){},remove(){}}, setAttribute(name,value){this.attributes[name]=value},
-    insertAdjacentHTML(){}, append(child){child.parentElement=this}, before(child){child.parentElement=node('.main')}, after(){}, querySelector(){return null}, scrollIntoView(options){this.scrolled=options}, hasAttribute(){return false}, focus(){document.activeElement=this}});
+    insertAdjacentHTML(){}, append(child){child.parentElement=this}, before(child){child.parentElement=node('.main')}, after(){}, querySelector(){return null}, scrollIntoView(options){this.scrolled=options}, scrollTo(options){(this.scrolls??=[]).push(options);this.scrollTop=options.top}, hasAttribute(){return false}, focus(){document.activeElement=this}});
   return elements.get(id);
 };
 const modes = ['inspect','simulate','compare'].map(mode=>Object.assign(node(mode),{dataset:{mode}}));
@@ -49,7 +49,7 @@ packet.encounters[0].evidence_card={version:1,student_messages:1,supplied_turns:
   scope:'Supplied student messages only.',limits:['One message cannot establish a stable communication pattern.']};
 let fail=false, requests=[], finishPost, readBusy=false, pollCallbacks=[], postFailure=false;
 let catalog=[], savedUrl=new URL('http://127.0.0.1/');
-let workspaceId='test-workspace';
+let workspaceId='test-workspace',reducedMotion=true;
 const draftStorage=new Map();
 let comparisonAvailable=false, policyWorkspaceAvailable=false, fidelityComparisonAvailable=false, replayAvailable=true, comparisonFail=false;
 let comparisonReadBusy=false,comparisonPostError='',comparisonPostThrow=false,finishComparisonPost;
@@ -72,7 +72,7 @@ packet.controls={send_enabled:false,policy:'One concise hint.',reference:null,bl
 packet.operation={status:'idle',message:''};
 const makeContext=()=>{
   const listeners={};
-  return vm.createContext({document, listeners, window:{matchMedia:()=>({matches:true}),
+  return vm.createContext({document, listeners, window:{matchMedia:query=>({matches:query==='(prefers-reduced-motion: reduce)'?reducedMotion:true}),
   addEventListener:(event,listener)=>{listeners[event]=listener},
   sessionStorage:{getItem:key=>draftStorage.get(key)??null,setItem:(key,value)=>draftStorage.set(key,value),removeItem:key=>draftStorage.delete(key)},
   get location(){return savedUrl},history:{replaceState:(_a,_b,url)=>{savedUrl=new URL(url,savedUrl)}}},
@@ -294,6 +294,8 @@ const run=code=>vm.runInContext(code,context);
   packet.encounters[0].frames.push({...chatStart,label:'Saved step 1',status:'awaiting-tutor',
     pending_message:'<script>help?</script>',actions:[{decision:'reply',text:'<script>help?</script>',source:null}]});
   node('message-.chat-turn:last-of-type').offsetTop=700;
+  node('message-[data-chat-message="1"]').offsetTop=700;
+  Object.assign(node('conversation-messages'),{scrollHeight:900,clientHeight:300,scrollTop:600});
   const readsBeforePlayback=requests.length;
   await run('reloadWorkspace()');
   assert.equal(node('canvas').innerHTML,'','Chat has no duplicate activity view');
@@ -1266,5 +1268,59 @@ const run=code=>vm.runInContext(code,context);
   assert.equal(node('notebook-versions').hidden,true);
   assert.equal(node('playback').hidden,false,'Switching away restores ordinary playback');
   assert.ok(requests.every(r=>!r.options.method),'Retrospective execution display must use GET only');
+  // Chat advances by visible messages, not work/check stages or pending-message metadata.
+  const sharedChat=[{role:'student',origin:'source',text:'start?'},{role:'tutor',origin:'generated',text:'try this'}];
+  const chatBase={...initial,dialogue:sharedChat,pending_message:null};
+  const committed=[...sharedChat,{role:'student',origin:'generated',text:'this?'},{role:'tutor',origin:'generated',text:'a new hint'}];
+  packet.kind='notebook';packet.controls={send_enabled:false};
+  packet.encounters=[{id:'chat-updates',title:'Authored chat changes',task:'Authored task',frames:[
+    chatBase,{...chatBase,work:{...initial.work,revision:1}},
+    {...chatBase,status:'awaiting-tutor',pending_message:'this?'},
+    {...chatBase,dialogue:committed}, {...chatBase,dialogue:committed},
+    {...chatBase,dialogue:committed,pending_message:'another?'}]}];
+  const chatContext=makeContext(),chat=code=>vm.runInContext(code,chatContext);
+  chat(fs.readFileSync(script,'utf8'));await chat('ready');
+  chat('selectFrame(0)');
+  const messages=node('conversation-messages');
+  messages.scrollHeight=900;messages.clientHeight=300;messages.scrollTop=600;messages.scrolls=[];
+  node('message-[data-chat-message="2"]').offsetTop=850;
+  node('message-[data-chat-message="3"]').offsetTop=1100;
+  node('message-[data-chat-message="4"]').offsetTop=1350;
+  const focusedBeforeChat=node('next-step');focusedBeforeChat.focus();
+  reducedMotion=false;
+  chat('selectFrame(1)');
+  assert.equal(messages.scrollTop,600,'A notebook-only stage preserves the reading position');
+  assert.equal(messages.scrolls.length,0,'A notebook-only stage never initiates scrolling');
+  chat('selectFrame(2)');
+  assert.match(messages.innerHTML,/chat-turn-new/);
+  assert.match(messages.innerHTML,/class="chat-new-label">New/);
+  assert.equal(node('chat-updates').textContent,'1 new message at this step.');
+  assert.equal(messages.scrolls.at(-1).behavior,'smooth');
+  assert.equal(messages.scrolls.at(-1).top,850);
+  assert.equal(document.activeElement,focusedBeforeChat,'Automatic chat updates never move keyboard focus');
+  assert.equal(node('chat-jump-new').hidden,true);
+  const sameStageScrolls=messages.scrolls.length;
+  chat('render()');assert.equal(messages.scrolls.length,sameStageScrolls,'Repeated rendering never restarts scrolling');
+  // A reader moved up before the tutor response: preserve that position and offer an explicit jump.
+  messages.scrollHeight=1200;messages.scrollTop=80;
+  chat('selectFrame(3)');
+  assert.equal(messages.scrollTop,80);assert.equal(messages.scrolls.length,sameStageScrolls);
+  const messageArticles=messages.innerHTML.match(/<article class="chat-turn[^]*?<\/article>/g);
+  assert.equal(messageArticles.filter(html=>html.includes('chat-turn-new')).length,1);
+  assert.ok(messageArticles[3].includes('chat-turn-new'),'Only the new tutor response is new; the committed student message is not');
+  assert.equal(node('chat-updates').textContent,'1 new message at this step.');
+  assert.equal(node('chat-jump-new').hidden,false);
+  node('chat-jump-new').onclick();
+  assert.equal(messages.scrolls.at(-1).top,1100);assert.equal(messages.scrolls.at(-1).behavior,'smooth');
+  const beforeQuiet=messages.scrolls.length;
+  chat('selectFrame(4)');assert.equal(messages.scrolls.length,beforeQuiet);
+  assert.doesNotMatch(messages.innerHTML,/chat-turn-new/);
+  reducedMotion=true;messages.scrollHeight=1400;messages.scrollTop=1100;
+  chat('selectFrame(5)');assert.equal(messages.scrolls.at(-1).behavior,'instant');
+  assert.equal(messages.scrolls.at(-1).top,1350);
+  chat("state.chatKey=null;render()");
+  assert.doesNotMatch(messages.innerHTML,/chat-turn-new/,'Opening a different saved context does not announce historical messages as new');
+  assert.equal(node('chat-updates').textContent,'');
+  assert.equal(node('chat-jump-new').hidden,true);
   console.log('Saved workspace: playback, drafts, fidelity, student models, standalone review, next exercise, manual tutor, and recovery pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

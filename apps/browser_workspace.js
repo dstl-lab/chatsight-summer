@@ -19,6 +19,7 @@ const block = value => `<pre>${esc(typeof value==='string'?value:JSON.stringify(
 const taskText = task => typeof task==='string'?task:Array.isArray(task)&&task.every(cell=>typeof cell?.source==='string')?task.map(cell=>cell.source).join('\n\n'):JSON.stringify(task,null,2);
 const state = {kind:'notebook',scenarios:null,scenarioId:null,encounters:[],caseIndex:0,step:0,mode:'simulate',selected:'step',showInspector:false,controls:{send_enabled:false},operation:{status:'idle',message:''},policyDraft:null,replyDraft:'',replyMode:'policy',submitting:false,monitoring:false,refreshing:false,clientError:''};
 Object.assign(state,{comparisonAvailable:false,policyWorkspaceAvailable:false,fidelityComparisonAvailable:false,replayAvailable:true,comparison:null,reviewIndex:0,comparisonLoading:false,comparisonError:'',comparisonEntryNote:'',chatOpen:true,chatKey:null});
+Object.assign(state,{chatSnapshot:null,chatNewFrom:null,chatUnread:false});
 Object.assign(state,{workspaceId:null,comparisonDraft:null,comparisonDirty:false,draftStored:false,comparisonEditing:false,comparisonSubmitting:false,comparisonMonitoring:false,comparisonOperation:{status:'idle',message:''}});
 Object.assign(state,{exercise:new URLSearchParams(window.location.search).get('exercise')||'current',preparingExercise:false,openingExercise:false});
 Object.assign(state,{teachingComparisonAvailable:false,teachingArm:'shared',studentComparisonAvailable:false});
@@ -167,8 +168,15 @@ function pendingReplyNote(){
 }
 function conversation(rows=turns(),offset=0){
   const simulationStart=(state.kind==='chat'||isSourceOnly())&&state.mode!=='compare'?rows.findIndex(t=>t.origin==='generated'):-1;
-  return rows.length?rows.map((turn,i)=>`${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${glyph(turn.role==='student'?'student':'tutor')}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(isRecordedNotebook()&&state.mode!=='compare'?'Recorded event '+turn.sequence:originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div><button class="source-inspect" data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">${glyph('source')}Source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`).join(''):'<p class="quiet">No chat message at this saved state.</p>';
+  return rows.length?rows.map((turn,i)=>{
+    const isNew=state.chatNewFrom!==null&&i+offset>=state.chatNewFrom;
+    return `${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${isNew?' chat-turn-new':''}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" data-chat-message="${i+offset}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${glyph(turn.role==='student'?'student':'tutor')}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(isRecordedNotebook()&&state.mode!=='compare'?'Recorded event '+turn.sequence:originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div>${isNew?'<span class="chat-new-label">New<span class="sr-only"> at this step</span></span>':''}<button class="source-inspect" data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">${glyph('source')}Source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`;
+  }).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
+function scrollChatTo(top,smooth=true){
+  $('conversation-messages').scrollTo({top,behavior:smooth&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches?'smooth':'instant'});
+}
+const firstNewMessage=()=>$('conversation-messages').querySelector(`[data-chat-message="${state.chatNewFrom}"]`);
 function renderStudentEvidence(){
   const card=state.mode==='compare'?null:current()?.evidence_card;
   const details=$('student-evidence'),content=$('student-evidence-content');
@@ -206,22 +214,46 @@ function renderChat(){
   $('chat-title').textContent=teaching?'Student–tutor chat':isStudentComparison()&&comparing?'Shared recorded context':isFidelityComparison()&&comparing?'Recorded conversation':comparing?'Shared conversation':'Student–tutor chat';
   $('chat-title').insertAdjacentHTML('afterbegin',glyph('chat'));
   $('chat-caption').textContent=teaching?(condition?'Reply '+condition.id.toUpperCase()+' · saved conversation':'Shared starting conversation'):comparing?(c?`${c.source?.title||c.title} · ${isStudentComparison()?'every turn supplied to both models':isFidelityComparison()?'before the next reply':'shared starting point'}`:'No saved context loaded'):available?`${current().title} · ${frame().label}`:'No saved conversation loaded';
-  const key=comparing?'compare:'+state.comparisonEditing+':'+c?.id+':'+(teaching?state.teachingArm:''):`${state.scenarioId}:${current()?.id}:${state.step}`;
-  const changed=state.chatKey!==key;
-  if(visibleChat)state.chatKey=key;
+  const contextKey=comparing?'compare:'+state.comparisonEditing+':'+c?.id+':'+(teaching?state.teachingArm:''):`${state.scenarioId}:${current()?.id}:${current()?.sample_index??''}`;
+  const key=contextKey+':'+(comparing?'':state.step);
   const rows=available?turns():[];
   $('chat-count').textContent=rows.length+' message'+(rows.length===1?'':'s');
   document.querySelectorAll('[data-chat-jump]').forEach(b=>b.disabled=rows.length<2);
-  if(!available){$('conversation-messages').innerHTML='<p class="quiet">'+(state.comparisonLoading||state.refreshing||state.monitoring?'Loading saved conversation…':'No verified conversation to display.')+'</p>';return}
+  if(!available){
+    state.chatSnapshot=null;state.chatNewFrom=null;state.chatUnread=false;
+    $('chat-jump-new').hidden=true;$('chat-updates').textContent='';
+    $('conversation-messages').innerHTML='<p class="quiet">'+(state.comparisonLoading||state.refreshing||state.monitoring?'Loading saved conversation…':'No verified conversation to display.')+'</p>';return;
+  }
   const messages=$('conversation-messages'),previousScroll=messages.scrollTop;
-  messages.innerHTML=teaching?`<div class="draft-actions" role="group" aria-label="Conversation to inspect">${['shared','a','b'].map(id=>`<button data-teaching-chat="${id}" aria-pressed="${state.teachingArm===id}">${id==='shared'?'Shared start':'Reply '+id.toUpperCase()}</button>`).join('')}</div><p class="quiet chat-context-note">${condition?'Saved dialogue for this condition. Quiet edits and checks appear in its outcome column.':esc(c.context_status)}</p>${conversation(rows)}`:comparing?`<p class="quiet chat-context-note">${esc(c.context_status)}</p><h3 class="chat-section-label">${isStudentComparison()?'Earlier dialogue · both models':isFidelityComparison()?'Earlier dialogue · history condition only':'Earlier messages supplied'}</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3 class="chat-section-label"${isStudentComparison()||isPolicyComparison()||isFidelityComparison()?' id="tested-question"':''}>${isStudentComparison()?'Current exchange · both models':isFidelityComparison()?'Current exchange · both conditions':isPolicyComparison()?(c.gemini_tutor_model||state.comparisonEditing&&state.comparison?.controls?.gemini_tutor_model?'Shared starting question · cached simulation':'Question being tested · simulated'):'Current exchange'}</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
-  if(!comparing&&isSourceOnly()&&frame().status==='awaiting-tutor')messages.innerHTML+='<p class="quiet">No tutor reply was generated. This saved decision ends the branch.</p>';
-  if(!comparing&&isSourceOnly()&&frame().reaction)messages.innerHTML+=`<p class="quiet">${frame().status==='no-reply'?'After seeing the execution result, the simulated student chose no further action. No message was sent and no code changed. This does not establish understanding or task completion.':frame().status==='active'?'The student edited the notebook after feedback without sending a message. The new code has not been executed.':'This simulated message follows the supplied execution result.'}</p>`;
+  // Pending -> committed changes metadata, not the identity of the visible student message.
+  const identities=rows.map(turn=>JSON.stringify([turn.role,turn.text])),previous=state.chatSnapshot;
+  const fresh=state.chatKey===null||!previous||previous.contextKey!==contextKey;
+  const same=!fresh&&identities.length===previous.identities.length&&identities.every((id,i)=>id===previous.identities[i]);
+  const appended=!fresh&&identities.length>previous.identities.length&&previous.identities.every((id,i)=>id===identities[i])
+    &&(comparing||state.step>=previous.step);
+  const nearBottom=messages.scrollHeight-messages.clientHeight-previousScroll<=64;
+  if(fresh||!same||state.chatKey!==key){
+    state.chatNewFrom=appended?previous.identities.length:null;
+    state.chatUnread=appended&&!nearBottom;
+    const count=appended?identities.length-previous.identities.length:0;
+    $('chat-updates').textContent=count?`${count} new message${count===1?'':'s'} at this step.`:'';
+  }
+  let html=teaching?`<div class="draft-actions" role="group" aria-label="Conversation to inspect">${['shared','a','b'].map(id=>`<button data-teaching-chat="${id}" aria-pressed="${state.teachingArm===id}">${id==='shared'?'Shared start':'Reply '+id.toUpperCase()}</button>`).join('')}</div><p class="quiet chat-context-note">${condition?'Saved dialogue for this condition. Quiet edits and checks appear in its outcome column.':esc(c.context_status)}</p>${conversation(rows)}`:comparing?`<p class="quiet chat-context-note">${esc(c.context_status)}</p><h3 class="chat-section-label">${isStudentComparison()?'Earlier dialogue · both models':isFidelityComparison()?'Earlier dialogue · history condition only':'Earlier messages supplied'}</h3>${c.prefix.context.length?conversation(rows.slice(0,c.prefix.context.length)):'<p class="quiet">No earlier messages supplied.</p>'}<h3 class="chat-section-label"${isStudentComparison()||isPolicyComparison()||isFidelityComparison()?' id="tested-question"':''}>${isStudentComparison()?'Current exchange · both models':isFidelityComparison()?'Current exchange · both conditions':isPolicyComparison()?(c.gemini_tutor_model||state.comparisonEditing&&state.comparison?.controls?.gemini_tutor_model?'Shared starting question · cached simulation':'Question being tested · simulated'):'Current exchange'}</h3>${conversation(rows.slice(c.prefix.context.length),c.prefix.context.length)}`:conversation(rows);
+  if(!comparing&&isSourceOnly()&&frame().status==='awaiting-tutor')html+='<p class="quiet">No tutor reply was generated. This saved decision ends the branch.</p>';
+  if(!comparing&&isSourceOnly()&&frame().reaction)html+=`<p class="quiet">${frame().status==='no-reply'?'After seeing the execution result, the simulated student chose no further action. No message was sent and no code changed. This does not establish understanding or task completion.':frame().status==='active'?'The student edited the notebook after feedback without sending a message. The new code has not been executed.':'This simulated message follows the supplied execution result.'}</p>`;
+  const replaced=messages.innerHTML!==html;
+  if(replaced)messages.innerHTML=html;
+  $('chat-jump-new').hidden=!state.chatUnread;
   document.querySelectorAll('[data-teaching-chat]').forEach(button=>{button.onclick=()=>{state.teachingArm=button.dataset.teachingChat;state.showInspector=false;state.selected='review';render();document.querySelector(`[data-teaching-chat="${state.teachingArm}"]`)?.focus();notify('Showing '+(state.teachingArm==='shared'?'shared start':'Reply '+state.teachingArm.toUpperCase())+' conversation.')}});
-  if(changed&&visibleChat){
-    if(comparing&&(isStudentComparison()||isPolicyComparison()||isFidelityComparison()))messages.querySelector('#tested-question')?.scrollIntoView({block:'start'});
-    else messages.scrollTop=!comparing&&state.step>0?(messages.querySelector('.chat-turn:last-of-type')?.offsetTop||0):0;
-  }else messages.scrollTop=previousScroll;
+  if(visibleChat){
+    if(fresh){
+      if(comparing&&(isStudentComparison()||isPolicyComparison()||isFidelityComparison()))messages.querySelector('#tested-question')?.scrollIntoView({block:'start',behavior:'instant'});
+      else scrollChatTo(!comparing&&state.step>0?(messages.querySelector('.chat-turn:last-of-type')?.offsetTop||0):0,false);
+    }else if(appended&&nearBottom)scrollChatTo(firstNewMessage()?.offsetTop||0);
+    else if(!same&&!comparing&&state.step===0)scrollChatTo(0,false);
+    else if(replaced)messages.scrollTop=previousScroll;
+    state.chatKey=key;state.chatSnapshot={contextKey,identities,step:state.step};
+  }
   document.querySelectorAll('[data-evidence]').forEach(b=>b.onclick=()=>selectEvidence(b.dataset.evidence));
   document.querySelectorAll('.message-body pre').forEach(pre=>{pre.tabIndex=0;pre.setAttribute('aria-label','Tutor code block')});
 }
@@ -818,8 +850,7 @@ async function submitOperation(){
     if(!response.ok)throw new Error(typeof packet.detail==='string'?packet.detail:'The request was rejected. Reload the saved run before trying again.');
     state.showInspector=false;state.mode='simulate';state.selected='step';
     applyWorkspace(packet);
-    if(frame().actions.some(action=>action.text))document.querySelector('#conversation-messages .chat-turn:last-child')?.scrollIntoView({block:'nearest'});
-    else $('canvas').scrollTop=0;
+    if(!frame().actions.some(action=>action.text))$('canvas').scrollTop=0;
     notify(state.operation.message||'New result saved.');
   }catch(error){
     state.clientError=error.message||'Request outcome is unknown. Checking saved status; it will not be resent.';
@@ -828,7 +859,7 @@ async function submitOperation(){
 }
 document.title='Student lab · Simulation workspace';
 $('app').classList.toggle('connected-workspace',true);
-$('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel" id="conversation-panel" aria-label="Student and tutor conversation"><header><h2 id="chat-title">Student–tutor chat</h2><p id="chat-caption" class="small muted"></p><div class="chat-navigation"><span id="chat-count" class="small muted"></span><button data-chat-jump="first" aria-label="Go to first message" aria-controls="conversation-messages">First</button><button data-chat-jump="last" aria-label="Go to last message" aria-controls="conversation-messages">Last</button></div></header><div id="conversation-messages"></div></aside>');
+$('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel" id="conversation-panel" aria-label="Student and tutor conversation"><header><h2 id="chat-title">Student–tutor chat</h2><p id="chat-caption" class="small muted"></p><div class="chat-navigation"><span id="chat-count" class="small muted"></span><button data-chat-jump="first" aria-label="Go to first message" aria-controls="conversation-messages">First</button><button data-chat-jump="last" aria-label="Go to last message" aria-controls="conversation-messages">Last</button></div><button id="chat-jump-new" aria-controls="conversation-messages" hidden>Jump to new messages</button><p id="chat-updates" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p></header><div id="conversation-messages"></div></aside>');
 $('conversation-messages').insertAdjacentHTML('beforebegin','<details id="student-evidence" class="student-evidence" hidden><summary><b>Student evidence</b><span id="student-evidence-summary"></span></summary><div class="student-evidence-body"><div id="student-evidence-guidance" hidden><label><input type="checkbox" id="use-student-evidence" aria-describedby="evidence-guidance-note">Use as student guidance</label><p id="evidence-guidance-note" class="guidance-note muted">Applies to the next student reply. Viewing or changing this option sends nothing.</p></div><p id="student-evidence-used" hidden></p><div id="student-evidence-content"></div></div></details>');
 $('use-student-evidence').onchange=event=>{state.useEvidence=event.target.checked};
 $('inspector-toggle').insertAdjacentHTML('beforebegin','<button id="chat-toggle" aria-controls="conversation-panel" aria-expanded="true">Hide chat</button>');
@@ -872,7 +903,16 @@ $('previous-step').onclick=()=>{if(state.step>0)selectFrame(state.step-1)};
 $('tutor-controls').onclick=()=>selectEvidence(state.mode==='compare'?'review':'controls');
 $('saved-results').onclick=()=>selectEvidence('results');
 $('chat-toggle').onclick=()=>{state.chatOpen=!state.chatOpen;if(state.chatOpen)state.chatKey=null;renderChat();if(!state.chatOpen&&state.selected.startsWith('turn:'))$('chat-toggle').focus()};
-document.querySelectorAll('[data-chat-jump]').forEach(b=>b.onclick=()=>{const messages=$('conversation-messages'),first=b.dataset.chatJump==='first';messages.scrollTop=first?0:messages.scrollHeight;messages.querySelector(first?'.chat-turn':'.chat-turn:last-of-type')?.focus({preventScroll:true})});
+document.querySelectorAll('[data-chat-jump]').forEach(b=>b.onclick=()=>{const messages=$('conversation-messages'),first=b.dataset.chatJump==='first';scrollChatTo(first?0:messages.scrollHeight);messages.querySelector(first?'.chat-turn':'.chat-turn:last-of-type')?.focus({preventScroll:true})});
+$('chat-jump-new').onclick=()=>{
+  const target=firstNewMessage();if(!target)return;
+  scrollChatTo(target.offsetTop);target.focus({preventScroll:true});
+  state.chatUnread=false;$('chat-jump-new').hidden=true;
+};
+$('conversation-messages').onscroll=()=>{
+  const messages=$('conversation-messages'),target=state.chatUnread&&firstNewMessage();
+  if(target&&target.offsetTop<messages.scrollTop+messages.clientHeight-32){state.chatUnread=false;$('chat-jump-new').hidden=true}
+};
 $('next-step').onclick=()=>{if(state.step<current().frames.length-1)selectFrame(state.step+1)};
 $('inspector-toggle').onclick=()=>{state.showInspector=false;render();(state.selected.startsWith('turn:')&&!state.chatOpen&&(state.kind!=='chat'||state.mode==='compare')?$('chat-toggle'):state.selected==='results'?$('saved-results'):state.selected==='controls'?($('tutor-controls').hidden?$('continue-run'):$('tutor-controls')):state.selected==='review'?$('tutor-controls'):state.selected==='next-exercise'?$('next-exercise'):state.selected==='context'?$('run-details-toggle'):document.querySelector(`[data-evidence="${state.selected}"]:not([hidden], [hidden] *)`)||document.querySelector(`[data-mode="${state.mode}"]`))?.focus()};
 $('explorer-toggle').onclick=()=>{const shown=$('app').classList.toggle('show-explorer');$('explorer-toggle').setAttribute('aria-expanded',String(shown))};
