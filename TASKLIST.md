@@ -1,18 +1,20 @@
 # Simulated students: task list
 
-**Behavioral measurement audit closed with a transport failure (2026-09-30):**
+**Behavioral measurement audit completed; scorer not adopted (2026-09-30):**
 [Fixed audit and measurement limits](docs/2026-09-30-behavioral-measurement-readiness.md).
 Three completed reviews provide 88 distinct inputs across 16 conversation
 prefixes; no new human labeling is requested. The fixed Gemini Flash coder keeps
 the two help/work flags independent and preserves one conflicting human judgment.
-After exact transfer approval, all 88 requests ended in API client errors; zero
-usable labels, retries or missing slots. A synthetic diagnostic found the schema
-parameter bug; changing `response_schema` to `response_json_schema` works on an
-invented message. The 28 offline checks did not catch provider compatibility.
-The failed run and its report are preserved. A separate recovery uses identical
-inputs and needs approval for another 88-request batch; it has not been sent.
-No fresh benchmark or human labeling is queued. Work has 54 yes/34 no examples;
-help has only four negatives, limiting any later reliability conclusion.
+After a failed transport attempt and verified schema correction, the explicitly
+approved recovery completed 88/88 requests without errors or retries. Agreement
+on binary comparisons is work 76/87 (87.4%) and help 35/86 (40.7%), with one
+unclear message and a separate human help conflict. Work has 11 false positives;
+help has 51 false negatives relative to saved judgments. Some disagreements
+also expose ambiguity between the written rubric and saved human labels.
+Both runs and reports are preserved; the audit is closed. No scorer adoption,
+prompt tuning, fresh benchmark dispatch or additional human labeling is queued.
+Next: settle observable content versus inferred intent before treating these
+flags as a student-fidelity measure. The report records limitations and counts.
 
 **Saved history benchmark added to the workbench (2026-09-30):**
 The **History benchmark** tab at port 8454 shows all ten recorded next messages,

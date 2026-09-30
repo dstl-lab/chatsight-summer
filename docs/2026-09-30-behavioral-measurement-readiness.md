@@ -1,14 +1,102 @@
-# Behavioral measurement readiness
+# Help/work measurement audit and results
 
-**The approved audit completed with 88 API client errors and zero usable labels.**
-A synthetic diagnostic reproduced a schema-parameter error; the one-field
-correction succeeds with invented text. No private input has been resent.
-Automatic labels are still not established as reliable measurements of
-`help_request` and `work_present`. Three completed human reviews provide a
-bounded audit set for these exact flags. Reuse those judgments before treating
-an automatic coder as a behavioral benchmark instrument. The inventory and
-preparation inspect no new reserved targets; the separate, fixed coding audit
-below uses only previously reviewed messages.
+**The explicitly approved recovery completed all 88 coding requests, with no
+transport errors or retries.** Agreement with saved human judgments is 76/87
+(87.4%) for work presence and 35/86 (40.7%) for help requests among binary,
+nonconflicted comparisons. One message received unclear for both flags; another
+has a conflicting human help judgment. This measures coder–reviewer agreement,
+not simulated-student realism. Neither flag is adopted as a validated scorer.
+
+The original 88-request attempt remains a closed transport failure. Its schema
+parameter was corrected and checked on invented text before the user approved
+the separate recovery batch. The recovery changed no messages, human judgments,
+rubric, model, schedule or scoring logic. No new student replies were generated,
+no unused target messages were inspected and no further human labeling occurred.
+
+## Completed recovery results
+
+The user explicitly approved "the corrected 88-request batch". The local
+`data/behavioral-measurement-schema-recovery-v1/approval.json` binds that response
+to the frozen plan and exact disclosure; it precedes dispatch. All 88 raw provider
+responses and receipts are saved locally. `report.json` reparses those responses
+and verifies the unchanged prompts, human sources and prior failed-run evidence.
+Independent verification reproduced every raw response, aggregate and per-prefix
+metric, Wilson interval and kappa; all 223 source-file pins verify. Approval
+precedes every request, and the original failed run remains unchanged. The local
+`closure.json` records completion with no adopted scorer or further dispatch.
+
+Request accounting is 88 failed original attempts, two authored diagnostic
+generation requests and 88 completed recovery requests, plus one metadata-only
+lookup. There were no retries within either batch or other generation calls.
+
+| Compared with saved human flags | Work present | Help request |
+| --- | ---: | ---: |
+| Eligible human judgments | 88 | 87; one conflict excluded |
+| Binary model coverage | 87/88 (98.9%) | 86/87 (98.9%) |
+| Model unclear | 1 | 1 |
+| True positives | 54 | 31 |
+| False positives | 11 | 0 |
+| False negatives | 0 | 51 |
+| True negatives | 22 | 4 |
+| Agreement on binary comparisons | 76/87 (87.4%) | 35/86 (40.7%) |
+| Precision | 54/65 (83.1%) | 31/31 (100%) |
+| Recall | 54/54 (100%) | 31/82 (37.8%) |
+| Specificity | 22/33 (66.7%) | 4/4 (100%) |
+| Cohen's kappa | 0.713 | 0.054 |
+
+The unclear case has human help=yes and work=no. It stays outside confusion
+cells, which is why help recall uses 82 rather than 83 and work specificity uses
+33 rather than 34. The human help conflict does not discard its agreed work=no.
+Failures, unclear outcomes and conflicts are never converted into negative labels.
+
+All sixteen prefixes contain a binary help disagreement; eight contain a work
+disagreement. The saved report includes each prefix's counts. Across prefixes,
+help disagreement counts are 1 (one prefix), 2 (six), 3 (three), 4 (three), 5
+(two) and 7 (one). Work disagreement counts are 0 (eight prefixes), 1 (five)
+and 2 (three). These are shared contexts, not 88 independent student accounts.
+
+Descriptive Wilson 95% intervals for work precision, recall and specificity are
+72.2–90.3%, 93.4–100% and 49.6–80.2%, respectively. For help, they are
+89.0–100%, 28.1–48.6% and 51.0–100%. These intervals assume independence, which
+shared prefixes and a single reviewer violate; they are not population intervals.
+The four help-negative cases cannot establish strong specificity even with
+four matching answers.
+
+### Interpretation and stopping decision
+
+This audit exposes a mismatch between the automatic coder and our saved
+judgments. It does not establish which source is correct in every disagreement.
+Among the eleven work disagreements, nine candidates visibly contain declarative
+answers, code or explanations, one offers a tentative answer as a question, and
+one merely says a function exists before asking how to use it. The first pattern
+suggests that some saved judgments used a narrower meaning of work than the
+written rubric, which counts answers and reasoning. The last pattern exposes a
+potential model error: mentioning earlier work is not itself submitting it.
+These are qualitative observations, not replacement labels or adjudications.
+
+Inspection of the 51 help disagreements found code submissions, answers to tutor
+questions and acknowledgments of readiness to continue. Forty-one already have
+human work=yes; ten have work=no. Their prefixes often start with a request for
+help and end by inviting an attempt or answer. One interpretation is that the
+model distinguishes answering from requesting help, while the human judgments
+carry an implicit request for checking forward from the conversation. The saved
+categorical outputs cannot establish the model's reasoning. This is exactly the
+rubric boundary between context-supported terse requests and code/output that
+does not automatically imply a request; neither side is adjudicated here.
+
+Do not use these scores as a realism percentage or treat the model's flags as
+reliable ground truth for a fresh student benchmark. The protocol froze no
+numerical adoption threshold; none is invented after seeing these results.
+No label changes, prompt tuning, replacement draws or additional coding calls
+are queued. The failed original run and successful recovery are both closed.
+
+The next measurement decision is to separate observable message content from
+inferred intent: presenting an answer is observable; whether a bare answer is
+implicitly asking for confirmation requires interpretation. Keep the existing
+human judgments and automatic judgments separately inspectable. A later
+benchmark needs a declared operational definition and uncertainty treatment
+before its scores can support a student-fidelity claim. This report requests no
+new manual labeling and does not automatically launch that benchmark.
 
 ## Reusable evidence
 
@@ -92,13 +180,13 @@ failed its declared screen. It predicts future work probability, rather than
 coding a realized message, and cannot substitute for this measurement audit or
 for measured generated behavior.
 
-## Status
+## Original transport attempt
 
 Packet/review identities, exact common definitions and complete judgment coverage
 were checked during the inventory. After specific approval, the audit consumed
 all 88 scheduled requests, with 88 `ClientError` dispositions, zero usable labels
-and no missing slots. There are no accuracy estimates, adopted scorer or
-fresh-cohort findings. Both flags have zero coverage; precision, recall,
+and no missing slots. That initial attempt produced no accuracy estimates,
+adopted scorer or fresh-cohort findings. Both flags had zero coverage; precision, recall,
 specificity and kappa are undefined, not zero.
 Any new benchmark needs a separately frozen measurement gate and explicit handling
 of its weaker help evidence. No additional human labeling is requested here.
@@ -137,7 +225,7 @@ Run the offline checks from this worktree with:
 PYTHONPATH=. python -P -m pytest -q experiments/2026-09-30-help-work-measurement
 ```
 
-## Transport diagnosis and proposed recovery
+## Transport diagnosis and approved recovery
 
 A model-metadata request confirmed that the key can access `gemini-2.5-flash`.
 One invented message with the frozen configuration returned HTTP 400
@@ -174,12 +262,13 @@ synthetic output passes the same strict parser with help=yes and work=no.
 The prepared local directory is `data/behavioral-measurement-schema-recovery-v1`.
 Its dispatch plan SHA-256 is
 `de531030846f7918c26c68a69cc1bdabc1435c382e57ef2a321a82f72bfe4c5b`.
-The exact transfer disclosure is its `dispatch/disclosure.md`. There is no
-execution directory or provider request for this recovery.
+The exact transfer disclosure is its `dispatch/disclosure.md`. After explicit
+approval, this recovery completed 88/88 requests; the results are reported above.
 
-The recovery requires approval for **another batch of at most 88 private
-requests**: the previous approved budget has been consumed. It is prepared only,
-not dispatched. No fresh student benchmark or additional human review is queued.
+The recovery used a separately approved budget of at most 88 private requests,
+because the original approved budget had been consumed. The local authorization
+record preserves that scope. No fresh student benchmark or additional human
+review is queued.
 
 ## Fixed measurement audit protocol
 
