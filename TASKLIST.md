@@ -1,7 +1,7 @@
 # Simulated students: task list
 
 **Saved views consolidated (2026-09-30):**
-Use the **Student simulation** workbench at port 8454. A single Run selector
+Use the **Student simulation** workbench at port 8454. Three visible run choices
 switches between the latest continuation and the earlier direct-answer/guided-hint
 samples; each uses the same notebook, chat and timeline. **Compare samples** is
 optional and describes only the earlier 30-draw-per-policy study. Researcher

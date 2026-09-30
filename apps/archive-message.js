@@ -4,11 +4,12 @@
   const scoped=()=>current()?.archive_message===true;
   const waiting='Awaiting tutor · No reply is running';
   $('canvas').before($('playback'));
-  $('playback').insertAdjacentHTML('afterbegin','<div id="simulation-run-row" hidden><label for="simulation-run">Run</label><select id="simulation-run" aria-label="Saved simulation run"></select></div>');
+  $('playback').insertAdjacentHTML('afterbegin','<div id="simulation-run-row" hidden><div id="simulation-run" role="group" aria-label="Saved simulation run"></div></div>');
   const runLabel=c=>c.policy_sample?`${c.policy_label} · sample ${c.sample_index}`:'Latest continuation';
-  $('simulation-run').onchange=()=>{
-    if(state.refreshing){$('simulation-run').value=current()?.id||'';return}
-    const index=state.encounters.findIndex(c=>c.simulation_workspace&&c.id===$('simulation-run').value);
+  $('simulation-run').onclick=event=>{
+    const button=event.target.closest('button[data-run]');
+    if(!button||state.refreshing)return;
+    const index=state.encounters.findIndex(c=>c.simulation_workspace&&c.id===button.dataset.run);
     if(index<0)return;
     state.caseIndex=index;state.step=current().frames.length-1;state.showInspector=false;
     state.selected='step';state.chatKey=null;$('run-details').open=false;
@@ -92,16 +93,22 @@
 
   function decorate(){
     const c=current(),f=c?.frames?.[state.step];
+    $('app').setAttribute('data-simulation-workspace',String(Boolean(c?.simulation_workspace)));
     $('simulation-run-row').hidden=!c?.simulation_workspace;
-    $('simulation-run').disabled=!f||Boolean(state.refreshing);
     if(c?.simulation_workspace){
+      const focused=$('simulation-run').contains(document.activeElement)?document.activeElement?.dataset.run:null;
       const options=[...state.encounters].sort((a,b)=>Number(Boolean(a.policy_sample))-Number(Boolean(b.policy_sample)))
-        .map(run=>`<option value="${esc(run.id)}">${esc(runLabel(run))}</option>`).join('');
-      if($('simulation-run').innerHTML!==options)$('simulation-run').innerHTML=options;
-      $('simulation-run').value=c.id;
+        .map(run=>`<button type="button" data-run="${esc(run.id)}" aria-label="${esc(runLabel(run))}">${glyph(run.policy_sample?'tutor':'student')}<span class="run-name">${esc(run.policy_sample?run.policy_label:'Latest continuation')}</span>${run.policy_sample?`<span class="run-sample">Sample ${esc(run.sample_index)}</span>`:''}</button>`).join('');
+      if($('simulation-run').runHTML!==options){$('simulation-run').innerHTML=options;$('simulation-run').runHTML=options}
+      $('simulation-run').querySelectorAll('button[data-run]').forEach(button=>{
+        button.setAttribute('aria-pressed',String(button.dataset.run===c.id));
+        button.disabled=!f||Boolean(state.refreshing);
+        if(focused===button.dataset.run&&document.activeElement!==button)button.focus({preventScroll:true});
+      });
       $('case-title').textContent='Student simulation';
       document.title='Student simulation';
     }
+    else $('simulation-run').querySelectorAll('button[data-run]').forEach(button=>button.disabled=true);
     if(!c||!f){$('playback').hidden=true;return}
     if(!scoped())return;
     document.querySelector('.prototype-note').textContent=(c.authored_demo===true?'Authored test data · ':'')

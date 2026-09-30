@@ -130,11 +130,16 @@ deprecation warning is unchanged.
 
 ## Consolidated workbench
 
-The current page is **Student simulation**: one Run selector, one interaction
+The current page is **Student simulation**: three visible run choices, one interaction
 timeline, notebook on the left and chat on the right. The latest continuation
 opens by default. Earlier direct-answer and guided-hint samples use the same
 renderer; **Compare samples** opens the existing optional floating panel. Cycling
-samples keeps that panel open and updates the run selector and timeline together.
+samples keeps that panel open and updates the run controls and timeline together.
+The run controls use native buttons with glyphs, sample badges, a selected state
+and keyboard focus. Header, timeline and notebook use aligned 24px gutters and
+consistent inner spacing; notebook instructions and source share a left edge.
+These style changes apply only to the consolidated workspace. Three Node checks
+and browser mouse/keyboard checks cover switching, focus and sample cycling.
 
 ```sh
 PYTHONPATH=. python -P apps/archive_message_preview.py \

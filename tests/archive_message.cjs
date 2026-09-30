@@ -2,11 +2,25 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const nodes=new Map();
 const document={activeElement:null,querySelector:selector=>node(selector)};
+let runButtons=[],runNodeId=0;
 function node(id){
-  if(!nodes.has(id))nodes.set(id,{textContent:'',innerHTML:'',hidden:false,dataset:{},attributes:{},style:{},
+  if(!nodes.has(id))nodes.set(id,{textContent:'',html:'',hidden:false,dataset:{},attributes:{},style:{},
+    get innerHTML(){return this.html},set innerHTML(html){
+      this.html=html;if(id!=='simulation-run')return;
+      if(runButtons.includes(document.activeElement))document.activeElement=null;
+      runButtons=[...html.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)].map(([,attrs,content])=>{
+        const button=node('run-button-'+(++runNodeId));button.innerHTML=content;
+        button.attributes=Object.fromEntries([...attrs.matchAll(/([\w-]+)="([^"]*)"/g)].map(([,key,value])=>[key,value]));
+        button.dataset.run=button.attributes['data-run'];return button;
+      });
+    },
     before(child){this.beforeNode=child},insertAdjacentHTML(position,html){this.inserted={position,html}},
     setAttribute(name,value){this.attributes[name]=value},
-    querySelectorAll(){return buttons},focus(){document.activeElement=this}});
+    querySelectorAll(){return id==='simulation-run'?runButtons:buttons},
+    querySelector(selector){return runButtons.find(button=>selector===`[data-run="${button.dataset.run}"]`||selector===`button[data-run="${button.dataset.run}"]`)},
+    contains(element){return id==='simulation-run'&&runButtons.includes(element)},
+    closest(selector){return selector==='button[data-run]'&&this.dataset.run?this:null},
+    focus(){document.activeElement=this}});
   return nodes.get(id);
 }
 const stages=['captured','tutor','message'];
@@ -137,19 +151,28 @@ const latestBefore=JSON.stringify(latest);
 state.encounters=[direct,hint,latest];state.caseIndex=2;state.step=latest.frames.length-1;
 state.showInspector=false;context.render();
 const selector=node('simulation-run');
+const runButton=id=>runButtons.find(button=>button.dataset.run===id);
+const selectRun=id=>selector.onclick({target:runButton(id)});
 assert.equal(node('simulation-run-row').hidden,false);
-assert.equal(selector.value,'latest');
-assert.match(selector.innerHTML,/Direct answer · sample 1/);
-assert.match(selector.innerHTML,/Guided hint · sample 1/);
-assert.match(selector.innerHTML,/Latest continuation/);
+assert.equal(node('app').attributes['data-simulation-workspace'],'true');
+assert.deepEqual(runButtons.map(button=>button.dataset.run),['latest','direct','hint']);
+assert.equal(runButton('latest').attributes['aria-pressed'],'true');
+assert.equal(runButton('direct').attributes['aria-label'],'Direct answer · sample 1');
+assert.equal(runButton('hint').attributes['aria-label'],'Guided hint · sample 1');
+assert.equal(runButton('latest').attributes['aria-label'],'Latest continuation');
+assert.match(runButton('direct').innerHTML,/class="run-name"/);
+assert.match(runButton('direct').innerHTML,/class="run-sample"[^>]*>Sample 1/);
 assert.match(node('playback').inserted.html,/simulation-run-row/,'The run selector is inserted with the timeline');
+assert.match(node('playback').inserted.html,/<div id="simulation-run"[^>]*role="group"/);
 assert.match(node('.prototype-note').textContent,/^Authored test data · /);
 state.showInspector=true;state.selected='turn:7';state.chatKey='stale';node('run-details').open=true;
-selector.focus();selector.value='direct';selector.onchange();
+const focusedRun=runButton('direct');focusedRun.focus();
+selector.onclick({target:{closest:selector=>selector==='button[data-run]'?focusedRun:null}});
 assert.equal(state.caseIndex,0);assert.equal(state.step,direct.frames.length-1,'Switching selects the saved final stage');
 assert.equal(state.showInspector,false);assert.equal(state.selected,'step');assert.equal(state.chatKey,null);
-assert.equal(node('run-details').open,false);assert.equal(selector.value,'direct');
-assert.equal(document.activeElement,selector,'Switching retains native selector focus');
+assert.equal(node('run-details').open,false);assert.equal(runButton('direct').attributes['aria-pressed'],'true');
+assert.equal(runButton('latest').attributes['aria-pressed'],'false');
+assert.equal(document.activeElement,focusedRun,'Switching retains the same focused native button');
 assert.doesNotMatch(context.sourceOnlyNotebook(),/Student-requested/);
 assert.match(node('#canvas .notebook-document > .notebook-caption').textContent,/unchanged revision/i);
 state.step=3;context.render();
@@ -165,20 +188,27 @@ state.selected='context';context.renderInspector();
 assert.match(node('inspector').innerHTML,/researcher/i);
 assert.doesNotMatch(node('inspector').innerHTML,/Only student-requested|Student-controlled continuation|No local execution was requested/);
 assert.doesNotMatch(context.continuationReason(),/student-controlled/i);
-selector.value='hint';selector.onchange();
+selectRun('hint');
 assert.equal(state.caseIndex,1);assert.equal(state.step,4);
 assert.doesNotMatch(context.sourceOnlyNotebook(),/AUTHORED RESEARCHER OUTPUT/,'The reaction edit does not inherit an older revision result');
-selector.value='latest';selector.onchange();
+selectRun('latest');
 assert.equal(state.caseIndex,2);assert.equal(state.step,latest.frames.length-1);
 assert.equal(JSON.stringify(latest),latestBefore,'Policy inspection never changes the saved latest continuation');
 assert.match(node('.prototype-note').textContent,/^Authored test data · /);
-selector.focus();context.renderOperationStatus();assert.equal(document.activeElement,selector);
-state.refreshing=true;selector.value='direct';selector.onchange();
-assert.equal(state.caseIndex,2);assert.equal(selector.value,'latest','A refresh guard restores the displayed saved run');
-context.renderOperationStatus();assert.equal(selector.disabled,true);
-state.refreshing=false;context.renderOperationStatus();assert.equal(selector.disabled,false);
-selector.value='missing';selector.onchange();assert.equal(state.caseIndex,2);
+runButton('latest').focus();const unchangedRun=runButton('latest');context.renderOperationStatus();
+assert.equal(document.activeElement,unchangedRun,'Status decoration preserves the run button');
+direct.sample_index=2;context.renderOperationStatus();
+assert.notEqual(runButton('latest'),unchangedRun,'Sample label changes rebuild the run choices');
+assert.equal(document.activeElement,runButton('latest'),'Rebuilt choices restore focus to the same run');
+assert.equal(runButton('direct').attributes['aria-label'],'Direct answer · sample 2');
+state.refreshing=true;selectRun('direct');
+assert.equal(state.caseIndex,2);assert.equal(runButton('latest').attributes['aria-pressed'],'true');
+context.renderOperationStatus();assert.ok(runButtons.every(button=>button.disabled));
+state.refreshing=false;context.renderOperationStatus();assert.ok(runButtons.every(button=>!button.disabled));
+selector.onclick({target:{closest:()=>({dataset:{run:'missing'}})}});assert.equal(state.caseIndex,2);
+selector.onclick({target:{closest:()=>null}});assert.equal(state.caseIndex,2);
 state.encounters=[saved];state.caseIndex=0;state.step=2;context.render();
+assert.equal(node('app').attributes['data-simulation-workspace'],'false');
 
 saved.archive_message=false;
 assert.equal(context.statusText(saved.frames[2]),'Generic status');
@@ -187,5 +217,5 @@ context.renderInspector();assert.equal(node('inspector').innerHTML,'Generic insp
 state.encounters=[];const before=renders;context.render();context.renderOperationStatus();
 assert.equal(renders,before,'Empty or rejected data does not enter the frame renderer');
 assert.equal(node('playback').hidden,true);
-assert.equal(node('simulation-run-row').hidden,true);assert.equal(selector.disabled,true);
+assert.equal(node('simulation-run-row').hidden,true);assert.ok(runButtons.every(button=>button.disabled));
 console.log('Archive message: saved stages, native switching/focus, execution provenance, pending tutor, scoped copy and empty state pass.');

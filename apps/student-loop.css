@@ -12,13 +12,33 @@
 #loop-policy:active{background:var(--mint)}
 #loop-policy:disabled{opacity:.6;cursor:wait}
 #loop-policy-note{color:var(--muted)}
-#simulation-run-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px}
+#simulation-run-row{margin-bottom:16px;font-size:12px}
 #simulation-run-row[hidden]{display:none}
-#simulation-run-row label{font-weight:600}
-#simulation-run{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:4px 8px;min-height:32px;max-width:100%}
-#simulation-run:hover{border-color:var(--muted)}
-#simulation-run:focus-visible{outline:2px solid var(--green);outline-offset:2px}
-#simulation-run:disabled{opacity:.6;cursor:wait}
+#simulation-run{display:inline-flex;flex-wrap:wrap;gap:4px;max-width:100%;padding:4px;border:1px solid var(--line);border-radius:8px;background:var(--ground)}
+#simulation-run button{gap:8px;min-height:36px;padding:8px 12px;border:1px solid transparent;border-radius:4px;color:var(--muted);font-size:12px;line-height:1.5}
+#simulation-run button svg{width:16px;height:16px;margin:0;flex-shrink:0}
+#simulation-run .run-name{font-weight:500}
+#simulation-run .run-sample{padding-left:8px;border-left:1px solid var(--line);font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted)}
+#simulation-run button[aria-pressed=true]{background:var(--paper);border-color:var(--line);color:var(--green)}
+#simulation-run button:hover:not(:disabled){background:var(--hover);color:var(--ink)}
+#simulation-run button:active:not(:disabled){background:var(--pressed)}
+#simulation-run button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+#simulation-run button:disabled{opacity:.6;cursor:wait}
+/* The unified timeline sits above the notebook, not in the shell's old footer. */
+#app[data-simulation-workspace=true] .view-head{padding:16px 24px}
+#app[data-simulation-workspace=true] .view-head h1{font-size:22px;line-height:1.3}
+#app[data-simulation-workspace=true] .tabs{padding-inline:24px}
+#app[data-simulation-workspace=true] #playback{padding:0 24px 16px;border-top:0;background:var(--paper);width:100%;max-width:1160px;margin:0 auto}
+#app[data-simulation-workspace=true] .trail-label{margin-bottom:8px}
+#app[data-simulation-workspace=true] .canvas{padding:0 24px 24px;scrollbar-gutter:stable}
+#app[data-simulation-workspace=true] .notebook-filebar{gap:8px;padding:8px 16px}
+#app[data-simulation-workspace=true] .notebook-cells{padding:16px 16px 8px 8px}
+#app[data-simulation-workspace=true] .notebook-cell{grid-template-columns:32px minmax(0,1fr);margin-bottom:16px}
+#app[data-simulation-workspace=true] .notebook-cell:last-child{margin-bottom:0}
+#app[data-simulation-workspace=true] .notebook-markdown{padding:8px 0 0}
+#app[data-simulation-workspace=true] .notebook-caption{padding:8px 16px 16px 48px}
+#app[data-simulation-workspace=true] .conversation-panel>header{padding:16px 20px}
+#app[data-simulation-workspace=true] .conversation-panel .chat-navigation{margin-top:12px}
 #trail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;overflow:visible;padding:4px 0;isolation:isolate}
 #trail>button{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;width:100%;padding:4px 4px 8px;border:0;border-radius:4px;background:transparent;color:var(--ink);white-space:normal;text-align:center;line-height:1.4}
 #trail>button::before{content:"";position:absolute;top:18px;left:0;width:100%;height:1px;background:var(--line);z-index:0}
