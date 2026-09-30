@@ -1,5 +1,16 @@
 # Simulated students: task list
 
+**Assumed-error sensitivity completed offline (2026-09-30):**
+[Historical-label sensitivity results](docs/2026-09-30-evaluator-error-sensitivity.md).
+Varied recorded/generated label error independently across eight levels each,
+retaining two historical studies separately and their original help-work-v1
+labels. All 192 combinations verified. Large 71.875/81.25-point gaps retain
+the proposed >20-point conclusion under large assumed distortions; the separate
+25-point gap loses that continuous guarantee at 2.5% error per source, and one
+actual generated-label flip would reduce it to 18.75 points. These are fixed-output
+what-if ranges, not validated error bounds or population intervals. No new labels,
+model calls or scorer adoption. The clarified semantic evaluator remains unsupported.
+
 **Evaluator reliability defined around the research decision (2026-09-30):**
 [Proposed reliability contract](docs/2026-09-30-evaluator-reliability-contract.md).
 Recommended starting use, pending preference: identify large, recurring content
