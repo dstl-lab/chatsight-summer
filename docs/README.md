@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-01 | [History, personas, and behavioral fidelity](2026-10-01-history-persona-literature.md) | Primary-source review and comparison design; prior art established, sparse-history feasibility checked before another generation batch |
 | 2026-09-30 | [Clarified sequence check](2026-09-30-clarified-sequence-run.md) | Closed: quiet edit → execution → acknowledgment → tutor → stop; 4 student decisions, 1 tutor call, 1 execution; field mismatch absent in this sample, no realism claim |
 | 2026-09-30 | [Notebook edits, chat and new-message feedback](2026-09-30-sequence-action-clarity.md) | Explicit action fields and tutor context; preserved version-one replay; chat update and scrolling refinement, no new model batch |
 | 2026-09-28 | [Full-adapter reply result](2026-09-28-full-adapter-replies-status.md) | Every fixed request completed and verified; mixed generation evidence, candidate remains experimental; no new labels or further tuning |
