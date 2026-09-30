@@ -108,3 +108,17 @@ initial combined invocation otherwise stops at a test-module name collision.
 Independent authored checks confirmed scoring arithmetic, target isolation,
 balanced order, raw-output tamper rejection and legacy receipt compatibility.
 The original 100 saved decisions still replay unchanged.
+
+Independent review of the real packet verified all fourteen code/source pins,
+each complete current block and retained student context, the original model
+settings, balanced order and absence of model-visible IDs or target fields.
+The reference file was not opened for this review.
+
+Automatic approval review rejected the attempted private Gemini dispatch before
+process creation: it requires specific authorization for this exact payload and
+destination despite the standing project grant. `send-blocked.json` preserves
+that rejection. There is no execution directory and zero provider requests were
+sent. The user has been asked to approve this one prepared 100-request batch;
+no alternate dispatch, retries or additional preparation are queued. After a
+specific approval, preserve it against the frozen plan and disclosure before
+consuming this batch once.

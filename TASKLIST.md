@@ -7,7 +7,9 @@ retaining only earlier student messages. Prepare all ten exposed development
 cases, including the identical-prompt case, for five fresh draws per condition.
 Use existing literal form measurements; no new manual labels or semantic
 evaluator. At most 100 calls, one batch/report, no automatic follow-up or default
-change. Live dispatch is not yet completed; see the linked status.
+change. Preparation and 1,021 tests passed (three skipped). Automatic approval
+review blocked the private Gemini dispatch before execution; zero requests were
+sent. Await specific approval for this frozen 100-request batch; see linked status.
 
 **Source-specific evaluator disagreement diagnosed offline (2026-09-30):**
 [Saved-review source comparison](docs/2026-09-30-evaluator-source-disagreement.md).
