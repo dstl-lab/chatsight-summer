@@ -1,10 +1,74 @@
 # Student-only earlier context: one simulator development comparison
 
-**TL;DR:** Test whether the simulator better preserves student message form when
-earlier context contains only the student's own messages. Keep the entire current
-student–tutor exchange in both conditions. Use the existing ten development cases,
-five fresh draws per condition, and automatic literal measurements. No new labels
-or semantic evaluator are involved. The existing simulator default stays unchanged.
+**TL;DR:** Implemented student-only earlier context and completed the approved
+100-request comparison. Literal form error is **0.420 current exchange versus
+0.390 student history**: three cases improve, three worsen and four tie. One case
+accounts for more than the net improvement. This is weak, mixed development
+evidence, not sufficient reason to change the default. No new human labels or
+semantic evaluator were used. The comparison is closed without another batch.
+
+The intervention keeps the entire current student–tutor exchange in both
+conditions, using the existing ten development cases and five fresh draws per
+condition. The isolated prompt helper is available for further development; it
+is not enabled in the production workbench or adopted as the simulator default.
+
+## Completed result
+
+| Measurement | Current exchange | Student-only earlier context |
+| --- | ---: | ---: |
+| Mean literal form error; lower is better | 0.420 | 0.390 |
+| Replies / no reply / errors | 50 / 0 / 0 | 50 / 0 / 0 |
+| Short replies, 0–40 characters | 17/50 (34%) | 20/50 (40%) |
+| Mean characters | 71.18 | 65.98 |
+| Character MAE against recorded next message | 41.64 | 37.52 |
+| Replies containing newline | 5/50 (10%) | 10/50 (20%) |
+| Replies containing backtick | 3/50 (6%) | 0/50 (0%) |
+
+The recorded messages are short in 8/10 cases, average 41.5 characters, contain
+one newline-bearing message and no backticks. The unchanged visible-student
+form-frequency baseline scores **0.1550**. Both generative conditions remain far
+from that baseline on this narrow form score. The frequency baseline supplies a
+distribution, not a coherent next message, so it is not itself a student simulator.
+
+All ten pairs are complete. Student-history minus current score is **−0.030**.
+The implementation's floating-point report retains approximately −0.03; exact
+score arithmetic has the same result. There is no statistical significance or
+population-improvement claim.
+
+| Case | Current form score | Student-history score | Change | Current character MAE | Student-history MAE |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 01 | 0.10 | 0.20 | +0.10 | 18.4 | 21.4 |
+| 02 | 0.00 | 0.00 | 0.00 | 5.0 | 10.6 |
+| 03 | 0.00 | 0.30 | +0.30 | 28.0 | 80.0 |
+| 04 | 0.60 | 0.00 | −0.60 | 52.4 | 5.0 |
+| 05 | 0.80 | 0.60 | −0.20 | 79.2 | 39.0 |
+| 06 | 0.00 | 0.00 | 0.00 | 23.2 | 24.0 |
+| 07 | 0.70 | 1.00 | +0.30 | 72.6 | 56.6 |
+| 08 | 1.00 | 0.80 | −0.20 | 72.6 | 76.6 |
+| 09 | 0.00 | 0.00 | 0.00 | 16.4 | 15.4 |
+| 10 | 1.00 | 1.00 | 0.00 | 48.6 | 46.6 |
+
+Post-result influence check: case 04 contributes −0.060 to the all-ten mean,
+while the net is −0.030. Omitting that case would leave +0.0333 across the other
+nine. This is a diagnostic of concentration, not permission to exclude it, a new
+primary endpoint or a confidence interval. Case 10's prompts are identical;
+form scores tie, while character errors differ because its draws differ.
+
+This is a distribution score: case 08 improves despite neither arm sampling a
+short reply matching its recorded length category. Category dispersion can lower
+the score without a target-category hit. A score of zero likewise does not mean
+that generated text or meaning matches the recorded message.
+
+The earlier full-history study also had a −0.030 contrast, but it was a separate
+batch with different draws. This coincidence does not establish equivalence
+between full history and student-only history. Do not pool the batches or use
+the older history outputs as a concurrent control.
+
+**Decision:** retain the experimental helper, preserve the unchanged default,
+and close this candidate's fixed comparison. Removing earlier tutor messages
+alone has not supplied strong evidence of a broadly better simulator. Form
+improvement does not settle whether replies pursue the student's aims. No further
+labeling, prompt tuning or generation is queued by this result.
 
 The [saved history diagnosis](2026-09-30-history-benchmark-diagnosis.md) found that
 full history supplied 67,796 earlier tutor characters versus 2,854 student
@@ -99,7 +163,7 @@ Implementation and preparation are complete. The ignored private packet is
 `1fd95accddb63286ba2655178ad4cfeb629478aed0f60011f342ee6212659b1d`.
 Prompts SHA-256:
 `db108d0c5988a0df54265da434f7087f48765ef722b7ee0d00adde0ddf9294be`.
-No new provider requests have been sent yet.
+These preparation hashes remain unchanged after the completed run.
 
 Verification passed: 1,021 Python tests, three skipped, with the existing
 Starlette/httpx deprecation warning. The command used `--import-mode=importlib`
@@ -117,8 +181,16 @@ The reference file was not opened for this review.
 Automatic approval review rejected the attempted private Gemini dispatch before
 process creation: it requires specific authorization for this exact payload and
 destination despite the standing project grant. `send-blocked.json` preserves
-that rejection. There is no execution directory and zero provider requests were
-sent. The user has been asked to approve this one prepared 100-request batch;
-no alternate dispatch, retries or additional preparation are queued. After a
-specific approval, preserve it against the frozen plan and disclosure before
-consuming this batch once.
+that rejection. No execution directory existed and zero provider requests were
+sent by the rejected attempt. The user subsequently replied **"Approve this
+100-request batch"**. `approval.json` binds that response to the exact plan,
+prompts, disclosure, earlier rejection and preflight, before launch and all
+100 requests. No workaround or alternate batch was used.
+
+The approved batch completed all 100 requests in approximately 20.5 minutes,
+with 100 replies, no errors, no no-reply outcomes and no retries. Every response
+reported `gemini-2.5-pro`. All raw outputs, receipts, source pins and aggregate
+results passed independent replay; exact Fraction arithmetic reproduced every
+case score and the aggregate contrast. The saved `report.json` is reproducible
+offline, and `closure.json` records the stopping decision. No additional provider
+call, manual review or automatic follow-up is queued.

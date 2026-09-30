@@ -1,15 +1,13 @@
 # Simulated students: task list
 
-**Simulator development resumed: student-only earlier context (2026-09-30):**
-[Bounded development comparison](docs/2026-09-30-student-only-history.md).
-Added a separate prompt mode preserving the complete current exchange while
-retaining only earlier student messages. Prepare all ten exposed development
-cases, including the identical-prompt case, for five fresh draws per condition.
-Use existing literal form measurements; no new manual labels or semantic
-evaluator. At most 100 calls, one batch/report, no automatic follow-up or default
-change. Preparation and 1,021 tests passed (three skipped). Automatic approval
-review blocked the private Gemini dispatch before execution; zero requests were
-sent. Await specific approval for this frozen 100-request batch; see linked status.
+**Student-only history implemented; bounded comparison closed (2026-09-30):**
+[Completed development comparison](docs/2026-09-30-student-only-history.md).
+After specific user approval, all 100 requests completed without errors or
+retries. Form error is 0.420 current exchange versus 0.390 student history;
+three cases improve, three worsen, four tie. One case more than accounts for
+the net gain. Retain the experimental helper; no default/UI change or realism
+claim. No new labels, further tuning or automatic batch. Raw responses and
+arithmetic independently verified; 1,021 tests passed, three skipped.
 
 **Source-specific evaluator disagreement diagnosed offline (2026-09-30):**
 [Saved-review source comparison](docs/2026-09-30-evaluator-source-disagreement.md).
