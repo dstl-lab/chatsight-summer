@@ -8,6 +8,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 from src.agents import archived_notebook as archive, archive_tutor_continuation as continuation_store
+from src.agents import archive_sequence as sequence_store
 from src.agents import browser_workspace as workspace
 from src.agents import notebook_student as store, student_evidence
 from src.eval import notebook_replay
@@ -15,6 +16,88 @@ from apps import policy_sampling_preview
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def project_sequence(result):
+    """Project verified snapshots without borrowing prior runs or inventing chat turns."""
+    plan, state, saved = result['plan'], result['state'], result['frames']
+    if (state is None or not saved or result['status'] in ('prepared', 'pending', 'active')
+            or saved[0]['kind'] != 'initial' or saved[-1]['status'] != result['status']):
+        raise ValueError('A completed, verified sequence is required.')
+    initial = plan['initial']
+    if (saved[0]['work'] != initial['work'] or saved[0]['dialogue'] != initial['dialogue']
+            or saved[0]['message'] is not None or saved[0]['observation'] is not None):
+        raise ValueError('The sequence start differs from its supplied context.')
+    frames, execution_results = [], 0
+    for index, snapshot in enumerate(saved):
+        work, choice = snapshot['work'], snapshot.get('action')
+        previous = saved[index-1] if index else snapshot
+        decision = choice['decision'] if choice else 'error'
+        stage = ('tutor-error' if snapshot.get('error') else 'tutor') if snapshot['kind'] == 'tutor' else decision
+        label = {'revise-work':'Student edit' + (' + message' if choice and choice['text'] else ''),
+                 'reply':'Student message', 'request-check':'Student requested local run',
+                 'no-reply':'No further action', 'error':'Student decision failed',
+                 'tutor':'New tutor reply', 'tutor-error':'Tutor reply failed'}[stage]
+        if index == 0:
+            stage, label = 'tutor', 'Captured start + saved hint'
+        elif snapshot.get('error') and choice:
+            label = 'Student action failed'
+        dialogue = [{**turn,
+            'origin':'source' if i < len(initial['dialogue']) and turn['role'] == 'student' else 'generated',
+            **({'display_html':workspace._tutor_html(turn['text'])} if turn['role'] == 'tutor' else {})}
+            for i, turn in enumerate(snapshot['dialogue'])]
+        frame = {'label':label, 'archive_stage':stage, 'status':snapshot['status'],
+            'decisions_remaining':plan['max_decisions']-snapshot['decisions'],
+            'work':deepcopy(work), 'dialogue':dialogue, 'pending_message':snapshot['message'],
+            'feedback':None, 'actions':[deepcopy(choice)] if choice else [],
+            'sequence_counts':{'student_decisions':snapshot['decisions'],
+                               'tutor_calls':snapshot['tutor_turns'], 'execution_calls':snapshot['checks']},
+            'changes':{'baseline_revision':previous['work']['revision'],
+                       'baseline_kind':'previous-saved-step' if index else 'initial-work',
+                       'unified_diff':notebook_replay._code_diff(previous['work'], work)},
+            'binding':{'session_sha256':store.digest(plan), 'state_sha256':store.digest(snapshot)}}
+        if index == 0:
+            frame['archive_reused_tutor'] = True
+        if snapshot['kind'] == 'student' and snapshot.get('error'):
+            frame['archive_action_failed'] = True
+        observed = snapshot['observation']
+        if observed is not None:
+            if (observed['revision'] != work['revision'] or
+                    observed['source_sha256'] != sha256(work['source'].encode()).hexdigest()):
+                raise ValueError('The displayed execution result is not bound to the current source.')
+            frame['archive_observation'] = {**deepcopy(observed), 'dataset':deepcopy(plan['dataset']),
+                                           'image_id':plan['image_id']}
+            new_result = (snapshot['kind'] == 'student' and decision == 'request-check'
+                          and snapshot['checks'] > previous['checks'] and not snapshot.get('error'))
+            frame['archive_observation_new'] = new_result
+            execution_results += int(new_result)
+        frames.append(frame)
+    final = saved[-1]
+    encounter = {'id':'archive-sequence', 'title':'Full behavioral sequence',
+        'archive_message':True, 'archive_sequence':True, 'archive_continuation':True,
+        'simulation_workspace':True, 'authored_demo':plan['authored_demo'],
+        'terminal_status':result['status'], 'model_decisions':final['decisions'],
+        'tutor_calls':final['tutor_turns'], 'execution_calls':final['checks'],
+        'execution_results':execution_results, 'task':deepcopy(initial['task']),
+        'task_html':workspace._tutor_html('\n\n'.join(cell['source'] for cell in initial['task'])),
+        'initialization':initial['initialization'], 'activity':None,
+        'evidence_card':student_evidence.supplied_card(initial['dialogue']), 'frames':frames,
+        'saved_results_html':workspace._tutor_html(
+            ('Authored test data. ' if plan['authored_demo'] else 'One saved model-driven sequence. ')+
+            f'Final saved status: {result["status"]}. {final["decisions"]} student decision attempts, '
+            f'{final["tutor_turns"]} new tutor attempts, {final["checks"]} local execution attempts; '
+            f'{execution_results} saved execution results. The initial guided hint is a reused generated '
+            'tutor reply and consumes no new request. Student messages and tutor replies continue within '
+            f'limits of {plan["max_decisions"]} student decisions, {plan["max_tutor_calls"]} tutor calls '
+            f'and {plan["max_checks"]} requested executions. Edits clear current feedback; earlier results '
+            'remain attached to their source revision. Local execution is ungraded and establishes neither '
+            'correctness nor learning. Historical dataset bytes and kernel are unverified. '
+            'This is simulated behavior, not a reconstruction of the real student’s future. '
+            'Viewing or reloading sends no model or execution requests.')}
+    return {'version':1, 'kind':'notebook', 'source_only':True, 'encounters':[encounter],
+        'controls':{'send_enabled':False, 'tutor_generation_enabled':False,
+                    'blocked_reason':'This saved sequence is read only. No model or execution request is running.'},
+        'operation':{'status':'idle', 'message':''}}
 
 
 def project(result, continuation=None):
@@ -142,7 +225,7 @@ def _append_continuation(encounter, parent, saved):
         'Viewing or reloading sends no model or execution requests.')
 
 
-def consolidate(parent, continuation=None):
+def consolidate(parent, continuation=None, sequence=None):
     """Use the exact earlier study frozen in this parent, without borrowing its outputs."""
     latest = project(parent, continuation)
     folder = Path(parent['plan']['followup_folder'])
@@ -200,21 +283,28 @@ def consolidate(parent, continuation=None):
     for encounter in latest['encounters']:
         encounter['simulation_workspace'] = True
     packet['encounters'].extend(latest['encounters'])  # The shared workbench defaults to the final encounter.
+    if sequence is not None:
+        packet['encounters'].extend(project_sequence(sequence)['encounters'])
     sampling.update(unified_workspace=True, authored_demo=parent['plan']['authored_demo'])
     return packet, sampling
 
 
 def create_app(folder, *, notebook_branch, continuation=None, include_policy_samples=False,
-               history_benchmark=None):
+               history_benchmark=None, sequence=None):
     folder = Path(folder).absolute()
     initial = archive.load(folder)
     continuation = Path(continuation).absolute() if continuation is not None else None
     attached = continuation_store.load(continuation) if continuation is not None else None
+    sequence = Path(sequence).absolute() if sequence is not None else None
+    saved_sequence = sequence_store.load(sequence) if sequence is not None else None
+    if saved_sequence is not None:
+        project_sequence(saved_sequence)
     project(initial, attached)
     if include_policy_samples:
-        consolidate(initial, attached)
+        consolidate(initial, attached, saved_sequence)
     pin = store.digest(initial)
     continuation_pin = store.digest(attached) if attached is not None else None
+    sequence_pin = store.digest(saved_sequence) if saved_sequence is not None else None
     if history_benchmark is not None:
         from apps import history_benchmark as benchmark_store
         history_benchmark = Path(history_benchmark).absolute()
@@ -233,7 +323,15 @@ def create_app(folder, *, notebook_branch, continuation=None, include_policy_sam
             attached = continuation_store.load(continuation) if continuation is not None else None
             if attached is not None and store.digest(attached) != continuation_pin:
                 raise ValueError('Saved continuation changed.')
-            return consolidate(result, attached) if include_policy_samples else (project(result, attached), None)
+            saved_sequence = sequence_store.load(sequence) if sequence is not None else None
+            if saved_sequence is not None and store.digest(saved_sequence) != sequence_pin:
+                raise ValueError('Saved sequence changed.')
+            if include_policy_samples:
+                return consolidate(result, attached, saved_sequence)
+            packet = project(result, attached)
+            if saved_sequence is not None:
+                packet['encounters'].extend(project_sequence(saved_sequence)['encounters'])
+            return packet, None
         except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
             raise HTTPException(409, 'This saved run could not be verified. Its contents are not displayed.') from exc
 
@@ -308,6 +406,7 @@ if __name__ == '__main__':
     parser.add_argument('folder', type=Path)
     parser.add_argument('--branch', type=Path, required=True)
     parser.add_argument('--continuation', type=Path)
+    parser.add_argument('--sequence', type=Path, help='Append a completed, verified full behavioral sequence.')
     parser.add_argument('--include-policy-samples', action='store_true',
                         help='Include the verified earlier policy study frozen in this run.')
     parser.add_argument('--history-benchmark', type=Path,
@@ -317,5 +416,5 @@ if __name__ == '__main__':
     import uvicorn
     uvicorn.run(create_app(args.folder, notebook_branch=args.branch, continuation=args.continuation,
                           include_policy_samples=args.include_policy_samples,
-                          history_benchmark=args.history_benchmark),
+                          history_benchmark=args.history_benchmark, sequence=args.sequence),
                 host='127.0.0.1', port=args.port)

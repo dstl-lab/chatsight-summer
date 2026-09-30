@@ -207,6 +207,25 @@ context.renderOperationStatus();assert.ok(runButtons.every(button=>button.disabl
 state.refreshing=false;context.renderOperationStatus();assert.ok(runButtons.every(button=>!button.disabled));
 selector.onclick({target:{closest:()=>({dataset:{run:'missing'}})}});assert.equal(state.caseIndex,2);
 selector.onclick({target:{closest:()=>null}});assert.equal(state.caseIndex,2);
+const sequence={...structuredClone(latest),id:'sequence',archive_sequence:true,
+  terminal_status:'tutor-limit',tutor_calls:3,execution_calls:0,frames:[
+    {archive_stage:'tutor',archive_reused_tutor:true,status:'active',actions:[]},
+    {archive_stage:'reply',status:'tutor-limit',actions:[{decision:'reply',text:'help'}]}]};
+state.encounters=[direct,hint,latest,sequence];state.caseIndex=3;state.step=1;context.render();
+assert.deepEqual(runButtons.map(button=>button.dataset.run),['sequence','latest','direct','hint']);
+assert.equal(runButton('sequence').attributes['aria-label'],'Full sequence');
+assert.equal(runButton('latest').attributes['aria-label'],'Earlier continuation');
+assert.match(context.statusText(sequence.frames[1]),/Tutor reply limit/);
+assert.doesNotMatch(context.statusText(sequence.frames[1]),/chose no further/);
+assert.match(context.pendingReplyNote(),/reply budget/);
+state.step=0;context.render();
+assert.equal(buttons[0].attributes['aria-label'],'1. Start + saved hint · Saved context');
+assert.match(context.statusText(sequence.frames[0]),/saved tutor hint/);
+state.selected='context';context.renderInspector();
+assert.match(node('inspector').innerHTML,/continuous/);
+assert.doesNotMatch(node('inspector').innerHTML,/No new code was executed|separately saved tutor/);
+state.step=1;sequence.frames[1].status='action-limit';
+assert.match(context.pendingReplyNote(),/student decision budget/);
 state.encounters=[saved];state.caseIndex=0;state.step=2;context.render();
 assert.equal(node('app').attributes['data-simulation-workspace'],'false');
 
