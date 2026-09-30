@@ -1,5 +1,18 @@
 # Simulated students: task list
 
+**Bounded context/uncertainty revision closed; return to simulator development (2026-09-30):**
+[Fixed authored check and decision](docs/2026-09-30-message-content-context-check.md).
+Sixteen invented examples completed once: values matched 14/16 for content and
+12/16 for request; all eight direct controls matched. Only one of six expected
+unclear judgments survived and none of six required context citations appeared.
+The message-only filter wrongly included five content and six request judgments
+that needed context or abstention, so neither scorer nor filtered subset is
+adopted as a semantic-fidelity measure. Original studies remain unchanged.
+979 tests passed, 3 skipped; no student data, new reviews or extra tuning.
+Next simulator work can use existing literal form measurements and inspect
+continuations while testing the proposed student-only earlier-context condition;
+the current complete exchange stays identical. No such comparison has run yet.
+
 **Evidence-backed scorer implemented; authored smoke closed with two mismatches (2026-09-30):**
 [Implementation, fixed protocol and results](docs/2026-09-30-message-content-scorer.md).
 The model selects source lines and the application copies exact quotes for the

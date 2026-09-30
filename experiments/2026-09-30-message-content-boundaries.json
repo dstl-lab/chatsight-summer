@@ -1,0 +1,203 @@
+[
+  {
+    "id": "direct-01",
+    "group": "direct",
+    "input": {
+      "prefix": [],
+      "message": "My explanation is that removing the separator joins the two fields into one string."
+    },
+    "expected": {"content_supplied": "yes", "expressed_request": "no"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "direct-02",
+    "group": "direct",
+    "input": {
+      "prefix": [],
+      "message": "I copied this unchanged as my proposed solution:\nresult = [word.strip() for word in words]\nPlease tell me whether it handles an empty list."
+    },
+    "expected": {"content_supplied": "yes", "expressed_request": "yes"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "direct-03",
+    "group": "direct",
+    "input": {
+      "prefix": [],
+      "message": "prompt = 'Which file should I read?'\nprint(prompt)"
+    },
+    "expected": {"content_supplied": "yes", "expressed_request": "no"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "direct-04",
+    "group": "direct",
+    "input": {
+      "prefix": [],
+      "message": "아직 풀이를 쓰지 않았어요. Please give me a hint. 정답 대신 첫 단계만 설명해 주세요."
+    },
+    "expected": {"content_supplied": "no", "expressed_request": "yes"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "direct-05",
+    "group": "direct",
+    "input": {
+      "prefix": [],
+      "message": "I revised the explanation, but I am not pasting it here."
+    },
+    "expected": {"content_supplied": "no", "expressed_request": "no"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "direct-06",
+    "group": "direct",
+    "input": {
+      "prefix": [],
+      "message": "I will first list the cases and then write the proof."
+    },
+    "expected": {"content_supplied": "no", "expressed_request": "no"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "direct-07",
+    "group": "direct",
+    "input": {
+      "prefix": [],
+      "message": "Please give me a counterexample to the rule in Exercise Moss."
+    },
+    "expected": {"content_supplied": "no", "expressed_request": "yes"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "direct-08",
+    "group": "direct",
+    "input": {
+      "prefix": [],
+      "message": "Captured console text:\nKeyError: 'chapter'\nPlease explain what this error means."
+    },
+    "expected": {"content_supplied": "yes", "expressed_request": "yes"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "context-01",
+    "group": "context",
+    "input": {
+      "prefix": [
+        {"role": "tutor", "text": "What one-word answer do you propose for the question? The allowed answers are 'left' and 'right'."}
+      ],
+      "message": "Left?"
+    },
+    "expected": {"content_supplied": "yes", "expressed_request": "yes"},
+    "expected_basis": {"content_supplied": "preceding_context", "expressed_request": "preceding_context"},
+    "context_lines": {
+      "content_supplied": [{"turn_id": "p1", "line": 1}],
+      "expressed_request": [{"turn_id": "p1", "line": 1}]
+    }
+  },
+  {
+    "id": "context-02",
+    "group": "context",
+    "input": {
+      "prefix": [
+        {"role": "tutor", "text": "Paste the exact assignment sentence here so I can see it."}
+      ],
+      "message": "Explain why the last item is omitted."
+    },
+    "expected": {"content_supplied": "no", "expressed_request": "no"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "preceding_context"},
+    "context_lines": {
+      "content_supplied": [],
+      "expressed_request": [{"turn_id": "p1", "line": 1}]
+    }
+  },
+  {
+    "id": "context-03",
+    "group": "context",
+    "input": {
+      "prefix": [
+        {"role": "tutor", "text": "Which rule do you propose applying to the two rows? You may answer with its name."}
+      ],
+      "message": "Deduplicate.\nPlease explain the selection rule."
+    },
+    "expected": {"content_supplied": "yes", "expressed_request": "yes"},
+    "expected_basis": {"content_supplied": "preceding_context", "expressed_request": "message_only"},
+    "context_lines": {
+      "content_supplied": [{"turn_id": "p1", "line": 1}],
+      "expressed_request": []
+    }
+  },
+  {
+    "id": "context-04",
+    "group": "context",
+    "input": {
+      "prefix": [
+        {"role": "student", "text": "Please help me improve the heading."},
+        {"role": "tutor", "text": "What is your proposed edit to the heading? Name the part you would delete."}
+      ],
+      "message": "The parenthesized phrase."
+    },
+    "expected": {"content_supplied": "yes", "expressed_request": "no"},
+    "expected_basis": {"content_supplied": "preceding_context", "expressed_request": "preceding_context"},
+    "context_lines": {
+      "content_supplied": [{"turn_id": "p2", "line": 1}],
+      "expressed_request": [{"turn_id": "p2", "line": 1}]
+    }
+  },
+  {
+    "id": "ambiguous-01",
+    "group": "ambiguous",
+    "input": {
+      "prefix": [],
+      "message": "Alternate?"
+    },
+    "expected": {"content_supplied": "unclear", "expressed_request": "unclear"},
+    "expected_basis": {"content_supplied": "unresolved", "expressed_request": "unresolved"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "ambiguous-02",
+    "group": "ambiguous",
+    "input": {
+      "prefix": [
+        {"role": "tutor", "text": "We can discuss the assignment statement or your proposed solution next."}
+      ],
+      "message": "Swap the two labels."
+    },
+    "expected": {"content_supplied": "unclear", "expressed_request": "unclear"},
+    "expected_basis": {"content_supplied": "unresolved", "expressed_request": "unresolved"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "ambiguous-03",
+    "group": "ambiguous",
+    "input": {
+      "prefix": [],
+      "message": "Worksheet instruction: 'Which branch should be taken when the file is empty?'"
+    },
+    "expected": {"content_supplied": "no", "expressed_request": "unclear"},
+    "expected_basis": {"content_supplied": "message_only", "expressed_request": "unresolved"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  },
+  {
+    "id": "ambiguous-04",
+    "group": "ambiguous",
+    "input": {
+      "prefix": [
+        {"role": "tutor", "text": "You mentioned a worksheet sentence and your proposed answer, but I have not seen either. You may paste one of them."}
+      ],
+      "message": "'Every sealed box has an even number of tokens.' Please explain this sentence."
+    },
+    "expected": {"content_supplied": "unclear", "expressed_request": "yes"},
+    "expected_basis": {"content_supplied": "unresolved", "expressed_request": "message_only"},
+    "context_lines": {"content_supplied": [], "expressed_request": []}
+  }
+]
