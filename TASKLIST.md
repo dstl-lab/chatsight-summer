@@ -1,5 +1,14 @@
 # Simulated students: task list
 
+**Simulator development resumed: student-only earlier context (2026-09-30):**
+[Bounded development comparison](docs/2026-09-30-student-only-history.md).
+Added a separate prompt mode preserving the complete current exchange while
+retaining only earlier student messages. Prepare all ten exposed development
+cases, including the identical-prompt case, for five fresh draws per condition.
+Use existing literal form measurements; no new manual labels or semantic
+evaluator. At most 100 calls, one batch/report, no automatic follow-up or default
+change. Live dispatch is not yet completed; see the linked status.
+
 **Source-specific evaluator disagreement diagnosed offline (2026-09-30):**
 [Saved-review source comparison](docs/2026-09-30-evaluator-source-disagreement.md).
 The closed 88-input audit contains 16 recorded and 72 generated unique inputs.
