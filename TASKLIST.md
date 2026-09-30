@@ -1,5 +1,16 @@
 # Simulated students: task list
 
+**Evidence-backed scorer implemented; authored smoke closed with two mismatches (2026-09-30):**
+[Implementation, fixed protocol and results](docs/2026-09-30-message-content-scorer.md).
+The model selects source lines and the application copies exact quotes for the
+two independent observations. Strict validation rejects invented/blank/context-only
+evidence; unclear is preserved. All 12 authored requests completed once: content
+matched 11/12, expressed request 10/12, both 10/12. The model chose definite values
+on two deliberately ambiguous cases and omitted context citations in two matching
+numeric cases. No student data was sent. 30 focused checks and the full Python
+suite (977 passed, 3 skipped) pass. The authored smoke criterion was not met;
+no tuning, real-data calibration, manual labeling or scorer adoption is queued.
+
 **Message content separated from inferred intent (2026-09-30):**
 [Operational definition and authored boundary examples](docs/2026-09-30-message-content-definition.md).
 Future observations distinguish **content supplied** from **expressed request**;
