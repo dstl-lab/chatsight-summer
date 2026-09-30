@@ -46,7 +46,7 @@ behavior. A single sample cannot estimate a failure rate or isolate which of the
 student/schema/tutor changes caused a different outcome. Close this check after
 reporting its result; further sampling requires a separate research decision.
 
-## Prepared; exact dispatch approval pending
+## Preparation and approval
 
 The private version-two plan is frozen with digest
 `0e22dc50ed61f7b819c150f5028387b2d1107a6c744974dcaa5a3a800bf8342a`.
@@ -62,6 +62,67 @@ The prepared protocol and user/standing-authorization record are retained privat
 Automatic approval review rejected the dispatch before process creation because
 the latest user acceptance did not explicitly name this new private payload and
 Google Gemini as its destination. The actual rejection is recorded privately;
-there is no run receipt and **zero provider calls or local candidate executions**.
-The exact-payload question is pending. Approval would dispatch only this unchanged
-plan; the closed v1 trial remains unchanged.
+at that point there was no run receipt and zero provider calls or local candidate
+executions. Minchan then answered **“Let's continue. Approved.”** to the exact
+payload/destination question. That approval was bound to the unchanged plan and
+recorded before the single dispatch. The closed v1 trial remains unchanged.
+
+## Completed outcome
+
+The run completed in **38.98 seconds** with **four student decisions, one new tutor
+reply and one requested local execution**. All five Gemini responses were valid
+complete STOP outputs; there were no provider/executor failures or retries. Usage
+totaled 10,353 tokens: 7,213 prompt, 183 output and 2,957 thinking tokens.
+
+| Stage | Saved behavior | Evidence |
+| --- | --- | --- |
+| Initial | Captured work plus reused guided hint | Revision zero, no current execution feedback |
+| Student 1 | Quiet code edit | Full replacement code installed at revision one; empty chat |
+| Student 2 | Requests a local run | Exact installed source executed in the declared isolated runtime; scalar result 2,850, no error or course grade |
+| Student 3 | Sends a short acknowledgment | Receives the real execution feedback; chat changes no code |
+| Tutor 1 | Acknowledges and explains the installed approach | Sees revision-one source, its actual feedback and the acknowledgment |
+| Student 4 | Explicit no-reply | Four student decisions, two tutor calls and three executions still available |
+
+The notebook/chat field mismatch seen in v1 **did not recur in this sample**.
+Raw replacement code equals the installed cell and the source sent to execution.
+The tutor discusses the installed approach; no chat proposal competes with it and
+no unobserved execution or course-grade claim is made. Its correctness language
+is a tutor judgment, not an independently verified course outcome.
+
+The new run is mechanically coherent and exercises quiet editing, actual execution,
+feedback-informed communication and stopping. Because no chat/code discrepancy
+occurred, the tutor's response to such a discrepancy remains untested. This single
+unpaired stochastic draw cannot establish a reduced error rate, which component
+caused the change, realistic communication/stopping, or real-student learning.
+There is only one short visible student message in the starting exchange; this
+run does not validate that the generated acknowledgment matches that student's
+communication habits.
+
+Exact offline replay, approval chronology, raw response validation, source-bound
+feedback and limits were checked. All original v1 file hashes remain unchanged.
+An independent read-only audit confirmed the raw field mapping, both execution
+output frames and their dataset/runtime fingerprints, retained feedback, and
+terminal reason without dispatching any new provider or Docker call.
+The existing browser projection correctly shows six stages, two initial messages,
+no new chat during the edit/run, one later student message and one tutor reply.
+Only the requested execution stage labels its output as new; later stages retain
+it as a previous observation. New-message highlighting works, and the browser
+reported no console errors. This run is closed; no additional batch is queued.
+
+## Saved replay
+
+The new read-only replay is served at `http://127.0.0.1:8456/`; the earlier v1
+replay remains on port 8455. From this worktree, the new launch command is:
+
+```sh
+PYTHONPATH=. /Users/minchan/github/chatsight-summer/episode-pilot/.venv/bin/python -P \
+  apps/archive_message_preview.py data/archived-student-loop-v1 \
+  --branch data/notebook-source-branch-v1/branch \
+  --continuation data/archived-tutor-continuation-v1 \
+  --include-policy-samples --history-benchmark data/course-account-history-v1 \
+  --sequence data/full-behavior-sequence-v2 --port 8456
+```
+
+Private receipts, protocol snapshot, approval records and completion audit remain
+under ignored `data/full-behavior-sequence-v2`. Only aggregate results are recorded
+in this public memo.
