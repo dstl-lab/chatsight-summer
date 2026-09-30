@@ -1,5 +1,17 @@
 # Simulated students: task list
 
+**Source-specific evaluator disagreement diagnosed offline (2026-09-30):**
+[Saved-review source comparison](docs/2026-09-30-evaluator-source-disagreement.md).
+The closed 88-input audit contains 16 recorded and 72 generated unique inputs.
+Work agreement is 14/15 decisive recorded judgments and 62/72 generated; one
+recorded outcome stays unclear. The large fixed-study work gaps survive both
+label sources, but current-exchange/history ordering reverses on the marginal
+work rate. The separate cached gap is 25 points under human labels and
+18.75–31.25 under coder labels. Help gaps vary much more. These are disagreements
+with one reviewer, not validated error bounds or new-rubric validation.
+No new labels, model calls, scorer adoption or automatic follow-up; original
+study weights and labels remain intact. Semantic ranking remains unsupported.
+
 **Assumed-error sensitivity completed offline (2026-09-30):**
 [Historical-label sensitivity results](docs/2026-09-30-evaluator-error-sensitivity.md).
 Varied recorded/generated label error independently across eight levels each,
