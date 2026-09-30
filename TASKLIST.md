@@ -1,5 +1,16 @@
 # Simulated students: task list
 
+**Message content separated from inferred intent (2026-09-30):**
+[Operational definition and authored boundary examples](docs/2026-09-30-message-content-definition.md).
+Future observations distinguish **content supplied** from **expressed request**;
+both allow unclear and can coexist. A prose answer counts as content, a prior
+help request does not carry into every later answer, and a test-pass claim is
+not an execution receipt. Existing literal form measurements are reused unchanged.
+This defines the proposed semantic benchmark outcome without adopting a coder or
+relabeling old studies. No new provider calls, human review, UI or dependencies.
+The next semantic benchmark still needs evidence that its clarified measurement
+works; another prompt run against the old labels would not establish that.
+
 **Behavioral measurement audit completed; scorer not adopted (2026-09-30):**
 [Fixed audit and measurement limits](docs/2026-09-30-behavioral-measurement-readiness.md).
 Three completed reviews provide 88 distinct inputs across 16 conversation
