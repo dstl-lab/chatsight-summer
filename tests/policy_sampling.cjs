@@ -27,4 +27,58 @@ assert.equal(state.encounters[0].frames.length,2,'Restoring the tutor must clear
 state.encounters=structuredClone(originals);context.render();elements.get('hint:revise-work').onclick();elements.get('policy-original-reply').onclick();assert.equal(state.encounters[1].frames[1].work.source,'hint baseline');assert.deepEqual(state.encounters[0].frames[0],originals[0].frames[0]);assert.equal(requests.length,1);
 for(const [status,label] of [['prepared','Reaction not generated'],['pending','Reaction pending'],['error','Reaction unavailable']]){data.conditions[0].reaction.status=status;delete data.conditions[0].samples[0].reaction_frame;await elements.get('reload-policy-sampling').onclick();elements.get('direct:revise-work').onclick();assert.equal(state.encounters[0].frames.length,2);assert.ok(elements.get('policy-sampling-footer').innerHTML.includes(label));elements.get('policy-sample-next').onclick();assert.ok(!elements.get('policy-sampling-footer').innerHTML.includes(label),'Reaction status belongs only to its selected sample')}
 for(const status of ['tutor-error','tutor-pending','pending']){data.conditions[0].status=status;await elements.get('reload-policy-sampling').onclick();assert.equal(elements.get('tutor:direct').disabled,true);assert.equal(elements.get('direct:revise-work').disabled,true);const before=JSON.stringify(state.encounters);elements.get('tutor:direct').onclick();assert.equal(JSON.stringify(state.encounters),before);state.caseIndex=0;context.render();assert.match(elements.get('view-description').textContent,/No student action sampled/)}
-data.authored_demo=false;await elements.get('reload-policy-sampling').onclick();assert.equal(elements.get('prototype-note').textContent,'Tutor policy sampling · Saved results');assert.match(elements.get('policy-sampling-distribution').innerHTML,/Observed model action frequencies/);assert.ok(requests.every(r=>r.opts.method===undefined));console.log('Policy sampling controller: condition isolation, next sample, baseline restore, reload reset, authored-data disclosure, failed/pending tutor guard, GET-only pass');})().catch(e=>{console.error(e);process.exitCode=1});
+data.authored_demo=false;await elements.get('reload-policy-sampling').onclick();assert.equal(elements.get('prototype-note').textContent,'Tutor policy sampling · Saved results');assert.match(elements.get('policy-sampling-distribution').innerHTML,/Observed model action frequencies/);
+
+// Unified view: panel counts stay separate, while each sample replaces its full main timeline.
+data.unified_workspace=true;
+for(const c of data.conditions){
+  c.status='complete';c.reaction={sample_index:1,status:'complete'};
+  for(const sample of c.samples){
+    sample.timeline=[
+      {archive_stage:'captured',work:{source:'shared'}},
+      {archive_stage:'tutor',work:{source:c.id+' baseline'}},
+      {archive_stage:'revise-work',work:{source:c.id+' sample '+sample.index}},
+      {archive_stage:'researcher-check',work:{source:c.id+' sample '+sample.index},archive_observation:{status:'ok'},archive_observation_new:true,archive_observation_actor:'researcher'},
+      ...(sample.index===1?[{archive_stage:'no-reply',archive_reaction:true,work:{source:c.id+' sample '+sample.index},archive_observation:{status:'ok'},archive_observation_new:false,archive_observation_actor:'researcher'}]:[])];
+  }
+}
+const latest={id:'archive-message',simulation_workspace:true,archive_message:true,frames:[{work:{source:'LATEST SAVED SOURCE'}}]};
+state.encounters=[...data.conditions.map(c=>({id:c.id,simulation_workspace:true,archive_message:true,policy_sample:true,
+  policy_label:c.label,sample_index:1,frames:structuredClone(c.samples[0].timeline)})),structuredClone(latest)];
+state.caseIndex=2;state.step=0;
+elements.get('prototype-note').textContent='Read only';elements.get('view-description').textContent='WORKSPACE TIMELINE';
+node('run-details').open=true;
+await elements.get('reload-policy-sampling').onclick();
+assert.equal(document.title,'Student simulation');
+assert.equal(elements.get('prototype-note').textContent,'Read only','Comparison metadata must not overwrite the selected run identity');
+assert.match(elements.get('policy-sampling-toggle').innerHTML,/Compare samples/);
+assert.match(elements.get('policy-comparison-scope').textContent,/separate run.*do not describe the latest continuation/);
+assert.match(elements.get('policy-sampling-footer').innerHTML,/main timeline/);
+const requestCount=requests.length;
+elements.get('direct:revise-work').onclick();
+assert.equal(state.caseIndex,0);assert.equal(state.step,2);assert.equal(state.encounters[0].sample_index,1);
+assert.equal(state.encounters[0].frames.length,5);assert.equal(state.encounters[0].execution_results,1);
+assert.doesNotMatch(elements.get('policy-sampling-footer').innerHTML,/No later student reaction saved/);
+assert.ok(state.encounters[0].frames.every(f=>!f.external_execution&&!f.reaction));
+assert.equal(elements.get('view-description').textContent,'WORKSPACE TIMELINE','Archive adapter owns timeline descriptions');
+assert.equal(elements.get('run-details').open,false);
+elements.get('policy-open-reaction').onclick();assert.equal(state.step,4);
+panel.open=true;elements.get('policy-sample-next').focus();elements.get('policy-sample-next').onclick();
+assert.equal(state.step,2);assert.equal(state.encounters[0].sample_index,2);assert.equal(state.encounters[0].frames.length,4);
+assert.ok(state.encounters[0].frames.every(f=>!f.archive_reaction),'A different sample must remove the first sample’s reaction');
+assert.match(elements.get('policy-sampling-footer').innerHTML,/No later student reaction saved/);
+assert.equal(panel.open,true);assert.equal(document.activeElement,elements.get('policy-sample-previous'));
+const chosenTimeline=JSON.stringify(state.encounters[0].frames);
+elements.get('policy-original-reply').onclick();
+assert.equal(state.step,1);assert.equal(state.encounters[0].sample_index,2);
+assert.equal(JSON.stringify(state.encounters[0].frames),chosenTimeline,'Viewing the tutor does not discard the selected sample timeline');
+state.refreshing=true;const beforeRefresh=JSON.stringify(state.encounters);
+elements.get('hint:revise-work').onclick();assert.equal(JSON.stringify(state.encounters),beforeRefresh);
+state.refreshing=false;state.caseIndex=2;state.step=0;context.render();
+assert.deepEqual(state.encounters[2],latest,'Earlier samples never mutate the latest continuation');
+assert.equal(elements.get('prototype-note').textContent,'Read only');
+assert.match(elements.get('policy-sampling-footer').innerHTML,/main timeline/);
+assert.equal(requests.length,requestCount,'Choosing and cycling saved samples adds no requests');
+assert.ok(requests.every(r=>r.opts.method===undefined));
+console.log('Policy sampling: standalone behavior, unified timelines, selected sample isolation, cycling focus, separate comparison scope and GET-only pass');
+})().catch(e=>{console.error(e);process.exitCode=1});

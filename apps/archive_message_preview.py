@@ -1,4 +1,4 @@
-"""Inspect the saved archive-loop edit/message that stopped for a tutor reply."""
+"""Inspect saved student runs and their earlier policy samples in one read-only workspace."""
 import argparse
 from copy import deepcopy
 from hashlib import sha256
@@ -11,6 +11,7 @@ from src.agents import archived_notebook as archive, archive_tutor_continuation 
 from src.agents import browser_workspace as workspace
 from src.agents import notebook_student as store, student_evidence
 from src.eval import notebook_replay
+from apps import policy_sampling_preview
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -141,20 +142,83 @@ def _append_continuation(encounter, parent, saved):
         'Viewing or reloading sends no model or execution requests.')
 
 
-def create_app(folder, *, notebook_branch, continuation=None):
+def consolidate(parent, continuation=None):
+    """Use the exact earlier study frozen in this parent, without borrowing its outputs."""
+    latest = project(parent, continuation)
+    folder = Path(parent['plan']['followup_folder'])
+    followup = archive._followup()
+    _, report, _ = followup.context(folder)
+    attached = followup.load(folder)
+    if store.digest(attached) != parent['plan']['followup_sha256']:
+        raise ValueError('The earlier policy study differs from this parent.')
+    packet, sampling = policy_sampling_preview.project(report, attached)
+    for encounter, condition in zip(packet['encounters'], sampling['conditions']):
+        for sample in condition['samples']:
+            captured, tutor = deepcopy(encounter['frames'])
+            captured.update(archive_stage='captured', label='Captured start')
+            tutor.update(archive_stage='tutor', label='Tutor reply')
+            edit = deepcopy(sample['frame'])
+            observed = edit.pop('external_execution', None)
+            decision = sample['decision']
+            edit.update(archive_stage=decision, label={
+                'revise-work':'Student edit', 'reply':'Student message', 'no-reply':'No further action'}[decision])
+            timeline = [captured, tutor, edit]
+            if observed is not None:
+                if (observed['revision'] != edit['work']['revision'] or
+                        observed['source_sha256'] != sha256(edit['work']['source'].encode()).hexdigest()):
+                    raise ValueError('The saved check does not match this policy revision.')
+                timeline.append(deepcopy(edit) | {
+                    'archive_stage':'researcher-check', 'label':'Researcher check', 'actions':[],
+                    'archive_observation':observed, 'archive_observation_actor':'researcher',
+                    'archive_observation_new':True,
+                    'changes':{'baseline_revision':edit['work']['revision'],
+                               'baseline_kind':'previous-saved-step', 'unified_diff':''}})
+            if sample.get('reaction_frame'):
+                reaction = deepcopy(sample['reaction_frame'])
+                reaction.pop('reaction')
+                decision = reaction['actions'][0]['decision']
+                reaction.update(archive_stage=decision, archive_reaction=True,
+                    label={'revise-work':'Student edit after check', 'reply':'Student message after check',
+                           'no-reply':'No further action'}[decision])
+                if observed and reaction['work'] == edit['work']:
+                    reaction.update(archive_observation=deepcopy(observed), archive_observation_new=False,
+                                    archive_observation_actor='researcher')
+                timeline.append(reaction)
+            sample['timeline'] = timeline
+        if not condition['samples']:
+            raise ValueError('The earlier policy study has no valid samples.')
+        selected = condition['samples'][0]
+        encounter.update(archive_message=True, simulation_workspace=True, policy_sample=True,
+            policy_label=condition['label'], sample_index=selected['index'],
+            authored_demo=parent['plan']['authored_demo'], frames=deepcopy(selected['timeline']),
+            execution_results=sum(bool(f.get('archive_observation_new')) for f in selected['timeline']))
+        encounter['saved_results_html'] += workspace._tutor_html(
+            'These are earlier policy samples, separate from the latest continuation. Checks were triggered '
+            'by the researcher and shared across matching source edits, not independently run for every sample. '
+            'Only the predetermined first sample of each policy has a saved reaction; other paths end at '
+            'the shared check. A missing reaction does not mean the student chose silence.')
+    for encounter in latest['encounters']:
+        encounter['simulation_workspace'] = True
+    packet['encounters'].extend(latest['encounters'])  # The shared workbench defaults to the final encounter.
+    sampling.update(unified_workspace=True, authored_demo=parent['plan']['authored_demo'])
+    return packet, sampling
+
+
+def create_app(folder, *, notebook_branch, continuation=None, include_policy_samples=False):
     folder = Path(folder).absolute()
     initial = archive.load(folder)
     continuation = Path(continuation).absolute() if continuation is not None else None
     attached = continuation_store.load(continuation) if continuation is not None else None
     project(initial, attached)
+    if include_policy_samples:
+        consolidate(initial, attached)
     pin = store.digest(initial)
     continuation_pin = store.digest(attached) if attached is not None else None
     app = workspace.create_app(notebook_branch=notebook_branch)
     # Keep the existing localhost security middleware and shared assets, not another data source.
     app.router.routes[:] = [route for route in app.routes if route.path in ('/workspace.js', '/api/scenarios')]
 
-    @app.get('/api/workspace')
-    def saved(request: Request):
+    def snapshot(request):
         if request.query_params:
             raise HTTPException(400, 'This is one fixed saved run.')
         try:
@@ -164,14 +228,27 @@ def create_app(folder, *, notebook_branch, continuation=None):
             attached = continuation_store.load(continuation) if continuation is not None else None
             if attached is not None and store.digest(attached) != continuation_pin:
                 raise ValueError('Saved continuation changed.')
-            return project(result, attached)
+            return consolidate(result, attached) if include_policy_samples else (project(result, attached), None)
         except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
             raise HTTPException(409, 'This saved run could not be verified. Its contents are not displayed.') from exc
 
+    @app.get('/api/workspace')
+    def saved(request: Request):
+        return snapshot(request)[0]
+
+    if include_policy_samples:
+        @app.get('/api/policy-sampling')
+        def samples(request: Request):
+            return snapshot(request)[1]
+
     @app.get('/', response_class=HTMLResponse)
     def page():
-        return workspace._page().replace('</head>', '<link rel="stylesheet" href="/student-loop.css"></head>').replace(
-            '</body>', '<script src="/archive-message.js"></script></body>')
+        styles = '<link rel="stylesheet" href="/student-loop.css">'
+        scripts = '<script src="/archive-message.js"></script>'
+        if include_policy_samples:
+            styles += '<link rel="stylesheet" href="/next-actions.css"><link rel="stylesheet" href="/policy-sampling.css">'
+            scripts += '<script src="/policy-sampling.js"></script>'
+        return workspace._page().replace('</head>', styles+'</head>').replace('</body>', scripts+'</body>')
 
     @app.get('/student-loop.css')
     def style():
@@ -180,6 +257,14 @@ def create_app(folder, *, notebook_branch, continuation=None):
     @app.get('/archive-message.js')
     def script():
         return Response((ROOT/'apps/archive-message.js').read_text(), media_type='text/javascript')
+
+    if include_policy_samples:
+        @app.get('/{asset}')
+        def comparison_asset(asset: str):
+            if asset not in ('next-actions.css', 'policy-sampling.css', 'policy-sampling.js'):
+                raise HTTPException(404)
+            return Response((ROOT/'apps'/asset).read_text(),
+                            media_type='text/javascript' if asset.endswith('.js') else 'text/css')
 
     @app.middleware('http')
     async def local_style(request: Request, call_next):
@@ -197,8 +282,11 @@ if __name__ == '__main__':
     parser.add_argument('folder', type=Path)
     parser.add_argument('--branch', type=Path, required=True)
     parser.add_argument('--continuation', type=Path)
+    parser.add_argument('--include-policy-samples', action='store_true',
+                        help='Include the verified earlier policy study frozen in this run.')
     parser.add_argument('--port', type=int, default=8453)
     args = parser.parse_args()
     import uvicorn
-    uvicorn.run(create_app(args.folder, notebook_branch=args.branch, continuation=args.continuation),
+    uvicorn.run(create_app(args.folder, notebook_branch=args.branch, continuation=args.continuation,
+                          include_policy_samples=args.include_policy_samples),
                 host='127.0.0.1', port=args.port)

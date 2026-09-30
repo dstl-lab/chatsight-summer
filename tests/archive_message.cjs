@@ -4,7 +4,8 @@ const nodes=new Map();
 const document={activeElement:null,querySelector:selector=>node(selector)};
 function node(id){
   if(!nodes.has(id))nodes.set(id,{textContent:'',innerHTML:'',hidden:false,dataset:{},attributes:{},style:{},
-    before(child){this.beforeNode=child},setAttribute(name,value){this.attributes[name]=value},
+    before(child){this.beforeNode=child},insertAdjacentHTML(position,html){this.inserted={position,html}},
+    setAttribute(name,value){this.attributes[name]=value},
     querySelectorAll(){return buttons},focus(){document.activeElement=this}});
   return nodes.get(id);
 }
@@ -26,10 +27,15 @@ const context=vm.createContext({state,document,$:node,current:()=>state.encounte
   sourceOnlyNotebook:()=>'<section><pre class="notebook-input"><code>saved code</code></pre><p>caption</p></section>',
   externalExecution:(result,title)=>`<section class="notebook-result">${title}: ${result.output}</section>`,
   renderInspector(){node('inspector').innerHTML='Generic inspector'},
-  render(){renders++;node('#canvas .notebook-document > .notebook-caption').textContent='Code execution is unavailable';
+  notify(){},
+  render(){renders++;const active=state.encounters[state.caseIndex];
+    while(buttons.length<active.frames.length){const i=buttons.length,button=node('button-'+i);button.dataset.trail=String(i);
+      button.onclick=()=>{state.step=i;context.render()};buttons.push(button)}
+    buttons.splice(active.frames.length);
+    node('#canvas .notebook-document > .notebook-caption').textContent='Code execution is unavailable';
     node('#canvas .notebook-prompt').attributes={title:'Code execution unavailable'};
     node('#conversation-messages > p.quiet:last-child').textContent='This saved decision ends the branch.';
-    node('view-description').textContent=context.statusText(saved.frames[state.step]);
+    node('view-description').textContent=context.statusText(active.frames[state.step]);
     buttons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===state.step)));
     if(state.showInspector)context.renderInspector();context.renderOperationStatus()},
   renderOperationStatus(){node('.prototype-note').textContent='Source-only branch · Read only'},
@@ -110,6 +116,70 @@ assert.equal(context.statusText(saved.frames[2]),'Awaiting tutor · No reply is 
 assert.match(node('#conversation-messages > p.quiet:last-child').textContent,/failed tutor request/);
 state.selected='context';context.renderInspector();
 assert.match(node('inspector').innerHTML,/No tutor reply or new student decision followed/);
+
+const observation={revision:1,output:'AUTHORED RESEARCHER OUTPUT'};
+function policy(id,label,edited){
+  const frames=['captured','tutor','revise-work','researcher-check',edited?'revise-work':'no-reply']
+    .map((archive_stage,i)=>({archive_stage,label:archive_stage,status:i===4?'no-reply':'active',
+      work:{revision:edited&&i===4?2:i<2?0:1,source:'saved code'},
+      actions:i===2||edited&&i===4?[{decision:'revise-work',text:''}]:i===4?[{decision:'no-reply'}]:[],
+      changes:{baseline_kind:'previous-saved-step',baseline_revision:0,unified_diff:''}}));
+  frames[3].archive_observation=observation;frames[3].archive_observation_new=true;
+  frames[3].archive_observation_actor='researcher';frames[4].archive_reaction=true;
+  if(!edited){frames[4].archive_observation=observation;frames[4].archive_observation_new=false;
+    frames[4].archive_observation_actor='researcher'}
+  return {id,archive_message:true,simulation_workspace:true,policy_sample:true,policy_label:label,
+    sample_index:1,authored_demo:false,model_decisions:2,execution_results:1,initialization:'Shared captured context',frames};
+}
+const latest={...structuredClone(saved),id:'latest',simulation_workspace:true};
+const direct=policy('direct','Direct answer',false),hint=policy('hint','Guided hint',true);
+const latestBefore=JSON.stringify(latest);
+state.encounters=[direct,hint,latest];state.caseIndex=2;state.step=latest.frames.length-1;
+state.showInspector=false;context.render();
+const selector=node('simulation-run');
+assert.equal(node('simulation-run-row').hidden,false);
+assert.equal(selector.value,'latest');
+assert.match(selector.innerHTML,/Direct answer · sample 1/);
+assert.match(selector.innerHTML,/Guided hint · sample 1/);
+assert.match(selector.innerHTML,/Latest continuation/);
+assert.match(node('playback').inserted.html,/simulation-run-row/,'The run selector is inserted with the timeline');
+assert.match(node('.prototype-note').textContent,/^Authored test data · /);
+state.showInspector=true;state.selected='turn:7';state.chatKey='stale';node('run-details').open=true;
+selector.focus();selector.value='direct';selector.onchange();
+assert.equal(state.caseIndex,0);assert.equal(state.step,direct.frames.length-1,'Switching selects the saved final stage');
+assert.equal(state.showInspector,false);assert.equal(state.selected,'step');assert.equal(state.chatKey,null);
+assert.equal(node('run-details').open,false);assert.equal(selector.value,'direct');
+assert.equal(document.activeElement,selector,'Switching retains native selector focus');
+assert.doesNotMatch(context.sourceOnlyNotebook(),/Student-requested/);
+assert.match(node('#canvas .notebook-document > .notebook-caption').textContent,/unchanged revision/i);
+state.step=3;context.render();
+assert.equal(buttons[3].dataset.loopStage,'researcher-check','Researcher runs retain the square-node style hook');
+assert.match(buttons[3].attributes['aria-label'],/Researcher/);
+assert.doesNotMatch(buttons[3].attributes['aria-label'],/Student/);
+assert.match(context.sourceOnlyNotebook(),/Researcher-triggered local execution.*AUTHORED RESEARCHER OUTPUT/);
+assert.match(node('#canvas .notebook-document > .notebook-caption').textContent,/researcher/i);
+assert.doesNotMatch(node('#canvas .notebook-document > .notebook-caption').textContent,/student requested/i);
+assert.match(node('#canvas .notebook-prompt').attributes.title,/researcher/i);
+assert.doesNotMatch(node('#canvas .notebook-prompt').attributes.title,/student-requested/i);
+state.selected='context';context.renderInspector();
+assert.match(node('inspector').innerHTML,/researcher/i);
+assert.doesNotMatch(node('inspector').innerHTML,/Only student-requested|Student-controlled continuation|No local execution was requested/);
+assert.doesNotMatch(context.continuationReason(),/student-controlled/i);
+selector.value='hint';selector.onchange();
+assert.equal(state.caseIndex,1);assert.equal(state.step,4);
+assert.doesNotMatch(context.sourceOnlyNotebook(),/AUTHORED RESEARCHER OUTPUT/,'The reaction edit does not inherit an older revision result');
+selector.value='latest';selector.onchange();
+assert.equal(state.caseIndex,2);assert.equal(state.step,latest.frames.length-1);
+assert.equal(JSON.stringify(latest),latestBefore,'Policy inspection never changes the saved latest continuation');
+assert.match(node('.prototype-note').textContent,/^Authored test data · /);
+selector.focus();context.renderOperationStatus();assert.equal(document.activeElement,selector);
+state.refreshing=true;selector.value='direct';selector.onchange();
+assert.equal(state.caseIndex,2);assert.equal(selector.value,'latest','A refresh guard restores the displayed saved run');
+context.renderOperationStatus();assert.equal(selector.disabled,true);
+state.refreshing=false;context.renderOperationStatus();assert.equal(selector.disabled,false);
+selector.value='missing';selector.onchange();assert.equal(state.caseIndex,2);
+state.encounters=[saved];state.caseIndex=0;state.step=2;context.render();
+
 saved.archive_message=false;
 assert.equal(context.statusText(saved.frames[2]),'Generic status');
 assert.equal(context.pendingReplyNote(),'Generic pending note');
@@ -117,4 +187,5 @@ context.renderInspector();assert.equal(node('inspector').innerHTML,'Generic insp
 state.encounters=[];const before=renders;context.render();context.renderOperationStatus();
 assert.equal(renders,before,'Empty or rejected data does not enter the frame renderer');
 assert.equal(node('playback').hidden,true);
-console.log('Archive message: saved final stage, native timeline/focus, unexecuted code, pending tutor, scoped copy and empty state pass.');
+assert.equal(node('simulation-run-row').hidden,true);assert.equal(selector.disabled,true);
+console.log('Archive message: saved stages, native switching/focus, execution provenance, pending tutor, scoped copy and empty state pass.');

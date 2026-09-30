@@ -5,10 +5,13 @@
   const labels={'no-reply':'No further action',reply:'Send a message','revise-work':'Edit notebook'};
   const actionGlyph={'no-reply':'idle',reply:'chat','revise-work':'edit'};
   const tutorUnavailable=c=>['tutor-error','tutor-pending','pending'].includes(c.status);
+  const unified=()=>comparison.data?.unified_workspace===true||state.encounters.some(c=>c.simulation_workspace===true);
   const workspaceLabel=()=>comparison.authoredDemo===true?'Authored test data · No live comparison results':comparison.data?'Tutor policy sampling · Saved results':'Tutor policy sampling · Loading saved results';
   const percent=value=>(100*value).toFixed(1)+'%';
   const condition=()=>comparison.data?.conditions.find(c=>c.id===current()?.id);
-  const selectedSample=()=>condition()?.samples.find(s=>s.index===comparison.selected.get(condition().id));
+  const selectedSample=()=>condition()?.samples.find(s=>s.index===(unified()?current()?.sample_index:comparison.selected.get(condition().id)));
+  const reactionIndex=sample=>sample?.timeline?.findIndex(f=>f.archive_reaction)??-1;
+  const hasReaction=sample=>unified()?reactionIndex(sample)>=0:Boolean(sample?.reaction_frame);
   const group=()=>condition()?.samples.filter(s=>s.decision===selectedSample()?.decision)||[];
   const replaceHTML=(element,html)=>{if(element.policyHTML!==html){element.innerHTML=html;element.policyHTML=html}};
 
@@ -16,8 +19,9 @@
     if($('policy-sampling-panel'))return;
     $('reset').insertAdjacentHTML('afterend','<button id="policy-sampling-toggle" popovertarget="policy-sampling-panel" aria-controls="policy-sampling-panel" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="5" cy="15" r="2"/><path d="M5 7v6m2-3h3a5 5 0 0 0 5-3"/></svg>Compare next actions</button>');
     $('app').insertAdjacentHTML('beforeend',`<section popover="auto" id="policy-sampling-panel" class="sampling-panel policy-sampling-panel" aria-label="Compare sampled next actions">
-      <header class="sampling-header"><div><h2>What changes with the tutor reply?</h2><p id="policy-sampling-summary" role="status">Loading saved samples…</p></div><button class="sampling-close" id="hide-policy-sampling" aria-label="Hide next-action comparison">×</button></header>
+      <header class="sampling-header"><div><h2 id="policy-sampling-title">What changes with the tutor reply?</h2><p id="policy-sampling-summary" role="status">Loading saved samples…</p></div><button class="sampling-close" id="hide-policy-sampling" aria-label="Hide next-action comparison">×</button></header>
       <div id="policy-sampling-error" class="sampling-error" role="alert" hidden></div><button id="reload-policy-sampling" class="text-action" hidden>Reload comparison</button>
+      <p id="policy-comparison-scope" class="sampling-hint" hidden></p>
       <div id="policy-sampling-distribution"></div><div id="policy-sampling-footer" class="sampling-footer"></div>
     </section>`);
     $('policy-sampling-panel').addEventListener('toggle',()=>{
@@ -36,12 +40,23 @@
   function open(id,index=null,keepOpen=false,step=1){
     const c=comparison.data?.conditions.find(c=>c.id===id),caseIndex=state.encounters.findIndex(c=>c.id===id);
     const baseline=comparison.originals.get(id),sample=c?.samples.find(s=>s.index===index);
-    if(!c||tutorUnavailable(c)||caseIndex<0||!baseline||comparison.loading||index!==null&&!sample)return;
+    if(!c||tutorUnavailable(c)||caseIndex<0||!baseline||comparison.loading||state.refreshing||index!==null&&!sample)return;
+    if(unified()&&sample&&!sample.timeline?.length)return;
     if(sample)comparison.selected.set(id,index);else comparison.selected.delete(id);
     state.caseIndex=caseIndex;
-    current().frames=[current().frames[0],structuredClone(sample?sample.frame:baseline),
-      ...(sample?.reaction_frame?[structuredClone(sample.reaction_frame)]:[])];
-    state.step=step===2&&sample?.reaction_frame?2:1;state.showInspector=false;state.selected='step';state.chatOpen=true;state.chatKey=null;
+    if(unified()){
+      if(sample){
+        current().frames=structuredClone(sample.timeline);current().sample_index=index;
+        current().execution_results=sample.timeline.filter(f=>f.archive_observation_new).length;
+      }
+      state.step=sample?step===2&&hasReaction(sample)?reactionIndex(sample):Math.min(2,current().frames.length-1):1;
+      if($('run-details'))$('run-details').open=false;
+    }else{
+      current().frames=[current().frames[0],structuredClone(sample?sample.frame:baseline),
+        ...(sample?.reaction_frame?[structuredClone(sample.reaction_frame)]:[])];
+      state.step=step===2&&sample?.reaction_frame?2:1;
+    }
+    state.showInspector=false;state.selected='step';state.chatOpen=true;state.chatKey=null;
     render();if(!keepOpen)closePanel();
     document.querySelector('#canvas [aria-label="Selected code cell, read only"]')?.scrollIntoView({block:'start'});
     document.querySelector('#conversation-messages .chat-turn:last-of-type')?.scrollIntoView({block:'nearest'});
@@ -51,7 +66,7 @@
   function outcome(c,key){
     const category=c.categories.find(row=>row.decision===key),count=category?.count||0;
     const selected=current()?.id===c.id&&state.step>0&&selectedSample()?.decision===key;
-    const available=!tutorUnavailable(c)&&count>0&&c.samples.some(s=>s.decision===key)&&comparison.originals.has(c.id)&&!comparison.loading;
+    const available=!tutorUnavailable(c)&&count>0&&c.samples.some(s=>s.decision===key)&&comparison.originals.has(c.id)&&!comparison.loading&&!state.refreshing;
     const frequency=category?.proportion,interval=category?.interval?.map(percent).join(' – ');
     return `<td><button class="policy-outcome" data-policy="${esc(c.id)}" data-outcome="${key}" aria-pressed="${selected}"${available?'':' disabled'} aria-label="${esc(c.label+': '+labels[key]+', '+count+' of '+c.valid+' valid samples'+(available?', inspect saved outcome':', none available'))}"${interval?` title="95% sampling interval: ${interval}"`:''}>
       <span class="action-count">${count}<span> / ${c.valid}</span></span><span class="action-percentage">${frequency===null||frequency===undefined?'—':percent(frequency)}</span>
@@ -61,10 +76,12 @@
 
   function selection(){
     const sample=selectedSample(),c=condition();
-    if(!sample)return '<p class="sampling-hint">Choose an outcome to see its saved notebook and chat in Generated.</p>';
+    if(!sample)return '<p class="sampling-hint">'+(unified()?'Choose an outcome to open a saved policy sample in the main timeline.':'Choose an outcome to see its saved notebook and chat in Generated.')+'</p>';
     const samples=group(),position=samples.findIndex(s=>s.index===sample.index);
-    const reactionStatus=!sample.reaction_frame&&c.reaction?.sample_index===sample.index?{prepared:'Reaction not generated',pending:'Reaction pending',error:'Reaction unavailable'}[c.reaction.status]:null;
-    return `<div class="sample-selection"><span class="sample-selection-label"><span class="sample-dot" aria-hidden="true"></span>${esc(c.label)} · sample <b>${sample.index}</b></span><span class="sample-position">${position+1} of ${samples.length} in this action</span>${reactionStatus?`<span class="sample-position">${reactionStatus}</span>`:''}<div class="sample-nav" role="group" aria-label="Browse samples within this action"><button id="policy-sample-previous" aria-label="Previous saved sample"${position===0?' disabled':''}>‹</button><button id="policy-sample-next" aria-label="Next saved sample"${position===samples.length-1?' disabled':''}>›</button></div>${state.step!==1?'<button id="policy-open-selected" class="text-action">Open Generated</button>':''}${sample.reaction_frame&&state.step!==2?'<button id="policy-open-reaction" class="text-action">View reaction</button>':''}<button id="policy-original-reply" class="text-action">${glyph('tutor')}Tutor reply</button></div>`;
+    const reactionStatus=(!hasReaction(sample)&&c.reaction?.sample_index===sample.index?{prepared:'Reaction not generated',pending:'Reaction pending',error:'Reaction unavailable'}[c.reaction.status]:null)
+      ||(unified()&&!hasReaction(sample)?'No later student reaction saved':null);
+    const actionStep=unified()?2:1,reactionStep=unified()?reactionIndex(sample):2;
+    return `<div class="sample-selection"><span class="sample-selection-label"><span class="sample-dot" aria-hidden="true"></span>${esc(c.label)} · sample <b>${sample.index}</b></span><span class="sample-position">${position+1} of ${samples.length} in this action</span>${reactionStatus?`<span class="sample-position">${reactionStatus}</span>`:''}<div class="sample-nav" role="group" aria-label="Browse samples within this action"><button id="policy-sample-previous" aria-label="Previous saved sample"${position===0?' disabled':''}>‹</button><button id="policy-sample-next" aria-label="Next saved sample"${position===samples.length-1?' disabled':''}>›</button></div>${state.step!==actionStep?`<button id="policy-open-selected" class="text-action">${unified()?'View sampled action':'Open Generated'}</button>`:''}${hasReaction(sample)&&state.step!==reactionStep?'<button id="policy-open-reaction" class="text-action">View reaction</button>':''}<button id="policy-original-reply" class="text-action">${glyph('tutor')}Tutor reply</button></div>`;
   }
 
   function renderPanel(){
@@ -74,11 +91,17 @@
       state.encounters.forEach(c=>{if(c.frames[1])comparison.originals.set(c.id,structuredClone(c.frames[1]))});
     }
     const panel=$('policy-sampling-panel'),focused=panel.contains(document.activeElement)?document.activeElement:null;
-    document.title='Student lab · Tutor policy sampling';
+    document.title=unified()?'Student simulation':'Student lab · Tutor policy sampling';
     $('app').classList.add('policy-sampling-workspace');
-    document.querySelector('.prototype-note').textContent=workspaceLabel();
-    document.querySelector('.explorer-heading').textContent='Tutor policies';
-    document.querySelector('.breadcrumb').textContent='Shared notebook checkpoint';
+    if(!unified()){
+      document.querySelector('.prototype-note').textContent=workspaceLabel();
+      document.querySelector('.explorer-heading').textContent='Tutor policies';
+      document.querySelector('.breadcrumb').textContent='Shared notebook checkpoint';
+    }
+    if(unified())replaceHTML($('policy-sampling-toggle'),glyph('compare')+'Compare samples');
+    $('policy-sampling-title').textContent=unified()?'Compare saved samples':'What changes with the tutor reply?';
+    $('policy-comparison-scope').hidden=!unified();
+    $('policy-comparison-scope').textContent=unified()?'Earlier comparison · These independent policy samples are a separate run. Their counts do not describe the latest continuation.':'';
     $('policy-sampling-toggle').disabled=!state.encounters.length;
     if(!state.encounters.length&&panel.matches(':popover-open'))panel.hidePopover();
     $('policy-sampling-error').hidden=!comparison.error;$('policy-sampling-error').textContent=comparison.error;
@@ -104,7 +127,7 @@
       if($('policy-open-selected'))$('policy-open-selected').onclick=()=>open(c.id,sample.index);
       if($('policy-open-reaction'))$('policy-open-reaction').onclick=()=>open(c.id,sample.index,false,2);
     }
-    if(c){
+    if(c&&!unified()){
       $('version-captured').title='Shared captured notebook and conversation before either tutor reply';
       $('version-generated-description').textContent=tutorUnavailable(c)?'Tutor reply unavailable':sample?'Sampled student action':'Tutor reply · before student action';
       $('view-description').textContent=state.step===0?'Shared captured starting point · Before tutor reply':state.step===2?`${c.label} · Sample ${sample.index} · After execution · New edits are unexecuted`:tutorUnavailable(c)?`${c.label} · ${c.status==='tutor-error'?'Tutor generation failed':'Tutor reply pending'} · No student action sampled`:sample?`${c.label} · Sample ${sample.index} · ${labels[sample.decision]} · ${sample.frame.external_execution?'Saved local execution · No course grade':'Code not executed'}`:`${c.label} · Tutor reply · Student has not acted`;
@@ -130,6 +153,6 @@
   const workspaceRender=render;
   render=function(){workspaceRender();renderPanel()};
   const workspaceStatus=renderOperationStatus;
-  renderOperationStatus=function(){workspaceStatus();document.querySelector('.prototype-note').textContent=workspaceLabel()};
+  renderOperationStatus=function(){workspaceStatus();if(!unified())document.querySelector('.prototype-note').textContent=workspaceLabel()};
   load();
 })();

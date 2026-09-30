@@ -96,6 +96,8 @@ PYTHONPATH=. python -P apps/archive_message_preview.py \
   --continuation data/archived-tutor-continuation-v1 --port 8454
 ```
 
+For the current unified interface, use the consolidated command below instead.
+
 The original three events remain intact, followed by the new tutor reply and
 each student action on the same timeline. Student-requested execution output
 appears below its exact code revision, and a subsequent edit removes the current
@@ -125,3 +127,40 @@ pass after removing a stale parent execution counter from continued packets;
 the continued timeline reports saved local results, without guessing how many
 failed execution attempts reached the executor. The shared Starlette/httpx
 deprecation warning is unchanged.
+
+## Consolidated workbench
+
+The current page is **Student simulation**: one Run selector, one interaction
+timeline, notebook on the left and chat on the right. The latest continuation
+opens by default. Earlier direct-answer and guided-hint samples use the same
+renderer; **Compare samples** opens the existing optional floating panel. Cycling
+samples keeps that panel open and updates the run selector and timeline together.
+
+```sh
+PYTHONPATH=. python -P apps/archive_message_preview.py \
+  data/archived-student-loop-v1 --branch data/notebook-source-branch-v1/branch \
+  --continuation data/archived-tutor-continuation-v1 \
+  --include-policy-samples --port 8454
+```
+
+The earlier comparison is derived from the parent's frozen attachment, not an
+independently selected folder. Both read-only APIs revalidate the parent,
+continuation and prior study; changed receipts fail closed. Three distinct
+researcher checks are shared across matching source edits. Only the predetermined
+first sample per policy has a saved reaction. Missing later reactions are labeled
+as missing, not inferred silence. An edited reaction has no inherited output;
+unchanged code may retain its previously observed result. The latest continuation
+never borrows a matching-source output from the earlier comparison.
+
+The former local listeners at 8450, 8452 and 8453 were retired. Temporary localhost
+redirects send GET/HEAD requests for their roots to 8454 with 302/no-store; legacy
+API paths return 410 and writes are unsupported. The redirect process serves no
+research data and forwards no query strings. These redirects last only while that
+local process runs; the command above is the canonical launcher. Historical
+standalone adapters and all frozen artifacts remain available for reproducibility.
+
+Validation: 32 focused Python tests and four Node controller checks pass, with
+independent backend review. Browser checks covered the default latest run,
+researcher feedback, unexecuted repairs, native run switching and sample cycling
+with the comparison panel staying open. No new model calls, notebook executions,
+manual labels or evidence of improved student realism result from consolidation.

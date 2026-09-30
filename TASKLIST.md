@@ -1,5 +1,17 @@
 # Simulated students: task list
 
+**Saved views consolidated (2026-09-30):**
+Use the **Student simulation** workbench at port 8454. A single Run selector
+switches between the latest continuation and the earlier direct-answer/guided-hint
+samples; each uses the same notebook, chat and timeline. **Compare samples** is
+optional and describes only the earlier 30-draw-per-policy study. Researcher
+checks remain explicit, unexecuted revisions stay unexecuted, and missing reactions
+are distinguished from no-action decisions. The old local preview roots at 8450,
+8452 and 8453 now temporarily redirect here; historical launch notes below are
+retained as history. No new simulations or labeling. All 32 focused Python checks,
+four Node checks and browser verification pass. See the
+[consolidated launch command](docs/2026-09-30-archive-tutor-continuation.md#consolidated-workbench).
+
 **One tutor continuation completed (2026-09-30):**
 [Bounded exchange and dispatch status](docs/2026-09-30-archive-tutor-continuation.md).
 After exact-payload approval, one tutor reply used the verified course API

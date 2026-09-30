@@ -4,10 +4,21 @@
   const scoped=()=>current()?.archive_message===true;
   const waiting='Awaiting tutor · No reply is running';
   $('canvas').before($('playback'));
+  $('playback').insertAdjacentHTML('afterbegin','<div id="simulation-run-row" hidden><label for="simulation-run">Run</label><select id="simulation-run" aria-label="Saved simulation run"></select></div>');
+  const runLabel=c=>c.policy_sample?`${c.policy_label} · sample ${c.sample_index}`:'Latest continuation';
+  $('simulation-run').onchange=()=>{
+    if(state.refreshing){$('simulation-run').value=current()?.id||'';return}
+    const index=state.encounters.findIndex(c=>c.simulation_workspace&&c.id===$('simulation-run').value);
+    if(index<0)return;
+    state.caseIndex=index;state.step=current().frames.length-1;state.showInspector=false;
+    state.selected='step';state.chatKey=null;$('run-details').open=false;
+    render();notify(runLabel(current())+' · Saved results; no generation or execution.');
+  };
 
   const workspaceStatusText=statusText;
   statusText=function(f){
     if(!scoped())return workspaceStatusText(f);
+    if(f.archive_stage==='researcher-check')return 'Researcher-triggered local execution · Ungraded';
     if(f.status==='awaiting-tutor')return current().frames.slice(current().frames.indexOf(f)+1).some(next=>next.archive_stage==='tutor')
       ?'Awaiting the next saved tutor reply':waiting;
     const stopped={'no-reply':'Student chose no further action',
@@ -20,18 +31,20 @@
       'setup-error':'Execution setup failed · Saved run stopped'};
     return stopped[f.status]||(f.archive_stage==='tutor'?'Student has not acted'
       :f.archive_stage==='captured'?'Read only':f.archive_stage==='request-check'
-      ?'Student requested local execution · Ungraded':'Saved student action');
+      ?'Student requested local execution · Ungraded':f.archive_reaction
+      ?'Saved student action after researcher-run feedback':'Saved student action');
   };
   const workspacePendingNote=pendingReplyNote;
   pendingReplyNote=function(){
     if(!scoped())return workspacePendingNote();
+    if(current().policy_sample)return 'No later tutor reply is saved for this sample. Viewing sends nothing.';
     return (current().frames.slice(state.step+1).some(next=>next.archive_stage==='tutor')?'A later saved tutor reply follows this message.'
       :state.step<current().frames.length-1?'The later tutor request failed; no reply was saved.'
       :frame().status==='tutor-error'?'The tutor request failed. No reply is running.':waiting+'.')
       +' Viewing this saved run sends nothing.';
   };
   const workspaceReason=continuationReason;
-  continuationReason=function(){return scoped()?'This saved student-controlled loop is read only.':workspaceReason()};
+  continuationReason=function(){return scoped()?'This saved run is read only.':workspaceReason()};
 
   const workspaceNotebook=sourceOnlyNotebook;
   sourceOnlyNotebook=function(){
@@ -39,7 +52,9 @@
     if(!scoped()||!f.archive_observation)return html;
     // The selected code is the final code/pre pair; leave its source renderer intact.
     const marker='</code></pre>',end=html.lastIndexOf(marker)+marker.length;
-    const title=(f.archive_observation_new?'Student-requested local execution':'Previously observed local result')
+    const researcher=f.archive_observation_actor==='researcher';
+    const title=(f.archive_observation_new?researcher?'Researcher-triggered local execution':'Student-requested local execution'
+      :researcher?'Previously observed researcher-run result':'Previously observed local result')
       +' · revision '+f.archive_observation.revision;
     return html.slice(0,end)+externalExecution(f.archive_observation,title)+html.slice(end);
   };
@@ -49,9 +64,13 @@
     if(!scoped())return workspaceInspector();
     const c=current(),f=frame();
     if(['context','controls','next-exercise','feedback'].includes(state.selected)){
-      $('inspector').innerHTML='<div class="inspector-title">Saved run context</div><h2>Student-controlled continuation</h2>'
+      $('inspector').innerHTML='<div class="inspector-title">Saved run context</div><h2>'+(c.policy_sample?'Saved policy sample':'Student-controlled continuation')+'</h2>'
         +'<p>This is a simulated continuation from captured work, not recorded future student behavior.</p>'
-        +(c.terminal_status==='tutor-error'?'<p>The new tutor request failed. No tutor reply or new student decision followed, and no new code was executed. No request is running.</p>'
+        +(c.policy_sample?'<p>This sample belongs to the earlier tutor-policy comparison, a separate run from the latest continuation. '
+          +'Samples were generated independently from their supplied tutor reply. Any local execution was triggered by a researcher after the sampled action; '
+          +'its output was unavailable to that action. Only the selected first sample per policy has a separately saved reaction to that result. '
+          +'These results are ungraded and do not establish a general policy advantage or learning.</p>'
+          :c.terminal_status==='tutor-error'?'<p>The new tutor request failed. No tutor reply or new student decision followed, and no new code was executed. No request is running.</p>'
           :c.archive_continuation?'<p>A separately saved tutor reply and bounded student continuation follow the original message. '
           +'Only student-requested runs can supply local output. Results belong to their source revision; edits clear current feedback. '
           +'Local execution is ungraded and establishes neither correctness nor learning. No request is running.</p>'
@@ -73,24 +92,37 @@
 
   function decorate(){
     const c=current(),f=c?.frames?.[state.step];
+    $('simulation-run-row').hidden=!c?.simulation_workspace;
+    $('simulation-run').disabled=!f||Boolean(state.refreshing);
+    if(c?.simulation_workspace){
+      const options=[...state.encounters].sort((a,b)=>Number(Boolean(a.policy_sample))-Number(Boolean(b.policy_sample)))
+        .map(run=>`<option value="${esc(run.id)}">${esc(runLabel(run))}</option>`).join('');
+      if($('simulation-run').innerHTML!==options)$('simulation-run').innerHTML=options;
+      $('simulation-run').value=c.id;
+      $('case-title').textContent='Student simulation';
+      document.title='Student simulation';
+    }
     if(!c||!f){$('playback').hidden=true;return}
     if(!scoped())return;
-    document.querySelector('.prototype-note').textContent=(c.authored_demo===true?'Authored test data · ':'')+'Saved student-controlled loop';
+    document.querySelector('.prototype-note').textContent=(c.authored_demo===true?'Authored test data · ':'')
+      +(c.simulation_workspace?'Read only':'Saved student-controlled loop');
     $('trail-title').textContent='Interaction timeline';
     $('trail-hint').textContent=`Step ${state.step+1} of ${c.frames.length} · `
-      +(c.archive_continuation?`${c.execution_results} local result${c.execution_results===1?'':'s'}`
+      +(c.archive_continuation||c.policy_sample?`${c.execution_results} local result${c.execution_results===1?'':'s'}`
         :`${c.model_decisions} student action · ${c.execution_calls} local executions`);
     $('trail').style.gridTemplateColumns=`repeat(${c.frames.length}, minmax(${c.frames.length>5?'76px':'0'}, 1fr))`;
     $('trail').style.overflowX=c.frames.length>5?'auto':'visible';
     $('trail').setAttribute('role','group');
-    $('trail').setAttribute('aria-label','Saved student-controlled interaction timeline');
+    $('trail').setAttribute('aria-label',c.simulation_workspace?'Saved interaction timeline':'Saved student-controlled interaction timeline');
     $('trail').querySelectorAll('button[data-trail]').forEach(button=>{
       const index=Number(button.dataset.trail),event=c.frames[index];
       const [label,actor,icon]=event.archive_stage==='captured'
         ?['Captured',c.authored_demo===true?'Authored':'Recorded','notebook']
         :event.archive_stage==='tutor'?['Tutor reply','Tutor','tutor']
         :event.archive_stage==='tutor-error'?['Tutor failed','Tutor','tutor']
+        :event.archive_stage==='researcher-check'?['Local run','Researcher','results']
         :event.archive_action_failed?['Action failed','Student','idle']
+        :event.archive_reaction?['Next action','Student','student']
         :event.archive_stage==='request-check'?[event.archive_observation_new?'Local run':'Run requested','Student','results']
         :event.archive_stage==='no-reply'?['No further action','Student','idle']
         :event.archive_stage==='error'?['Decision failed','Student','idle']
@@ -105,18 +137,20 @@
     });
     const caption=document.querySelector('#canvas .notebook-document > .notebook-caption');
     if(caption)caption.textContent=f.archive_observation
-      ?f.archive_observation_new?'The student requested this local run. Its saved output is shown; this is not a course grade.'
+      ?f.archive_observation_new?f.archive_observation_actor==='researcher'
+          ?'Saved researcher check for this source; identical sources share it. The sampled action did not receive this output. No course grade is established.'
+          :'The student requested this local run. Its saved output is shown; this is not a course grade.'
         :'Previously observed result for this unchanged revision. No new execution result is available at this step.'
-      :c.archive_continuation?'No execution result for this revision at this stage. No output or course grade is inferred.'
+      :c.archive_continuation||c.policy_sample?'No execution result for this revision at this stage. No output or course grade is inferred.'
       :f.archive_stage==='message'?'No local check was requested. This revision has not been executed in this run; no course grade is established.'
       :'No execution result at this stage. No code was executed in this saved run.';
     const prompt=document.querySelector('#canvas .notebook-prompt');
     if(prompt)for(const key of ['title','aria-label'])prompt.setAttribute(key,f.archive_observation
-      ?'Saved student-requested local result; no historical execution count is inferred'
+      ?`Saved ${f.archive_observation_actor==='researcher'?'researcher-triggered':'student-requested'} local result; no historical execution count is inferred`
       :f.archive_stage==='message'&&!c.archive_continuation?'This revision has not been executed in this run':'No execution result at this stage');
     if(f.status==='awaiting-tutor'){
       const note=document.querySelector('#conversation-messages > p.quiet:last-child');
-      if(note)note.textContent=state.step<current().frames.length-1
+      if(note)note.textContent=c.policy_sample?'No later tutor reply is saved for this sample.':state.step<current().frames.length-1
         ?c.terminal_status==='tutor-error'?'The following stage shows the failed tutor request.'
           :'The following stage contains the saved tutor continuation.':'This saved run stopped after the student’s message.';
     }

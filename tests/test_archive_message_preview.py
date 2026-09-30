@@ -5,12 +5,12 @@ import json
 from fastapi.testclient import TestClient
 import pytest
 
-from apps.archive_message_preview import create_app, project
+from apps.archive_message_preview import consolidate, create_app, project
 from src.agents import archive_tutor_continuation as continuation
 from src.agents import archived_notebook as archive, notebook_student as store
 from tests.test_archive_tutor_continuation import child
 from tests.test_archived_notebook import prepared, action, execution, no_execution
-from tests.test_policy_execution import raw
+from tests.test_policy_execution import prepared_followup, raw
 
 
 def test_saved_message_projection_and_read_only_fail_closed_api(prepared):
@@ -211,3 +211,67 @@ def test_continuation_api_pins_both_inputs_and_remains_read_only(prepared, monke
     changed_parent['state']['message'] = 'OTHER PARENT'
     with pytest.raises(ValueError):
         project(changed_parent, result)
+
+
+def test_unified_workspace_keeps_runs_checks_and_reactions_separate(tmp_path):
+    followup, comparison, previous, _ = prepared_followup(tmp_path)
+    followup.execute(previous)
+    followup.prepare_reactions(previous)
+    followup.send(previous, send=True, generate=lambda _, prompt:raw(
+        action('revise-work', 'unique_uris = 22') if 'DIRECT_TUTOR' in prompt else action('no-reply')))
+    folder = tmp_path/'archive-loop'
+    archive.prepare(folder, followup_folder=previous, condition='hint', authored_demo=True)
+    parent = archive.run(folder, send=True, generate=lambda *_:raw(
+        action('revise-work', 'unique_uris = 1', 'unique_uris = 1')), execute=no_execution)
+    original = deepcopy(parent)
+    packet, sampling = consolidate(parent)
+    assert parent == original
+    direct, hint, latest = packet['encounters']
+    assert all(c['simulation_workspace'] and c['archive_message'] for c in packet['encounters'])
+    assert latest == project(parent)['encounters'][0] | {'simulation_workspace':True}
+    assert latest['execution_calls'] == 0
+    assert sampling['unified_workspace'] and sampling['authored_demo']
+    assert sampling['execution_count'] == 3
+    assert [len(c['samples']) for c in sampling['conditions']] == [30, 30]
+    for encounter, condition in zip((direct, hint), sampling['conditions']):
+        assert encounter['policy_sample'] and encounter['sample_index'] == 1
+        assert encounter['execution_results'] == 1
+        assert encounter['evidence_card']['student_messages'] == 1
+        for sample in condition['samples']:
+            frames = sample['timeline']
+            assert len(frames) == (5 if sample['index'] == 1 else 4)
+            assert all('reaction' not in f and 'external_execution' not in f for f in frames)
+            assert all('archive_observation' not in f for f in frames[:3])
+            check = frames[3]
+            assert check['archive_stage'] == 'researcher-check' and check['actions'] == []
+            assert check['archive_observation_actor'] == 'researcher' and check['archive_observation_new']
+            assert check['archive_observation']['revision'] == check['work']['revision']
+            assert len(frames[0]['dialogue']) == 1
+            assert frames[1]['dialogue'][-1]['text'] == ('DIRECT_TUTOR' if condition['id'] == 'direct' else 'HINT_TUTOR')
+    assert direct['frames'][-1]['archive_reaction']
+    assert 'archive_observation' not in direct['frames'][-1]  # Repair is unexecuted.
+    assert hint['frames'][-1]['archive_observation'] == hint['frames'][-2]['archive_observation']
+    assert hint['frames'][-1]['archive_observation_new'] is False
+    assert hint['frames'][-1]['status'] == 'no-reply'
+    assert all('archive_observation' not in f for f in latest['frames'])
+    assert 'code_pins' not in json.dumps((packet, sampling))
+
+    app = create_app(folder, notebook_branch=tmp_path/'source', include_policy_samples=True)
+    assert not any('POST' in getattr(route, 'methods', ()) for route in app.routes)
+    with TestClient(app, base_url='http://127.0.0.1') as client:
+        assert client.get('/api/workspace').json() == packet
+        assert client.get('/api/policy-sampling').json() == sampling
+        assert client.get('/api/policy-sampling?condition=other').status_code == 400
+        assert client.post('/api/continue', json={}).status_code == 404
+        html = client.get('/').text
+        assert html.index('/archive-message.js') < html.index('/policy-sampling.js')
+        for asset in ('archive-message.js', 'student-loop.css', 'policy-sampling.js', 'policy-sampling.css', 'next-actions.css'):
+            assert client.get('/'+asset).status_code == 200
+        path = previous/'reaction-direct.json'
+        receipt = store._read(path)
+        store._save(path, receipt | {'response':action('reply', text='FORGED_PRIVATE')})
+        for endpoint in ('/api/workspace', '/api/policy-sampling'):
+            response = client.get(endpoint)
+            assert response.status_code == 409 and 'FORGED_PRIVATE' not in response.text
+        store._save(path, receipt)
+        assert client.get('/api/workspace').json() == packet
