@@ -145,7 +145,7 @@ and browser mouse/keyboard checks cover switching, focus and sample cycling.
 PYTHONPATH=. python -P apps/archive_message_preview.py \
   data/archived-student-loop-v1 --branch data/notebook-source-branch-v1/branch \
   --continuation data/archived-tutor-continuation-v1 \
-  --include-policy-samples --port 8454
+  --include-policy-samples --history-benchmark data/course-account-history-v1 --port 8454
 ```
 
 The earlier comparison is derived from the parent's frozen attachment, not an
@@ -169,3 +169,38 @@ independent backend review. Browser checks covered the default latest run,
 researcher feedback, unexecuted repairs, native run switching and sample cycling
 with the comparison panel staying open. No new model calls, notebook executions,
 manual labels or evidence of improved student realism result from consolidation.
+
+## Recorded-chat benchmark in the same workspace
+
+`--history-benchmark` adds **History benchmark** beside the notebook view. It
+opens the already completed ten-account study: one recorded next message and
+all five current-exchange and five history-conditioned draws per case, in the
+fixed case order. The shared recorded prefix stays beside the replies, with the
+current exchange boundary visible. Switching views preserves the notebook run.
+The recorded message and generated replies appear first; aggregate scores and
+earlier dialogue are expandable. `?view=benchmark` opens this view directly.
+
+Scores are the original literal message-form errors, recomputed with the frozen
+scorer and checked against its saved report. The visible-history frequency
+baseline predicts form, not text. Length, newline and backtick indicators do
+not measure meaning, notebook activity, learning or personality. The recorded
+message is one observed continuation, not the only plausible next response.
+The cases are provisional course accounts selected conditional on returning to
+chat; student eligibility and silence probabilities remain unestablished.
+
+The optional GET endpoint verifies frozen sources, terminal receipts and the
+report, and pins its projection for the life of the preview. A changed benchmark
+returns a redacted error without displaying stale replies; the independent
+notebook replay remains available. Raw provider receipts and original account
+identifiers are not browser fields. Everything remains local and read only.
+No new generation, labels or simulator change is triggered by inspection.
+
+The [offline diagnosis](2026-09-30-history-benchmark-diagnosis.md) distinguishes
+the closed benchmark findings from one proposed next improvement target.
+
+Validation: 26 focused Python tests, five Node controller checks and browser
+inspection pass. Checks cover all ten cases and all saved draws, literal escaping,
+reference exclusion from prompts, tampered-artifact failures, and preservation of
+the notebook run and timeline when switching views, including during loading.
+An independent integration review found the loading-state reload-button bug;
+the fix and its regression check are included.

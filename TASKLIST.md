@@ -1,8 +1,20 @@
 # Simulated students: task list
 
+**Saved history benchmark added to the workbench (2026-09-30):**
+The **History benchmark** tab at port 8454 shows all ten recorded next messages,
+all 100 saved replies, their supplied conversation and the original form scores.
+Switching back preserves the notebook run and timeline position. Current-exchange
+error is 0.430, history error 0.400, and the empirical form baseline 0.155; these
+measure length/formatting, not meaning or student realism. The
+[offline diagnosis](docs/2026-09-30-history-benchmark-diagnosis.md) identifies one
+prospective comparison: student-only earlier context with the current exchange
+unchanged. That comparison is not run or adopted; these exposed cases are
+development evidence and a formal later test needs fresh reserved cases.
+No new model calls, executions or labeling.
+
 **Saved views consolidated (2026-09-30):**
 Use the **Student simulation** workbench at port 8454. Three visible run choices
-switches between the latest continuation and the earlier direct-answer/guided-hint
+switch between the latest continuation and the earlier direct-answer/guided-hint
 samples; each uses the same notebook, chat and timeline. **Compare samples** is
 optional and describes only the earlier 30-draw-per-policy study. Researcher
 checks remain explicit, unexecuted revisions stay unexecuted, and missing reactions

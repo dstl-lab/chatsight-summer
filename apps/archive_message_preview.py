@@ -204,7 +204,8 @@ def consolidate(parent, continuation=None):
     return packet, sampling
 
 
-def create_app(folder, *, notebook_branch, continuation=None, include_policy_samples=False):
+def create_app(folder, *, notebook_branch, continuation=None, include_policy_samples=False,
+               history_benchmark=None):
     folder = Path(folder).absolute()
     initial = archive.load(folder)
     continuation = Path(continuation).absolute() if continuation is not None else None
@@ -214,6 +215,10 @@ def create_app(folder, *, notebook_branch, continuation=None, include_policy_sam
         consolidate(initial, attached)
     pin = store.digest(initial)
     continuation_pin = store.digest(attached) if attached is not None else None
+    if history_benchmark is not None:
+        from apps import history_benchmark as benchmark_store
+        history_benchmark = Path(history_benchmark).absolute()
+        benchmark_pin = store.digest(benchmark_store.load(history_benchmark))
     app = workspace.create_app(notebook_branch=notebook_branch)
     # Keep the existing localhost security middleware and shared assets, not another data source.
     app.router.routes[:] = [route for route in app.routes if route.path in ('/workspace.js', '/api/scenarios')]
@@ -241,6 +246,19 @@ def create_app(folder, *, notebook_branch, continuation=None, include_policy_sam
         def samples(request: Request):
             return snapshot(request)[1]
 
+    if history_benchmark is not None:
+        @app.get('/api/history-benchmark')
+        def benchmark(request: Request):
+            if request.query_params:
+                raise HTTPException(400, 'This is one fixed, completed benchmark.')
+            try:
+                result = benchmark_store.load(history_benchmark)
+                if store.digest(result) != benchmark_pin:
+                    raise ValueError('Saved benchmark changed.')
+                return result
+            except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
+                raise HTTPException(409, 'The saved benchmark could not be verified. Its contents are not displayed.') from exc
+
     @app.get('/', response_class=HTMLResponse)
     def page():
         styles = '<link rel="stylesheet" href="/student-loop.css">'
@@ -248,6 +266,9 @@ def create_app(folder, *, notebook_branch, continuation=None, include_policy_sam
         if include_policy_samples:
             styles += '<link rel="stylesheet" href="/next-actions.css"><link rel="stylesheet" href="/policy-sampling.css">'
             scripts += '<script src="/policy-sampling.js"></script>'
+        if history_benchmark is not None:
+            styles += '<link rel="stylesheet" href="/history-benchmark.css">'
+            scripts += '<script src="/history-benchmark.js"></script>'
         return workspace._page().replace('</head>', styles+'</head>').replace('</body>', scripts+'</body>')
 
     @app.get('/student-loop.css')
@@ -258,10 +279,15 @@ def create_app(folder, *, notebook_branch, continuation=None, include_policy_sam
     def script():
         return Response((ROOT/'apps/archive-message.js').read_text(), media_type='text/javascript')
 
+    assets = set()
     if include_policy_samples:
+        assets.update(('next-actions.css', 'policy-sampling.css', 'policy-sampling.js'))
+    if history_benchmark is not None:
+        assets.update(('history-benchmark.css', 'history-benchmark.js'))
+    if assets:
         @app.get('/{asset}')
         def comparison_asset(asset: str):
-            if asset not in ('next-actions.css', 'policy-sampling.css', 'policy-sampling.js'):
+            if asset not in assets:
                 raise HTTPException(404)
             return Response((ROOT/'apps'/asset).read_text(),
                             media_type='text/javascript' if asset.endswith('.js') else 'text/css')
@@ -284,9 +310,12 @@ if __name__ == '__main__':
     parser.add_argument('--continuation', type=Path)
     parser.add_argument('--include-policy-samples', action='store_true',
                         help='Include the verified earlier policy study frozen in this run.')
+    parser.add_argument('--history-benchmark', type=Path,
+                        help='Inspect the completed ten-account chat benchmark in the same workspace.')
     parser.add_argument('--port', type=int, default=8453)
     args = parser.parse_args()
     import uvicorn
     uvicorn.run(create_app(args.folder, notebook_branch=args.branch, continuation=args.continuation,
-                          include_policy_samples=args.include_policy_samples),
+                          include_policy_samples=args.include_policy_samples,
+                          history_benchmark=args.history_benchmark),
                 host='127.0.0.1', port=args.port)

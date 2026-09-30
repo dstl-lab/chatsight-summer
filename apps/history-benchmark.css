@@ -1,0 +1,62 @@
+/* The notebook DOM stays mounted behind this separate, read-only benchmark. */
+#app.history-benchmark-active :is(#body-grid,#policy-sampling-toggle,#chat-toggle,#inspector-toggle){display:none!important}
+#history-benchmark{display:grid;grid-template-columns:minmax(0,1fr) clamp(260px,32vw,360px);grid-template-rows:auto minmax(0,1fr);flex:1;min-width:0;min-height:0;isolation:isolate}
+#history-benchmark[hidden]{display:none}
+#history-benchmark .hb-header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:20px 24px;border-bottom:1px solid var(--line)}
+#history-benchmark h1{font-size:24px;line-height:1.3}
+#history-benchmark-summary{font-size:12px;color:var(--muted);margin-top:4px}
+#history-benchmark .hb-navigation{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px}
+#history-benchmark .hb-navigation label{font-weight:600}
+#history-benchmark .hb-navigation select{font-size:12px;min-height:32px;padding:4px 8px;max-width:240px}
+#history-benchmark .hb-navigation button{font-size:12px;padding:4px 8px;min-height:32px}
+#history-benchmark .hb-navigation button:hover:not(:disabled){background:var(--mint)}
+#history-benchmark .hb-navigation button:active:not(:disabled){background:var(--pressed,var(--mint))}
+#history-benchmark :is(button,select,summary):focus-visible{outline:2px solid var(--green);outline-offset:3px}
+#history-benchmark .hb-main{grid-column:1;grid-row:2;overflow:auto;overscroll-behavior:contain;min-width:0;min-height:0;padding:24px;font-size:13px;line-height:1.6}
+#history-benchmark :is(.hb-main,#history-benchmark-prefix):focus-visible{outline:2px solid var(--green);outline-offset:-2px}
+#history-benchmark h2{font-size:14px;line-height:1.5;font-weight:600}
+#history-benchmark h3{font-size:12px;line-height:1.5;font-weight:600}
+#history-benchmark .hb-form{font-size:11px;color:var(--muted);line-height:1.6;margin-top:8px;font-variant-numeric:tabular-nums}
+#history-benchmark .hb-study>summary{color:var(--ink);font-weight:500;border-bottom:1px solid var(--line);padding:8px 0 12px}
+#history-benchmark .hb-study>summary span{font-size:11px;color:var(--muted);font-weight:400;margin-left:8px;white-space:nowrap}
+#history-benchmark .hb-study-body{padding:8px 0}
+#history-benchmark table{width:100%;border-collapse:collapse;margin:12px 0;font-size:11px;text-align:left;font-variant-numeric:tabular-nums}
+#history-benchmark th,#history-benchmark td{padding:8px 8px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+#history-benchmark th{font-weight:500}
+#history-benchmark td:last-child{color:var(--muted)}
+#history-benchmark summary{cursor:pointer;padding:8px 0;font-size:12px;color:var(--green)}
+#history-benchmark summary:hover{text-decoration:underline}
+#history-benchmark summary:active{color:var(--ink)}
+#history-benchmark .hb-limits{margin-top:8px}
+#history-benchmark .hb-limits :is(p,li){font-size:12px;color:var(--muted);max-width:72ch}
+#history-benchmark .hb-limits ul{padding-left:20px;margin:8px 0 0}
+#history-benchmark .hb-limits li+li{margin-top:8px}
+#history-benchmark .hb-reference{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:24px 0;background:var(--ground)}
+#history-benchmark .hb-reference header{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px;margin-bottom:12px}
+#history-benchmark .hb-reference header span{font-size:11px;color:var(--muted)}
+#history-benchmark .hb-message{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.7;max-width:72ch}
+#history-benchmark .hb-reference-note{font-size:11px;color:var(--muted);margin-top:12px}
+#history-benchmark .hb-arms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+#history-benchmark .hb-arm{min-width:0}
+#history-benchmark .hb-arm>header{padding-bottom:16px;border-bottom:1px solid var(--line)}
+#history-benchmark .hb-score{margin-top:8px;font-size:12px;font-variant-numeric:tabular-nums}
+#history-benchmark .hb-score b{font-weight:650;margin-left:4px}
+#history-benchmark .hb-draws{list-style:none;padding:0;margin:0}
+#history-benchmark .hb-draw{padding:16px 0;border-bottom:1px solid var(--line)}
+#history-benchmark .hb-draw header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin-bottom:8px}
+#history-benchmark .hb-draw header span{font-size:11px;color:var(--muted)}
+#history-benchmark :is(.hb-missing,.hb-no-reply){padding:8px 12px;background:var(--ground);border-left:2px solid var(--line);font-size:12px}
+#history-benchmark .hb-baseline{margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+#history-benchmark .hb-baseline>p{font-size:12px;margin-top:8px}
+#history-benchmark .hb-context{grid-column:2;grid-row:2;min-width:0;min-height:0;background:var(--ground)}
+#history-benchmark .hb-context>header{padding:20px;border-bottom:1px solid var(--line)}
+#history-benchmark-prefix{overflow:auto;overscroll-behavior:contain;min-height:0;padding:0 20px 24px;flex:1}
+#history-benchmark-prefix .hb-current{border-top:1px solid var(--line);margin-top:24px;padding-top:20px}
+#history-benchmark .hb-earlier{padding-top:12px}
+#history-benchmark .hb-earlier>summary{color:var(--ink);font-weight:500}
+#history-benchmark .hb-earlier>summary span{color:var(--muted);font-size:11px;font-weight:400}
+#history-benchmark-prefix .literal-message{font-size:13px;overflow-wrap:anywhere}
+#history-benchmark .hb-empty{padding:16px 0;color:var(--muted);font-size:13px}
+#history-benchmark .hb-empty p{margin-top:12px;max-width:64ch}
+@media(max-width:720px){#history-benchmark{grid-template-columns:minmax(0,1fr);overflow:auto;grid-template-rows:auto auto auto}#history-benchmark .hb-main{overflow:visible;grid-row:2}#history-benchmark .hb-context{grid-column:1;grid-row:3;border-left:0;border-top:1px solid var(--line);max-height:480px}#history-benchmark .hb-header{padding:20px}#history-benchmark .hb-main{padding:20px}}
+@media(max-width:460px){#history-benchmark .hb-arms{grid-template-columns:minmax(0,1fr)}#history-benchmark .hb-navigation select{max-width:180px}}

@@ -275,3 +275,28 @@ def test_unified_workspace_keeps_runs_checks_and_reactions_separate(tmp_path):
             assert response.status_code == 409 and 'FORGED_PRIVATE' not in response.text
         store._save(path, receipt)
         assert client.get('/api/workspace').json() == packet
+
+
+def test_optional_history_benchmark_is_pinned_read_only_and_independent(prepared, monkeypatch):
+    from apps import history_benchmark
+    folder, _ = prepared
+    archive.run(folder, send=True, generate=lambda *_:raw(action('reply', text='AUTHORED MESSAGE')),
+                execute=no_execution)
+    saved = {'version':1, 'cases':[{'reference':{'text':'AUTHORED REFERENCE'}}]}
+    monkeypatch.setattr(history_benchmark, 'load', lambda _:deepcopy(saved))
+    app = create_app(folder, notebook_branch=folder.parent/'source', history_benchmark=folder.parent/'benchmark')
+    assert not any('POST' in getattr(route, 'methods', ()) for route in app.routes)
+    with TestClient(app, base_url='http://127.0.0.1') as client:
+        assert client.get('/api/history-benchmark').json() == saved
+        assert client.get('/api/history-benchmark?case=unknown').status_code == 400
+        assert client.post('/api/history-benchmark', json={}).status_code == 405
+        html = client.get('/').text
+        assert html.index('/archive-message.js') < html.index('/history-benchmark.js')
+        assert '/history-benchmark.css' in html
+        for asset in ('history-benchmark.js', 'history-benchmark.css', 'archive-message.js'):
+            assert client.get('/'+asset).status_code == 200
+        saved['cases'][0]['reference']['text'] = 'CHANGED_PRIVATE_REFERENCE'
+        response = client.get('/api/history-benchmark')
+        assert response.status_code == 409 and 'CHANGED_PRIVATE_REFERENCE' not in response.text
+        assert 'AUTHORED REFERENCE' not in response.text
+        assert client.get('/api/workspace').status_code == 200
