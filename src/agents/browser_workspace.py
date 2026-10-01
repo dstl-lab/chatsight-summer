@@ -24,7 +24,7 @@ from src.agents import chat_policy_pair, chat_student, chat_workspace, notebook_
 from src.eval import fidelity_comparison as fidelity, notebook_replay, student_reply_comparison as student_replies
 from src.eval.saved_comparison import load_comparison
 from src.agents import notebook_branch as source_branch
-from src.agents import student_evidence
+from src.agents import student_evidence, authored_policy_chat
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_POLICY = "Respond concisely to the student's current request using the visible work and check feedback."
@@ -195,13 +195,15 @@ def _chat_snapshot(folder):
                 'actions':[{key:receipt['response'][key] for key in ('decision', 'text')} | {'source':None}]
                     if receipt is not None and receipt['status'] == 'complete' else []})
         saved_results = _saved_results(folder)
-    return {'version':1, 'kind':'chat', 'encounters':[{
+        encounter = {
         'id':'1', 'title':'Conversation', 'task':'Conversation scenario',
         'evidence_card': evidence,
         'initialization':'Supplied conversation prefix followed by saved simulated continuation. '
             'The prefix may be recorded or authored; its saved origin alone does not establish this. '
             'Notebook activity and outcomes are unknown. Code in a message is text only.',
-        'activity':None, 'frames':frames, 'saved_results_html':saved_results}]}
+        'activity':None, 'frames':frames, 'saved_results_html':saved_results}
+        authored_policy_chat.project(folder, manifest, receipts, encounter)
+    return {'version':1, 'kind':'chat', 'encounters':[encounter]}
 
 
 def snapshot(folder, *, chat_mode=False):
@@ -601,7 +603,17 @@ def _source_branch_snapshot(folder, expected_pin, execution_path=None, execution
         'operation':{'status':'idle', 'message':''}}
 
 
-def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, recorded_replay=None, recorded_sha256=None, notebook_branch=None, notebook_execution=None, notebook_execution_sha256=None, notebook_reaction=None, notebook_reaction_sha256=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None):
+def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=None, policy_comparison=None, policy_workspace=None, fidelity_comparison=None, student_comparison=None, teaching_comparison=None, recorded_replay=None, recorded_sha256=None, notebook_branch=None, notebook_execution=None, notebook_execution_sha256=None, notebook_reaction=None, notebook_reaction_sha256=None, next_exercise_file=None, next_exercise_output=None, send=False, policy=None, reference=None, generate=None, generate_tutor=None, check=None, generate_reply=None, manual_tutor=False, gemini_tutor_model=None, make_student_reply=None, authored_policy=False):
+    if type(authored_policy) is not bool:
+        raise ValueError('Authored policy mode must be boolean.')
+    if authored_policy:
+        if (folder is None or not chat_mode or chat_sessions or any(value is not None for value in (
+                comparison, policy_comparison, policy_workspace, fidelity_comparison, student_comparison,
+                teaching_comparison, recorded_replay, notebook_branch, next_exercise_file, generate,
+                generate_reply, generate_tutor, gemini_tutor_model, make_student_reply, policy, reference, check))):
+            raise ValueError('Authored policy mode requires one chat and no provider or comparison configuration.')
+        authored_policy_chat.verify(folder)
+        manual_tutor = True
     if (notebook_execution is None) != (notebook_execution_sha256 is None):
         raise ValueError('Configure both the notebook execution file and its expected SHA-256.')
     if notebook_execution is not None and notebook_branch is None:
@@ -911,6 +923,14 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
         return scenario_id, selected
 
     def blocked(selected, frame):
+        if (selected / authored_policy_chat.CONFIG).exists():
+            if not authored_policy:
+                return 'Open this authored session with --authored-policy to enable its local reply.'
+            if frame['decisions_remaining'] <= 0:
+                return 'The one-step authored example is complete. This limit does not mean student silence.'
+            rendering = authored_policy_chat.verify(selected)['result']['rendering']
+            if rendering['status'] != 'rendered':
+                return 'The authored template is unavailable or missing input. No student decision was consumed.'
         if chat_mode and generate_reply is None and (selected / 'local-student').exists():
             return 'Configure the saved local student model and runtime paths to continue this session.'
         if (selected / 'tutor-exchanges' / frame['binding']['state_sha256']).exists():
@@ -933,7 +953,8 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             result['encounters'][0]['title'] = titles[scenario_id]
         frame = result['encounters'][-1]['frames'][-1]
         result = result | {'scenario_id':scenario_id, 'controls':{'send_enabled':send is True,
-            'evidence_guidance_enabled':chat_mode and generate_reply is None and not (selected / 'local-student').exists(),
+            'evidence_guidance_enabled':chat_mode and generate_reply is None and not (selected / 'local-student').exists() and not (selected / authored_policy_chat.CONFIG).exists(),
+            'authored_policy_enabled':authored_policy,
             'tutor_generation_enabled':not manual_tutor,
             **({'gemini_tutor_model':gemini_tutor_model} if gemini_tutor_model is not None else {}),
             'policy':exercise['policy'] if is_next else policy,
@@ -1201,8 +1222,9 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
             if (body.mode == 'advance') != (current['status'] == ready):
                 raise HTTPException(409, 'Tutor guidance requires a pending student message; continuation does not accept it.')
             student_generator = generate
+            local_reply = authored_policy_chat.make_reply(selected) if authored_policy else generate_reply
             if body.use_evidence:
-                if not chat_mode or generate_reply is not None or (selected / 'local-student').exists():
+                if not chat_mode or local_reply is not None or (selected / 'local-student').exists():
                     raise HTTPException(400, 'Evidence guidance is available for the chat provider backend only.')
                 backend = generate or partial(student_workspace._generate_model,
                     student._read(selected / 'session.json')['model'], single_attempt=True)
@@ -1216,7 +1238,7 @@ def create_app(folder=None, *, chat_sessions=False, chat_mode=False, comparison=
                 runner.advance(selected, binding=binding,
                     tutor_reply=body.text if body.mode == 'reply' else None,
                     send=True, generate=student_generator,
-                    **({'generate_reply':generate_reply} if chat_mode else {'check':check}))
+                    **({'generate_reply':local_reply} if chat_mode else {'check':check}))
             result = packet(scenario_id, selected)
             failed = result['encounters'][-1]['frames'][-1]['status'] in ('error', 'environment-error', 'execution-limit')
             operation.update(status='error' if failed else 'complete', message=(
@@ -1263,6 +1285,7 @@ def main():
     parser.add_argument('--notebook-reaction', type=Path, help='Saved student reaction to the attached execution; read-only.')
     parser.add_argument('--notebook-reaction-sha256', help='Expected raw file SHA-256; required with --notebook-reaction.')
     parser.add_argument('--send', action='store_true', help='Enable explicit tutor/student generation and requested local checks.')
+    parser.add_argument('--authored-policy', action='store_true', help='Use the attached one-step authored policy locally; no model requests.')
     parser.add_argument('--policy-file', type=Path, help='UTF-8 starting tutor instructions, loaded once.')
     parser.add_argument('--reference-file', type=Path, help='Tutor-only library reference JSON, loaded once.')
     parser.add_argument('--next-exercise-file', type=Path, help='One supported exercise JSON to assign after this notebook task ends.')
@@ -1313,7 +1336,7 @@ def main():
                          send=args.send, policy=policy, reference=reference,
                          generate_reply=reply, generate_tutor=tutor,
                          manual_tutor=reply is not None and tutor is None, gemini_tutor_model=args.gemini_tutor_model,
-                         make_student_reply=reply_factory)
+                         make_student_reply=reply_factory, authored_policy=args.authored_policy)
     except (OSError, ValueError) as exc:
         parser.error(f'Workspace configuration could not be loaded: {exc}')
     uvicorn.run(app, host='127.0.0.1', port=args.port)

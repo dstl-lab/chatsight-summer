@@ -1322,5 +1322,63 @@ const run=code=>vm.runInContext(code,context);
   assert.doesNotMatch(messages.innerHTML,/chat-turn-new/,'Opening a different saved context does not announce historical messages as new');
   assert.equal(node('chat-updates').textContent,'');
   assert.equal(node('chat-jump-new').hidden,true);
-  console.log('Saved workspace: playback, drafts, fidelity, student models, standalone review, next exercise, manual tutor, and recovery pass.');
+  // The authored policy is a local notebook checkpoint, not recorded history or a model call.
+  const behavior={assistance:['checking'],material:['diagnostic'],task_relation:'same'};
+  const policyTrace={seed:4,query:{context:{last_assistance:['hint'],feedback:'runtime-error'},diagnostic:'TypeError: <bad>'},
+    matching:{pool:'matching-context',reason:'Two authored accounts match.',fields:['last_assistance','feedback'],unknown_fields:[]},
+    counts:{used_examples:4,used_accounts:2},weighting:'Uniform account, then example.',
+    distribution:[{behavior,probability:1,fraction:'1',accounts:2,examples:4}],
+    selection:{behavior,example_id:'authored-choice'},rendering:{status:'rendered',template_id:'check-with-diagnostic',text:'what is wrong? <bad>',missing:[]},
+    examples:[{id:'authored-choice',source_ref:'fixture:<example>',included:true,weight:'1/2',exclusion:null}]};
+  const authoredStart={...initial,label:'Authored checkpoint',status:'ready',decisions_remaining:1,
+    dialogue:[{role:'student',origin:'authored',text:'why error'},{role:'tutor',origin:'authored',text:'Try checking the types.'}],behavior_policy:null};
+  packet.kind='chat';packet.source_only=false;
+  packet.controls={send_enabled:true,authored_policy_enabled:true,evidence_guidance_enabled:true,tutor_generation_enabled:false,blocked_reason:null};
+  packet.encounters=[{id:'authored-policy',title:'Local policy demonstration',task:'Add the numbers.',frames:[authoredStart],
+    authored_policy:{scope:'Authored examples; no course records.',checkpoint:{source:'total = 1 + "two" # <script>',stdout:'',stderr:'TypeError: <bad>',returncode:1},preview:policyTrace},
+    evidence_card:packet.encounters[0].evidence_card}];
+  requests=[];const authoredContext=makeContext(),authored=code=>vm.runInContext(code,authoredContext);
+  authored(fs.readFileSync(script,'utf8'));await authored('ready');
+  assert.match(node('canvas').innerHTML,/Authored notebook/);
+  assert.match(node('canvas').innerHTML,/total = 1 \+ &quot;two&quot; # &lt;script&gt;/);
+  assert.match(node('canvas').innerHTML,/TypeError: &lt;bad&gt;/);
+  assert.doesNotMatch(node('canvas').innerHTML,/<script>|Gemini|Recorded|chat-turn/);
+  assert.equal(node('conversation-panel').parentElement,node('body-grid'),'Authored chat remains beside the notebook');
+  assert.equal(node('student-evidence').hidden,true,'Authored policy must not enable model evidence guidance');
+  assert.equal(node('authored-policy').hidden,false);
+  assert.match(node('authored-policy-summary').textContent,/Run one local step/);
+  assert.doesNotMatch(node('authored-policy-content').innerHTML,/check-with-diagnostic|Selected behavior/,'Preview does not show the sampled choice before advance');
+  assert.match(node('authored-policy-content').innerHTML,/not measured student probabilities/);
+  assert.equal(node('continue-run').textContent,'Generate local reply');
+  assert.equal(node('tutor-controls').hidden,true);
+  authored('state.useEvidence=true');
+  const localStep=node('continue-run').onclick();
+  const localRequest=requests.find(request=>request.options.method==='POST');
+  assert.equal(localRequest.url,'/api/continue');
+  assert.deepEqual(JSON.parse(localRequest.options.body),{binding:{},mode:'advance'});
+  packet.encounters[0].frames.push({...authoredStart,label:'Local reply',status:'awaiting-tutor',decisions_remaining:0,
+    behavior_policy:policyTrace,pending_message:'what is wrong? <bad>',actions:[{decision:'reply',source:null,text:'what is wrong? <bad>'}]});
+  finishPost();await localStep;
+  assert.match(node('authored-policy-content').innerHTML,/Selected behavior/);
+  assert.match(node('authored-policy-content').innerHTML,/check-with-diagnostic/);
+  assert.match(node('authored-policy-content').innerHTML,/fixture:&lt;example&gt;/);
+  assert.doesNotMatch(node('authored-policy-content').innerHTML,/<example>/);
+  assert.match(node('conversation-messages').innerHTML,/what is wrong\? &lt;bad&gt;/);
+  assert.match(node('conversation-messages').innerHTML,/Local template/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/Student chose no reply/);
+  assert.match(node('view-description').textContent,/scenario.*complete/i);
+  assert.equal(node('continue-run').disabled,true);
+  const countAfterStep=requests.length;await node('continue-run').onclick();
+  assert.equal(requests.length,countAfterStep,'The one-step cap prevents an extra request');
+  authored("state.controls.blocked_reason='The one-step authored example is complete.';selectFrame(0)");
+  assert.match(node('view-description').textContent,/use Next to see saved reply/);
+  assert.equal(node('authored-policy-summary').textContent,'Use Next to view the saved selection');
+  assert.doesNotMatch(node('authored-policy-content').innerHTML,/Selected behavior|check-with-diagnostic/);
+  assert.equal(node('continue-run').disabled,true);
+  packet.encounters[0].frames=[authoredStart];packet.controls.blocked_reason='The chosen behavior has no supported template.';
+  await authored('reloadWorkspace()');
+  assert.equal(node('continue-run').disabled,true);
+  assert.match(node('operation-status').textContent,/no supported template/);
+  assert.doesNotMatch(node('conversation-messages').innerHTML,/what is wrong/,'An unsupported template must not manufacture a reply');
+  console.log('Saved workspace: playback, drafts, fidelity, student models, standalone review, next exercise, manual tutor, recovery, and authored local policy pass.');
 })().catch(error=>{console.error(error);process.exitCode=1});

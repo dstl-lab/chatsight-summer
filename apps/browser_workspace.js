@@ -27,6 +27,7 @@ state.useEvidence=false;
 let pollTimer,comparisonPollTimer;
 const current = () => state.encounters[state.caseIndex];
 const frame = () => current().frames[state.step];
+const isAuthoredPolicy = () => state.mode!=='compare'&&Boolean(current()?.authored_policy);
 const isRecordedNotebook = () => state.kind==='recorded-notebook';
 const isSourceOnly = () => state.kind==='notebook'&&state.sourceOnly;
 const hasExternalExecution = () => isSourceOnly()&&Boolean(current()?.frames.some(f=>f.external_execution));
@@ -69,6 +70,7 @@ function discardComparisonDraft(){
 }
 const originNames = {authored:'Authored context',source:'Starting conversation',generated:'Simulated',supplied:'Supplied intervention',scripted:'Added tutor reply'};
 function statusText(f){
+  if(isAuthoredPolicy())return state.step<current().frames.length-1?'Starting checkpoint · use Next to see saved reply':f.decisions_remaining===0?'One-step scenario complete · no further reply requested':state.controls.blocked_reason?'Local step unavailable':'Run one local step to see the selected reply';
   if(isRecordedNotebook())return f.recorded.later_evidence?'Later evidence · read only':'At or before prediction cutoff · read only';
   if(isSourceOnly()){
     if(f.reaction)return f.status==='no-reply'?'No further action':f.status==='awaiting-tutor'?'Student replied · no tutor reply generated':'Work revised · new code not run';
@@ -102,9 +104,9 @@ function selectMode(mode){
 }
 function renderModeButtons(){
   document.querySelectorAll('[data-mode]').forEach(b=>{
-    if(b.dataset.mode==='simulate')b.textContent=state.kind==='chat'?'Conversation':'Notebook';
+    if(b.dataset.mode==='simulate')b.textContent=state.kind==='chat'&&!isAuthoredPolicy()?'Conversation':'Notebook';
     if(b.dataset.mode==='compare')b.textContent=state.studentComparisonAvailable||isStudentComparison()?'Student models':state.teachingComparisonAvailable||isTeachingComparison()?'Tutor replies':state.fidelityComparisonAvailable||isFidelityComparison()?'Student fidelity':state.policyWorkspaceAvailable||isPolicyComparison()?'Tutor policies':state.comparison?.kind==='saved-communication-comparison'?'Reviewed replies':'Compare';
-    if(b.dataset.mode!=='inspect')b.insertAdjacentHTML('afterbegin',glyph(b.dataset.mode==='compare'?'compare':state.kind==='chat'?'chat':'notebook'));
+    if(b.dataset.mode!=='inspect')b.insertAdjacentHTML('afterbegin',glyph(b.dataset.mode==='compare'?'compare':state.kind==='chat'&&!isAuthoredPolicy()?'chat':'notebook'));
     b.hidden=b.dataset.mode==='inspect'||b.dataset.mode==='compare'&&!state.comparisonAvailable||b.dataset.mode==='simulate'&&!state.replayAvailable;
     b.disabled=state.submitting||state.monitoring||state.refreshing||comparisonBusy()||(!state.encounters.length&&state.mode!=='compare'&&b.dataset.mode!=='compare');
     b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode));
@@ -141,7 +143,7 @@ function renderCases(){
     document.querySelectorAll('[data-review-case]').forEach(b=>{b.disabled=comparisonBusy();b.onclick=()=>{if(comparisonBusy())return;state.reviewIndex=Number(b.dataset.reviewCase);state.comparisonEditing=false;state.showInspector=false;render();$('canvas').scrollTop=0;notify('Opened '+state.comparison.cases[state.reviewIndex].title)}});
     return;
   }
-  document.querySelector('.breadcrumb').textContent=isRecordedNotebook()?'Recorded notebook':isSourceOnly()?'Notebook branch':state.kind==='chat'?'Conversation simulation':'Notebook simulation';
+  document.querySelector('.breadcrumb').textContent=isAuthoredPolicy()?'Authored policy':isRecordedNotebook()?'Recorded notebook':isSourceOnly()?'Notebook branch':state.kind==='chat'?'Conversation simulation':'Notebook simulation';
   document.querySelector('.explorer-heading').textContent=isRecordedNotebook()?'Recordings':state.scenarios?.length?'Conversations':state.kind==='chat'?'Conversation':'Tasks';
   $('conversation-guide').hidden=!state.scenarios?.length;
   const label=isRecordedNotebook()?'Filter recorded activity':state.scenarios?.length?'Filter saved conversations':state.kind==='chat'?'Filter saved conversation':'Filter saved tasks';
@@ -158,6 +160,7 @@ function renderCases(){
   document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>selectCase(Number(b.dataset.case)));
 }
 function pendingReplyNote(){
+  if(isAuthoredPolicy())return 'One local reply completes this authored scenario. No further tutor reply was requested.';
   if(state.mode==='compare')return 'No tutor reply follows this saved student message. '+(teachingCondition()?.encounter.frames.at(-1).decisions_remaining===0?'This condition reached its decision limit.':'This comparison is read only; no reply is running.');
   if(state.step<current().frames.length-1)return 'This saved result ends before a tutor reply. Use Next to see later saved activity.';
   const next=state.submitting||state.monitoring?'A request is running; this is the last saved conversation.':
@@ -170,7 +173,8 @@ function conversation(rows=turns(),offset=0){
   const simulationStart=(state.kind==='chat'||isSourceOnly())&&state.mode!=='compare'?rows.findIndex(t=>t.origin==='generated'):-1;
   return rows.length?rows.map((turn,i)=>{
     const isNew=state.chatNewFrom!==null&&i+offset>=state.chatNewFrom;
-    return `${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${isNew?' chat-turn-new':''}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" data-chat-message="${i+offset}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${glyph(turn.role==='student'?'student':'tutor')}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(isRecordedNotebook()&&state.mode!=='compare'?'Recorded event '+turn.sequence:originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified'))}${turn.pending?' · awaiting reply':''}</span></div>${isNew?'<span class="chat-new-label">New<span class="sr-only"> at this step</span></span>':''}<button class="source-inspect" data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">${glyph('source')}Source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`;
+    const origin=isAuthoredPolicy()?(turn.origin==='generated'?'Local template':'Authored context'):isRecordedNotebook()&&state.mode!=='compare'?'Recorded event '+turn.sequence:originNames[turn.origin]||(turn.origin?'Saved context':'Supplied context · origin unspecified');
+    return `${i===simulationStart?'<h3 class="chat-section-label">Simulated continuation begins</h3>':''}${i>0&&turn.role==='student'&&turn.origin==='source'&&rows[i-1].role==='student'&&rows[i-1].origin==='source'?'<p class="chat-gap">No tutor message is recorded between these supplied student messages.</p>':''}<article class="chat-turn ${turn.role==='student'?'student':'tutor'}${isNew?' chat-turn-new':''}${state.showInspector&&state.selected==='turn:'+(i+offset)?' selected':''}" data-chat-message="${i+offset}" tabindex="-1" aria-label="Message ${i+offset+1}, ${turn.role==='student'?'Student':'Tutor'}"><header><span class="avatar ${turn.role==='tutor'?'tutor':''}" aria-hidden="true">${glyph(turn.role==='student'?'student':'tutor')}</span><div class="chat-identity"><b>${turn.role==='student'?'Student':'Tutor'}</b><span class="muted small">${esc(origin)}${turn.pending&&!isAuthoredPolicy()?' · awaiting reply':''}</span></div>${isNew?'<span class="chat-new-label">New<span class="sr-only"> at this step</span></span>':''}<button class="source-inspect" data-evidence="turn:${i+offset}" aria-label="Inspect source of message ${i+offset+1}" aria-pressed="${state.showInspector&&state.selected==='turn:'+(i+offset)}">${glyph('source')}Source</button></header><div class="message-body">${turn.role==='tutor'&&typeof turn.display_html==='string'?turn.display_html:`<p class="literal-message">${esc(turn.text)}</p>`}</div>${turn.pending?`<p class="reply-note">${esc(pendingReplyNote())}</p>`:''}</article>`;
   }).join(''):'<p class="quiet">No chat message at this saved state.</p>';
 }
 function scrollChatTo(top,smooth=true){
@@ -178,7 +182,7 @@ function scrollChatTo(top,smooth=true){
 }
 const firstNewMessage=()=>$('conversation-messages').querySelector(`[data-chat-message="${state.chatNewFrom}"]`);
 function renderStudentEvidence(){
-  const card=state.mode==='compare'?null:current()?.evidence_card;
+  const card=state.mode==='compare'||isAuthoredPolicy()?null:current()?.evidence_card;
   const details=$('student-evidence'),content=$('student-evidence-content');
   details.hidden=card?.version!==1;
   if(details.hidden){content.innerHTML='';details.open=false;delete details.dataset.source;state.useEvidence=false;return}
@@ -195,12 +199,28 @@ function renderStudentEvidence(){
   if(!enabled)state.useEvidence=false;
   $('use-student-evidence').checked=state.useEvidence;
 }
+function behaviorSummary(behavior){
+  const names={hint:'Ask for a hint',explanation:'Ask for an explanation',solution:'Ask for a solution',checking:'Ask for a check',unspecified:'Ask for help'};
+  return [behavior.assistance.map(value=>names[value]||value).join(' + ')||'No help request',behavior.material.length?behavior.material.map(value=>value==='diagnostic'?'include diagnostic evidence':'include work').join(' + '):'no work pasted',behavior.task_relation==='same'?'same task':'different task'].join(' · ');
+}
+function renderAuthoredPolicy(){
+  const panel=$('authored-policy');panel.hidden=!isAuthoredPolicy();
+  if(panel.hidden){$('authored-policy-content').innerHTML='';panel.open=false;return}
+  const saved=frame().behavior_policy,trace=saved||current().authored_policy.preview;
+  const assistance=trace.query.context.last_assistance;
+  $('authored-policy-summary').textContent=saved?.selection?behaviorSummary(saved.selection.behavior):state.step<current().frames.length-1?'Use Next to view the saved selection':'Run one local step to reveal the selection';
+  const selected=saved?.selection,rendering=saved?.rendering;
+  const html='<p class="authored-policy-source">Authored examples · not measured student probabilities</p>'+
+    (selected?`<p><b>Selected behavior</b><br>${esc(behaviorSummary(selected.behavior))}</p><p>Template: <code>${esc(rendering.template_id||'Unavailable')}</code> · ${esc(rendering.status)}</p>`:'<p>Python selects a behavior, then an authored template supplies the message. No LLM is used.</p>')+
+    `<p class="muted">${esc(trace.counts.used_examples)} examples · ${esc(trace.counts.used_accounts)} authored accounts · seed ${esc(trace.seed)}</p><details class="authored-policy-support"><summary>Context, weights and sources</summary><p>${esc(trace.matching.reason)}</p><p>Feedback: ${esc(trace.query.context.feedback??'unknown')} · Requested help: ${esc(assistance===null?'unknown':assistance.join(', ')||'none')}</p><p>${esc(trace.weighting)}</p><ul>${trace.distribution.map(row=>`<li>${esc(behaviorSummary(row.behavior))}: <b>${esc(row.fraction)}</b> of authored weight (${esc(row.examples)} examples)</li>`).join('')}</ul><details><summary>Matching and example provenance</summary>${block({matching:trace.matching,examples:trace.examples.map(example=>({id:example.id,source:example.source_ref,included:example.included,weight:example.weight,exclusion:example.exclusion}))})}</details></details>`;
+  if($('authored-policy-content').innerHTML!==html)$('authored-policy-content').innerHTML=html;
+}
 function renderChat(){
   const comparing=state.mode==='compare',c=comparisonContext();
   const teaching=comparing&&isTeachingComparison(),condition=teachingCondition();
   const available=comparing?Boolean(c):Boolean(state.encounters.length);
-  renderStudentEvidence();
-  const chatOnly=state.kind==='chat'&&!comparing,primaryChat=chatOnly&&available&&!state.showInspector;
+  renderStudentEvidence();renderAuthoredPolicy();
+  const chatOnly=state.kind==='chat'&&!comparing&&!isAuthoredPolicy(),primaryChat=chatOnly&&available&&!state.showInspector;
   const visibleChat=chatOnly?available:state.chatOpen;
   const panel=$('conversation-panel'),parent=primaryChat?document.querySelector('.main'):$('body-grid');
   if(panel.parentElement!==parent){if(primaryChat)$('inspector').before(panel);else parent.append(panel)}
@@ -516,6 +536,10 @@ function checkLabel(feedback){
   }[feedback.status]||'Saved check feedback');
 }
 function notebook(){
+  if(isAuthoredPolicy()){
+    const checkpoint=current().authored_policy.checkpoint;
+    return `<section class="notebook-document" aria-label="Authored notebook"><div class="notebook-filebar"><b>${glyph('notebook')}Authored notebook</b><span class="tag">Read only</span></div><div class="notebook-cells"><section class="notebook-cell"><span class="notebook-prompt" aria-label="Saved local execution">[1]</span><div class="notebook-cell-body"><div class="notebook-cell-label">Python · fixed checkpoint</div><pre class="notebook-input" tabindex="0" aria-label="Authored Python code"><code>${esc(checkpoint.source)}</code></pre><div class="authored-execution"><b>Saved local execution · exit ${esc(checkpoint.returncode)}</b>${checkpoint.stdout?`<pre tabindex="0" aria-label="Execution output">${esc(checkpoint.stdout)}</pre>`:''}${checkpoint.stderr?`<pre tabindex="0" aria-label="Execution error">${esc(checkpoint.stderr)}</pre>`:''}</div></div></section></div><p class="notebook-caption">This fixed example was executed locally. Generating a reply reuses the saved result; it does not run this cell.</p></section>`;
+  }
   if(isRecordedNotebook())return recordedNotebook();
   if(isSourceOnly())return sourceOnlyNotebook();
   const f=frame();
@@ -591,7 +615,7 @@ function renderInspector(){
   }else if(key==='feedback'){
     title='Local check result';body=`<p>${esc(checkLabel(f.feedback))}. This is the local checker, not the course autograder. A passing check does not establish learning.</p>`+block(f.feedback);
   }else if(key==='context'){
-    title=isSourceOnly()?'Historical branch context':'Supplied run context';body='<h3>Initialization</h3>'+block(current().initialization)+(isSourceOnly()?'<p>The starting source and conversation come from a historical capture. Any simulated edit or message is a separate continuation, not recorded student behavior.</p><p>Only selected instructions and one code cell are shown. Dependencies and unobserved notebook activity are not reconstructed. '+(hasExternalExecution()?'Attached source revisions were checked locally on archived data after generation. The first generated edit did not see these results. Any later reaction is shown separately with its supplied observation. Historical dataset bytes and version are unverified; these checks do not reconstruct historical execution or establish a course grade.':'Code execution is unavailable; no output or grade is inferred.')+'</p>':state.kind==='chat'?'<p>Only the supplied conversation and saved continuations are available. No notebook activity or learner traits are reconstructed.</p>':'<div class="divider"></div><h3>Activity</h3>'+block(current().activity)+'<p>Only the selected cell and saved interactions are available. Additional notebook actions and learner traits are unknown.</p>');
+    title=isSourceOnly()?'Historical branch context':'Supplied run context';body=isAuthoredPolicy()?`<p>${esc(current().authored_policy.scope)}</p><p>One local behavior selection and template reply. No model calls or real student probabilities.</p>`:'<h3>Initialization</h3>'+block(current().initialization)+(isSourceOnly()?'<p>The starting source and conversation come from a historical capture. Any simulated edit or message is a separate continuation, not recorded student behavior.</p><p>Only selected instructions and one code cell are shown. Dependencies and unobserved notebook activity are not reconstructed. '+(hasExternalExecution()?'Attached source revisions were checked locally on archived data after generation. The first generated edit did not see these results. Any later reaction is shown separately with its supplied observation. Historical dataset bytes and version are unverified; these checks do not reconstruct historical execution or establish a course grade.':'Code execution is unavailable; no output or grade is inferred.')+'</p>':state.kind==='chat'?'<p>Only the supplied conversation and saved continuations are available. No notebook activity or learner traits are reconstructed.</p>':'<div class="divider"></div><h3>Activity</h3>'+block(current().activity)+'<p>Only the selected cell and saved interactions are available. Additional notebook actions and learner traits are unknown.</p>');
   }else if(key.startsWith('turn:')){
     const turn=turns()[Number(key.split(':')[1])];
     title='Conversation source';body=`<p>${turn.origin?'Saved origin: '+esc(turn.origin):'Origin not specified in the saved record'}${turn.pending?' · pending tutor reply':''}.</p>`+block(turn.text)+'<p>The saved origin identifies how the runner stored this message; it does not by itself prove a fresh provider request.</p>';
@@ -643,13 +667,13 @@ function render(){
   $('instructions').insertAdjacentHTML('afterbegin',glyph('details'));$('tutor-controls').insertAdjacentHTML('afterbegin',glyph('tutor'));
   $('tutor-controls').hidden=false;$('run-details').hidden=false;
   $('continue-run').hidden=isSourceOnly()||!state.controls.send_enabled;
-  $('continue-run').textContent=f.status==='awaiting-tutor'?'Reply to student':'Continue run';
+  $('continue-run').textContent=isAuthoredPolicy()?'Generate local reply':f.status==='awaiting-tutor'?'Reply to student':'Continue run';
   $('continue-run').disabled=Boolean(continuationReason());
-  $('tutor-controls').hidden=isRecordedNotebook()||isSourceOnly()||!$('continue-run').hidden&&!$('continue-run').disabled;
-  $('saved-results').hidden=isRecordedNotebook();$('saved-results').disabled=false;
+  $('tutor-controls').hidden=isAuthoredPolicy()||isRecordedNotebook()||isSourceOnly()||!$('continue-run').hidden&&!$('continue-run').disabled;
+  $('saved-results').hidden=isRecordedNotebook()||isAuthoredPolicy();$('saved-results').disabled=false;
   $('case-title').textContent=c.title;
   $('view-description').textContent=`${f.label} · ${statusText(f)}`;
-  $('canvas').innerHTML=state.kind==='chat'?'':isRecordedNotebook()||isSourceOnly()?notebook():`${notebook()}<p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`;
+  $('canvas').innerHTML=isAuthoredPolicy()?notebook():state.kind==='chat'?'':isRecordedNotebook()||isSourceOnly()?notebook():`${notebook()}<p class="note">Saved results only. Moving between states makes no model requests and executes no code. One saved step may contain several student decisions.</p>`;
   $('next-step').hidden=state.mode!=='simulate';
   $('next-step').disabled=state.step===c.frames.length-1;
   $('next-step').textContent='Next';
@@ -666,18 +690,20 @@ function continuationReason(){
   if(isSourceOnly())return hasExternalExecution()?'Saved retrospective execution checks. This branch is read only.':'Source-only branch. Code execution is unavailable; this saved branch is read only.';
   if(state.mode==='compare')return 'Saved comparisons are read only.';
   if(!state.encounters.length)return 'Load a saved session first.';
+  if(isAuthoredPolicy()&&state.controls.authored_policy_enabled!==true)return 'The local behavior policy is not enabled.';
   if(!state.controls.send_enabled)return 'Sending is disabled in this workspace.';
   if(state.submitting||state.monitoring||state.refreshing)return 'Waiting for the current request.';
   if(state.caseIndex!==state.encounters.length-1||state.step!==current().frames.length-1)return 'Select the latest saved state to continue.';
   if(state.controls.blocked_reason)return state.controls.blocked_reason;
   if(!['active','ready','awaiting-tutor'].includes(frame().status))return 'This encounter has stopped. Its saved results remain available.';
-  if(frame().decisions_remaining<=0)return 'The decision budget is exhausted.';
+  if(frame().decisions_remaining<=0)return isAuthoredPolicy()?'The one-step scenario is complete. This limit is not a student silence decision.':'The decision budget is exhausted.';
   return '';
 }
 function canSubmit(){
   return !continuationReason()&&(['active','ready'].includes(frame().status)||Boolean((state.replyMode==='policy'?state.policyDraft:state.replyDraft)?.trim()));
 }
 function submitLabel(){
+  if(isAuthoredPolicy())return 'Generate local reply';
   return frame().status==='awaiting-tutor'?(state.replyMode==='policy'?'Generate tutor reply + one decision':'Send reply + one decision'):'Continue one student decision';
 }
 function updateSubmitButton(){
@@ -724,6 +750,10 @@ async function prepareNextExercise(){
   }finally{state.submitting=false;state.preparingExercise=false;renderOperationStatus();if(state.showInspector&&state.selected==='next-exercise'){renderNextExercise();(nextExerciseReason()?$('operation-status'):$('save-next-exercise')).focus()}}
 }
 function renderControls(){
+  if(isAuthoredPolicy()){
+    $('inspector').innerHTML=`<div class="inspector-title">Local behavior policy</div><h2>Generate one reply</h2><p>Python selects from authored behavior examples. A fixed template supplies the message; no model is called.</p><p id="continuation-reason">${esc(continuationReason())}</p><button class="primary" id="submit-operation">Generate local reply</button>`;
+    $('submit-operation').onclick=submitOperation;updateSubmitButton();return;
+  }
   const waiting=frame().status==='awaiting-tutor';
   const tutorGeneration=state.controls.tutor_generation_enabled!==false;
   const manual=waiting&&state.replyMode==='reply';
@@ -758,10 +788,10 @@ function renderOperationStatus(){
     return;
   }
   $('continue-run').disabled=Boolean(continuationReason());
-  $('tutor-controls').hidden=!$('continue-run').hidden&&!$('continue-run').disabled;
+  $('tutor-controls').hidden=isAuthoredPolicy()||!$('continue-run').hidden&&!$('continue-run').disabled;
   const message=state.preparingExercise?'Preparing the next exercise · no model requests or code execution.':state.submitting||state.monitoring?'Request running'+(state.encounters.length?' · showing the last saved state.':'.')+' Reloading checks progress without resending.':state.clientError||state.controls.blocked_reason||state.operation.message||'';
   $('operation-status').textContent=message;$('operation-status').hidden=!message;
-  document.querySelector('.prototype-note').textContent=state.preparingExercise?'Next exercise · Offline setup':state.submitting||state.monitoring?'Simulation · Request running':state.controls.send_enabled?'Simulation · Sending enabled':'Saved simulation · Read only';
+  document.querySelector('.prototype-note').textContent=isAuthoredPolicy()?'Authored policy · Local only':state.preparingExercise?'Next exercise · Offline setup':state.submitting||state.monitoring?'Simulation · Request running':state.controls.send_enabled?'Simulation · Sending enabled':'Saved simulation · Read only';
   document.querySelectorAll('[data-scenario]').forEach(b=>{b.disabled=state.refreshing||state.submitting||state.monitoring});
   if(state.encounters.length)document.querySelectorAll('#conversation-messages .reply-note').forEach(note=>{note.textContent=pendingReplyNote()});
   updateSubmitButton();
@@ -841,7 +871,7 @@ async function submitOperation(){
   if(!canSubmit())return;
   const mode=['active','ready'].includes(frame().status)?'advance':state.replyMode;
   const payload={binding:{...frame().binding},mode,...(mode==='advance'?{}:{text:mode==='policy'?state.policyDraft:state.replyDraft}),
-    ...(state.useEvidence&&state.controls.evidence_guidance_enabled===true?{use_evidence:true}:{})};
+    ...(!isAuthoredPolicy()&&state.useEvidence&&state.controls.evidence_guidance_enabled===true?{use_evidence:true}:{})};
   state.submitting=true;state.clientError='';renderOperationStatus();
   try{
     // No timeout/retry: aborting an HTTP request would not cancel a saved backend operation.
@@ -861,6 +891,7 @@ document.title='Student lab · Simulation workspace';
 $('app').classList.toggle('connected-workspace',true);
 $('body-grid').insertAdjacentHTML('beforeend','<aside class="conversation-panel" id="conversation-panel" aria-label="Student and tutor conversation"><header><h2 id="chat-title">Student–tutor chat</h2><p id="chat-caption" class="small muted"></p><div class="chat-navigation"><span id="chat-count" class="small muted"></span><button data-chat-jump="first" aria-label="Go to first message" aria-controls="conversation-messages">First</button><button data-chat-jump="last" aria-label="Go to last message" aria-controls="conversation-messages">Last</button></div><button id="chat-jump-new" aria-controls="conversation-messages" hidden>Jump to new messages</button><p id="chat-updates" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p></header><div id="conversation-messages"></div></aside>');
 $('conversation-messages').insertAdjacentHTML('beforebegin','<details id="student-evidence" class="student-evidence" hidden><summary><b>Student evidence</b><span id="student-evidence-summary"></span></summary><div class="student-evidence-body"><div id="student-evidence-guidance" hidden><label><input type="checkbox" id="use-student-evidence" aria-describedby="evidence-guidance-note">Use as student guidance</label><p id="evidence-guidance-note" class="guidance-note muted">Applies to the next student reply. Viewing or changing this option sends nothing.</p></div><p id="student-evidence-used" hidden></p><div id="student-evidence-content"></div></div></details>');
+$('conversation-messages').insertAdjacentHTML('beforebegin','<details id="authored-policy" class="student-evidence authored-policy" hidden><summary><b>Why this reply?</b><span id="authored-policy-summary"></span></summary><div id="authored-policy-content" class="student-evidence-body"></div></details>');
 $('use-student-evidence').onchange=event=>{state.useEvidence=event.target.checked};
 $('inspector-toggle').insertAdjacentHTML('beforebegin','<button id="chat-toggle" aria-controls="conversation-panel" aria-expanded="true">Hide chat</button>');
 $('instructions').insertAdjacentHTML('beforebegin','<button class="bare" id="tutor-controls">Tutor controls</button>');
@@ -889,7 +920,7 @@ document.querySelectorAll('[data-mode]').forEach(b=>{if(b.dataset.mode==='compar
 $('search').oninput=()=>{if(state.mode==='compare'||state.encounters.length||state.scenarios?.length)renderCases()};
 $('run-details').onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();$('run-details').open=false;$('run-details-toggle').focus()}};
 $('instructions').onclick=()=>selectEvidence('context');
-$('continue-run').onclick=()=>selectEvidence('controls');
+$('continue-run').onclick=()=>isAuthoredPolicy()?submitOperation():selectEvidence('controls');
 $('next-exercise').onclick=()=>selectEvidence('next-exercise');
 $('new-comparison').onclick=async()=>{
   if(state.submitting||state.monitoring||state.refreshing||comparisonBusy())return;
