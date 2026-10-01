@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-01 | [Concrete behavior examples](2026-10-01-behavior-examples.md) | Read-only recheck of 134 events in ten exposed conversations; observable help, checking, error reporting and task movement linked to prior audits; illustrative, no new model batch or labels |
 | 2026-10-01 | [Cross-notebook comparison results](2026-10-01-cross-notebook-results.md) | Closed: 150 valid replies; own-history card error 0.430 vs current conversation 0.420 and other-account card 0.545; no default adoption or additional labels |
 | 2026-10-01 | [Cross-notebook comparison preparation](2026-10-01-cross-notebook-preparation.md) | Historical preparation record: initial send rejected before dispatch; subsequently explicitly approved and completed in the result memo |
 | 2026-10-01 | [Cross-notebook history-card comparison](2026-10-01-cross-notebook-cards.md) | Fixed ten-account protocol; 30 prepared prompts and 150 scheduled draws; references excluded from inputs, no manual labels |
