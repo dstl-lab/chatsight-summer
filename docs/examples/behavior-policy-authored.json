@@ -1,0 +1,62 @@
+{
+  "basis": "authored",
+  "seed": 4,
+  "query": {
+    "id": "authored-query",
+    "account_id": "authored-query-account",
+    "source_ref": "authored:query",
+    "context": {"last_assistance": ["hint"], "feedback": null},
+    "work": "teal_count = colors.count('teal')"
+  },
+  "examples": [
+    {
+      "id": "a1", "account_id": "authored-a", "source_ref": "authored:a1",
+      "origin": "authored",
+      "context": {"last_assistance": ["hint"], "feedback": null},
+      "behavior": {"assistance": ["hint"], "material": [], "task_relation": "same"}
+    },
+    {
+      "id": "a2", "account_id": "authored-a", "source_ref": "authored:a2",
+      "origin": "authored",
+      "context": {"last_assistance": ["hint"], "feedback": null},
+      "behavior": {"assistance": ["hint"], "material": [], "task_relation": "same"}
+    },
+    {
+      "id": "a3", "account_id": "authored-a", "source_ref": "authored:a3",
+      "origin": "authored",
+      "context": {"last_assistance": ["hint"], "feedback": null},
+      "behavior": {"assistance": ["checking"], "material": ["work"], "task_relation": "same"}
+    },
+    {
+      "id": "b1", "account_id": "authored-b", "source_ref": "authored:b1",
+      "origin": "authored",
+      "context": {"last_assistance": ["hint"], "feedback": null},
+      "behavior": {"assistance": ["checking"], "material": ["work"], "task_relation": "same"}
+    },
+    {
+      "id": "c1", "account_id": "authored-c", "source_ref": "authored:c1",
+      "origin": "authored",
+      "context": {"last_assistance": ["solution"], "feedback": null},
+      "behavior": {"assistance": ["hint"], "material": [], "task_relation": "different"}
+    },
+    {
+      "id": "unclear", "account_id": "authored-d", "source_ref": "authored:unclear",
+      "origin": "authored",
+      "context": {"last_assistance": ["hint"], "feedback": null},
+      "behavior": {"assistance": null, "material": [], "task_relation": "same"}
+    },
+    {
+      "id": "model-labelled-example", "account_id": "authored-e",
+      "source_ref": "authored:excluded-model-label",
+      "origin": "assistant-labeled",
+      "context": {"last_assistance": ["hint"], "feedback": null},
+      "behavior": {"assistance": ["solution"], "material": [], "task_relation": "same"}
+    },
+    {
+      "id": "query-account-example", "account_id": "authored-query-account",
+      "source_ref": "authored:excluded-query-account", "origin": "authored",
+      "context": {"last_assistance": ["hint"], "feedback": null},
+      "behavior": {"assistance": ["solution"], "material": [], "task_relation": "same"}
+    }
+  ]
+}
