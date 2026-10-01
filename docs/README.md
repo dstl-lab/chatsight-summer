@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-01 | [Cross-notebook history-card comparison](2026-10-01-cross-notebook-cards.md) | Fixed ten-account protocol; 30 prepared prompts and 150 scheduled draws; references excluded from inputs, no manual labels |
 | 2026-10-01 | [Earlier-history availability](2026-10-01-history-availability.md) | Read-only lookup verified after cluster access recovered: 72 accounts with richer histories across earlier notebook identities; task identity remains unverified, no model batch |
 | 2026-10-01 | [History, personas, and behavioral fidelity](2026-10-01-history-persona-literature.md) | Primary-source review and comparison design; prior art established, sparse-history feasibility checked before another generation batch |
 | 2026-09-30 | [Clarified sequence check](2026-09-30-clarified-sequence-run.md) | Closed: quiet edit → execution → acknowledgment → tutor → stop; 4 student decisions, 1 tutor call, 1 execution; field mismatch absent in this sample, no realism claim |
