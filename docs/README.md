@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-01 | [Interpretable behavior policy](2026-10-01-interpretable-behavior-policy.md) | Adopted constraint: inspectable local behavior selection, optional LLM expression; first prototype planned without model calls, existing labels remain exploratory |
 | 2026-10-01 | [Behavioral pilot results](2026-10-01-behavior-pilot-results.md) | Closed: two assistant passes over 20 saved replies plus eight authored checks; recorded work 1/10 vs generated 6–7/10, uncertainty retained; exploratory, no scorer adoption |
 | 2026-10-01 | [Behavioral comparison pilot](2026-10-01-behavior-pilot.md) | Frozen three-dimension rubric and fixed comparison; source evidence reused, no new student generation or human queue |
 | 2026-10-01 | [Concrete behavior examples](2026-10-01-behavior-examples.md) | Read-only recheck of 134 events in ten exposed conversations; observable help, checking, error reporting and task movement linked to prior audits; illustrative, no new model batch or labels |
