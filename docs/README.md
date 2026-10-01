@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-02 | [Policy template coverage](2026-10-02-policy-template-coverage.md) | Both coders: 3/10 recorded patterns have a template, 6 missing and 1 unresolved; expression gaps identified without new labels or probability changes |
 | 2026-10-02 | [Policy evidence audit](2026-10-02-policy-evidence-audit.md) | 26 source-backed recorded messages / 25 course accounts; coarse human and exploratory assistant labels kept separate, no reserved-account overlap or policy-probability adoption |
 | 2026-10-01 | [Behavior selection and expression](2026-10-01-behavior-expression.md) | Reusable template/optional wording renderer preserves one local choice and literal material; authored Gemini check passed after schema correction, semantic fidelity unverified |
 | 2026-10-01 | [Gemini 3.8 Flash for new runs](2026-10-01-gemini-38-flash.md) | Key access and three authored schema checks passed; fresh notebook examples use 3.8 Flash, predecessors and frozen engines retain their model |
