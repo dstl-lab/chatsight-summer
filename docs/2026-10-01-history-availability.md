@@ -3,8 +3,10 @@
 **TL;DR:** Richer earlier conversation histories exist: 80 of the 108 remaining
 accounts have at least two earlier query-bearing conversations and ten nonempty
 query events before an eligible later conversation. This supports preparing a
-history-conditioned comparison. Notebook/task separation remains unverified;
-the cluster's authentication service returned HTTP 503. No model batch ran.
+history-conditioned comparison. After cluster access recovered, the metadata
+lookup verified 72 accounts with history spanning at least two earlier notebook
+identities different from the target notebook, totaling ten or more query events.
+Notebook names remain a proxy for task separation. No model batch ran.
 
 ## Frozen scope
 
@@ -85,7 +87,7 @@ full sequence of notebook actions. A comparison restricted to these 80 accounts
 would describe accounts with richer recorded histories, not a randomly chosen
 DSC 10 student. Sparse histories still need a generic fallback.
 
-## Prepared lookup and external blocker
+## Initial prepared lookup and external blocker
 
 The private lookup plan covers the 833 later conversations and their query-bearing
 earlier histories: **1,839 distinct conversation IDs across 80 accounts**. It reuses
@@ -133,8 +135,9 @@ retain failed/sparse cases rather than silently replacing them. Task-separated
 claims require evidence beyond the available conversation metadata.
 
 The local inventory is closed. Its practical result is **enough earlier
-conversation history to prepare the comparison, with notebook separation still
-pending the metadata lookup**. No labeling request or user review is needed now.
+conversation history to prepare the comparison**. The subsequent notebook lookup
+below completes the availability check. No labeling request or user review is
+needed now.
 
 ## Reproduction and saved evidence
 
@@ -168,3 +171,51 @@ A null notebook aggregate means missing evidence. Observing a different notebook
 hash alongside missing identities does not establish that all earlier messages
 concern another notebook. Exact stored strings are hashed without normalizing
 whitespace, filenames or paths; a rename can therefore look like a new identity.
+
+## Access restored: notebook lookup completed
+
+Later on 2026-10-01, the user requested cluster sign-in. Existing authentication
+succeeded without an interactive browser prompt. The originally prepared SQL ran
+once through the existing read-only probe, returning exactly 1,839 rows. Every
+conversation's account identities, event/query/response counts and chat times
+matched the frozen linkage. Receipt/source pins and read-only status verified.
+
+The service endpoint has no selector, so its initial tunnel attempt failed before
+opening. The documented production database pod supported the localhost-only
+tunnel. The probe saved its successful receipt before the tunnel ended with a
+connection reset; no tunnel remains active. No message text, notebook cells,
+outputs or raw account identifiers were exported.
+
+| Conservative notebook-identity availability | Accounts | Later conversations |
+| --- | ---: | ---: |
+| Prepared richer-history scope | 80 | 833 |
+| At least one earlier conversation on a different notebook identity | 78 | 825 |
+| At least two such earlier conversations, totaling at least ten query events | 74 | 767 |
+| At least two distinct earlier notebook identities, both different from the target, totaling at least ten query events | 72 | 741 |
+
+All 1,839 returned conversations have complete, single notebook identities among
+their chat events. The analysis nevertheless requires a complete, unambiguous
+identity for each included earlier conversation, and uses only the first
+chronological chat event's identity for the target. An authored check rejects
+missing/mixed histories and prevents later target identities from filling a
+missing initial identity.
+
+An independent audit reproduced every table count and verified the complete
+receipt against the frozen metadata and exact output-field allowlist.
+
+**Decision:** the existing data supports preparing a bounded comparison using
+earlier histories across notebook identities; a new collection or more manual
+labels are not required for this preparation. The 72-account group offers a
+candidate pool, not a frozen ten-account study or evidence that personalization
+works. Distinct notebook strings do not prove distinct assignments, questions or
+versions. Exact checkpoint selection and prefix-only profile construction still
+precede any generation batch.
+
+Private `notebooks.json` preserves the read-only receipt and
+`notebook-readiness.json` preserves the derived metadata counts and per-case
+coverage. Reproduce with:
+
+```sh
+python experiments/2026-10-01-history-notebook-readiness.py check
+python experiments/2026-10-01-history-notebook-readiness.py verify
+```
