@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-01 | [Real-data baseline results](2026-10-01-real-policy-calibration-results.md) | Closed: 16 human-reviewed recorded messages / 15 accounts; work frequency 20%, account-held-out Brier 0.367347; strong source dependence, no calibrated-policy claim or default change |
+| 2026-10-01 | [Real-data baseline protocol](2026-10-01-real-policy-calibration.md) | Fixed offline reuse of existing human work-presence labels, account separation and source sensitivity; no new labels, generation or finer-label conversion |
 | 2026-10-01 | [Offline behavior policy prototype](2026-10-01-interpretable-policy-prototype.md) | Implemented: authored-only context matching, account-balanced joint sampling, template messages and verifiable traces; no model calls, calibration or production adoption |
 | 2026-10-01 | [Interpretable behavior policy](2026-10-01-interpretable-behavior-policy.md) | Adopted constraint: inspectable local behavior selection, optional LLM expression; first prototype planned without model calls, existing labels remain exploratory |
 | 2026-10-01 | [Behavioral pilot results](2026-10-01-behavior-pilot-results.md) | Closed: two assistant passes over 20 saved replies plus eight authored checks; recorded work 1/10 vs generated 6–7/10, uncertainty retained; exploratory, no scorer adoption |
