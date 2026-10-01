@@ -158,6 +158,10 @@ NOTEBOOK_RUNTIME_IMAGE=$(docker image inspect chatsight-notebook --format '{{.Id
   --reference-file runtime/notebook/babypandas-1.0.0-reference.json
 ```
 
+Fresh examples use Gemini 3.8 Flash. Use `--model` to select another model at
+creation; continued exercises inherit the predecessor's model. Existing saved
+runs retain their original model. See the [compatibility check](2026-10-01-gemini-38-flash.md).
+
 Open **http://127.0.0.1:8427/**. Inspect the task, table and initial code. Creation
 and viewing make no model or execution calls; current check feedback is empty.
 The session starts before any generated action and permits six student decisions.

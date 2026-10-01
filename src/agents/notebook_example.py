@@ -11,13 +11,15 @@ from uuid import uuid4
 from src.agents import chat_student as chat, notebook_next_task, notebook_student as student
 
 
-def create(folder, *, image_id, chat_source=None, exercise=None, previous=None):
+def create(folder, *, image_id, chat_source=None, exercise=None, previous=None, model=None):
     """Publish explicit task inputs and a hint policy without generating or executing."""
     folder = Path(folder)
     if folder.exists() or folder.is_symlink():
         raise FileExistsError(folder)
     if chat_source is not None and previous is not None:
         raise ValueError('Choose a chat source or a previous notebook session, not both.')
+    if model is not None and (not isinstance(model, str) or not model.strip()):
+        raise ValueError('Supply a nonblank model name.')
     task = {
         'initialization': 'Authored task, table, work and dialogue for a mechanism example; '
             'not a recovered student record or calibrated persona.',
@@ -77,6 +79,8 @@ def create(folder, *, image_id, chat_source=None, exercise=None, previous=None):
     with ExitStack() as stack:
         if previous is not None:
             ancestors = notebook_next_task.lineage(Path(previous), stack)
+            if model is not None and model != ancestors[-1][1]['model']:
+                raise ValueError('A continued exercise must inherit its previous model.')
             if any(folder.resolve().is_relative_to(entry[0]) for entry in ancestors):
                 raise ValueError('Keep the new exercise outside all previous notebook sessions.')
         folder.parent.mkdir(parents=True, exist_ok=True)
@@ -85,7 +89,7 @@ def create(folder, *, image_id, chat_source=None, exercise=None, previous=None):
         if previous is None:
             student.create(staged / 'session', task=task, activity=activity.model_dump(),
                 evaluation=evaluation, branch_id='synthetic/' + uuid4().hex,
-                model='gemini-2.5-pro', max_decisions=6)
+                model=model if model is not None else 'gemini-3.8-flash', max_decisions=6)
         else:
             notebook_next_task.create(previous, staged / 'session', task=task,
                 activity=activity.model_dump(), evaluation=evaluation, max_decisions=6)
@@ -110,6 +114,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('folder', type=Path, help='New directory for the session and tutor policy.')
     parser.add_argument('--image-id', required=True, help='Immutable local notebook-runtime image ID (sha256:...).')
+    parser.add_argument('--model', help='New session model (default gemini-3.8-flash); --previous inherits its model.')
     source = parser.add_mutually_exclusive_group()
     source.add_argument('--chat-source', type=Path,
                         help='Optional saved chat session; use only its original prefix as a communication example.')
@@ -122,7 +127,7 @@ def main():
     if args.exercise_file is not None and not isinstance(exercise, dict):
         parser.error('The exercise file must contain an object, not null or a list.')
     child = create(args.folder, image_id=args.image_id, chat_source=args.chat_source,
-                   exercise=exercise, previous=args.previous)
+                   exercise=exercise, previous=args.previous, model=args.model)
     print(f'Notebook exercise saved to {child}. '
           + ('Includes a separate conversation example; no validated persona. ' if args.chat_source else '')
           + ('Includes verified prior activity; the new exercise is researcher-supplied. ' if args.previous else '')

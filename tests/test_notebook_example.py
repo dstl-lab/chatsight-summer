@@ -57,7 +57,7 @@ def test_create_reopen_agent_inputs_and_cli_without_dispatch(tmp_path, monkeypat
     assert initial['work'] == {'cell_index': 1, 'revision': 0,
         'source': "fraction_blue = (swatches.get('shade') == 'blue').sum()"}
     manifest = student._read(child / 'session.json')
-    assert manifest['model'] == 'gemini-2.5-pro' and manifest['max_decisions'] == 6
+    assert manifest['model'] == 'gemini-3.8-flash' and manifest['max_decisions'] == 6
     assert set(files(folder)) == {'session/session.json', 'session/.lock', 'policy.txt'}
     assert (folder / 'policy.txt').read_text().strip()
     student_prompt = notebook_session.make_prompt(initial)
@@ -78,10 +78,12 @@ def test_create_reopen_agent_inputs_and_cli_without_dispatch(tmp_path, monkeypat
         assert context['activity']['values'] == initial['activity']['values']
         assert all(secret not in prompt for secret in ('"evaluation"', '"expected"', '0.5'))
     cli = tmp_path / 'cli'
-    monkeypatch.setattr(sys, 'argv', ['notebook_example', str(cli), '--image-id', IMAGE])
+    monkeypatch.setattr(sys, 'argv', ['notebook_example', str(cli), '--image-id', IMAGE,
+                                    '--model', 'gemini-2.5-pro'])
     setup.main()
     assert 'No model calls or code execution' in capsys.readouterr().out
     assert student.load(cli / 'session')['history'] == []
+    assert student._read(cli / 'session/session.json')['model'] == 'gemini-2.5-pro'
 
 
 def test_invalid_existing_and_interrupted_preparation_preserve_destinations(tmp_path, monkeypatch):
@@ -283,12 +285,18 @@ def test_exercise_continuation_cli_keeps_history_and_fresh_custom_inputs(tmp_pat
     monkeypatch.setattr(student.notebook_runtime, 'check_work', forbidden)
     chat_source = tmp_path / 'chat'
     chat.create(chat_source, query=QUERY)
-    root = example().create(tmp_path / 'first', image_id=IMAGE, chat_source=chat_source)
-    manifest = student._read(root / 'session.json')
-    student._save(root / 'session.json', manifest | {'model': 'authored-model'})
+    root = example().create(tmp_path / 'first', image_id=IMAGE, chat_source=chat_source,
+                            model='authored-model')
     student.step(root, max_actions=1, check=forbidden,
                  generate=lambda _, schema: schema(decision='no-reply', text='', source=None))
     before = files(root), files(chat_source)
+    for model in ('gemini-3.8-flash', '', 42):
+        with pytest.raises(ValueError, match='model'):
+            example().create(tmp_path / 'conflict', image_id=IMAGE, previous=root, model=model)
+        assert not (tmp_path / 'conflict').exists()
+    matching = example().create(tmp_path / 'matching', image_id=IMAGE, previous=root,
+                                model='authored-model')
+    assert student._read(matching / 'session.json')['model'] == 'authored-model'
     exercise = deepcopy(EXERCISE)
     second = example().create(tmp_path / 'second', image_id=IMAGE, exercise=exercise, previous=root)
     state = student.load(second)

@@ -5,6 +5,7 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-01 | [Gemini 3.8 Flash for new runs](2026-10-01-gemini-38-flash.md) | Key access and three authored schema checks passed; fresh notebook examples use 3.8 Flash, predecessors and frozen engines retain their model |
 | 2026-10-01 | [Authored policy in the workbench](2026-10-01-authored-policy-workbench.md) | One local selector/template step connected to notebook-style checkpoint and chat; bound rationale and exact replay; no model requests or natural-behavior probability claim |
 | 2026-10-01 | [Independent context-test results](2026-10-01-context-work-holdout-results.md) | Closed: context Brier 0.402980 vs frequency 0.251429 on 21/24 binary judgments; three unclear cannot reverse direction under accepted labels; single reviewer, no tuning or adoption |
 | 2026-10-01 | [Independent context-test preparation](2026-10-01-context-work-holdout-preparation.md) | Historical preparation record: 24 unused accounts selected and predictions sealed; review and scoring now closed in the result memo |
