@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-01 | [Behavioral pilot results](2026-10-01-behavior-pilot-results.md) | Closed: two assistant passes over 20 saved replies plus eight authored checks; recorded work 1/10 vs generated 6–7/10, uncertainty retained; exploratory, no scorer adoption |
+| 2026-10-01 | [Behavioral comparison pilot](2026-10-01-behavior-pilot.md) | Frozen three-dimension rubric and fixed comparison; source evidence reused, no new student generation or human queue |
 | 2026-10-01 | [Concrete behavior examples](2026-10-01-behavior-examples.md) | Read-only recheck of 134 events in ten exposed conversations; observable help, checking, error reporting and task movement linked to prior audits; illustrative, no new model batch or labels |
 | 2026-10-01 | [Cross-notebook comparison results](2026-10-01-cross-notebook-results.md) | Closed: 150 valid replies; own-history card error 0.430 vs current conversation 0.420 and other-account card 0.545; no default adoption or additional labels |
 | 2026-10-01 | [Cross-notebook comparison preparation](2026-10-01-cross-notebook-preparation.md) | Historical preparation record: initial send rejected before dispatch; subsequently explicitly approved and completed in the result memo |
