@@ -5,6 +5,8 @@ the code. Register of memos, newest first:
 
 | date | memo | status |
 |---|---|---|
+| 2026-10-01 | [Context work-presence results](2026-10-01-context-work-probe-results.md) | Closed: one prior-code cue reduced development Brier 0.367347→0.193358; 14 accounts improved, one worsened, only two cue-positive accounts; no adoption |
+| 2026-10-01 | [Context work-presence protocol](2026-10-01-context-work-probe.md) | Frozen single-feature comparison with account-preserving conditional frequencies; no LLM calls, new labels or parameter search |
 | 2026-10-01 | [Real-data baseline results](2026-10-01-real-policy-calibration-results.md) | Closed: 16 human-reviewed recorded messages / 15 accounts; work frequency 20%, account-held-out Brier 0.367347; strong source dependence, no calibrated-policy claim or default change |
 | 2026-10-01 | [Real-data baseline protocol](2026-10-01-real-policy-calibration.md) | Fixed offline reuse of existing human work-presence labels, account separation and source sensitivity; no new labels, generation or finer-label conversion |
 | 2026-10-01 | [Offline behavior policy prototype](2026-10-01-interpretable-policy-prototype.md) | Implemented: authored-only context matching, account-balanced joint sampling, template messages and verifiable traces; no model calls, calibration or production adoption |
