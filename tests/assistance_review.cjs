@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const {validateResponse}=require(process.cwd()+'/src/eval/assistance_review.js');
+const packet={version:1,rubric_id:'requested-assistance-human-v1',packet_id:'authored',phase:'prefix',kinds:['hint','explanation','solution','checking','unspecified'],cases:[{id:'R01',focus_turn_id:'T02',turns:[{id:'T01',lines:[{line:1,text:'Synthetic earlier turn'}]},{id:'T02',lines:[{line:1,text:'Synthetic message'},{line:2,text:'Second line'}]}]}]};
+const valid=()=>({version:1,rubric_id:packet.rubric_id,packet_id:packet.packet_id,phase:'prefix',reviewer_alias:'synthetic-reviewer',prior_exposure:'no',human_attestation:true,no_prior_labels_or_model:true,prefix_before_outcome:true,completed:true,completed_at:'2026-10-02T00:00:00Z',judgments:[{case_id:'R01',status:'definite',labels:['hint','explanation'],evidence:[{turn_id:'T02',line:1}],note:''}]});
+assert.equal(validateResponse(valid(),packet,true),true);
+for(const change of [r=>r.packet_id='wrong',r=>r.phase='outcome',r=>r.completed=false,r=>r.human_attestation=false,r=>r.prefix_before_outcome=false,r=>r.prior_exposure=null,r=>r.judgments.push(r.judgments[0]),r=>r.judgments[0].labels=['guess'],r=>r.judgments[0].evidence=[{turn_id:'T01',line:1}],r=>r.judgments[0].evidence=[{turn_id:'T02',line:99}],r=>{r.judgments[0].status='none';r.judgments[0].labels=[];},r=>{r.judgments[0].status='unclear';r.judgments[0].labels=null;}]){const r=valid();change(r);assert.throws(()=>validateResponse(r,packet,true));}
+const none=valid();Object.assign(none.judgments[0],{status:'none',labels:[],evidence:[{turn_id:'T02',line:1},{turn_id:'T02',line:2}]});assert.equal(validateResponse(none,packet,true),true);
+const unclear=valid();Object.assign(unclear.judgments[0],{status:'unclear',labels:null,note:'Synthetic ambiguity.'});assert.equal(validateResponse(unclear,packet,true),true);
+const draft=valid();draft.completed=false;draft.completed_at=null;draft.human_attestation=false;draft.judgments[0].evidence=[];assert.equal(validateResponse(draft,packet,false),true);
+console.log('16 authored client validation scenarios passed.');

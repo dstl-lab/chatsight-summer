@@ -1,0 +1,313 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "development_accounts": [
+    "synthetic-complete",
+    "synthetic-partial",
+    "synthetic-leaked"
+  ],
+  "test_accounts": [],
+  "reserved_accounts": [],
+  "exposed_accounts": [],
+  "events": [
+    {
+      "id": "complete-prefix",
+      "account_id": "synthetic-complete",
+      "conversation_id": "synthetic-complete-conversation",
+      "kind": "student",
+      "timestamp": "2026-09-01T11:58:00Z",
+      "text": "Please check my attempt.",
+      "origin": "recorded",
+      "source_ref": "synthetic:complete-prefix",
+      "sha256": "48f9c8f2d07ceca0efdf8a21328abe9cd8b7575071bbed89fa2e420dbdb8206f"
+    },
+    {
+      "id": "complete-target",
+      "account_id": "synthetic-complete",
+      "conversation_id": "synthetic-complete-conversation",
+      "kind": "student",
+      "timestamp": "2026-09-01T12:01:00Z",
+      "text": "Can you give me a hint?",
+      "origin": "recorded",
+      "source_ref": "synthetic:complete-target",
+      "sha256": "836ca13c54a49709ce0d320152d2838793c44393d5c8cd81ae5805782048b316"
+    },
+    {
+      "id": "complete-execution",
+      "account_id": "synthetic-complete",
+      "conversation_id": "synthetic-complete-conversation",
+      "kind": "execution",
+      "timestamp": "2026-09-01T11:59:00Z",
+      "text": "IndexError: list index out of range",
+      "origin": "recorded",
+      "source_ref": "synthetic:complete-execution",
+      "revision_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "feedback": "runtime-error",
+      "sha256": "d1f8491d1630f6bbb12795ecedc3b0a578cd56561224667b2fdc1e7e8afcb1fd"
+    },
+    {
+      "id": "partial-prefix",
+      "account_id": "synthetic-partial",
+      "conversation_id": "synthetic-partial-conversation",
+      "kind": "student",
+      "timestamp": "2026-09-01T11:58:00Z",
+      "text": "Please check my attempt.",
+      "origin": "recorded",
+      "source_ref": "synthetic:partial-prefix",
+      "sha256": "5842eb9adb0f5e38163d120d3bfc55f312d7b02faab291ae675aec68b9a37c63"
+    },
+    {
+      "id": "partial-target",
+      "account_id": "synthetic-partial",
+      "conversation_id": "synthetic-partial-conversation",
+      "kind": "student",
+      "timestamp": "2026-09-01T12:01:00Z",
+      "text": "Can you give me a hint?",
+      "origin": "recorded",
+      "source_ref": "synthetic:partial-target",
+      "sha256": "b9cff4ec99a78749b8cca21a7b3db8e62a66ad413be159e7d5d0dba04940348e"
+    },
+    {
+      "id": "partial-execution",
+      "account_id": "synthetic-partial",
+      "conversation_id": "synthetic-partial-conversation",
+      "kind": "execution",
+      "timestamp": "2026-09-01T11:59:00Z",
+      "text": "IndexError: list index out of range",
+      "origin": "recorded",
+      "source_ref": "synthetic:partial-execution",
+      "revision_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "feedback": "runtime-error",
+      "sha256": "05fa06436230ac61053cb3c6ea896553b62f22cb5d134d3ee444c0ad3e59a15e"
+    },
+    {
+      "id": "leaked-prefix",
+      "account_id": "synthetic-leaked",
+      "conversation_id": "synthetic-leaked-conversation",
+      "kind": "student",
+      "timestamp": "2026-09-01T11:58:00Z",
+      "text": "Please check my attempt.",
+      "origin": "recorded",
+      "source_ref": "synthetic:leaked-prefix",
+      "sha256": "6939d37b78b915b74b0f33b8e8eefa2323f14d8f90056938497609dc117d1275"
+    },
+    {
+      "id": "leaked-target",
+      "account_id": "synthetic-leaked",
+      "conversation_id": "synthetic-leaked-conversation",
+      "kind": "student",
+      "timestamp": "2026-09-01T12:01:00Z",
+      "text": "Can you give me a hint?",
+      "origin": "recorded",
+      "source_ref": "synthetic:leaked-target",
+      "sha256": "5903d7766eef9766067cb4f188a0c57a8f69f726bded4476db4d75c803d65a52"
+    },
+    {
+      "id": "leaked-execution",
+      "account_id": "synthetic-leaked",
+      "conversation_id": "synthetic-leaked-conversation",
+      "kind": "execution",
+      "timestamp": "2026-09-01T11:59:00Z",
+      "text": "IndexError: list index out of range",
+      "origin": "recorded",
+      "source_ref": "synthetic:leaked-execution",
+      "revision_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "feedback": "runtime-error",
+      "sha256": "3ed3cabe7ad1680dfd33d91ce901432dfa1116b016baae0c3d1df67383f57bb2"
+    }
+  ],
+  "records": [
+    {
+      "id": "complete",
+      "account_id": "synthetic-complete",
+      "conversation_id": "synthetic-complete-conversation",
+      "membership": "development",
+      "cutoff": "2026-09-01T12:00:00Z",
+      "prefix_event_ids": [
+        "complete-prefix",
+        "complete-execution"
+      ],
+      "outcome_event_id": "complete-target",
+      "revision_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "context": [
+        {
+          "field": "last_assistance",
+          "value": [
+            "checking"
+          ],
+          "evidence_event_ids": [
+            "complete-prefix"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        },
+        {
+          "field": "feedback",
+          "value": "runtime-error",
+          "evidence_event_ids": [
+            "complete-execution"
+          ],
+          "origin": "instrumentation",
+          "coder": "synthetic-instrumentation",
+          "rubric": "execution-feedback-v1"
+        }
+      ],
+      "annotations": [
+        {
+          "field": "assistance",
+          "value": [
+            "hint"
+          ],
+          "evidence_event_ids": [
+            "complete-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        },
+        {
+          "field": "material",
+          "value": [],
+          "evidence_event_ids": [
+            "complete-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        },
+        {
+          "field": "task_relation",
+          "value": "same",
+          "evidence_event_ids": [
+            "complete-prefix",
+            "complete-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        }
+      ]
+    },
+    {
+      "id": "partial",
+      "account_id": "synthetic-partial",
+      "conversation_id": "synthetic-partial-conversation",
+      "membership": "development",
+      "cutoff": "2026-09-01T12:00:00Z",
+      "prefix_event_ids": [
+        "partial-prefix",
+        "partial-execution"
+      ],
+      "outcome_event_id": "partial-target",
+      "revision_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "context": [],
+      "annotations": [
+        {
+          "field": "assistance",
+          "value": null,
+          "evidence_event_ids": [
+            "partial-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        },
+        {
+          "field": "material",
+          "value": [],
+          "evidence_event_ids": [
+            "partial-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        },
+        {
+          "field": "task_relation",
+          "value": "same",
+          "evidence_event_ids": [
+            "partial-prefix",
+            "partial-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        }
+      ]
+    },
+    {
+      "id": "leaked",
+      "account_id": "synthetic-leaked",
+      "conversation_id": "synthetic-leaked-conversation",
+      "membership": "development",
+      "cutoff": "2026-09-01T12:00:00Z",
+      "prefix_event_ids": [
+        "leaked-prefix",
+        "leaked-execution",
+        "leaked-target"
+      ],
+      "outcome_event_id": "leaked-target",
+      "revision_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "context": [
+        {
+          "field": "last_assistance",
+          "value": [
+            "checking"
+          ],
+          "evidence_event_ids": [
+            "leaked-prefix"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        },
+        {
+          "field": "feedback",
+          "value": "runtime-error",
+          "evidence_event_ids": [
+            "leaked-execution"
+          ],
+          "origin": "instrumentation",
+          "coder": "synthetic-instrumentation",
+          "rubric": "execution-feedback-v1"
+        }
+      ],
+      "annotations": [
+        {
+          "field": "assistance",
+          "value": [
+            "hint"
+          ],
+          "evidence_event_ids": [
+            "leaked-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        },
+        {
+          "field": "material",
+          "value": [],
+          "evidence_event_ids": [
+            "leaked-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        },
+        {
+          "field": "task_relation",
+          "value": "same",
+          "evidence_event_ids": [
+            "leaked-prefix",
+            "leaked-target"
+          ],
+          "origin": "human",
+          "coder": "synthetic-human",
+          "rubric": "behavior-pilot-v1-20261001"
+        }
+      ]
+    }
+  ]
+}
