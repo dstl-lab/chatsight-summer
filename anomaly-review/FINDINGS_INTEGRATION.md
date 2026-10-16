@@ -9,6 +9,45 @@ React review interface. It branches from Steven's `codex/anomaly-review-phase2c-
 
 ## Start the interface
 
+For the complete **raw export → preview → analysis → dashboard** flow, build the
+frontend, configure `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) in the service environment
+using your usual credential workflow, and start the local upload service:
+
+```sh
+cd anomaly-review
+uv sync --locked
+cd frontend
+npm ci
+npm run build
+cd ..
+uv run session-findings-app
+```
+
+Open http://127.0.0.1:8765. Choose **Upload PR100 export** for a recent `.jsonl` or
+`.jsonl.gz` file, preview its prepared sessions, then click **Analyze … with Gemini**.
+The default is 10 selected windows with 25 minutes of context (5 before and 20 after
+a tutor request); choose 1–20 windows or the shorter 10-minute option explicitly.
+The app displays the source event count/span, eligible scope count and progress.
+It selects bounded windows from the file; it does not analyze every raw event as
+an independent session. Insufficient counts and excluded/oversized windows are
+reported instead of silently truncating evidence. Upload limits are 50 MB compressed,
+300 MB expanded and 100,000 events; use smaller operator exports for larger datasets.
+
+Upload and preview make no model calls. Analysis sends the prepared dialogue,
+code captures, edit summaries, execution outputs and checks to Gemini. Results
+appear automatically when the job finishes, and **Saved uploads** reopens them
+without another request. **Download review bundle** preserves an offline copy.
+The existing **Open local review bundle** remains the input for already-analyzed
+version-2 JSON; it is separate from raw-data upload.
+
+The service needs no database credentials, PostgreSQL driver or cluster access.
+It binds only to this computer and stores uploads, manifests, receipts and bundles
+under ignored `private-data/uploads/` (override with `--storage`). It is not a
+public or authenticated shared deployment. Run extraction separately as described
+below; do not put secrets or private files in frontend source/public/build folders.
+
+For frontend development or saved-result viewing only:
+
 ```sh
 cd anomaly-review
 uv sync --locked
@@ -22,6 +61,34 @@ and authored priorities. **Findings demo** opens Austin's six input-pinned autho
 assessments, with accepted evidence and recovery links. It makes no model calls;
 those assessments are authored examples, not measured detection performance.
 The additional eleven-scenario casebook inputs remain in `fixtures/findings/`.
+
+The development server proxies `/api` to the upload service on port 8765. If that
+service is stopped, synthetic demos and saved-result import still work, while the
+raw upload panel reports that its service is offline.
+
+## Operator-only production extraction
+
+Only the operator needs database/cluster permissions. Establish the usual private
+database connection and configure standard `PGHOST`, `PGPORT`, `PGDATABASE`,
+`PGUSER`, and `PGPASSWORD` through your credential workflow, then run:
+
+```sh
+uv sync --locked --extra extract
+uv run session-findings-extract --scopes 20 --output private-data/pr100-export
+```
+
+The default range is the last 24 hours. `--since` and `--until` accept timezone-aware
+ISO timestamps, starting no earlier than the PR100 observation deployment on
+October 13, 2026, and spanning at most seven days per export. The operator can choose
+1–100 page/notebook scopes; these are recent tutor-bearing scopes, not the entire
+student population. Queries run read-only, require PR100 schema version 1, preserve
+exact snapshot strings for SHA256 checks, and include relevant notebook/tutor/check
+events. The account column is pseudonymized, but private text and code can still
+contain identifiers. An interrupted/oversized export is marked incomplete.
+
+Deliver `events.jsonl.gz` privately to an authorized dashboard user; keep the
+adjacent `manifest.json` for provenance. The dashboard user uploads the gzip file
+directly and needs no database permission. The dashboard has no extraction route.
 
 **Open local review bundle** reads a version-2 JSON file in browser memory. It
 makes no upload or model call. The import validates JSON Schema, IDs, references,

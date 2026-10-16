@@ -26,6 +26,27 @@
   --shadow: 0 1px 2px rgb(20 29 40 / 4%), 0 8px 24px rgb(20 29 40 / 4%);
 }
 
+.upload-panel { margin:16px 24px; padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:8px; }
+.upload-heading { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+.upload-heading h2 { font-size:17px; margin-bottom:6px; }
+.upload-panel p { font-size:12px; line-height:1.5; color:var(--muted); margin-bottom:10px; }
+.service-ready,.service-offline { font-size:11px; white-space:nowrap; padding:5px 8px; border-radius:5px; background:var(--green-soft); color:var(--green); }
+.service-offline { background:var(--surface-soft); color:var(--muted); }
+.upload-controls { display:flex; flex-wrap:wrap; gap:14px; align-items:end; margin:14px 0 10px; }
+.upload-controls label { font-size:12px; display:flex; flex-direction:column; gap:6px; }
+.upload-controls input[type=number] { width:130px; }
+.upload-controls input,.upload-controls select { padding:7px; border:1px solid var(--line-strong); border-radius:5px; background:white; }
+.upload-panel button { border:1px solid var(--line-strong); border-radius:5px; background:white; padding:7px 10px; cursor:pointer; }
+.upload-panel button:disabled { opacity:.5; cursor:default; }
+.upload-job { padding:12px; margin:12px 0; background:var(--surface-soft); border:1px solid var(--line); border-radius:6px; }
+.upload-job strong { font-size:13px; overflow-wrap:anywhere; }
+.upload-job small { display:block; font-size:11px; color:var(--muted); margin-bottom:12px; }
+.upload-job a { display:inline-block; margin:8px 12px; font-size:12px; color:var(--accent); }
+.upload-job .analyze-button { color:white; background:var(--accent); border-color:var(--accent); }
+.saved-uploads { font-size:12px; margin-top:12px; }
+.saved-uploads ul { list-style:none; padding:0; display:grid; gap:6px; }
+@media(max-width:800px) { .upload-panel { margin:12px; } .upload-heading { flex-direction:column; gap:6px; } }
+
 * { box-sizing: border-box; letter-spacing: 0; }
 html { scroll-behavior: smooth; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: #f6f7f8; }

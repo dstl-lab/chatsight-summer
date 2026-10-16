@@ -5,6 +5,9 @@ description = "Independent event validation and question-session reconstruction"
 requires-python = ">=3.11"
 dependencies = ["pydantic>=2.0,<3", "google-genai>=1.0.0", "python-dotenv>=1.2.1"]
 
+[project.optional-dependencies]
+extract = ["psycopg2-binary>=2.9,<3"]
+
 [dependency-groups]
 dev = ["pytest>=9,<10"]
 
@@ -16,6 +19,8 @@ session-rank = "session_review.ranking_cli:main"
 session-ranking-demo = "session_review.phase3b_demo:main"
 session-real-validate = "session_review.phase2c_cli:main"
 session-findings = "session_review.findings.cli:main"
+session-findings-app = "session_review.findings.web:main"
+session-findings-extract = "session_review.findings.extract:main"
 
 [build-system]
 requires = ["hatchling"]
