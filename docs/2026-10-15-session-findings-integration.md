@@ -140,5 +140,13 @@ The recent PR100 adapter prepared five bounded windows with 10 matched tutor
 exchanges, 302 actual edit summaries, 48 linked execution results and 8 linked
 checks. These are coverage-selected development records, not detection results.
 The historical pilot has been superseded. All real records, prepared evidence,
-bundles and any future model receipts remain in ignored local storage. A live
-Gemini run awaits explicit approval of the credential source and recent-data send.
+bundles and model receipts remain in ignored local storage.
+
+After Austin explicitly authorized the credential source and recent-data transfer,
+the five windows were analyzed with `gemini-3.8-flash`. All five responses completed
+and passed the structural evidence validator; all returned `no_supported_finding`.
+The analyzed bundle loaded in the frontend with 5/5 completed analyses. Offline
+export reconstructed the exact same bundle from the saved receipts without another
+model request. This verifies the integration path, not detection accuracy or the
+semantic correctness of those assessments. No historical records were sent and
+no private source, prompt, response or bundle was added to Git.
