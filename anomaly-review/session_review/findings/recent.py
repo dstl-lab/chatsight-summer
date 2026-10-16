@@ -6,9 +6,9 @@ import json
 from pathlib import Path
 
 from . import analyze_sessions as analyzer
-from .historical import digest, file_hash, private_json, rows, timestamp, source_ref
+from .historical import digest, file_hash, private_json, rows, timestamp, source_ref, load_prepared
 
-VERSION = "pr100-notebook-observation-windows-v1"
+VERSION = "pr100-notebook-observation-windows-v2"
 BEFORE_MINUTES = 3
 AFTER_MINUTES = 7
 
@@ -81,7 +81,9 @@ def normalize_session(records, input_hash, *, window=None):
         "Client sequence orders logging calls; occurrence timestamps govern event-time order. Retained page sequence gaps may include other notebooks or excluded events.",
     ]
     if window:
-        warnings.append(f'Fixed observation window: {window["start"]} through {window["end"]}; 3 minutes before and 7 after the anchor request. Events outside it, including later recovery, are not analyzed. This is not a complete question attempt.')
+        before = window.get("before_minutes", BEFORE_MINUTES)
+        after = window.get("after_minutes", AFTER_MINUTES)
+        warnings.append(f'Fixed observation window: {window["start"]} through {window["end"]}; {before} minutes before and {after} after the anchor request. Events outside it, including later recovery, are not analyzed. This is not a complete question attempt.')
     request_rows = defaultdict(list)
     response_rows = defaultdict(list)
     execution_rows = defaultdict(list)
@@ -240,15 +242,30 @@ def normalize_session(records, input_hash, *, window=None):
     return session, ctx, evidence, quality
 
 
-def prepare(path, destination, *, count=5, seed=15, max_records=500, max_characters=160000):
+def prepare(path, destination, *, count=5, seed=15, max_records=500, max_characters=160000,
+            before_minutes=BEFORE_MINUTES, after_minutes=AFTER_MINUTES, coverage="rich", exclude_prepared=()):
     """Freeze fixed observation windows; no historical fallback, no model call."""
     path, destination = Path(path), Path(destination)
     if type(count) is not int or not 1 <= count <= 20:
         raise ValueError("Choose 1–20 recent notebook observation sessions.")
+    if coverage not in {"rich", "dialogue"}:
+        raise ValueError("Coverage must be rich or dialogue.")
+    if type(before_minutes) is not int or not 0 <= before_minutes <= 30 or type(after_minutes) is not int or not 1 <= after_minutes <= 60:
+        raise ValueError("Window allows 0–30 minutes before and 1–60 after a request.")
+    if type(max_records) is not int or not 1 <= max_records <= 2000 or type(max_characters) is not int or not 1000 <= max_characters <= 1000000:
+        raise ValueError("Evidence budget allows 1–2000 records and 1000–1000000 characters.")
     if destination.exists() or destination.is_symlink():
         raise FileExistsError(destination)
     groups = defaultdict(list)
     input_hash = file_hash(path)
+    excluded_pages, excluded_inputs = set(), []
+    for folder in exclude_prepared:
+        previous, _, contexts, _ = load_prepared(folder)
+        for ctx in contexts.values():
+            if ctx.get("scope") != "notebook_session" or not ctx.get("page_id"):
+                raise ValueError("Exclusions require prepared PR100 notebook observation scopes.")
+            excluded_pages.add(ctx["page_id"])
+        excluded_inputs.append({"sessions_sha256": previous["sessions_sha256"], "context_sha256": previous["context_sha256"]})
     accounting = Counter()
     for line, row in rows(path, accounting):
         if row["payload"].get("schema_version") != 1:
@@ -261,14 +278,18 @@ def prepare(path, destination, *, count=5, seed=15, max_records=500, max_charact
         groups[key].append((line, row))
     eligible, exclusions, window_counts = [], Counter(), Counter()
     for key, records in groups.items():
+        if key[1] in excluded_pages:
+            exclusions["previously_analyzed_page_scopes"] += 1
+            continue
         candidates = []
         anchors = [row for _, row in records if row["event_type"] == "tutor_query" and row["payload"].get("mode") == "tutor"]
         for anchor in anchors:
             window_counts["candidate_windows"] += 1
             try:
                 at = timestamp(anchor["payload"].get("timestamp"))
-                start, end = at - timedelta(minutes=BEFORE_MINUTES), at + timedelta(minutes=AFTER_MINUTES)
-                window = {"anchor_event_id": anchor["payload"].get("event_id"), "start": start.isoformat(), "end": end.isoformat()}
+                start, end = at - timedelta(minutes=before_minutes), at + timedelta(minutes=after_minutes)
+                window = {"anchor_event_id": anchor["payload"].get("event_id"), "start": start.isoformat(), "end": end.isoformat(),
+                          "before_minutes": before_minutes, "after_minutes": after_minutes}
                 observed = []
                 for line, row in records:
                     try:
@@ -282,7 +303,9 @@ def prepare(path, destination, *, count=5, seed=15, max_records=500, max_charact
                     exclusions["mixed_or_unknown_mode_window"] += 1
                     continue
                 session, ctx, evidence, quality = normalize_session(observed, input_hash, window=window)
-                required = ["tutor_requests", "matched_completed_tutor_responses", "matched_execution_results", "matched_execution_checks", "edit_observations", "request_snapshot_hash_verified"]
+                required = ["tutor_requests", "matched_completed_tutor_responses"]
+                if coverage == "rich":
+                    required += ["matched_execution_results", "matched_execution_checks", "edit_observations", "request_snapshot_hash_verified"]
                 if not all(quality[name] for name in required):
                     exclusions["missing_required_observation_family"] += 1
                     continue
@@ -313,7 +336,8 @@ def prepare(path, destination, *, count=5, seed=15, max_records=500, max_charact
         "selected_session_ids": [s.session_id for s, _, _ in selected], "quality": dict(accounting),
         "eligible_notebook_sessions": len(eligible), "window_counts": dict(window_counts), "exclusions": dict(exclusions),
         "selection": {"count": count, "seed": seed, "max_records": max_records, "max_evidence_characters": max_characters,
-                      "method": "fixed-seeded-coverage-windows-v1", "before_minutes": BEFORE_MINUTES, "after_minutes": AFTER_MINUTES,
+                      "method": "fixed-seeded-coverage-windows-v2", "before_minutes": before_minutes, "after_minutes": after_minutes,
+                      "coverage": coverage, "excluded_prepared_inputs": excluded_inputs,
                       "purpose": "coverage-selected development integration test, not representative evaluation; later recovery outside window is unobserved"},
         "source_basename": path.name, "contains_private_course_content": True,
         "historical_fallback": False, "sends_source_captures_and_execution_outputs": True}

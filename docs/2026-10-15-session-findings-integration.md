@@ -150,3 +150,54 @@ export reconstructed the exact same bundle from the saved receipts without anoth
 model request. This verifies the integration path, not detection accuracy or the
 semantic correctness of those assessments. No historical records were sent and
 no private source, prompt, response or bundle was added to Git.
+
+
+## Expanded recent-data experiment
+
+A second read-only production export selected up to 60 recent notebook scopes,
+excluding the pages used in the original five-window pilot. It contains 66,448
+recent PR100 events. The next development run freezes two disjoint groups before
+inference: ten standard windows (3 minutes before, 7 after) with rich observation
+coverage, and ten longer windows (5 minutes before, 15 after) requiring matched
+completed dialogue but allowing missing notebook/check evidence. Both use the
+same analyzer, prompt, response schema, model and factual validator as the pilot.
+No passing/failing check value or model outcome drives case selection.
+
+The groups use seeds 16 and 17; the longer group also excludes the ten standard
+pages. Preparations retain their selection/budget/exclusion manifests. Public CLI
+options now support configurable bounded windows, rich/dialogue coverage, and
+repeated `--exclude-prepared` arguments. Page identity excludes previous cases even
+when account pseudonyms change across private exports. Oversized inputs still
+fail eligibility rather than losing events to truncation.
+
+The selected groups contain 63 matched tutor exchanges, 1,267 edit observations,
+425 execution results, and 101 linked checks including 12 failed checks. Sixteen
+windows contain multiple tutor requests. Although dialogue coverage allows absent
+checks, the seeded longer sample happened to contain checks in all ten windows.
+These are development cases, not a labeled evaluation or population estimate.
+
+
+### Expanded run outcome, October 16
+
+All twenty new windows completed and passed the structural evidence validator.
+Nineteen returned `no_supported_finding`; one returned an
+`advice_linked_obstacle` candidate. The original decisions, inputs and receipts
+remain preserved. Offline export exactly reconstructed the twenty-window bundle
+without another model request.
+
+A source-level review of the candidate found later clarification and a
+matching-grader pass beyond its ten-minute prompt boundary. A separate paired
+25-minute window included that observed follow-up and returned
+`no_supported_finding`. This is one additional model call on the same page, not
+an independent 21st case or a reroll of the original input. Both assessments are
+available side by side in a private comparison bundle. The original factual IDs,
+source binding and time checks passed; those checks cannot verify the semantic
+interpretation or tutor causality.
+
+Evidence spot checks covered the candidate and three negative cases, including
+recovery after clarification and an unfinished case that retained a failing
+check. A negative decision is not completion or proof of correct tutoring. No
+independent human labels, sensitivity, precision or false-positive rate are
+claimed. Follow-up coverage should be reviewed before relying on short-window
+flags. The window controls and exclusion regressions pass the 120-test Python
+suite; private records and model outputs remain outside Git.

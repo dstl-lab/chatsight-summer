@@ -64,6 +64,29 @@ cohort or an accuracy benchmark. Later recovery outside the fixed window is
 unobserved, not absent. The requested count must be available or preparation
 fails; it never substitutes historical records.
 
+For follow-up tests, `--exclude-prepared` excludes every page present in a previous
+prepared dataset, even across exports with different account pseudonyms. Repeat
+the option for multiple previous batches. Selection and exclusions are frozen in
+the manifest; old assessments are neither rerun nor overwritten.
+
+Longer windows can include more follow-up without requiring a grader check:
+
+```sh
+uv run session-findings prepare-recent /private/path/recent-events.jsonl.gz \
+  --count 10 --seed 17 --coverage dialogue \
+  --before-minutes 5 --after-minutes 15 \
+  --max-records 1000 --max-characters 300000 \
+  --exclude-prepared private-data/recent-pr100 \
+  --output private-data/recent-long
+```
+
+The default `rich` coverage requires all observation families described above.
+`dialogue` requires an exactly matched completed tutor exchange, while preserving
+available notebook observations and explicit missing evidence. Neither profile
+selects on model output or a passing/failing check value. Larger prompts still
+have a fixed budget; oversized windows are excluded rather than truncated. These
+are development samples, not manually labeled accuracy evaluations.
+
 | Recent production observation | Model/UI treatment |
 | --- | --- |
 | Tutor query and completed response | Match exact request ID, even when the first query has no conversation ID; preserve occurrence timestamps, page sequence, and native cell IDs |

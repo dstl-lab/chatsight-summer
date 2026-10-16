@@ -152,3 +152,37 @@ def test_preparation_freezes_one_window_and_does_not_use_historical_fallback(tmp
     with pytest.raises(ValueError, match="Only 1 recent notebook scopes"):
         recent.prepare(path, tmp_path / "c", count=2)
     assert not (tmp_path / "c").exists()
+
+
+def test_longer_dialogue_window_includes_later_events_without_requiring_checks(tmp_path):
+    events = [row for row in invented_rows() if row["event_type"] != "autograder_info"]
+    later = copy.deepcopy(events[-1])
+    later.update(id=99, event_type="notebook_cell_source_changed")
+    later["payload"].update(event_id="later-edit", client_sequence=99, timestamp="2026-10-15T12:16:00Z", source_revision=2)
+    events.append(later)
+    path = tmp_path / "invented.jsonl"
+    path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    with pytest.raises(ValueError, match="Only 0"):
+        recent.prepare(path, tmp_path / "rich", count=1)
+    m = recent.prepare(path, tmp_path / "long", count=1, coverage="dialogue", before_minutes=5, after_minutes=15)
+    _, sessions, _, evidence = historical.load_prepared(tmp_path / "long")
+    assert any(r.id == "later-edit" for r in sessions[0].activity)
+    assert m["selection"]["coverage"] == "dialogue"
+    assert any("5 minutes before and 15 after" in w for w in evidence[0]["warnings"])
+
+
+def test_exclusions_follow_page_identity_across_exports_and_notebook_scopes(tmp_path):
+    events = invented_rows()
+    path = tmp_path / "first.jsonl"
+    path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    recent.prepare(path, tmp_path / "first", count=1)
+    # Pseudonyms change between private exports; notebook tabs on the same page
+    # must still be excluded, regardless of the source file or model result.
+    for row in events:
+        row["user_email"] = "STU-ANOTHER-EXPORT-PSEUDONYM"
+        row["payload"]["notebook_session_id"] = "another-notebook-on-same-page"
+    path = tmp_path / "second.jsonl"
+    path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    with pytest.raises(ValueError, match="previously_analyzed_page_scopes"):
+        recent.prepare(path, tmp_path / "second", count=1, exclude_prepared=[tmp_path / "first"])
+    assert not (tmp_path / "second").exists()

@@ -23,6 +23,12 @@ def main(argv=None):
     pr100.add_argument("--output", type=Path, required=True)
     pr100.add_argument("--count", type=int, default=5)
     pr100.add_argument("--seed", type=int, default=15)
+    pr100.add_argument("--before-minutes", type=int, default=recent.BEFORE_MINUTES)
+    pr100.add_argument("--after-minutes", type=int, default=recent.AFTER_MINUTES)
+    pr100.add_argument("--coverage", choices=["rich", "dialogue"], default="rich")
+    pr100.add_argument("--max-records", type=int, default=500)
+    pr100.add_argument("--max-characters", type=int, default=160000)
+    pr100.add_argument("--exclude-prepared", type=Path, action="append", default=[])
     export = sub.add_parser("export", help="Open prepared data/results offline as a UI bundle")
     analyze = sub.add_parser("analyze", help="One request per untouched session; requires --send")
     for command in (export, analyze):
@@ -39,7 +45,9 @@ def main(argv=None):
     schema.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "prepare-recent":
-        manifest = recent.prepare(args.input, args.output, count=args.count, seed=args.seed)
+        manifest = recent.prepare(args.input, args.output, count=args.count, seed=args.seed,
+            before_minutes=args.before_minutes, after_minutes=args.after_minutes, coverage=args.coverage,
+            max_records=args.max_records, max_characters=args.max_characters, exclude_prepared=args.exclude_prepared)
         print(json.dumps({"selected_sessions": len(manifest["selected_session_ids"]), "eligible_sessions": manifest["eligible_notebook_sessions"], "exclusions": manifest["exclusions"], "quality": manifest["quality"]}))
         return 0
     if args.command == "prepare":
