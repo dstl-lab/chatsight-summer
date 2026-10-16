@@ -33,38 +33,57 @@ separately under a dataset-specific localStorage key. **Download reviews** and
 storage can contain private notes; failures are reported rather than claiming a
 review was saved. No shared review server is provided.
 
-## Prepare a private historical export offline
+## Prepare recent production PR100 observations offline
 
-Use the `events.jsonl.gz` from the private original-ChatSight export. No production
-database access is needed. Run from `anomaly-review`:
+The current workflow uses recent production notebook observations from
+`dsc10-tutor-jlab` PR #100. The old original-ChatSight export is **not** an input
+or fallback for this pilot. A read-only fresh export is prepared locally; database
+credentials and private source files are not part of this branch.
+
+Run from `anomaly-review` against that recent `events.jsonl.gz`:
 
 ```sh
-uv run session-findings prepare /private/path/events.jsonl.gz \
-  --count 20 --seed 15 --output private-data/pilot
-uv run session-findings export private-data/pilot \
-  --output private-data/pilot-not-analyzed.private.json
+uv run session-findings prepare-recent /private/path/events.jsonl.gz \
+  --count 5 --seed 15 --output private-data/recent-pr100
+uv run session-findings export private-data/recent-pr100 \
+  --output private-data/recent-not-analyzed.private.json
 ```
 
-Open that JSON in the browser. Preparation streams the source, checks identifiers
-and timezone-aware recorded timestamps, accounts for malformed/duplicate rows,
-then selects up to twenty eligible conversations deterministically across notebook
-strata. It includes exclusively `tutor`-mode conversations with student and tutor
-text and a consistent account/notebook identity. Missing or conflicting identity,
-missing dialogue, mixed/unknown modes and oversized conversations are excluded
-with aggregate counts. Selection is frozen before model inference. This is a
-convenience development sample, not a benchmark or a representative student cohort.
+Preparation groups by pseudonymous account, page `analytics_session_id`, and
+`notebook_session_id`. Each candidate has a fixed window from three minutes before
+a tutor request to seven minutes after it. All available PR100 observations in
+that scope/window are considered; malformed identities and invalid bindings are
+accounted for. It keeps at most one window per page/notebook scope, chooses by a
+fixed seeded hash, and freezes the input/context hashes before analysis.
 
-One conversation can supply notebook identity for another event in that same
-conversation, but conflicting identities are excluded. Export event IDs are
-export-local, not original production database IDs. Each selected record retains
-the compressed input hash, source line, export ID, and normalized-record hash.
-Raw messages and source paths remain private.
+The initial development sample requires a completed tutor exchange, verified
+request snapshot, actual edit summaries, source-bound execution results, and
+execution-bound checks. Mixed/unknown tutor modes and oversized windows are
+excluded. Coverage selection biases the sample; it is not a representative
+cohort or an accuracy benchmark. Later recovery outside the fixed window is
+unobserved, not absent. The requested count must be available or preparation
+fails; it never substitutes historical records.
 
-Nearby checks are attached only as account/notebook/time context within thirty
-minutes of the conversation's observed logging span. They do not establish the
-question the student asked about or a linked execution. Notebook captures are
-shown as bounded code excerpts with an explicit notice, not as inferred edits or
-executed revisions. Full snapshots remain in the original export.
+| Recent production observation | Model/UI treatment |
+| --- | --- |
+| Tutor query and completed response | Match exact request ID, even when the first query has no conversation ID; preserve occurrence timestamps, page sequence, and native cell IDs |
+| Request notebook JSON | Verify SHA256 of the exact serialized request snapshot; include only uniquely identified active code-cell source as context, not the full notebook |
+| Cell source changed | Actual edit-burst summary, revision/count/length and interval; it contains no edited source text |
+| Execution requested/finished | Exact submitted source and output, bound by kernel/execution/cell IDs, checked for matching source and consistent time |
+| Autograder info | Exact execution and checked-source binding; pass/fail remains a text heuristic; incomplete output/result stays unknown |
+| Cell creation/deletion/movement/selection | Observed structural activity, not proof of a change in the student’s question |
+| Failed/cancelled tutor request | Explicit failure observation; partial text is not a completed tutor answer |
+
+Source captures are labeled separately from edits. Every evidence record has
+source-file hash, source line, export ID, and normalized-record hash. Client event
+time is distinguished from database logging time. Logging sequence is retained,
+but equal occurrence timestamps remain uncertain unless an explicit link provides
+order. Task metadata is notebook structure; it does not establish the subject of
+typed student questions. Grader labels do not silently become question intent.
+The full exported snapshots remain private and local.
+
+The older `prepare` command remains a separate legacy adapter for reproducibility.
+It is not used by `prepare-recent` or by the current recent-data pilot.
 
 ## Analyze the fixed pilot, then reopen offline
 
@@ -74,17 +93,18 @@ read a database password. Private course data requires appropriate authorization
 for the established Gemini provider.
 
 ```sh
-uv run session-findings analyze private-data/pilot \
+uv run session-findings analyze private-data/recent-pr100 \
   --model gemini-3.8-flash --send \
-  --output private-data/pilot-analyzed.private.json
-uv run session-findings check private-data/pilot-analyzed.private.json
+  --output private-data/recent-pr100-analyzed.private.json
+uv run session-findings check private-data/recent-pr100-analyzed.private.json
 ```
 
 The explicit `--send` command sends one request for each untouched selected
-conversation, capped at twenty. The historical prompt includes student/tutor
-messages, recorded timestamps/IDs, and missing-evidence warnings. Notebook
-captures and nearby unlinked checks are not sent. Their UI presence does not mean
-the model considered them. Model availability depends on the configured account;
+observation window, capped at twenty. The recent prompt includes student/tutor
+messages, timestamps/IDs, request links, actual edit summaries, captured source,
+execution output, checks, explicit bindings and missing-evidence warnings.
+Only the prepared evidence is sent; full request snapshots remain local.
+Model availability depends on the configured account;
 choose and record another model explicitly if necessary.
 
 Requests have create-only receipts written before dispatch. Completed, failed and
@@ -97,11 +117,11 @@ new output filename when exporting; existing files are not overwritten.
 To reopen results without another request:
 
 ```sh
-uv run session-findings export private-data/pilot \
-  --model gemini-3.8-flash --output private-data/pilot-reopened.private.json
+uv run session-findings export private-data/recent-pr100 \
+  --model gemini-3.8-flash --output private-data/recent-pr100-reopened.private.json
 ```
 
-Results normally live in `private-data/pilot/analysis/`. `--analysis` selects a
+Results normally live in `private-data/recent-pr100/analysis/`. `--analysis` selects a
 different receipt folder, with the same configuration checks. Loading a bundle in
 the browser never calls Gemini. If generation or factual/evidence validation
 fails, the UI shows insufficient evidence and exposes no accepted finding.
@@ -116,10 +136,10 @@ do not establish semantic correctness, causality, learning, or tutor quality.
 the tutor was proven correct. Completed-analysis counts distinguish unevaluated
 sessions from negative results.
 
-Historical records use conversation scope with unknown question attribution and
-unknown response-completion links. Database logging time is displayed with its
-basis; it is not a verified client action clock. Equal-time records retain order
-uncertainty. Missing notebook actions are not inactivity. Active-time percentiles,
+Recent records use bounded page/notebook scope with explicit request and
+execution links. Question intent can still be unknown. Event-specific client time
+is displayed with its basis. Equal-time records retain order uncertainty.
+Missing notebook actions are not inactivity. Active-time percentiles,
 post-help failure counts and question completion stay unknown when the necessary
 links/coverage are absent. No high/medium priority is inferred from model decisions.
 Steven's existing canonical question reconstruction and ranking remain available
@@ -137,4 +157,4 @@ npm run build
 The public fixtures are entirely synthetic. Do not place a real bundle in source
 imports, `frontend/public/`, built assets, or Git. Keep private inputs, receipts,
 outputs and reviews in ignored storage such as `anomaly-review/private-data/`.
-The larger historical export is processed locally, not embedded in the UI.
+Recent production exports are processed locally, never embedded in public assets.

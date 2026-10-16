@@ -6,5 +6,5 @@
     "analyze_sessions.py": "c84119242327379eb9c1da502e4646eb04a440399a7c0879297354964e1addfa",
     "text_report.py": "1fbdb367950ec524125ed5f30f54d56090735242708c9d0e39233490647a3ba3"
   },
-  "port_changes": "Package imports and fixture paths in tests only; analyzer behavior initially unchanged."
+  "port_changes": "Packaged imports and fixtures; PR100 additions retain request/cell/page sequence metadata, explicit request-response bindings, source-capture versus actual-edit semantics, and conservative notebook observation records. Prompt adapted for source captures, unknown question intent and heuristic checks. Source hashes above describe the original copied files, not the modified port."
 }

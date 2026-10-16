@@ -1,267 +1,144 @@
-# Integrate session findings with Steven's review frontend
+# Integrate session findings with Steven’s frontend and recent PR100 data
 
-Prepared October 15, 2026 before implementation. The design below records the
-agreed integration plan. Implementation now lives on
-`codex/session-findings-real-data`; see `anomaly-review/FINDINGS_INTEGRATION.md`
-for current commands and limitations.
+Updated October 15, 2026 after Austin clarified the production data requirement.
+This plan supersedes the historical-data milestone in the original draft. Current
+commands and data semantics are in `anomaly-review/FINDINGS_INTEGRATION.md`.
 
-## Objective
+## Objective and preserved branches
 
-Use Austin's evidence-based session-finding algorithm inside Steven's existing
-session-review interface, with a reproducible local path from recorded course
-events to reviewable findings and their exact source evidence. Preserve both
-original branches and the private historical export.
+Use Austin’s finding algorithm in Steven’s review interface with **recent
+production `dsc10-tutor-jlab` PR #100 notebook observations**. Preserve the original
+algorithm and frontend branches. Historical original-ChatSight records are not
+used for this test, and there is no automatic historical fallback.
 
-## Source revisions and branch strategy
-
-- Destination repository: `dstl-lab/chatsight-summer`.
-- Base: Steven's `codex/anomaly-review-phase2c-phase3b`, inspected at
+- Repository: `dstl-lab/chatsight-summer`.
+- Frontend base: `codex/anomaly-review-phase2c-phase3b`,
   `9dc2f2678ab5b3216bcedbdabd5237e175f3e49b`.
-- New integration branch: `codex/session-findings-real-data`.
+- Integration branch: `codex/session-findings-real-data`, separate checkout.
 - Algorithm source: `dstl-lab/dsc10-tutor-jlab`,
-  `codex/session-findings-prototype`, commit `25a146e`.
-- Record the full source SHA and copied-file hashes when implementation begins.
-- Use a separate checkout. Make no commits or history changes on either original
-  branch; do not merge either prototype into main as part of this work.
-- Port the selected analyzer, fixtures, and tests into `anomaly-review`; do not
-  merge the unrelated Jupyter extension history across repositories.
-- Before code, add the dated integration design memo required by this repo's
-  working style. Update it as concrete source decisions become known.
-- Push the integration branch after verification. Any later PR should describe
-  its dependency on Steven's branch; initially compare against that branch so
-  the integration changes can be reviewed separately.
+  `codex/session-findings-prototype`, `25a146e10926108bbdfbcfd99438c955d122ac49`.
+- Original copied-file hashes and subsequent port changes are recorded in
+  `session_review/findings/PROVENANCE.json`.
 
-## Findings from inspection
+## Fresh data audit
 
-1. Steven's React interface imports a static synthetic JSON dataset. It has no
-   model adapter, backend, or real-data loader. Its types require `synthetic: true`.
-2. The frontend's displayed priorities, reasons, and timing reference bands are
-   currently authored demo metadata. Python metric-based ranking exists separately
-   but is not wired into that frontend.
-3. His canonical normalizer, source provenance, explicit unknowns, metric models,
-   and evidence references are reusable. His question-episode constructor requires
-   learner/course/cohort/assignment/version/notebook scope and an explicit or
-   verified question link; historical records missing these must remain unassigned
-   under that constructor.
-4. Austin's analyzer already accepts unknown question IDs and missing notebook
-   activity. It has three finding categories and a separate factual/evidence
-   validator. Its output is not a priority score or proof of semantic correctness.
-5. The private export contains 484,652 events and 9,443 conversation IDs from
-   February through September 18, 2026. It is gzipped JSONL, not the JSON-array
-   document Steven's configurable adapter currently expects.
-6. Historical notebook captures and checks do not provide continuous, explicitly
-   linked edit/execution traces. No present-day deployment claim will be based on
-   this historical export; current-quarter telemetry needs a separate fresh audit.
+A read-only production audit confirmed the new PR100 observation stream starting
+October 13, 2026. A fresh local export selected recent tutor-bearing page/notebook
+scopes and included their available observations through its snapshot boundary.
+It contains 21,702 events from October 15 Pacific: actual edit summaries,
+execution requests/results, checks, request snapshots and tutor exchanges. Account
+columns are pseudonymized; text, code and notebook content remain private.
 
-## Proposed architecture
+This establishes that recent rich telemetry exists. It does not establish perfect
+event coverage, verified question intent, complete kernel state or a valid
+active-time baseline. Missing native identity, truncated windows and unmatched
+requests/results are counted explicitly. No private data is committed here.
+
+## Pipeline
 
 ```text
-private historical events.jsonl.gz
-  -> streaming source adapter + quality accounting
-  -> canonical records + provenance index
-  -> conversation-scoped evidence (legacy records)
-     OR existing question episodes (explicitly linked records)
-  -> Austin's assembler and evidence validation
-  -> bounded Gemini assessments, saved once per exact input/configuration
-  -> validated findings + recorded timeline + available metrics
-  -> versioned review bundle
-  -> Steven's frontend, loaded locally
+fresh private production PR100 events.jsonl.gz
+  -> validate native identities and event-specific timestamps
+  -> group account + page + notebook session
+  -> fixed tutor-anchored observation windows, coverage/size accounting
+  -> exact request links + source/execution/check links
+  -> Austin’s assembler and adapted source-capture prompt
+  -> bounded Gemini assessment with immutable request receipts
+  -> factual/reference validator
+  -> version-2 local review bundle
+  -> Steven’s queue, timeline, findings, and instructor review UI
 ```
 
-Keep three outputs distinct: source facts, model interpretations, and instructor
-review decisions. Metric-based ranking remains a separate optional signal.
+Keep observed facts, model interpretations, and instructor judgments separate.
 
-## Phase 1 — Preserve and port the algorithm
+## 1. Freeze the recent-data pilot
 
-- Establish the isolated branch at the pinned Steven revision.
-- Put the reusable analyzer under `anomaly-review/session_review/findings/`.
-- Port the three categories, assembly, response schema, validator, and existing
-  tests without changing detection behavior during the first port.
-- Preserve the original six input-pinned offline assessments. Include the eleven
-  authored casebook inputs as additional synthetic examples, with separate origins.
-- Add `google-genai` only to the Python analysis path; keep keys out of the browser.
-- Record prompt/schema/model/source versions. Any prompt/schema adaptation gets
-  its own version rather than silently changing a saved assessment's meaning.
+- Use `prepare-recent`; the legacy `prepare` adapter is retained independently.
+- Group by account, `analytics_session_id`, and `notebook_session_id`, rather than
+  a conversation ID that may be missing on the first request.
+- Each window spans three minutes before and seven minutes after a tutor request.
+  Do not extend windows or select cases based on model outcomes. Explicitly warn
+  that later recovery outside a window is unobserved.
+- Require tutor-mode dialogue, a completed request pair, verified request snapshot,
+  edit summaries, bound execution results and bound checks for this first
+  integration sample. This selects coverage and is not a representative benchmark.
+- Reject mixed/unknown modes, conflicting IDs and oversized windows; fail if the
+  requested count is unavailable. No truncation to fit a prompt or legacy fallback.
+- Select deterministically by seeded hash, at most one window per notebook/page,
+  and save source/context/input hashes before any model request.
 
-Exit: existing twenty prototype tests pass in the new package, and offline fixture
-replay gives the same decisions and validation results. An LLM is unnecessary to
-prove that the port preserved behavior.
+Exit: five recent windows can export offline with no model calls and all source
+references recoverable in the private source file.
 
-## Phase 2 — Define one review contract
+## 2. Preserve the PR100 meanings
 
-Create a versioned contract shared by the Python exporter and frontend. Include:
+- Match query/response by exact request ID, unique terminal event and completed
+  status; initial null conversation IDs do not prevent matching.
+- Verify the SHA256 of the exact request notebook string. Use only the uniquely
+  identified active code cell as captured context; keep full snapshots local.
+- Actual edit-burst summaries have counts, lengths, revisions and intervals but no
+  source text. Never derive a code diff from them.
+- Bind submitted source and finished output by kernel/execution/native-cell IDs;
+  reject source conflicts or reversed time. Source captures are not edit events.
+- Bind checks to the exact accepted execution and checked source. Preserve the
+  grader label separately from unknown question intent. A heuristic pass/fail is
+  not proof of learning or complete kernel correctness; incomplete output is unknown.
+- Preserve occurrence timestamps, page logging sequence, native cells, source line,
+  file hash and record hash. Logging-call order and occurrence time have different
+  semantics; missing events and equal times remain explicit.
+- Do not fabricate question intent from task metadata, or timing/reference metrics
+  from the length of an observed window.
 
-- Dataset ID, input hash, real/synthetic origin, analysis version, model, prompt hash.
-- Stable session ID and scope (`conversation` or `question_episode`).
-- Known/unknown assignment/question identity, including the attribution basis.
-- Timeline source IDs, timestamps and clock basis, provenance references, text,
-  observed notebook state, explicit links, and ambiguity/missingness notices.
-- Analysis state: not analyzed, completed, failed, or validation rejected.
-- Decision: surface, no supported finding, or insufficient evidence.
-- Findings with category, explanation, interpretation evidence, checked facts,
-  recovery evidence, uncertainties, and validation outcome.
-- Metrics with known/unknown values and their evidence; optional ranking metadata.
+Exit: authored regressions catch wrong request IDs, noncompleted responses,
+conflicting UUID/sequence, bad snapshot hash, kernel/cell/source mismatches,
+missing submissions and incomplete checks.
 
-Validate generated bundles in Python and at the browser import boundary. A failed
-analysis must not look like a completed 'no issue' assessment. Keep raw rejected
-model output in private diagnostics, not in the accepted-findings display.
+## 3. Integrate and validate the finding algorithm
 
-Exit: the same contract can represent Steven's synthetic demo, Austin's casebook,
-and a historical conversation with unknown question/activity/outcome.
+- Port the pinned analyzer, six authored assessment fixtures, eleven casebook
+  inputs, and original factual-validation tests without replacing Steven’s code.
+- Extend records with request/cell/order metadata and explicitly typed edit
+  observations versus source captures; version and hash the modified prompt.
+- Send the prepared timeline, explicit links and coverage warnings to Gemini.
+  Code, outputs and checks are part of this recent-data model input.
+- Keep generation separate from local import/export. Save a create-only receipt
+  before dispatch; preserve failed/interrupted/completed requests without rerolls.
+- Validate every finding’s evidence references and factual assertions. Semantic
+  correctness and causal interpretation still require human review.
+- Model availability and permission to use the configured credential/provider are
+  execution prerequisites; no model result is implied by offline validation.
 
-## Phase 3 — Implement the historical-data adapter
+Exit: the fixed pilot has saved validated results, or a clear failed/rejected state;
+reopening results makes no model calls.
 
-Read the existing private export; no new production export or database credentials
-are necessary for the first integration.
+## 4. Keep the frontend reviewable
 
-| Historical source | Treatment |
-| --- | --- |
-| tutor_query | Recorded student message; retain conversation, mode, notebook, timestamp basis |
-| tutor_response | Recorded tutor message; preserve unknown request/completion linkage |
-| tutor_notebook_info | Captured notebook-state context, not a code edit or executed revision |
-| autograder_info | Recorded check with grader and pass/fail/unknown; execution binding unknown |
-| session_start | Observation context, not proof of active work or a complete session boundary |
-| experiment/UI/other events | Preserve source access and account for exclusions; not automatically model evidence |
+- Retain Steven’s queue, metrics, timeline and review panel, and both synthetic demos.
+- Import a version-2 bundle locally; validate the Python-derived JSON Schema plus
+  cross-reference, metric, origin, summary and state invariants in the browser.
+- Display PR100 notebook observation scope, code captures, actual edit summaries,
+  recorded outputs, request IDs, time basis and missing evidence.
+- Findings jump to exact evidence, revealing events hidden by timeline filters.
+  Show uncertainty and later observed recovery separately.
+- Keep not analyzed, completed negative, surfaced, failed and rejected states
+  distinct. Do not convert categorical findings into made-up priority scores.
+- Store reviews separately by exact dataset identity, with offline review
+  download/import and visible storage errors. Clear stale data on invalid imports.
+- Keep private bundles out of source imports, public assets, builds and Git.
 
-- Stream the gzipped JSONL; do not load 484,652 full records or notebook snapshots
-  into the browser or one model prompt.
-- Maintain file hash, line/event locator, original export-local ID, and stable
-  canonical reference so every displayed excerpt can be traced to its exact source.
-- Preserve server logging time as server logging time. Use client time only when
-  its format/timezone and clock basis are documented. Ties and uncertain order
-  remain explicit; a display sort does not prove causal order.
-- Group historical chat by conversation plus consistent account/notebook identity.
-  Conflicting identities are quarantined or explicitly split with recorded reasons.
-- Do not fill in missing course, quarter, assignment versions, or question IDs with
-  invented constants to satisfy the strict question-session builder.
-- Keep grader question identity separate from the question a message concerns.
-  Nearby same-account/notebook checks are contextual unless a documented mapping
-  establishes applicability. Do not infer an execution link from proximity.
-- Keep notebook snapshots in a separate observed-state record/sidecar. If included
-  in model context, declare the capture-time uncertainty and which portion was sent.
-  A snapshot must not be converted to an invented edit or execution event.
-- Define fixed scope/size limits. Oversized or malformed cases receive explicit
-  exclusions; no silent truncation, deduplication, or deletion of recovery evidence.
-- Export a privacy-safe quality summary: counts, accepted/rejected/context-only
-  rows, missing question/request/execution links, timestamp issues and usable cases.
+## 5. Verify and deliver
 
-Exit: mechanically reconcile all input rows with accepted/context-only/excluded
-accounting, then inspect representative bounded joins locally. Real legacy
-conversations can appear in the UI even when question metrics are unavailable.
+Run the Python suite, frontend suite and production build; inspect a local recent
+bundle in the browser. Scan the staged diff against private source strings and
+credentials, then push only implementation/docs/synthetic tests to the integration
+branch. Neither source branch changes. No production deployment or public data
+publication is part of this task.
 
-## Phase 4 — Add bounded, reproducible analysis
+## Current status
 
-- Provide separate offline preparation/check, live analyze, and offline export
-  commands. Opening the frontend must never trigger a model request.
-- First run the synthetic examples through the full UI export path offline.
-- Prepare a fixed twenty-conversation development pilot from eligible real
-  conversations, stratified by available mode/notebook/context coverage where
-  practical, with selection rule and seed recorded before analysis. Do not select
-  cases because they yield convincing findings.
-- Inspect prompt previews and counts locally before sending. For the first real
-  run, send selected dialogue and supported minimal context, not whole captured
-  notebooks, embedded images, or the entire historical corpus.
-- Use the established Gemini provider/configuration, checking model availability
-  during implementation. One application-level request per selected session;
-  record transport attempts where possible and avoid automatic rerolling.
-- Save assessments against exact input, source/prompt/schema/model pins; reuse only
-  matching results. Preserve provider failure, rejection and incomplete states.
-- Run the evidence validator before accepting any surfaced finding. Keep later
-  recovery and conflicting checks visible. Semantic correctness remains a human
-  review question, not something the structural validator proves.
-
-Exit: saved real-session results reopen offline, every accepted citation resolves,
-and failed/rejected runs are explicit. The twenty cases are development material,
-not a validated detection benchmark or population estimate.
-
-## Phase 5 — Connect Steven's frontend
-
-- Keep his layout, session queue, timeline, evidence navigation and review panel.
-- Add local import of a validated review bundle; retain synthetic demo as an
-  explicit selectable dataset. No private data is added to source imports,
-  `frontend/public/`, JavaScript build assets, or Git.
-- Replace synthetic-only labels/types with actual dataset/session provenance.
-- Populate the findings panel from the validated model output: explanation,
-  category, precise highlighted events, recovery and uncertainty.
-- Separate filters for surfaced findings, no supported finding, insufficient
-  evidence and not analyzed. Do not fabricate high/medium priority from the
-  algorithm's three categorical decisions.
-- Keep metric-based rankings separately labeled and eligible only where the
-  required question scope and observation coverage exist. Unknown timing/check
-  metrics remain unknown; no historical 'typical time' range is manufactured.
-- Display notebook captures as snapshots with their limitations. Missing notebook
-  actions are not an empty sequence proving no activity.
-- Retain timestamp/date/timezone visibility and exact-source access. When an
-  evidence link targets an event hidden by a timeline filter, reveal it before
-  scrolling and highlighting.
-- Namespace local review storage by dataset and session identity, provide review
-  JSON download/import, and count reviews for the current dataset only. Explain
-  browser storage behavior and keep it separate from model assessments.
-- Clear stale session/review state on dataset changes or failed imports; validate
-  schemas at runtime rather than relying on a TypeScript cast.
-
-Exit: a reviewer can open a real conversation, understand why it was surfaced,
-inspect the supporting/recovery evidence, record a judgment and reopen it without
-a model call. The unchanged synthetic demo still works.
-
-## Phase 6 — Validate and deliver
-
-Tests should cover actual integration failure modes:
-
-- Source mapping, ID stability, record accounting, dates/timezones, tied times,
-  mixed/missing identity, duplicate events, malformed records and oversized inputs.
-- Snapshot-versus-edit separation, unknown question links, grader context without
-  execution links, and no fake request completion or active-time measurement.
-- Analyzer regressions: false checks, fabricated IDs, wrong-question recovery,
-  omitted recovery, unavailable models, rejected evidence and cache invalidation.
-- Python-export/TypeScript-import contract, findings-to-timeline navigation,
-  invalid-file/stale-state handling, dataset-specific reviews and literal rendering
-  of untrusted message/code content.
-- Existing anomaly-review Python tests, frontend tests and production build.
-- A desktop walkthrough with synthetic cases and a bounded private real bundle.
-- Inspect the final staged diff and built assets for private records/credentials.
-
-Deliver the new branch and a concise README with setup, offline demo, local import,
-analysis commands, exact data scope, provider behavior, and known limitations.
-Keep private inputs, prompts, responses, bundles and reviews in ignored local
-storage. Do not deploy or publish real-data pages as part of this integration.
-
-## Suggested commit sequence
-
-1. Dated integration design memo and source provenance.
-2. Preserve and package the analyzer with its fixtures/tests.
-3. Versioned review contract and private historical-event adapter.
-4. Conversation evidence assembly, accounting and offline export.
-5. Bounded model runner and saved-result handling.
-6. Frontend import, findings display and dataset-specific reviews.
-7. End-to-end verification, usage documentation and branch push.
-
-## First milestone and practical boundary
-
-The first milestone is Steven's UI displaying Austin's validated synthetic
-findings plus genuine historical conversations, followed by a fixed small real
-analysis run. It is not an all-quarter batch, a newly deployed logger, a detector
-accuracy study, or proof that a tutor caused a student's difficulty.
-
-New fully linked student telemetry, when available, can later use the existing
-strict question-episode route through the same review contract. That is an
-extension of this integration, not a prerequisite for the first real-data view.
-
-## Implementation status, October 15
-
-The isolated branch now contains the pinned analyzer, original evidence regressions,
-synthetic fixtures, JSON Schema-validated version-2 review bundles, streaming
-historical adapter, fixed pilot preparation, durable model receipts, offline
-exports and local frontend imports. Findings and instructor reviews remain separate.
-Unknown question/activity metrics are preserved. Notebook captures are display-only
-bounded excerpts; nearby checks are contextual. Private records remain outside Git.
-The legacy synthetic frontend dataset was absent from the source branch because its
-`src/data/` location matched the root data ignore rule; it has been regenerated
-from the existing fictional fixture as `demo-data.synthetic.json`.
-
-Local tests cover input accounting, conflicting/missing identity, oversized content,
-immutable preparation, failed/interrupted request preservation, contract parity,
-unknown metrics, invalid imports, evidence navigation and review isolation. Browser
-checks verified the authored findings and local import of a bounded real pilot.
-No result here establishes detection accuracy or tutor causality. A live private
-model pilot remains a separate execution step, and opening the app is offline.
+The recent PR100 adapter prepared five bounded windows with 10 matched tutor
+exchanges, 302 actual edit summaries, 48 linked execution results and 8 linked
+checks. These are coverage-selected development records, not detection results.
+The historical pilot has been superseded. All real records, prepared evidence,
+bundles and any future model receipts remain in ignored local storage. A live
+Gemini run awaits explicit approval of the credential source and recent-data send.

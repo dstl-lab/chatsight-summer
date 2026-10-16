@@ -22,7 +22,7 @@ function EventIcon({ event }: { event: TimelineEvent }) {
   const size = 17;
   if (event.kind === "student_message") return <MessageSquare size={size} />;
   if (event.kind === "tutor_response") return <Bot size={size} />;
-  if (event.kind === "code_edit") return <Code2 size={size} />;
+  if (event.kind === "code_edit" || event.kind === "code_capture") return <Code2 size={size} />;
   if (event.kind === "execution") return <Play size={size} />;
   if (event.kind === "inactivity") return <Pause size={size} />;
   if (event.kind === "activity") return <Activity size={size} />;
@@ -40,7 +40,7 @@ function phaseTitle(phase: TimelineEvent["phase"]): string | null {
   return null;
 }
 
-function CodeDiff({ before, after }: { before: string | null; after: string | null }) {
+function CodeDiff({ before, after, capture }: { before: string | null; after: string | null; capture?: boolean }) {
   return (
     <div className={`code-diff ${before === null ? "code-diff--single" : ""}`}>
       {before !== null && (
@@ -50,8 +50,8 @@ function CodeDiff({ before, after }: { before: string | null; after: string | nu
         </div>
       )}
       <div className="diff-pane diff-pane--after">
-        <span className="diff-label">{before === null ? "Submitted code" : "After"}</span>
-        <pre><code>+ {after ?? "Source unavailable"}</code></pre>
+        <span className="diff-label">{capture ? "Captured source" : before === null ? "Source" : "After"}</span>
+        <pre><code>{capture ? "" : "+ "}{after ?? "Source unavailable"}</code></pre>
       </div>
     </div>
   );
@@ -93,7 +93,7 @@ function TimelineCard({ event, highlighted }: { event: TimelineEvent; highlighte
             <p className={event.kind === "student_message" || event.kind === "tutor_response" ? "message-copy" : "event-copy"}>
               {event.body}
             </p>
-            {event.code_diff && <CodeDiff before={event.code_diff.before} after={event.code_diff.after} />}
+            {event.code_diff && <CodeDiff before={event.code_diff.before} after={event.code_diff.after} capture={event.kind === "code_capture"} />}
             {!!event.metadata.length && (
               <dl className="event-metadata">
                 {event.metadata.map((item) => (

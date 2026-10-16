@@ -31,6 +31,21 @@ describe("review bundle validation", () => {
     expect(reviewStorageKey(a)).not.toBe(reviewStorageKey(b));
     expect(() => validateReviews({ unknown: { classification: "insufficient", notes: "", savedAt: null } }, a)).toThrow();
   });
+  it("accepts notebook observation scope and renders a capture as source rather than a diff", () => {
+    const doc = bundle();
+    doc.sessions[0].scope = "notebook_session";
+    const event = doc.sessions[0].timeline.find(item => item.kind === "code_edit")!;
+    event.kind = "code_capture";
+    event.title = "Source captured at execution";
+    event.code_diff = { before: null, after: "fictional_capture = 1" };
+    render(<App dataset={parseBundle(JSON.stringify(doc))} />);
+    fireEvent.click(screen.getByRole("button", { name: /Notebook Source captured at execution/ }));
+    expect(screen.getByText("Captured source")).toBeInTheDocument();
+    expect(screen.getByText("fictional_capture = 1")).toBeInTheDocument();
+    expect(screen.getByText(/PR100 notebook observation window/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Notebook$/ }));
+    expect(screen.getByRole("button", { name: /Notebook Source captured at execution/ })).toBeInTheDocument();
+  });
 });
 
 describe("integrated review UI", () => {

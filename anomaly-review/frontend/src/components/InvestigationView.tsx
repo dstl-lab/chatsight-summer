@@ -32,7 +32,7 @@ export function InvestigationView({ session, review, onSaveReview }: Investigati
             <span className="priority-context">{session.analysis ? decisionLabel(session) : `${session.priority} priority`}</span>
           </div>
           <h2>{session.student_id} <span>/</span> {session.question_id ?? "Question unknown"}</h2>
-          <small>{session.scope === "conversation" ? "Conversation evidence; question scope is unverified" : session.scope === "question_episode" ? "Question-scoped evidence" : "Synthetic question episode"}</small>
+          <small>{session.scope === "notebook_session" ? "PR100 notebook observation window; question intent may be unknown" : session.scope === "conversation" ? "Conversation evidence; question scope is unverified" : session.scope === "question_episode" ? "Question-scoped evidence" : "Synthetic question episode"}</small>
           <p>{session.scenario}</p>
         </div>
         <div className="outcome-block">

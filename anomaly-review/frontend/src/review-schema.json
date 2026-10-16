@@ -530,7 +530,8 @@
         "scope": {
           "enum": [
             "conversation",
-            "question_episode"
+            "question_episode",
+            "notebook_session"
           ],
           "title": "Scope",
           "type": "string"
@@ -709,7 +710,8 @@
             "question_status",
             "activity",
             "inactivity",
-            "notebook_snapshot"
+            "notebook_snapshot",
+            "code_capture"
           ],
           "title": "Kind",
           "type": "string"

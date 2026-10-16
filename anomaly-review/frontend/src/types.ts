@@ -43,7 +43,8 @@ export type TimelineKind =
   | "question_status"
   | "activity"
   | "inactivity"
-  | "notebook_snapshot";
+  | "notebook_snapshot"
+  | "code_capture";
 
 export interface TimelineEvent {
   id: string;
@@ -88,7 +89,7 @@ export interface DemoSession {
   timeline: TimelineEvent[];
   source_event_refs: string[];
   quality_warnings: string[];
-  scope?: "conversation" | "question_episode";
+  scope?: "conversation" | "question_episode" | "notebook_session";
   analysis?: Analysis;
 }
 

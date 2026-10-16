@@ -1,15 +1,15 @@
 {
   "contract_version": 2,
   "dataset": {
-    "id": "findings-e9a4e3bf20a27d3cbcbffd44",
+    "id": "findings-357c84d5a336f15f9a6d9e37",
     "synthetic": true,
     "label": "Synthetic session findings",
     "notice": "All events are invented.",
     "priority_method": "No automatic priority score",
     "input_sha256": "b72c8c4e70699ee187d83732c5ff3fca829b2a6074abfca4f0abee1cc57003f4",
     "model": null,
-    "prompt_sha256": "5210d615460394ab589638af516eebfe4ba5eae53525825fc41b0f20943b5ac7",
-    "analysis_version": "session-findings-integration-v1"
+    "prompt_sha256": "e714506a006852cad999df85ac513e8dcfac3565e9c1f521f04e702d7c757738",
+    "analysis_version": "session-findings-integration-v2-pr100"
   },
   "summary": {
     "total_sessions": 6,
@@ -215,6 +215,10 @@
             {
               "label": "Execution",
               "value": "E1"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -359,6 +363,10 @@
             {
               "label": "Execution",
               "value": "E2"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -674,6 +682,10 @@
             {
               "label": "Execution",
               "value": "E1"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -818,6 +830,10 @@
             {
               "label": "Execution",
               "value": "E2"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -962,6 +978,10 @@
             {
               "label": "Execution",
               "value": "E3"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -1418,6 +1438,10 @@
             {
               "label": "Execution",
               "value": "E1"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -1562,6 +1586,10 @@
             {
               "label": "Execution",
               "value": "E2"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -1624,6 +1652,10 @@
             {
               "label": "Execution",
               "value": "E3"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -1880,6 +1912,10 @@
             {
               "label": "Execution",
               "value": "E1"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -1992,6 +2028,10 @@
             {
               "label": "Execution",
               "value": "E2"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -2054,6 +2094,10 @@
             {
               "label": "Execution",
               "value": "E3"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -2198,6 +2242,10 @@
             {
               "label": "Execution",
               "value": "E4"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -2464,6 +2512,10 @@
             {
               "label": "Execution",
               "value": "E1"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -2608,6 +2660,10 @@
             {
               "label": "Execution",
               "value": "E2"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },
@@ -2752,6 +2808,10 @@
             {
               "label": "Execution",
               "value": "E3"
+            },
+            {
+              "label": "Grader",
+              "value": "Unknown"
             }
           ]
         },

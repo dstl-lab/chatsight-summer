@@ -23,6 +23,10 @@ class Record(Model):
     timestamp: datetime
     origin: Literal["recorded", "synthetic"]
     question_id: str | None = None
+    cell_id: str | None = None
+    order_stream_id: str | None = None
+    sequence: int | None = None
+    timestamp_basis: str | None = None
 
     @model_validator(mode="after")
     def timezone_required(self):
@@ -34,6 +38,7 @@ class Record(Model):
 class Message(Record):
     role: Literal["student", "tutor"]
     text: str = Field(min_length=1)
+    request_id: str | None = None
 
 
 class Revision(Record):
@@ -41,6 +46,7 @@ class Revision(Record):
     revision_id: str
     previous_revision_id: str | None = None
     source: str
+    capture_basis: Literal["edit", "execution_capture", "request_snapshot"] = "edit"
 
 
 class Execution(Record):
@@ -49,6 +55,8 @@ class Execution(Record):
     revision_id: str | None = None
     status: Literal["success", "error", "unknown"]
     output: str | None = None
+    kernel_id: str | None = None
+    output_complete: bool | None = None
 
 
 class Check(Record):
@@ -57,9 +65,17 @@ class Check(Record):
     execution_id: str | None = None
     result: Literal["pass", "fail", "unknown"]
     feedback: str | None = None
+    grader_id: str | None = None
+    verdict_method: str | None = None
 
 
-Activity = Annotated[Revision | Execution | Check, Field(discriminator="type")]
+class Observation(Record):
+    type: Literal["edit_observation", "cell_observation", "tutor_failure"]
+    description: str
+    source_revision: int | None = None
+
+
+Activity = Annotated[Revision | Execution | Check | Observation, Field(discriminator="type")]
 
 
 class Session(Model):
@@ -126,6 +142,12 @@ implementation of advice. A pass for another question is not recovery. Unknown l
 missing activity stay unknown. No passing check observed is not proof of unfinished work.
 Every finding must cite both student and tutor messages. Highlight the smallest explanatory
 sequence, including the student's reaction. Each interpretation cites evidence IDs.
+Some recorded revisions have capture_basis execution_capture or request_snapshot. These are
+observed source states, not edit events. edit_observation records are actual logged edit bursts
+without source text. Do not infer the edited code from an edit count or source length. A linked
+execution proves which submitted source produced its result, not complete kernel memory.
+Task/active-cell metadata is structural context, not verified student question intent. Keep
+check applicability uncertain when the request's question is unknown, even with an execution link.
 Facts are machine-checkable only: before(record_id, related_id), check_result(record_id,
 result), revision_executed(revision record_id, execution related_id), execution_checked
 (execution record_id, check related_id). No other factual assertion is automatically verified.
@@ -163,6 +185,13 @@ def assemble(session: Session) -> dict:
             warnings.append(f"{earlier.id}/{later.id}: equal timestamps; order comes from explicit link")
         links.append({"from_id": earlier.id, "to_id": later.id, "relationship": relationship})
 
+    requests = {}
+    for record in session.messages:
+        if record.request_id:
+            requests.setdefault(record.request_id, {}).setdefault(record.role, []).append(record)
+    for pair in requests.values():
+        if len(pair.get("student", [])) == len(pair.get("tutor", [])) == 1:
+            link(pair["student"][0], pair["tutor"][0], "responds_to_request")
     for record in records:
         if not record.question_id:
             warnings.append(f"{record.id}: question unknown")

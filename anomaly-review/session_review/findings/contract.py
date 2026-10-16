@@ -51,7 +51,7 @@ class TimelineEvent(Model):
     id: str
     source_event_id: str | None = None
     kind: Literal["student_message", "tutor_response", "code_edit", "execution",
-                  "check_result", "question_status", "activity", "inactivity", "notebook_snapshot"]
+                  "check_result", "question_status", "activity", "inactivity", "notebook_snapshot", "code_capture"]
     actor: str
     title: str
     body: str
@@ -104,7 +104,7 @@ class ReviewSession(Model):
     priority_basis: str
     scenario: str
     synthetic: bool
-    scope: Literal["conversation", "question_episode"]
+    scope: Literal["conversation", "question_episode", "notebook_session"]
     student_id: str
     question_id: str | None = None
     assignment_id: str | None = None

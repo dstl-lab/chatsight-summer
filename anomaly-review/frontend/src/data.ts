@@ -34,7 +34,7 @@ export function filterTimeline(events: TimelineEvent[], filter: TimelineFilter):
   if (filter === "all") return events;
   const groups: Record<Exclude<TimelineFilter, "all">, TimelineEvent["kind"][]> = {
     conversation: ["student_message", "tutor_response"],
-    notebook: ["code_edit", "execution", "activity", "inactivity", "notebook_snapshot"],
+    notebook: ["code_edit", "execution", "activity", "inactivity", "notebook_snapshot", "code_capture"],
     checks: ["check_result", "question_status"],
   };
   return events.filter((event) => groups[filter].includes(event.kind));

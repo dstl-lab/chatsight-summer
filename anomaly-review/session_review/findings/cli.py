@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 from . import analyze_sessions as analyzer
-from . import bundle, historical, runner
+from . import bundle, historical, runner, recent
 from .contract import ReviewBundle
 
 
@@ -18,6 +18,11 @@ def main(argv=None):
     prepare.add_argument("--output", type=Path, required=True)
     prepare.add_argument("--count", type=int, default=20)
     prepare.add_argument("--seed", type=int, default=15)
+    pr100 = sub.add_parser("prepare-recent", help="Use recent PR100 notebook actions and explicit request/execution bindings; no historical fallback")
+    pr100.add_argument("input", type=Path)
+    pr100.add_argument("--output", type=Path, required=True)
+    pr100.add_argument("--count", type=int, default=5)
+    pr100.add_argument("--seed", type=int, default=15)
     export = sub.add_parser("export", help="Open prepared data/results offline as a UI bundle")
     analyze = sub.add_parser("analyze", help="One request per untouched session; requires --send")
     for command in (export, analyze):
@@ -33,6 +38,10 @@ def main(argv=None):
     schema = sub.add_parser("schema", help="Write the shared contract's JSON Schema")
     schema.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.command == "prepare-recent":
+        manifest = recent.prepare(args.input, args.output, count=args.count, seed=args.seed)
+        print(json.dumps({"selected_sessions": len(manifest["selected_session_ids"]), "eligible_sessions": manifest["eligible_notebook_sessions"], "exclusions": manifest["exclusions"], "quality": manifest["quality"]}))
+        return 0
     if args.command == "prepare":
         manifest = historical.prepare(args.input, args.output, count=args.count, seed=args.seed)
         print(json.dumps({"selected_sessions": len(manifest["selected_session_ids"]), "quality": manifest["quality"],
@@ -63,7 +72,7 @@ def main(argv=None):
         analysis = args.analysis or args.prepared / "analysis"
         if args.command == "analyze":
             if not args.send:
-                parser.error("--send is required. Selected dialogue/warnings will be sent to Gemini.")
+                parser.error("--send is required. Prepared evidence, including any code/output records, will be sent to Gemini.")
             if not os.environ.get("GEMINI_API_KEY"):
                 key = os.environ.get("GOOGLE_API_KEY")
                 if not key:
