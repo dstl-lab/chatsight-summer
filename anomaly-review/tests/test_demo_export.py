@@ -6,7 +6,7 @@ from pathlib import Path
 from session_review.demo_export import build_demo
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "frontend_demo_sessions.json"
-FRONTEND_DATA = Path(__file__).parents[1] / "frontend" / "src" / "data" / "demo-data.json"
+FRONTEND_DATA = Path(__file__).parents[1] / "frontend" / "src" / "demo-data.synthetic.json"
 
 
 def test_demo_contract_has_four_synthetic_scenarios():

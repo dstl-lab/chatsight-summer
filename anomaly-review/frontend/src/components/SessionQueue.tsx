@@ -2,6 +2,7 @@ import { Check, ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { metricCount, metricDuration, referenceLabel } from "../data";
 import type { DemoSession, Priority } from "../types";
+import { decisionLabel } from "../bundle";
 
 interface SessionQueueProps {
   sessions: DemoSession[];
@@ -19,14 +20,19 @@ const priorityLabel: Record<Priority, string> = {
 export function SessionQueue({ sessions, selectedId, reviewedIds, onSelect }: SessionQueueProps) {
   const [query, setQuery] = useState("");
   const [priority, setPriority] = useState<"all" | Priority>("all");
+  const [decision, setDecision] = useState("all");
+  const hasAnalysis = sessions.some(session => session.analysis);
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return sessions.filter((session) => {
-      const matchesText = !normalized || [session.student_id, session.question_id, session.scenario]
+      const matchesText = !normalized || [session.student_id, session.question_id ?? "question unknown", session.scenario]
         .some((value) => value.toLowerCase().includes(normalized));
-      return matchesText && (priority === "all" || session.priority === priority);
+      const analysisState = session.analysis?.state;
+      const matchesDecision = decision === "all" ||
+        (decision === "not_analyzed" ? analysisState === "not_analyzed" : session.analysis?.decision === decision);
+      return matchesText && (priority === "all" || session.priority === priority) && matchesDecision;
     });
-  }, [priority, query, sessions]);
+  }, [priority, query, sessions, decision]);
 
   return (
     <aside className="queue-panel" aria-label="Session review queue">
@@ -41,7 +47,16 @@ export function SessionQueue({ sessions, selectedId, reviewedIds, onSelect }: Se
           <input value={query} onChange={(event) => setQuery(event.target.value)}
                  placeholder="Search student or question" />
         </label>
-        <label className="select-control">
+        {hasAnalysis ? <label className="select-control">
+          <span className="sr-only">Filter by analysis decision</span>
+          <select value={decision} onChange={event => setDecision(event.target.value)}>
+            <option value="all">All analysis states</option>
+            <option value="surface">Flagged for review</option>
+            <option value="no_supported_finding">No supported finding</option>
+            <option value="insufficient_evidence">Insufficient evidence</option>
+            <option value="not_analyzed">Not analyzed</option>
+          </select>
+        </label> : <label className="select-control">
           <span className="sr-only">Filter by priority</span>
           <select value={priority} onChange={(event) => setPriority(event.target.value as "all" | Priority)}>
             <option value="all">All priorities</option>
@@ -49,7 +64,7 @@ export function SessionQueue({ sessions, selectedId, reviewedIds, onSelect }: Se
             <option value="medium">Medium</option>
             <option value="routine">Routine</option>
           </select>
-        </label>
+        </label>}
       </div>
       <div className="queue-list">
         {visible.map((session) => (
@@ -58,20 +73,20 @@ export function SessionQueue({ sessions, selectedId, reviewedIds, onSelect }: Se
             <span className="queue-main">
               <span className="queue-title-line">
                 <strong>{session.student_id}</strong>
-                <span className="question-id">{session.question_id}</span>
+                <span className="question-id">{session.question_id ?? "Question unknown"}</span>
                 {reviewedIds.has(session.id) && <Check size={14} className="reviewed-check" aria-label="Reviewed" />}
               </span>
             </span>
             <span className="queue-evidence">
               <span><b>{metricDuration(session.active_time)}</b> <small>active</small></span>
-              <span className="reference-copy">Typical {referenceLabel(
+              <span className="reference-copy">{session.reference_active_time.status === "illustrative" ? "Illustrative" : "Reference"} {referenceLabel(
                 session.reference_active_time.lower_seconds,
                 session.reference_active_time.upper_seconds,
               )}</span>
               <span><b>{metricCount(session.failed_checks_after_help)}</b> <small>post-help fails</small></span>
             </span>
             <span className={`priority-text priority-text--${session.priority}`}>
-              <i aria-hidden="true" /> {priorityLabel[session.priority]}
+              <i aria-hidden="true" /> {session.analysis ? decisionLabel(session) : session.priority ? priorityLabel[session.priority] : "Not ranked"}
             </span>
             <ChevronRight size={17} className="queue-chevron" aria-hidden="true" />
           </button>

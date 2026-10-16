@@ -1,0 +1,2880 @@
+{
+  "contract_version": 2,
+  "dataset": {
+    "id": "findings-e9a4e3bf20a27d3cbcbffd44",
+    "synthetic": true,
+    "label": "Synthetic session findings",
+    "notice": "All events are invented.",
+    "priority_method": "No automatic priority score",
+    "input_sha256": "b72c8c4e70699ee187d83732c5ff3fca829b2a6074abfca4f0abee1cc57003f4",
+    "model": null,
+    "prompt_sha256": "5210d615460394ab589638af516eebfe4ba5eae53525825fc41b0f20943b5ac7",
+    "analysis_version": "session-findings-integration-v1"
+  },
+  "summary": {
+    "total_sessions": 6,
+    "flagged_sessions": 3,
+    "high_priority_sessions": 0
+  },
+  "sessions": [
+    {
+      "id": "S01-persistence",
+      "review_rank": 1,
+      "flagged": true,
+      "priority": null,
+      "priority_basis": "Model decisions are review findings, not priority scores.",
+      "scenario": "Hypothetical persistent difficulty after a changed attempt and repeated guidance.",
+      "synthetic": true,
+      "scope": "question_episode",
+      "student_id": "Authored example",
+      "question_id": "Q1",
+      "assignment_id": null,
+      "outcome": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No validated active-work measure.",
+        "evidence_refs": []
+      },
+      "post_help_active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "elapsed_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded span is not active work time.",
+        "evidence_refs": []
+      },
+      "reference_active_time": {
+        "status": "unknown",
+        "lower_seconds": null,
+        "upper_seconds": null,
+        "basis": "No valid question-level active-time baseline."
+      },
+      "failed_checks_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 2.0,
+        "reason": null,
+        "evidence_refs": [
+          "M1",
+          "M3"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded messages do not certify response completion.",
+        "evidence_refs": []
+      },
+      "repeated_failures": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "continued_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "resumed_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "reasons": [
+        {
+          "id": "finding-1",
+          "title": "Difficulty persisted after help",
+          "description": "The edit implements the stated operator change, but failure and the reported empty result persist; guidance repeats.",
+          "supporting_refs": [
+            "M1",
+            "M2",
+            "R2",
+            "E2",
+            "C2",
+            "M3",
+            "M4"
+          ],
+          "supporting_event_ids": [
+            "M1",
+            "M2",
+            "R2",
+            "E2",
+            "C2",
+            "M3",
+            "M4"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "R1",
+          "source_event_id": "R1",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": null,
+            "after": "table[table.score > 10]"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "E1",
+          "source_event_id": "E1",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:01:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "C1",
+          "source_event_id": "C1",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            }
+          ]
+        },
+        {
+          "id": "M1",
+          "source_event_id": "M1",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "My filter returns no rows.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M2",
+          "source_event_id": "M2",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Change > to >=.",
+          "occurred_at": "2026-10-01T12:03:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "R2",
+          "source_event_id": "R2",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:04:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": "table[table.score > 10]",
+            "after": "table[table.score >= 10]"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "E2",
+          "source_event_id": "E2",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:05:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "C2",
+          "source_event_id": "C2",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:06:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            }
+          ]
+        },
+        {
+          "id": "M3",
+          "source_event_id": "M3",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "I changed it to >=, but it still returns no rows.",
+          "occurred_at": "2026-10-01T12:07:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M4",
+          "source_event_id": "M4",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Change > to >=.",
+          "occurred_at": "2026-10-01T12:08:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        }
+      ],
+      "source_event_refs": [
+        "R1",
+        "E1",
+        "C1",
+        "M1",
+        "M2",
+        "R2",
+        "E2",
+        "C2",
+        "M3",
+        "M4"
+      ],
+      "quality_warnings": [],
+      "analysis": {
+        "state": "completed",
+        "decision": "surface",
+        "summary": "Hypothetical persistent difficulty after a changed attempt and repeated guidance.",
+        "findings": [
+          {
+            "category": "persistent_difficulty",
+            "explanation": "The edit implements the stated operator change, but failure and the reported empty result persist; guidance repeats.",
+            "interpretations": [
+              {
+                "statement": "The student reports trying the same change that appears in the revision; the tutor repeats it.",
+                "evidence_ids": [
+                  "M1",
+                  "M2",
+                  "R2",
+                  "E2",
+                  "C2",
+                  "M3",
+                  "M4"
+                ]
+              }
+            ],
+            "facts": [
+              {
+                "kind": "revision_executed",
+                "record_id": "R2",
+                "related_id": "E2",
+                "result": null
+              },
+              {
+                "kind": "execution_checked",
+                "record_id": "E2",
+                "related_id": "C2",
+                "result": null
+              },
+              {
+                "kind": "check_result",
+                "record_id": "C2",
+                "related_id": null,
+                "result": "fail"
+              },
+              {
+                "kind": "before",
+                "record_id": "M2",
+                "related_id": "C2",
+                "result": null
+              }
+            ],
+            "highlight_ids": [
+              "M1",
+              "M2",
+              "R2",
+              "E2",
+              "C2",
+              "M3",
+              "M4"
+            ],
+            "recovery_evidence_ids": [],
+            "uncertainties": [
+              "All evidence is invented; this finding concerns a hypothetical scenario.",
+              "Semantic interpretation is not established by structural validation."
+            ]
+          }
+        ],
+        "validation_errors": [],
+        "notices": [
+          "finding 1: synthetic evidence C2, E2, M1, M2, M3, M4, R2; interpretations using it are hypothetical"
+        ],
+        "model": null,
+        "source": "authored offline assessments, not model inference",
+        "semantic_interpretations_verified": false
+      }
+    },
+    {
+      "id": "S02-progress",
+      "review_rank": 2,
+      "flagged": false,
+      "priority": null,
+      "priority_basis": "Model decisions are review findings, not priority scores.",
+      "scenario": "Different obstacles were addressed, with a later passing check; failure count alone does not establish a problem.",
+      "synthetic": true,
+      "scope": "question_episode",
+      "student_id": "Authored example",
+      "question_id": "Q1",
+      "assignment_id": null,
+      "outcome": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No validated active-work measure.",
+        "evidence_refs": []
+      },
+      "post_help_active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "elapsed_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded span is not active work time.",
+        "evidence_refs": []
+      },
+      "reference_active_time": {
+        "status": "unknown",
+        "lower_seconds": null,
+        "upper_seconds": null,
+        "basis": "No valid question-level active-time baseline."
+      },
+      "failed_checks_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 3.0,
+        "reason": null,
+        "evidence_refs": [
+          "M1",
+          "M3",
+          "M5"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded messages do not certify response completion.",
+        "evidence_refs": []
+      },
+      "repeated_failures": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "continued_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "resumed_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "reasons": [],
+      "timeline": [
+        {
+          "id": "R1",
+          "source_event_id": "R1",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": null,
+            "after": "table.get('scores')"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "E1",
+          "source_event_id": "E1",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "missing column",
+          "occurred_at": "2026-10-01T12:01:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "C1",
+          "source_event_id": "C1",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            }
+          ]
+        },
+        {
+          "id": "M1",
+          "source_event_id": "M1",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "It says the column is missing.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M2",
+          "source_event_id": "M2",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Use score instead of scores.",
+          "occurred_at": "2026-10-01T12:03:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "R2",
+          "source_event_id": "R2",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:04:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": "table.get('scores')",
+            "after": "table.get('score')"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "E2",
+          "source_event_id": "E2",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:05:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "C2",
+          "source_event_id": "C2",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Expected scalar",
+          "occurred_at": "2026-10-01T12:06:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            }
+          ]
+        },
+        {
+          "id": "M3",
+          "source_event_id": "M3",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "Now it runs, but the grader wants a scalar.",
+          "occurred_at": "2026-10-01T12:07:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M4",
+          "source_event_id": "M4",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Select the first item to obtain the scalar.",
+          "occurred_at": "2026-10-01T12:08:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "R3",
+          "source_event_id": "R3",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:09:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": "table.get('score')",
+            "after": "table.get('score').iloc[0]"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R3"
+            }
+          ]
+        },
+        {
+          "id": "E3",
+          "source_event_id": "E3",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:10:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E3"
+            },
+            {
+              "label": "Revision",
+              "value": "R3"
+            }
+          ]
+        },
+        {
+          "id": "C3",
+          "source_event_id": "C3",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check pass",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:11:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E3"
+            }
+          ]
+        },
+        {
+          "id": "M5",
+          "source_event_id": "M5",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "That passed.",
+          "occurred_at": "2026-10-01T12:12:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        }
+      ],
+      "source_event_refs": [
+        "R1",
+        "E1",
+        "C1",
+        "M1",
+        "M2",
+        "R2",
+        "E2",
+        "C2",
+        "M3",
+        "M4",
+        "R3",
+        "E3",
+        "C3",
+        "M5"
+      ],
+      "quality_warnings": [],
+      "analysis": {
+        "state": "completed",
+        "decision": "no_supported_finding",
+        "summary": "Different obstacles were addressed, with a later passing check; failure count alone does not establish a problem.",
+        "findings": [],
+        "validation_errors": [],
+        "notices": [],
+        "model": null,
+        "source": "authored offline assessments, not model inference",
+        "semantic_interpretations_verified": false
+      }
+    },
+    {
+      "id": "S03-mismatch",
+      "review_rank": 3,
+      "flagged": true,
+      "priority": null,
+      "priority_basis": "Model decisions are review findings, not priority scores.",
+      "scenario": "Hypothetical explicit repair of a request/response mismatch.",
+      "synthetic": true,
+      "scope": "question_episode",
+      "student_id": "Authored example",
+      "question_id": "Q1",
+      "assignment_id": null,
+      "outcome": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No validated active-work measure.",
+        "evidence_refs": []
+      },
+      "post_help_active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "elapsed_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded span is not active work time.",
+        "evidence_refs": []
+      },
+      "reference_active_time": {
+        "status": "unknown",
+        "lower_seconds": null,
+        "upper_seconds": null,
+        "basis": "No valid question-level active-time baseline."
+      },
+      "failed_checks_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 2.0,
+        "reason": null,
+        "evidence_refs": [
+          "M1",
+          "M3"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded messages do not certify response completion.",
+        "evidence_refs": []
+      },
+      "repeated_failures": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "continued_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "resumed_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "reasons": [
+        {
+          "id": "finding-1",
+          "title": "Response missed the student's request",
+          "description": "The response supplies replacement code despite a request for explanation, and the student explicitly corrects the mismatch.",
+          "supporting_refs": [
+            "M1",
+            "M2",
+            "M3"
+          ],
+          "supporting_event_ids": [
+            "M1",
+            "M2",
+            "M3"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "M1",
+          "source_event_id": "M1",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "Can you explain why this expression works? Please do not just replace it.",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M2",
+          "source_event_id": "M2",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Replace it with this code: result = values.sum().",
+          "occurred_at": "2026-10-01T12:01:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M3",
+          "source_event_id": "M3",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "I am asking why the original expression works, not for replacement code.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        }
+      ],
+      "source_event_refs": [
+        "M1",
+        "M2",
+        "M3"
+      ],
+      "quality_warnings": [
+        "No notebook activity supplied; absence is not inactivity."
+      ],
+      "analysis": {
+        "state": "completed",
+        "decision": "surface",
+        "summary": "Hypothetical explicit repair of a request/response mismatch.",
+        "findings": [
+          {
+            "category": "request_mismatch",
+            "explanation": "The response supplies replacement code despite a request for explanation, and the student explicitly corrects the mismatch.",
+            "interpretations": [
+              {
+                "statement": "The student restates the requested explanation after receiving replacement code.",
+                "evidence_ids": [
+                  "M1",
+                  "M2",
+                  "M3"
+                ]
+              }
+            ],
+            "facts": [],
+            "highlight_ids": [
+              "M1",
+              "M2",
+              "M3"
+            ],
+            "recovery_evidence_ids": [],
+            "uncertainties": [
+              "All evidence is invented; this finding concerns a hypothetical scenario.",
+              "Semantic interpretation is not established by structural validation."
+            ]
+          }
+        ],
+        "validation_errors": [],
+        "notices": [
+          "No notebook activity supplied; absence is not inactivity.",
+          "finding 1: synthetic evidence M1, M2, M3; interpretations using it are hypothetical"
+        ],
+        "model": null,
+        "source": "authored offline assessments, not model inference",
+        "semantic_interpretations_verified": false
+      }
+    },
+    {
+      "id": "S04-other-question",
+      "review_rank": 4,
+      "flagged": false,
+      "priority": null,
+      "priority_basis": "Model decisions are review findings, not priority scores.",
+      "scenario": "The Q2 pass is not Q1 recovery; a relevant attempted change is not established, and the final tutor response requests diagnostic information.",
+      "synthetic": true,
+      "scope": "conversation",
+      "student_id": "Authored example",
+      "question_id": null,
+      "assignment_id": null,
+      "outcome": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No validated active-work measure.",
+        "evidence_refs": []
+      },
+      "post_help_active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "elapsed_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded span is not active work time.",
+        "evidence_refs": []
+      },
+      "reference_active_time": {
+        "status": "unknown",
+        "lower_seconds": null,
+        "upper_seconds": null,
+        "basis": "No valid question-level active-time baseline."
+      },
+      "failed_checks_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 2.0,
+        "reason": null,
+        "evidence_refs": [
+          "M1",
+          "M3"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded messages do not certify response completion.",
+        "evidence_refs": []
+      },
+      "repeated_failures": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "continued_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "resumed_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "reasons": [],
+      "timeline": [
+        {
+          "id": "R1",
+          "source_event_id": "R1",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": null,
+            "after": "answer1 = 0"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "E1",
+          "source_event_id": "E1",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:01:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "C1",
+          "source_event_id": "C1",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            }
+          ]
+        },
+        {
+          "id": "M1",
+          "source_event_id": "M1",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "Q1 still fails.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M2",
+          "source_event_id": "M2",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Try changing the comparison.",
+          "occurred_at": "2026-10-01T12:03:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "R2",
+          "source_event_id": "R2",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:04:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": null,
+            "after": "answer2 = 1"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q2"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "E2",
+          "source_event_id": "E2",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:05:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q2"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "C2",
+          "source_event_id": "C2",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check pass",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:06:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q2"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            }
+          ]
+        },
+        {
+          "id": "E3",
+          "source_event_id": "E3",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:08:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E3"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "C3",
+          "source_event_id": "C3",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:09:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E3"
+            }
+          ]
+        },
+        {
+          "id": "M3",
+          "source_event_id": "M3",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "Q1 still does not work.",
+          "occurred_at": "2026-10-01T12:10:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M4",
+          "source_event_id": "M4",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "What output are you getting?",
+          "occurred_at": "2026-10-01T12:11:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        }
+      ],
+      "source_event_refs": [
+        "R1",
+        "E1",
+        "C1",
+        "M1",
+        "M2",
+        "R2",
+        "E2",
+        "C2",
+        "E3",
+        "C3",
+        "M3",
+        "M4"
+      ],
+      "quality_warnings": [],
+      "analysis": {
+        "state": "completed",
+        "decision": "insufficient_evidence",
+        "summary": "The Q2 pass is not Q1 recovery; a relevant attempted change is not established, and the final tutor response requests diagnostic information.",
+        "findings": [],
+        "validation_errors": [],
+        "notices": [],
+        "model": null,
+        "source": "authored offline assessments, not model inference",
+        "semantic_interpretations_verified": false
+      }
+    },
+    {
+      "id": "S05-unchanged-retries",
+      "review_rank": 5,
+      "flagged": false,
+      "priority": null,
+      "priority_basis": "Model decisions are review findings, not priority scores.",
+      "scenario": "Repeated failed executions used unchanged source. The suggested change was then made and a check passed; repeated guidance alone is not an ineffective-help finding.",
+      "synthetic": true,
+      "scope": "question_episode",
+      "student_id": "Authored example",
+      "question_id": "Q1",
+      "assignment_id": null,
+      "outcome": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No validated active-work measure.",
+        "evidence_refs": []
+      },
+      "post_help_active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "elapsed_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded span is not active work time.",
+        "evidence_refs": []
+      },
+      "reference_active_time": {
+        "status": "unknown",
+        "lower_seconds": null,
+        "upper_seconds": null,
+        "basis": "No valid question-level active-time baseline."
+      },
+      "failed_checks_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 3.0,
+        "reason": null,
+        "evidence_refs": [
+          "M1",
+          "M3",
+          "M5"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded messages do not certify response completion.",
+        "evidence_refs": []
+      },
+      "repeated_failures": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "continued_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "resumed_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "reasons": [],
+      "timeline": [
+        {
+          "id": "R1",
+          "source_event_id": "R1",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": null,
+            "after": "print(result)"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "E1",
+          "source_event_id": "E1",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: error.",
+          "occurred_at": "2026-10-01T12:01:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "C1",
+          "source_event_id": "C1",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            }
+          ]
+        },
+        {
+          "id": "M1",
+          "source_event_id": "M1",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "This variable is not defined.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M2",
+          "source_event_id": "M2",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Rename result to answer.",
+          "occurred_at": "2026-10-01T12:03:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "E2",
+          "source_event_id": "E2",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: error.",
+          "occurred_at": "2026-10-01T12:04:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "C2",
+          "source_event_id": "C2",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:05:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            }
+          ]
+        },
+        {
+          "id": "E3",
+          "source_event_id": "E3",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: error.",
+          "occurred_at": "2026-10-01T12:06:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E3"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "C3",
+          "source_event_id": "C3",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:07:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E3"
+            }
+          ]
+        },
+        {
+          "id": "M3",
+          "source_event_id": "M3",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "Still broken.",
+          "occurred_at": "2026-10-01T12:08:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M4",
+          "source_event_id": "M4",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "You still need to rename result to answer.",
+          "occurred_at": "2026-10-01T12:09:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "R2",
+          "source_event_id": "R2",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:10:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": "print(result)",
+            "after": "print(answer)"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "E4",
+          "source_event_id": "E4",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:11:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E4"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "C4",
+          "source_event_id": "C4",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check pass",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:12:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E4"
+            }
+          ]
+        },
+        {
+          "id": "M5",
+          "source_event_id": "M5",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "It works now.",
+          "occurred_at": "2026-10-01T12:13:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        }
+      ],
+      "source_event_refs": [
+        "R1",
+        "E1",
+        "C1",
+        "M1",
+        "M2",
+        "E2",
+        "C2",
+        "E3",
+        "C3",
+        "M3",
+        "M4",
+        "R2",
+        "E4",
+        "C4",
+        "M5"
+      ],
+      "quality_warnings": [],
+      "analysis": {
+        "state": "completed",
+        "decision": "no_supported_finding",
+        "summary": "Repeated failed executions used unchanged source. The suggested change was then made and a check passed; repeated guidance alone is not an ineffective-help finding.",
+        "findings": [],
+        "validation_errors": [],
+        "notices": [],
+        "model": null,
+        "source": "authored offline assessments, not model inference",
+        "semantic_interpretations_verified": false
+      }
+    },
+    {
+      "id": "S06-recovered-obstacle",
+      "review_rank": 6,
+      "flagged": true,
+      "priority": null,
+      "priority_basis": "Model decisions are review findings, not priority scores.",
+      "scenario": "Hypothetical obstacle following advice, followed by explicit correction and a passing check.",
+      "synthetic": true,
+      "scope": "question_episode",
+      "student_id": "Authored example",
+      "question_id": "Q1",
+      "assignment_id": null,
+      "outcome": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No validated active-work measure.",
+        "evidence_refs": []
+      },
+      "post_help_active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "elapsed_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded span is not active work time.",
+        "evidence_refs": []
+      },
+      "reference_active_time": {
+        "status": "unknown",
+        "lower_seconds": null,
+        "upper_seconds": null,
+        "basis": "No valid question-level active-time baseline."
+      },
+      "failed_checks_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 3.0,
+        "reason": null,
+        "evidence_refs": [
+          "M1",
+          "M3",
+          "M5"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Recorded messages do not certify response completion.",
+        "evidence_refs": []
+      },
+      "repeated_failures": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "continued_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "resumed_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "Unavailable: question applicability, action timing and completion are not established.",
+        "evidence_refs": []
+      },
+      "reasons": [
+        {
+          "id": "finding-1",
+          "title": "Obstacle associated with tutor advice",
+          "description": "The attempted method matches the advice and the execution reports that method as unavailable. The tutor corrects it, followed by recovery.",
+          "supporting_refs": [
+            "M1",
+            "M2",
+            "R2",
+            "E2",
+            "C2",
+            "M3",
+            "M4",
+            "R3",
+            "E3",
+            "C3",
+            "M5"
+          ],
+          "supporting_event_ids": [
+            "M1",
+            "M2",
+            "R2",
+            "E2",
+            "C2",
+            "M3",
+            "M4",
+            "R3",
+            "E3",
+            "C3",
+            "M5"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "R1",
+          "source_event_id": "R1",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": null,
+            "after": "counts = None"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "E1",
+          "source_event_id": "E1",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:01:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            },
+            {
+              "label": "Revision",
+              "value": "R1"
+            }
+          ]
+        },
+        {
+          "id": "C1",
+          "source_event_id": "C1",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E1"
+            }
+          ]
+        },
+        {
+          "id": "M1",
+          "source_event_id": "M1",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "How do I get group counts in Babypandas?",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M2",
+          "source_event_id": "M2",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Call table.groupby(\"kind\").size().",
+          "occurred_at": "2026-10-01T12:03:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "R2",
+          "source_event_id": "R2",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:04:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": "counts = None",
+            "after": "counts = table.groupby(\"kind\").size()"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "E2",
+          "source_event_id": "E2",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "AttributeError: size",
+          "occurred_at": "2026-10-01T12:05:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            },
+            {
+              "label": "Revision",
+              "value": "R2"
+            }
+          ]
+        },
+        {
+          "id": "C2",
+          "source_event_id": "C2",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:06:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E2"
+            }
+          ]
+        },
+        {
+          "id": "M3",
+          "source_event_id": "M3",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "I used size(), but Babypandas says that method does not exist.",
+          "occurred_at": "2026-10-01T12:07:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "M4",
+          "source_event_id": "M4",
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "That method is unavailable here. Use count() and select the relevant column.",
+          "occurred_at": "2026-10-01T12:08:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        },
+        {
+          "id": "R3",
+          "source_event_id": "R3",
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Authored or explicitly supplied revision; no execution inferred.",
+          "occurred_at": "2026-10-01T12:09:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": {
+            "before": "counts = table.groupby(\"kind\").size()",
+            "after": "counts = table.groupby(\"kind\").count().get(\"value\")"
+          },
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Revision",
+              "value": "R3"
+            }
+          ]
+        },
+        {
+          "id": "E3",
+          "source_event_id": "E3",
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution status: success.",
+          "occurred_at": "2026-10-01T12:10:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E3"
+            },
+            {
+              "label": "Revision",
+              "value": "R3"
+            }
+          ]
+        },
+        {
+          "id": "C3",
+          "source_event_id": "C3",
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check pass",
+          "body": "Supplied check observation.",
+          "occurred_at": "2026-10-01T12:11:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            },
+            {
+              "label": "Execution",
+              "value": "E3"
+            }
+          ]
+        },
+        {
+          "id": "M5",
+          "source_event_id": "M5",
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "That passed.",
+          "occurred_at": "2026-10-01T12:12:00Z",
+          "phase": "unpartitioned",
+          "order_uncertain": false,
+          "duration_seconds": null,
+          "source_pointers": [],
+          "supporting_refs": [],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Origin",
+              "value": "synthetic"
+            },
+            {
+              "label": "Question",
+              "value": "Q1"
+            }
+          ]
+        }
+      ],
+      "source_event_refs": [
+        "R1",
+        "E1",
+        "C1",
+        "M1",
+        "M2",
+        "R2",
+        "E2",
+        "C2",
+        "M3",
+        "M4",
+        "R3",
+        "E3",
+        "C3",
+        "M5"
+      ],
+      "quality_warnings": [],
+      "analysis": {
+        "state": "completed",
+        "decision": "surface",
+        "summary": "Hypothetical obstacle following advice, followed by explicit correction and a passing check.",
+        "findings": [
+          {
+            "category": "advice_linked_obstacle",
+            "explanation": "The attempted method matches the advice and the execution reports that method as unavailable. The tutor corrects it, followed by recovery.",
+            "interpretations": [
+              {
+                "statement": "The proposed method is associated with the reported execution obstacle; later guidance changes the method.",
+                "evidence_ids": [
+                  "M1",
+                  "M2",
+                  "R2",
+                  "E2",
+                  "C2",
+                  "M3",
+                  "M4"
+                ]
+              }
+            ],
+            "facts": [
+              {
+                "kind": "revision_executed",
+                "record_id": "R2",
+                "related_id": "E2",
+                "result": null
+              },
+              {
+                "kind": "execution_checked",
+                "record_id": "E2",
+                "related_id": "C2",
+                "result": null
+              },
+              {
+                "kind": "check_result",
+                "record_id": "C2",
+                "related_id": null,
+                "result": "fail"
+              },
+              {
+                "kind": "check_result",
+                "record_id": "C3",
+                "related_id": null,
+                "result": "pass"
+              }
+            ],
+            "highlight_ids": [
+              "M1",
+              "M2",
+              "R2",
+              "E2",
+              "C2",
+              "M3",
+              "M4"
+            ],
+            "recovery_evidence_ids": [
+              "R3",
+              "E3",
+              "C3",
+              "M5"
+            ],
+            "uncertainties": [
+              "All evidence is invented; this finding concerns a hypothetical scenario.",
+              "Semantic interpretation is not established by structural validation."
+            ]
+          }
+        ],
+        "validation_errors": [],
+        "notices": [
+          "finding 1: synthetic evidence C2, C3, E2, E3, M1, M2, M3, M4, M5, R2, R3; interpretations using it are hypothetical"
+        ],
+        "model": null,
+        "source": "authored offline assessments, not model inference",
+        "semantic_interpretations_verified": false
+      }
+    }
+  ]
+}

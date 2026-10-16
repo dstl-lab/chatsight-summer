@@ -3,7 +3,7 @@ name = "tutor-session-review"
 version = "0.1.0"
 description = "Independent event validation and question-session reconstruction"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2.0,<3"]
+dependencies = ["pydantic>=2.0,<3", "google-genai>=1.0.0", "python-dotenv>=1.2.1"]
 
 [dependency-groups]
 dev = ["pytest>=9,<10"]
@@ -15,6 +15,7 @@ session-demo-export = "session_review.demo_export:main"
 session-rank = "session_review.ranking_cli:main"
 session-ranking-demo = "session_review.phase3b_demo:main"
 session-real-validate = "session_review.phase2c_cli:main"
+session-findings = "session_review.findings.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,0 +1,10 @@
+{
+  "source_repository": "dstl-lab/dsc10-tutor-jlab",
+  "source_branch": "codex/session-findings-prototype",
+  "source_commit": "25a146e10926108bbdfbcfd99438c955d122ac49",
+  "copied_files": {
+    "analyze_sessions.py": "c84119242327379eb9c1da502e4646eb04a440399a7c0879297354964e1addfa",
+    "text_report.py": "1fbdb367950ec524125ed5f30f54d56090735242708c9d0e39233490647a3ba3"
+  },
+  "port_changes": "Package imports and fixture paths in tests only; analyzer behavior initially unchanged."
+}

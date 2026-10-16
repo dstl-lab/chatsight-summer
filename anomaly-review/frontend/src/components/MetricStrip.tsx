@@ -22,7 +22,7 @@ export function MetricStrip({ session }: { session: DemoSession }) {
           {active !== null && <span className="active-marker" style={{ left: `${activeWidth}%` }} />}
         </div>
         <div className="metric-detail">
-          Typical: {referenceLabel(reference.lower_seconds, reference.upper_seconds)} · Post-help: {metricDuration(session.post_help_active_time)}
+          {reference.status === "illustrative" ? "Illustrative reference" : "Reference unavailable"}: {referenceLabel(reference.lower_seconds, reference.upper_seconds)} · Post-help: {metricDuration(session.post_help_active_time)}
         </div>
       </div>
       <div className="metric-cell">
@@ -31,7 +31,7 @@ export function MetricStrip({ session }: { session: DemoSession }) {
         <div className="metric-detail">{metricCount(session.repeated_failures)} repeated</div>
       </div>
       <div className="metric-cell">
-        <div className="metric-label"><MessageSquareMore size={15} /> Tutor requests</div>
+        <div className="metric-label"><MessageSquareMore size={15} /> {session.analysis ? "Student messages" : "Tutor requests"}</div>
         <div className="metric-value">{metricCount(session.tutor_requests)}</div>
         <div className="metric-detail">{metricCount(session.completed_tutor_responses)} completed responses</div>
       </div>

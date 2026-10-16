@@ -1,4 +1,4 @@
-import rawDemoData from "./data/demo-data.json";
+import rawDemoData from "./demo-data.synthetic.json";
 import type { DemoDataset, Metric, TimelineEvent } from "./types";
 
 export const demoDataset = rawDemoData as DemoDataset;
@@ -24,6 +24,7 @@ export function formatTimestamp(value: string): string {
     hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
+    year: "numeric", month: "short", day: "numeric", timeZoneName: "short",
   }).format(new Date(value));
 }
 
@@ -33,7 +34,7 @@ export function filterTimeline(events: TimelineEvent[], filter: TimelineFilter):
   if (filter === "all") return events;
   const groups: Record<Exclude<TimelineFilter, "all">, TimelineEvent["kind"][]> = {
     conversation: ["student_message", "tutor_response"],
-    notebook: ["code_edit", "execution", "activity", "inactivity"],
+    notebook: ["code_edit", "execution", "activity", "inactivity", "notebook_snapshot"],
     checks: ["check_result", "question_status"],
   };
   return events.filter((event) => groups[filter].includes(event.kind));

@@ -5,7 +5,7 @@ import type { ReviewClassification, ReviewRecord } from "../types";
 interface ReviewPanelProps {
   sessionId: string;
   review?: ReviewRecord;
-  onSave: (review: ReviewRecord) => void;
+  onSave: (review: ReviewRecord) => boolean | void;
 }
 
 const options: { value: Exclude<ReviewClassification, "">; title: string; detail: string }[] = [
@@ -22,14 +22,15 @@ export function ReviewPanel({ sessionId, review, onSave }: ReviewPanelProps) {
   useEffect(() => {
     setClassification(review?.classification ?? "");
     setNotes(review?.notes ?? "");
-    setSaved(false);
-  }, [sessionId]);
+  }, [sessionId, review?.classification, review?.notes]);
+
+  useEffect(() => { setSaved(false); }, [sessionId]);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!classification) return;
-    onSave({ classification, notes: notes.trim(), savedAt: new Date().toISOString() });
-    setSaved(true);
+    const persisted = onSave({ classification, notes: notes.trim(), savedAt: new Date().toISOString() });
+    setSaved(persisted !== false);
   }
 
   return (

@@ -1,75 +1,83 @@
 import { FlaskConical, Info } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { demoDataset } from "./data";
+import findingsDemo from "./findings-demo.synthetic.json";
+import { downloadReviews, parseBundle, readLocalFile, reviewStorageKey, validateReviews } from "./bundle";
 import { InvestigationView } from "./components/InvestigationView";
 import { SessionQueue } from "./components/SessionQueue";
 import { SummaryBar } from "./components/SummaryBar";
 import type { DemoDataset, ReviewRecord } from "./types";
 
-const STORAGE_KEY = "anomaly-review-instructor-reviews-v1";
-
+const authoredFindings = parseBundle(JSON.stringify(findingsDemo));
 function initialSelectedId(dataset: DemoDataset): string {
   const requested = new URLSearchParams(window.location.search).get("session");
-  return dataset.sessions.some((session) => session.id === requested)
-    ? requested! : dataset.sessions[0]?.id ?? "";
+  return dataset.sessions.some(session => session.id === requested) ? requested! : dataset.sessions[0]?.id ?? "";
 }
-
-function readReviews(): Record<string, ReviewRecord> {
-  try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}");
-  } catch {
-    return {};
-  }
-}
-
-export function App({ dataset = demoDataset }: { dataset?: DemoDataset }) {
-  const [selectedId, setSelectedId] = useState(() => initialSelectedId(dataset));
-  const [reviews, setReviews] = useState<Record<string, ReviewRecord>>(readReviews);
-  const selected = useMemo(
-    () => dataset.sessions.find((session) => session.id === selectedId) ?? dataset.sessions[0],
-    [dataset.sessions, selectedId],
-  );
-
+export function App({ dataset: initialDataset = demoDataset }: { dataset?: DemoDataset }) {
+  const [dataset, setDataset] = useState<DemoDataset | null>(initialDataset);
+  const [selectedId, setSelectedId] = useState(() => initialSelectedId(initialDataset));
+  const [reviews, setReviews] = useState<Record<string, ReviewRecord>>({});
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const selected = useMemo(() => dataset?.sessions.find(session => session.id === selectedId) ?? dataset?.sessions[0], [dataset, selectedId]);
   useEffect(() => {
-    if (!selectedId) return;
+    if (!dataset) { setReviews({}); return; }
+    try { setReviews(validateReviews(JSON.parse(window.localStorage.getItem(reviewStorageKey(dataset)) ?? "{}"), dataset)); }
+    catch { setReviews({}); setError("Saved reviews could not be read. Import a review download or continue in memory."); }
+  }, [dataset]);
+  useEffect(() => {
     const url = new URL(window.location.href);
-    url.searchParams.set("session", selectedId);
+    if (selectedId) url.searchParams.set("session", selectedId);
+    else url.searchParams.delete("session");
     window.history.replaceState({}, "", url);
   }, [selectedId]);
-
-  function saveReview(review: ReviewRecord) {
-    const updated = { ...reviews, [selected.id]: review };
-    setReviews(updated);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  function choose(next: DemoDataset | null) {
+    setDataset(next); setSelectedId(next?.sessions[0]?.id ?? ""); setReviews({}); setError("");
   }
-
-  if (!selected) return <main className="empty-app">No synthetic sessions are available.</main>;
-
-  return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div className="brand-copy" aria-label="ChatSight Session Review">
-          <span className="product-name">ChatSight</span>
-          <span className="brand-divider" aria-hidden="true">/</span>
-          <span className="product-context">Session Review</span>
-        </div>
-        <span className="synthetic-label"><FlaskConical size={14} /> Synthetic data</span>
-      </header>
-
-      <div className="dataset-notice" role="note">
-        <Info size={16} aria-hidden="true" />
-        <span><strong>Demonstration only.</strong> Synthetic sessions and illustrative priorities. No anomaly ranking is implemented.</span>
-      </div>
-
-      <main>
-        <SummaryBar summary={dataset.summary} reviewed={Object.keys(reviews).length} />
-        <div className="workspace">
-          <SessionQueue sessions={dataset.sessions} selectedId={selected.id}
-                        reviewedIds={new Set(Object.keys(reviews))} onSelect={setSelectedId} />
-          <InvestigationView key={selected.id} session={selected} review={reviews[selected.id]}
-                             onSaveReview={saveReview} />
-        </div>
-      </main>
+  async function importBundle(file?: File) {
+    if (!file) return;
+    choose(null); setLoading(true);
+    try { choose(parseBundle(await readLocalFile(file))); }
+    catch { setError("Could not open this review bundle. Select a valid version 2 JSON exported by session-findings. No previous dataset remains displayed."); }
+    finally { setLoading(false); }
+  }
+  async function importReviews(file?: File) {
+    if (!file || !dataset) return;
+    setLoading(true);
+    try {
+      const data = JSON.parse(await readLocalFile(file));
+      if (data.version !== 1 || data.dataset_key !== reviewStorageKey(dataset)) throw new Error("Wrong dataset");
+      const next = validateReviews(data.reviews, dataset);
+      window.localStorage.setItem(reviewStorageKey(dataset), JSON.stringify(next));
+      setReviews(next); setError("");
+    } catch { setError("Could not import reviews. Check that the file belongs to this exact dataset and browser storage is available."); }
+    finally { setLoading(false); }
+  }
+  function saveReview(review: ReviewRecord) {
+    if (!dataset || !selected) return false;
+    const next = { ...reviews, [selected.id]: review };
+    setReviews(next);
+    try { window.localStorage.setItem(reviewStorageKey(dataset), JSON.stringify(next)); setError(""); return true; }
+    catch { setError("Browser storage is unavailable. Your review is kept in memory; download reviews before leaving."); return false; }
+  }
+  return <div className="app-shell">
+    <header className="app-header">
+      <div className="brand-copy" aria-label="ChatSight Session Review"><span className="product-name">ChatSight</span><span className="brand-divider" aria-hidden="true">/</span><span className="product-context">Session Review</span></div>
+      <span className="synthetic-label"><FlaskConical size={14} /> {dataset?.dataset.synthetic ? "Synthetic data" : dataset ? "Private recorded data" : "No dataset"}</span>
+    </header>
+    <div className="dataset-toolbar" aria-label="Dataset controls">
+      <button onClick={() => choose(demoDataset)} disabled={loading}>Steven’s demo</button>
+      <button onClick={() => choose(authoredFindings)} disabled={loading}>Findings demo</button>
+      <label className="file-control">Open local review bundle<input aria-label="Open local review bundle" type="file" accept=".json" disabled={loading} onChange={event => { void importBundle(event.target.files?.[0]); event.target.value = ""; }} /></label>
+      <button disabled={!dataset || loading} onClick={() => { if (dataset) downloadReviews(dataset, reviews); }}>Download reviews</button>
+      <label className="file-control">Import reviews<input aria-label="Import reviews" type="file" accept=".json" disabled={!dataset || loading} onChange={event => { void importReviews(event.target.files?.[0]); event.target.value = ""; }} /></label>
     </div>
-  );
+    {error && <p role="alert" className="import-error">{error}</p>}
+    {loading && <p role="status" className="dataset-notice">Reading local bundle. No network request.</p>}
+    {dataset && <div className="dataset-notice" role="note"><Info size={16} aria-hidden="true" /><span><strong>{dataset.contract_version === 1 ? "Demonstration only." : dataset.dataset.label}</strong> {dataset.dataset.notice} {dataset.contract_version === 1 ? "Illustrative priorities. No anomaly ranking is implemented." : "Model interpretations are not verified tutor errors. Viewing makes no model calls."}</span></div>}
+    {dataset && selected ? <main><SummaryBar summary={dataset.summary} reviewed={Object.keys(reviews).length} analyzed={dataset.contract_version === 2 ? dataset.sessions.filter(session => session.analysis?.state === "completed").length : undefined} /><div className="workspace">
+      <SessionQueue key={dataset.dataset.id} sessions={dataset.sessions} selectedId={selected.id} reviewedIds={new Set(Object.keys(reviews))} onSelect={setSelectedId} />
+      <InvestigationView key={`${dataset.dataset.id}:${selected.id}`} session={selected} review={reviews[selected.id]} onSaveReview={saveReview} />
+    </div></main> : !loading && <main className="empty-app">Open a local bundle or select a synthetic demo to begin.</main>}
+  </div>;
 }

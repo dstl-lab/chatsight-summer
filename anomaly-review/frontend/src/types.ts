@@ -42,7 +42,8 @@ export type TimelineKind =
   | "check_result"
   | "question_status"
   | "activity"
-  | "inactivity";
+  | "inactivity"
+  | "notebook_snapshot";
 
 export interface TimelineEvent {
   id: string;
@@ -65,13 +66,13 @@ export interface DemoSession {
   id: string;
   review_rank: number;
   flagged: boolean;
-  priority: Priority;
+  priority: Priority | null;
   priority_basis: string;
   scenario: string;
-  synthetic: true;
+  synthetic: boolean;
   student_id: string;
-  question_id: string;
-  assignment_id: string;
+  question_id: string | null;
+  assignment_id: string | null;
   outcome: Metric<string>;
   active_time: Metric;
   post_help_active_time: Metric;
@@ -87,16 +88,22 @@ export interface DemoSession {
   timeline: TimelineEvent[];
   source_event_refs: string[];
   quality_warnings: string[];
+  scope?: "conversation" | "question_episode";
+  analysis?: Analysis;
 }
 
 export interface DemoDataset {
   contract_version: number;
   dataset: {
     id: string;
-    synthetic: true;
+    synthetic: boolean;
     label: string;
     notice: string;
     priority_method: string;
+    input_sha256?: string;
+    prompt_sha256?: string;
+    analysis_version?: string;
+    model?: string | null;
   };
   summary: {
     total_sessions: number;
@@ -110,4 +117,26 @@ export interface ReviewRecord {
   classification: ReviewClassification;
   notes: string;
   savedAt: string | null;
+}
+
+export type AnalysisDecision = "surface" | "no_supported_finding" | "insufficient_evidence";
+export interface Finding {
+  category: "persistent_difficulty" | "request_mismatch" | "advice_linked_obstacle";
+  explanation: string;
+  interpretations: { statement: string; evidence_ids: string[] }[];
+  facts: { kind: string; record_id: string; related_id?: string | null; result?: string | null }[];
+  highlight_ids: string[];
+  recovery_evidence_ids: string[];
+  uncertainties: string[];
+}
+export interface Analysis {
+  state: "not_analyzed" | "completed" | "failed" | "rejected";
+  decision: AnalysisDecision | null;
+  summary: string;
+  findings: Finding[];
+  validation_errors: string[];
+  notices: string[];
+  model: string | null;
+  source: string;
+  semantic_interpretations_verified: false;
 }

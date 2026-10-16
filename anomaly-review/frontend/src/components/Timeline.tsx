@@ -70,7 +70,7 @@ function TimelineCard({ event, highlighted }: { event: TimelineEvent; highlighte
     : "";
 
   return (
-    <article id={event.source_event_id ? `event-${event.source_event_id}` : event.id}
+    <article id={`ref-${event.id}`}
              data-source-ref={event.id}
              className={`timeline-card timeline-card--${event.kind} ${checkTone} ${highlighted ? "is-highlighted" : ""}`}>
       <div className="timeline-node" aria-hidden="true"><EventIcon event={event} /></div>
@@ -81,7 +81,7 @@ function TimelineCard({ event, highlighted }: { event: TimelineEvent; highlighte
             <span className="event-actor">{event.actor}</span>
             <h4>{event.title}</h4>
           </span>
-          <span className="event-time"><Clock3 size={13} /> {formatTimestamp(event.occurred_at)}</span>
+          <span className="event-time" title={event.occurred_at}><Clock3 size={13} /> {formatTimestamp(event.occurred_at)}</span>
           <ChevronDown size={16} className={`event-chevron ${expanded ? "is-expanded" : ""}`} aria-hidden="true" />
         </button>
         {expanded && (
@@ -118,6 +118,7 @@ function TimelineCard({ event, highlighted }: { event: TimelineEvent; highlighte
 
 export function Timeline({ events, highlightedRefs }: TimelineProps) {
   const [filter, setFilter] = useState<TimelineFilter>("all");
+  useEffect(() => { if (highlightedRefs.size) setFilter("all"); }, [highlightedRefs]);
   const visible = useMemo(() => filterTimeline(events, filter), [events, filter]);
   let previousPhase: TimelineEvent["phase"] | null = null;
 

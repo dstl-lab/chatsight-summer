@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { App } from "./App";
+import { demoDataset } from "./data";
+import { reviewStorageKey } from "./bundle";
 
 describe("instructor prototype", () => {
   beforeEach(() => {
@@ -33,7 +35,7 @@ describe("instructor prototype", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Save review" }));
     expect(screen.getByRole("button", { name: "Saved locally" })).toBeInTheDocument();
-    const stored = JSON.parse(window.localStorage.getItem("anomaly-review-instructor-reviews-v1")!);
+    const stored = JSON.parse(window.localStorage.getItem(reviewStorageKey(demoDataset))!);
     expect(Object.values(stored)[0]).toMatchObject({
       classification: "student_struggle",
       notes: "Tutor response was relevant; the student continued testing.",

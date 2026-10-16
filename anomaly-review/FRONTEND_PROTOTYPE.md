@@ -1,5 +1,9 @@
 # Instructor Frontend Prototype
 
+On the integration branch, [FINDINGS_INTEGRATION.md](FINDINGS_INTEGRATION.md)
+supersedes the synthetic-only data/loading limitations below. This original
+design describes Steven’s preserved demo; new review bundles are imported locally.
+
 ## Purpose
 
 This frontend demonstrates an instructor workflow for reviewing potentially concerning AI tutor sessions. It is an HCI prototype, not an anomaly detector. It does not make causal claims about the tutor.

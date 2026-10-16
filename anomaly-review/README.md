@@ -1,5 +1,10 @@
 # Tutor Session Review Research Pipeline
 
+**Integration branch:** Austin’s evidence-backed findings, private historical
+JSONL preparation, and local review-bundle imports are available here. Start with
+[FINDINGS_INTEGRATION.md](FINDINGS_INTEGRATION.md) for the combined workflow.
+The original pipeline and synthetic demo below remain available.
+
 This is an isolated offline project for event normalization, question-session reconstruction, and evidence-linked behavioral metrics. It does not modify the ChatSight application and does not contain production student data.
 
 ```bash

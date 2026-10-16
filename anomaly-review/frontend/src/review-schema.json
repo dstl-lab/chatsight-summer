@@ -1,0 +1,836 @@
+{
+  "$defs": {
+    "Analysis": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "not_analyzed",
+            "completed",
+            "failed",
+            "rejected"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "enum": [
+                "surface",
+                "no_supported_finding",
+                "insufficient_evidence"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Decision"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "validation_errors": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Validation Errors",
+          "type": "array"
+        },
+        "notices": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notices",
+          "type": "array"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "semantic_interpretations_verified": {
+          "const": false,
+          "default": false,
+          "title": "Semantic Interpretations Verified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "state",
+        "decision",
+        "summary",
+        "source"
+      ],
+      "title": "Analysis",
+      "type": "object"
+    },
+    "CodeDiff": {
+      "additionalProperties": false,
+      "properties": {
+        "before": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before"
+        },
+        "after": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After"
+        }
+      },
+      "title": "CodeDiff",
+      "type": "object"
+    },
+    "DatasetInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "synthetic": {
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "notice": {
+          "title": "Notice",
+          "type": "string"
+        },
+        "priority_method": {
+          "title": "Priority Method",
+          "type": "string"
+        },
+        "input_sha256": {
+          "title": "Input Sha256",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "prompt_sha256": {
+          "title": "Prompt Sha256",
+          "type": "string"
+        },
+        "analysis_version": {
+          "title": "Analysis Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "synthetic",
+        "label",
+        "notice",
+        "priority_method",
+        "input_sha256",
+        "prompt_sha256",
+        "analysis_version"
+      ],
+      "title": "DatasetInfo",
+      "type": "object"
+    },
+    "Fact": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "before",
+            "check_result",
+            "revision_executed",
+            "execution_checked"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "record_id": {
+          "title": "Record Id",
+          "type": "string"
+        },
+        "related_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Related Id"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "enum": [
+                "pass",
+                "fail",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result"
+        }
+      },
+      "required": [
+        "kind",
+        "record_id"
+      ],
+      "title": "Fact",
+      "type": "object"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "enum": [
+            "persistent_difficulty",
+            "request_mismatch",
+            "advice_linked_obstacle"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "explanation": {
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "interpretations": {
+          "items": {
+            "$ref": "#/$defs/Interpretation"
+          },
+          "minItems": 1,
+          "title": "Interpretations",
+          "type": "array"
+        },
+        "facts": {
+          "items": {
+            "$ref": "#/$defs/Fact"
+          },
+          "title": "Facts",
+          "type": "array"
+        },
+        "highlight_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Highlight Ids",
+          "type": "array"
+        },
+        "recovery_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Recovery Evidence Ids",
+          "type": "array"
+        },
+        "uncertainties": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Uncertainties",
+          "type": "array"
+        }
+      },
+      "required": [
+        "category",
+        "explanation",
+        "interpretations",
+        "highlight_ids",
+        "uncertainties"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "Interpretation": {
+      "additionalProperties": false,
+      "properties": {
+        "statement": {
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "statement",
+        "evidence_ids"
+      ],
+      "title": "Interpretation",
+      "type": "object"
+    },
+    "Metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "title": "Metadata",
+      "type": "object"
+    },
+    "Metric": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "known",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "value"
+      ],
+      "title": "Metric",
+      "type": "object"
+    },
+    "Reason": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "supporting_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supporting Refs",
+          "type": "array"
+        },
+        "supporting_event_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supporting Event Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "supporting_refs",
+        "supporting_event_ids"
+      ],
+      "title": "Reason",
+      "type": "object"
+    },
+    "ReferenceTime": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "illustrative",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "lower_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lower Seconds"
+        },
+        "upper_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Upper Seconds"
+        },
+        "basis": {
+          "title": "Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "basis"
+      ],
+      "title": "ReferenceTime",
+      "type": "object"
+    },
+    "ReviewSession": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "review_rank": {
+          "title": "Review Rank",
+          "type": "integer"
+        },
+        "flagged": {
+          "title": "Flagged",
+          "type": "boolean"
+        },
+        "priority": {
+          "anyOf": [
+            {
+              "enum": [
+                "high",
+                "medium",
+                "routine"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Priority"
+        },
+        "priority_basis": {
+          "title": "Priority Basis",
+          "type": "string"
+        },
+        "scenario": {
+          "title": "Scenario",
+          "type": "string"
+        },
+        "synthetic": {
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "scope": {
+          "enum": [
+            "conversation",
+            "question_episode"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "student_id": {
+          "title": "Student Id",
+          "type": "string"
+        },
+        "question_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Question Id"
+        },
+        "assignment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assignment Id"
+        },
+        "outcome": {
+          "$ref": "#/$defs/Metric"
+        },
+        "active_time": {
+          "$ref": "#/$defs/Metric"
+        },
+        "post_help_active_time": {
+          "$ref": "#/$defs/Metric"
+        },
+        "elapsed_time": {
+          "$ref": "#/$defs/Metric"
+        },
+        "reference_active_time": {
+          "$ref": "#/$defs/ReferenceTime"
+        },
+        "failed_checks_after_help": {
+          "$ref": "#/$defs/Metric"
+        },
+        "tutor_requests": {
+          "$ref": "#/$defs/Metric"
+        },
+        "completed_tutor_responses": {
+          "$ref": "#/$defs/Metric"
+        },
+        "repeated_failures": {
+          "$ref": "#/$defs/Metric"
+        },
+        "continued_after_help": {
+          "$ref": "#/$defs/Metric"
+        },
+        "resumed_after_help": {
+          "$ref": "#/$defs/Metric"
+        },
+        "reasons": {
+          "items": {
+            "$ref": "#/$defs/Reason"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "timeline": {
+          "items": {
+            "$ref": "#/$defs/TimelineEvent"
+          },
+          "title": "Timeline",
+          "type": "array"
+        },
+        "source_event_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Event Refs",
+          "type": "array"
+        },
+        "quality_warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Quality Warnings",
+          "type": "array"
+        },
+        "analysis": {
+          "$ref": "#/$defs/Analysis"
+        }
+      },
+      "required": [
+        "id",
+        "review_rank",
+        "flagged",
+        "priority_basis",
+        "scenario",
+        "synthetic",
+        "scope",
+        "student_id",
+        "outcome",
+        "active_time",
+        "post_help_active_time",
+        "elapsed_time",
+        "reference_active_time",
+        "failed_checks_after_help",
+        "tutor_requests",
+        "completed_tutor_responses",
+        "repeated_failures",
+        "continued_after_help",
+        "resumed_after_help",
+        "timeline",
+        "source_event_refs",
+        "quality_warnings",
+        "analysis"
+      ],
+      "title": "ReviewSession",
+      "type": "object"
+    },
+    "Summary": {
+      "additionalProperties": false,
+      "properties": {
+        "total_sessions": {
+          "title": "Total Sessions",
+          "type": "integer"
+        },
+        "flagged_sessions": {
+          "title": "Flagged Sessions",
+          "type": "integer"
+        },
+        "high_priority_sessions": {
+          "title": "High Priority Sessions",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total_sessions",
+        "flagged_sessions",
+        "high_priority_sessions"
+      ],
+      "title": "Summary",
+      "type": "object"
+    },
+    "TimelineEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "source_event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Event Id"
+        },
+        "kind": {
+          "enum": [
+            "student_message",
+            "tutor_response",
+            "code_edit",
+            "execution",
+            "check_result",
+            "question_status",
+            "activity",
+            "inactivity",
+            "notebook_snapshot"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "actor": {
+          "title": "Actor",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "body": {
+          "title": "Body",
+          "type": "string"
+        },
+        "occurred_at": {
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "phase": {
+          "default": "unpartitioned",
+          "enum": [
+            "before_help",
+            "help_boundary",
+            "after_help",
+            "ambiguous",
+            "unpartitioned"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "order_uncertain": {
+          "default": false,
+          "title": "Order Uncertain",
+          "type": "boolean"
+        },
+        "duration_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Seconds"
+        },
+        "source_pointers": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Pointers",
+          "type": "array"
+        },
+        "supporting_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supporting Refs",
+          "type": "array"
+        },
+        "code_diff": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CodeDiff"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "metadata": {
+          "items": {
+            "$ref": "#/$defs/Metadata"
+          },
+          "title": "Metadata",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "actor",
+        "title",
+        "body",
+        "occurred_at"
+      ],
+      "title": "TimelineEvent",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "dataset": {
+      "$ref": "#/$defs/DatasetInfo"
+    },
+    "summary": {
+      "$ref": "#/$defs/Summary"
+    },
+    "sessions": {
+      "items": {
+        "$ref": "#/$defs/ReviewSession"
+      },
+      "title": "Sessions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dataset",
+    "summary",
+    "sessions"
+  ],
+  "title": "ReviewBundle",
+  "type": "object"
+}
