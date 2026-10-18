@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { App } from "./App";
+import { demoDataset } from "./data";
 import raw from "./findings-demo.synthetic.json";
 import { parseBundle, reviewStorageKey, validateReviews } from "./bundle";
 
@@ -55,7 +56,8 @@ describe("integrated review UI", () => {
     Element.prototype.scrollIntoView = vi.fn();
   });
   it("opens findings, shows evidence/recovery, and reveals hidden timeline events", async () => {
-    render(<App />);
+    render(<App dataset={demoDataset} />);
+    fireEvent.click(screen.getByText("Examples & files"));
     fireEvent.click(screen.getByRole("button", { name: "Findings demo" }));
     expect(screen.getByRole("heading", { name: "Session findings" })).toBeInTheDocument();
     expect(screen.getByText(/No model inference/)).toBeInTheDocument();
@@ -67,7 +69,7 @@ describe("integrated review UI", () => {
     expect(screen.getAllByRole("button", { name: /Student Student message/ }).length).toBeGreaterThan(0);
   });
   it("imports recorded-origin bundles locally and clears the old dataset on invalid imports", async () => {
-    render(<App />);
+    render(<App dataset={demoDataset} />);
     const recorded = bundle();
     recorded.dataset.synthetic = false;
     recorded.dataset.id = "authored-recorded-import-test";

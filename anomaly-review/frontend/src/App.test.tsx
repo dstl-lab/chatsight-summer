@@ -11,7 +11,7 @@ describe("instructor prototype", () => {
   });
 
   it("shows synthetic provenance and dashboard totals", () => {
-    render(<App />);
+    render(<App dataset={demoDataset} />);
     expect(screen.getByText("Demonstration only.")).toBeInTheDocument();
     expect(screen.getByText("Total Sessions").previousElementSibling).toHaveTextContent("4");
     expect(screen.getByText("Flagged Sessions").previousElementSibling).toHaveTextContent("3");
@@ -20,7 +20,7 @@ describe("instructor prototype", () => {
   });
 
   it("opens another session from the review queue", () => {
-    render(<App />);
+    render(<App dataset={demoDataset} />);
     fireEvent.click(screen.getByRole("button", { name: /STU-067/ }));
     expect(screen.getByRole("heading", { name: "STU-067 / Q2.4" })).toBeInTheDocument();
     expect(screen.getByText("Multiple tutor responses before recovery")).toBeInTheDocument();
@@ -28,7 +28,7 @@ describe("instructor prototype", () => {
   });
 
   it("stores an instructor assessment in browser-local state", () => {
-    render(<App />);
+    render(<App dataset={demoDataset} />);
     fireEvent.click(screen.getByLabelText(/Student struggle/));
     fireEvent.change(screen.getByPlaceholderText(/Record what in the timeline/), {
       target: { value: "Tutor response was relevant; the student continued testing." },
@@ -43,7 +43,7 @@ describe("instructor prototype", () => {
   });
 
   it("expands a collapsed timeline event", () => {
-    render(<App />);
+    render(<App dataset={demoDataset} />);
     const edit = screen.getAllByRole("button", { name: /Notebook Code edited/ })[0];
     expect(edit).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(edit);

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import raw from "./findings-demo.synthetic.json";
 import { UploadPanel } from "./components/UploadPanel";
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.sessionStorage.clear(); });
 const id = "1".repeat(32);
 function bundle(completed = false) {
   const data = structuredClone(raw);
@@ -54,13 +54,30 @@ describe("raw PR100 upload", () => {
     const onDataset = vi.fn();
     render(<UploadPanel onDataset={onDataset} onBusy={vi.fn()} />);
     fireEvent.change(await screen.findByLabelText("Upload PR100 export"), { target: { files: [new File(["fictional"], "week.jsonl.gz")] } });
-    await screen.findByText("21 eligible windows in 1 review batches");
+    await screen.findByText("21 windows · 1 batch");
     expect(fetcher.mock.calls.some(([path]) => path.includes("mode=all"))).toBe(true);
     expect(fetcher.mock.calls.some(([path]) => path.endsWith("/analyze") || path === `/api/jobs/${id}/bundle`)).toBe(false);
-    expect(screen.getByRole("button", { name: "Analyze all 21 windows with Gemini" })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: /Batch 1 · 20 windows/ }));
-    await screen.findByText("Back to full export");
+    fireEvent.click(screen.getByText("Analyze the full export"));
+    expect(screen.getByRole("button", { name: "Analyze all 21 windows" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Open batch 1" }));
+    await screen.findByText("All batches");
     await waitFor(() => expect(onDataset).toHaveBeenLastCalledWith(expect.objectContaining({ sessions: expect.any(Array) })));
+  });
+
+  it("pages a large batch list and restores saved exports without starting analysis", async () => {
+    const batches = Array.from({ length: 13 }, (_, i) => ({ id: String(i + 1).padStart(32, "0"), status: "ready", count: 20, filename: `batch ${i + 1}`, progress: { completed: 0, failed: 0, pending: 0 } }));
+    const collection = { id, kind: "collection", filename: "fictional-week.jsonl.gz", status: "ready", count: 260, minutes: 25,
+      created_at: "2026-10-17T12:00:00Z", source: null, progress: { completed: 0, failed: 0, pending: 0 }, batches };
+    const fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === "/api/status" ? { ready: true, gemini_configured: true } : path === "/api/jobs" ? { jobs: [collection] } : collection), { status: 200 }));
+    vi.stubGlobal("fetch", fetcher);
+    render(<UploadPanel onDataset={vi.fn()} onBusy={vi.fn()} autoRestore />);
+    await screen.findByRole("button", { name: "Open batch 1" });
+    expect(screen.getAllByRole("button", { name: /^Open batch/ })).toHaveLength(6);
+    expect(screen.getByRole("button", { name: /Analyze all/ }).closest("details")).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByRole("button", { name: "Next batches" }));
+    expect(screen.queryByRole("button", { name: "Open batch 1" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open batch 7" })).toBeInTheDocument();
+    expect(fetcher.mock.calls.some(([path]) => path.endsWith("/analyze"))).toBe(false);
   });
 
   it("previews without analysis and runs Gemini only through the explicit button", async () => {
@@ -69,11 +86,11 @@ describe("raw PR100 upload", () => {
     fireEvent.change(screen.getByLabelText("Coverage"), { target: { value: "sample" } });
     fireEvent.change(screen.getByLabelText("Sessions to analyze"), { target: { value: "1" } });
     fireEvent.change(input, { target: { files: [new File(["fictional raw events"], "fictional.jsonl")] } });
-    await screen.findByText("1 session ready from 1 eligible notebook scopes");
+    await screen.findByText("Ready to analyze");
     await waitFor(() => expect(onDataset).toHaveBeenLastCalledWith(expect.objectContaining({ sessions: expect.arrayContaining([expect.objectContaining({ analysis: expect.objectContaining({ state: "not_analyzed" }) })]) })));
     expect(fetcher.mock.calls.some(([path]) => path.endsWith("/analyze"))).toBe(false);
-    fireEvent.click(screen.getByRole("button", { name: "Analyze 1 session with Gemini" }));
-    await screen.findByText("Finished: 1 response saved, 0 requests failed", {}, { timeout: 3000 });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze 1 window" }));
+    await screen.findByText("Analysis complete", {}, { timeout: 3000 });
     expect(fetcher.mock.calls.filter(([path]) => path.endsWith("/analyze"))).toHaveLength(1);
     expect(onDataset).toHaveBeenLastCalledWith(expect.objectContaining({ sessions: expect.arrayContaining([expect.objectContaining({ analysis: expect.objectContaining({ state: "completed" }) })]) }));
   });
@@ -88,8 +105,8 @@ describe("raw PR100 upload", () => {
 
   it("reopens a completed saved upload without posting another model request", async () => {
     const { fetcher, onDataset } = setup(true);
-    const button = await screen.findByText(/fictional.jsonl · completed/);
-    fireEvent.click(button);
+    const select = await screen.findByLabelText("Saved exports");
+    fireEvent.change(select, { target: { value: id } });
     await waitFor(() => expect(onDataset).toHaveBeenLastCalledWith(expect.objectContaining({ summary: expect.objectContaining({ total_sessions: 1 }) })));
     expect(fetcher.mock.calls.some(([, options]) => options?.method === "POST")).toBe(false);
   });

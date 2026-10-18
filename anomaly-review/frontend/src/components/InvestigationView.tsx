@@ -31,17 +31,16 @@ export function InvestigationView({ session, review, onSaveReview }: Investigati
             <span>{session.assignment_id ?? "Assignment unknown"}</span>
             <span className="priority-context">{session.analysis ? decisionLabel(session) : `${session.priority} priority`}</span>
           </div>
-          <h2>{session.student_id} <span>/</span> {session.question_id ?? "Question unknown"}</h2>
-          <small>{session.scope === "notebook_session" ? "PR100 notebook observation window; question intent may be unknown" : session.scope === "conversation" ? "Conversation evidence; question scope is unverified" : session.scope === "question_episode" ? "Question-scoped evidence" : "Synthetic question episode"}</small>
-          <p>{session.scenario}</p>
+          <h2>{session.analysis ? session.question_id ?? "Notebook session" : <>{session.student_id} <span>/</span> {session.question_id ?? "Question unknown"}</>}</h2>
+          {session.analysis ? <details className="scope-details"><summary>Session details</summary><p>{session.student_id}</p><p>{session.scope === "notebook_session" ? "PR100 notebook observation window; question intent may be unknown" : session.scope === "conversation" ? "Conversation evidence; question scope is unverified" : "Question-scoped evidence"}</p><p>{session.analysis.model ?? "No model inference"}</p></details> : <p>{session.scenario}</p>}
         </div>
-        <div className="outcome-block">
+        {(!session.analysis || session.outcome.status === "known") && <div className="outcome-block">
           <span>Outcome</span>
           <strong className={session.outcome.status === "unknown" ? "is-unknown" : ""}>
             {session.outcome.status === "known" && session.outcome.value
               ? session.outcome.value.replaceAll("_", " ") : "Unknown"}
           </strong>
-        </div>
+        </div>}
       </header>
 
       <MetricStrip session={session} />
@@ -49,7 +48,7 @@ export function InvestigationView({ session, review, onSaveReview }: Investigati
       <section className="reason-section" aria-labelledby="reason-heading">
         <div className="reason-heading">
           <h3 id="reason-heading">{session.analysis ? "Session findings" : "Why was this flagged?"}</h3>
-          <span className="placeholder-note">{session.analysis ? session.analysis.source : "Illustrative evidence"}</span>
+          {!session.analysis && <span className="placeholder-note">Illustrative evidence</span>}
         </div>
         <div className="reason-list">
           {session.reasons.map((reason) => (
@@ -62,8 +61,7 @@ export function InvestigationView({ session, review, onSaveReview }: Investigati
           ))}
         </div>
         {session.analysis && <div className="analysis-details">
-          <p><strong>{decisionLabel(session)}</strong> · {session.analysis.model ?? "No model inference"}</p>
-          {session.analysis.state !== "completed" && <p>{session.analysis.summary}</p>}
+          <p>{session.analysis.state === "not_analyzed" ? "Analyze this batch to generate findings." : session.analysis.summary}</p>
           {!!session.analysis.validation_errors.length && <ul>{session.analysis.validation_errors.map((error, index) => <li key={index}>{error}</li>)}</ul>}
           {session.analysis.findings.map((finding, index) => <details key={index} className="finding-detail">
             <summary>Evidence and uncertainty · finding {index + 1}</summary>

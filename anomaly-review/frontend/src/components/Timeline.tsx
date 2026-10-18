@@ -60,6 +60,8 @@ function CodeDiff({ before, after, capture }: { before: string | null; after: st
 function TimelineCard({ event, highlighted }: { event: TimelineEvent; highlighted: boolean }) {
   const initiallyExpanded = event.kind === "student_message" || event.kind === "tutor_response";
   const [expanded, setExpanded] = useState(initiallyExpanded || highlighted);
+  const [fullMessage, setFullMessage] = useState(false);
+  const longMessage = initiallyExpanded && event.body.length > 1200;
 
   useEffect(() => {
     if (highlighted) setExpanded(true);
@@ -90,10 +92,12 @@ function TimelineCard({ event, highlighted }: { event: TimelineEvent; highlighte
             {event.kind === "inactivity" && event.duration_seconds !== undefined && (
               <div className="gap-duration">Observed gap: {formatDuration(event.duration_seconds)}</div>
             )}
-            <p className={event.kind === "student_message" || event.kind === "tutor_response" ? "message-copy" : "event-copy"}>
+            <p className={initiallyExpanded ? `message-copy ${longMessage && !fullMessage ? "is-collapsed" : ""}` : "event-copy"}>
               {event.body}
             </p>
+            {longMessage && <button className="expand-message" onClick={() => setFullMessage(value => !value)} aria-expanded={fullMessage}>{fullMessage ? "Show less" : "Show full message"}</button>}
             {event.code_diff && <CodeDiff before={event.code_diff.before} after={event.code_diff.after} capture={event.kind === "code_capture"} />}
+            <details className="event-provenance"><summary>Source details</summary>
             {!!event.metadata.length && (
               <dl className="event-metadata">
                 {event.metadata.map((item) => (
@@ -109,6 +113,7 @@ function TimelineCard({ event, highlighted }: { event: TimelineEvent; highlighte
                 <span>Derived from adjacent source events</span>
               )}
             </footer>
+            </details>
           </div>
         )}
       </div>

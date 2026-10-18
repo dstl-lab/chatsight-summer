@@ -96,8 +96,8 @@ the code, stop the old service with Ctrl+C, rebuild the frontend, and restart.
 
 ## 3. Upload and prepare
 
-1. Leave **Coverage → All eligible tutor windows** selected.
-2. Leave **Context per session → 25 minutes** selected for the initial review.
+1. Click **Upload new**. Defaults analyze all eligible tutor windows.
+2. Keep the default 25-minute context; **Import settings** contains optional changes.
 3. Click **Upload PR100 export** and choose `events.jsonl.gz`.
 4. Wait for reading/preparation to finish. The app reads records into a local
    disk index, then prepares review batches of at most 20 windows.
@@ -120,7 +120,7 @@ recent requests wait for a later export with sufficient follow-up time.
 ## 4. Analyze and review
 
 For your first manual review, **open Batch 1**, inspect its preview, and click
-**Analyze 20 sessions with Gemini** (the last batch may contain fewer). The app
+**Analyze 20 windows** (the last batch may contain fewer). The app
 sends prepared dialogue, code captures, outputs and activity evidence to Gemini.
 It saves responses and opens the resulting dashboard when the batch finishes.
 
@@ -130,15 +130,15 @@ evidence. Inspect evidence links and later recovery, record your judgment in
 Human judgments remain in this browser and are specific to that review dataset;
 they are not automatically transferred to a newly exported dataset.
 
-Use **Back to full export** to choose another batch. Or click **Analyze all …
+Use **All batches** to choose another batch. Or click **Analyze all …
 windows with Gemini** from the export view to process every eligible batch
 sequentially. That button can authorize thousands of model calls; the displayed
 window count is the workload, not the raw event count. This is an offline job,
 not an instant result. Keep the service running and the computer awake.
 
 Completed batches are available while later batches run. Refreshing the browser
-does not cancel the job. **Saved uploads** reopens the export; each batch has a
-**Download review bundle** link for offline viewing. A whole export is deliberately
+does not cancel the job. The **Saved exports** selector reopens the export; each batch has a
+**Download review bundle** link under **Data details & coverage** for offline viewing. A whole export is deliberately
 not loaded into one enormous browser timeline.
 
 ## 5. Refresh later, or resume after interruption

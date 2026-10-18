@@ -72,19 +72,20 @@ export function SessionQueue({ sessions, selectedId, reviewedIds, onSelect }: Se
                   key={session.id} onClick={() => onSelect(session.id)}>
             <span className="queue-main">
               <span className="queue-title-line">
-                <strong>{session.student_id}</strong>
-                <span className="question-id">{session.question_id ?? "Question unknown"}</span>
+                <strong title={session.student_id}>{session.student_id.length > 18 ? `${session.student_id.slice(0, 10)}…${session.student_id.slice(-4)}` : session.student_id}</strong>
+                {session.question_id && <span className="question-id">{session.question_id}</span>}
                 {reviewedIds.has(session.id) && <Check size={14} className="reviewed-check" aria-label="Reviewed" />}
               </span>
+              {hasAnalysis && session.timeline[0]?.occurred_at && <time className="queue-window-time" dateTime={session.timeline[0].occurred_at}>{new Date(session.timeline[0].occurred_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time>}
             </span>
-            <span className="queue-evidence">
+            {(!hasAnalysis || session.active_time.status === "known" || session.failed_checks_after_help.status === "known") && <span className="queue-evidence">
               <span><b>{metricDuration(session.active_time)}</b> <small>active</small></span>
               <span className="reference-copy">{session.reference_active_time.status === "illustrative" ? "Illustrative" : "Reference"} {referenceLabel(
                 session.reference_active_time.lower_seconds,
                 session.reference_active_time.upper_seconds,
               )}</span>
               <span><b>{metricCount(session.failed_checks_after_help)}</b> <small>post-help fails</small></span>
-            </span>
+            </span>}
             <span className={`priority-text priority-text--${session.priority}`}>
               <i aria-hidden="true" /> {session.analysis ? decisionLabel(session) : session.priority ? priorityLabel[session.priority] : "Not ranked"}
             </span>

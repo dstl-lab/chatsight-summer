@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Database, LoaderCircle, Upload } from "lucide-react";
 import { parseBundle } from "../bundle";
 import type { DemoDataset } from "../types";
 
@@ -15,7 +16,7 @@ interface Job {
 }
 interface Service { ready: boolean; gemini_configured: boolean; max_upload_bytes: number; model: string }
 const running = (job: Job | null) => !!job && ["preparing", "analyzing"].includes(job.status);
-const plural = (value: number, word: string) => `${value} ${word}${value === 1 ? "" : "s"}`;
+const plural = (value: number, word: string) => `${value} ${word}${value === 1 ? "" : word.endsWith("ch") ? "es" : "s"}`;
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, options);
@@ -24,8 +25,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export function UploadPanel({ onDataset, onBusy, disabled = false }: {
-  onDataset: (dataset: DemoDataset | null) => void; onBusy: (busy: boolean) => void; disabled?: boolean;
+export function UploadPanel({ onDataset, onBusy, disabled = false, autoRestore = false }: {
+  onDataset: (dataset: DemoDataset | null) => void; onBusy: (busy: boolean) => void; disabled?: boolean; autoRestore?: boolean;
 }) {
   const [service, setService] = useState<Service | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -45,8 +46,9 @@ export function UploadPanel({ onDataset, onBusy, disabled = false }: {
     setService(info);
     const list = await request<{ jobs: Job[] }>("/api/jobs");
     setJobs(list.jobs);
+    return list.jobs;
   }, []);
-  useEffect(() => { void refresh().catch(() => setService(null)); }, [refresh]);
+
   useEffect(() => { callbacks.current.onBusy(busy); }, [busy]);
 
   const load = useCallback(async (next: Job) => {
@@ -57,6 +59,27 @@ export function UploadPanel({ onDataset, onBusy, disabled = false }: {
       if (ticket === epoch.current) callbacks.current.onDataset(parseBundle(JSON.stringify(value)));
     }
   }, []);
+
+  const restoreAllowed = useRef(autoRestore);
+  restoreAllowed.current = autoRestore;
+  useEffect(() => {
+    let cancelled = false;
+    void refresh().then(async list => {
+      if (cancelled || !restoreAllowed.current || epoch.current !== 0) return;
+      let previous: string | null = null;
+      try { previous = window.sessionStorage.getItem("chatsight-active-upload"); } catch { /* Optional convenience. */ }
+      const saved = list.find(item => item.id === previous) ?? list.find(item => item.status !== "failed");
+      if (!saved) return;
+      const next = await request<Job>(`/api/jobs/${saved.id}`);
+      if (cancelled || !restoreAllowed.current || epoch.current !== 0) return;
+      setJob(next); await load(next);
+    }).catch(() => { if (!cancelled) setService(null); });
+    return () => { cancelled = true; };
+  }, [refresh, load]);
+  useEffect(() => {
+    if (job) { try { window.sessionStorage.setItem("chatsight-active-upload", job.parent_id ?? job.id); } catch { /* Optional convenience. */ } }
+  }, [job?.id]);
+  const [showUpload, setShowUpload] = useState(false);
 
   useEffect(() => {
     if (!job || !running(job)) return;
@@ -94,7 +117,7 @@ export function UploadPanel({ onDataset, onBusy, disabled = false }: {
         body: file,
       });
       if (epoch.current !== ticket) return;
-      setJob(next); if (!running(next)) await load(next); await refresh();
+      setJob(next); setShowUpload(false); if (!running(next)) await load(next); await refresh();
     } catch (err) { if (epoch.current === ticket) setError(err instanceof Error ? err.message : "Upload failed. Choose the file again."); }
     finally { if (epoch.current === ticket) setSending(false); }
   }
@@ -105,7 +128,7 @@ export function UploadPanel({ onDataset, onBusy, disabled = false }: {
     try {
       const next = await request<Job>(`/api/jobs/${id}`);
       if (epoch.current !== ticket) return;
-      setJob(next); await load(next);
+      setJob(next); setShowUpload(false); await load(next);
     } catch (err) { setError(err instanceof Error ? err.message : "Could not open this upload."); }
     finally { setSending(false); }
   }
@@ -119,34 +142,89 @@ export function UploadPanel({ onDataset, onBusy, disabled = false }: {
     finally { setSending(false); }
   }
 
-  return <section className="upload-panel" aria-label="Upload recent PR100 data">
-    <div className="upload-heading"><div><h2>Upload recent PR100 data</h2><p>Use a private export prepared by someone with database access. This dashboard does not connect to the database.</p></div>
-      <span className={service ? "service-ready" : "service-offline"}>{service ? "Upload service connected" : "Upload service offline"}</span></div>
-    {!service ? <p>Start the local upload service to prepare raw data. Saved review bundles still open without it. <button onClick={() => { void refresh().catch(() => setError("Upload service is unavailable. Start session-findings-app and reconnect.")); }}>Reconnect</button></p> : <>
-      <div className="upload-controls">
-        <label>Coverage<select aria-label="Coverage" value={mode} disabled={busy || disabled} onChange={e => setMode(e.target.value)}><option value="all">All eligible tutor windows</option><option value="sample">Small development sample</option></select></label>
-        {mode === "sample" && <label>Sessions to analyze<input aria-label="Sessions to analyze" type="number" min="1" max="20" value={count} disabled={busy || disabled} onChange={e => setCount(Math.max(1, Math.min(20, Number(e.target.value) || 1)))} /></label>}
-        <label>Context per session<select aria-label="Context per session" value={minutes} disabled={busy || disabled} onChange={e => setMinutes(Number(e.target.value))}><option value="25">25 minutes (recommended)</option><option value="10">10 minutes</option></select></label>
-        <label className="file-control">Upload PR100 export<input aria-label="Upload PR100 export" type="file" accept=".jsonl,.gz" disabled={busy || disabled} onChange={e => { void upload(e.target.files?.[0]); e.target.value = ""; }} /></label>
+  const collection = job?.kind === "collection";
+  const savedCount = job ? job.progress.completed + job.progress.failed : 0;
+  const readyToAnalyze = job && ["ready", "stopped", "interrupted"].includes(job.status);
+  const nextBatch = job?.batches?.find(batch => ["ready", "interrupted", "stopped"].includes(batch.status)) ?? job?.batches?.[0];
+  const title = !job ? "Choose your data" : job.parent_id ? (job.filename.match(/batch \d+$/i)?.[0] ?? "Review batch").replace(/^b/, "B") : "Production data";
+  const status = job ? ({ preparing: "Preparing data", analyzing: "Analysis in progress", ready: "Ready to analyze", completed: "Analysis complete", failed: "Import failed", stopped: "Analysis paused", interrupted: "Analysis paused" } as Record<string, string>)[job.status] ?? job.status : "";
+  const dateRange = job?.source ? `${shortDate(job.source.first_event_at)} – ${shortDate(job.source.last_event_at)}` : "";
+
+  return <section className={`upload-panel ${job && !collection ? "upload-panel--batch" : ""}`} aria-label="Upload recent PR100 data">
+    <div className="upload-heading">
+      <div className="data-title"><Database size={20} aria-hidden="true" /><div><h2>{title}</h2>
+        {job && <p className="source-caption" title={job.filename}>{job.parent_id ? `${job.count} windows · ${job.minutes}-minute context · ${status}` : dateRange || job.filename}</p>}
+      </div></div>
+      <div className="data-switcher">
+        {!!jobs.length && <label><span className="sr-only">Saved exports</span><select aria-label="Saved exports" disabled={busy || disabled} value={job?.parent_id ?? job?.id ?? ""} onChange={e => { if (e.target.value) void open(e.target.value); }}>
+          <option value="">Choose saved export</option>{jobs.map(item => <option key={item.id} value={item.id}>{shortDate(item.created_at)} · {item.filename}</option>)}
+        </select></label>}
+        <button className="quiet-button" disabled={busy || disabled} onClick={() => setShowUpload(value => !value)}><Upload size={15} /> {showUpload ? "Close upload" : "Upload new"}</button>
       </div>
-      <p className="upload-hint">All-window imports prepare review batches of up to 20 windows and report requests that could not be prepared. Upload and preview make no model calls. Analysis sends messages, captured code, outputs and checks to Gemini.</p>
-      {sending && <p role="status">Sending request…</p>}
-      {job && <div className="upload-job"><strong>{job.filename}</strong>
-        {job.parent_id && <button disabled={sending} onClick={() => { void open(job.parent_id!); }}>Back to full export</button>}
-        <p role="status">{job.status === "preparing" ? `${job.import_progress?.phase ?? "Preparing uploaded events"}…${job.import_progress?.events ? ` ${job.import_progress.events.toLocaleString()} events read` : job.import_progress?.requests ? ` ${job.import_progress.requests.toLocaleString()} requests checked` : ""}` : job.status === "analyzing" ? `Analyzing: ${job.progress.completed + job.progress.failed} / ${job.count} responses saved` : job.status === "ready" ? job.kind === "collection" ? `${job.count.toLocaleString()} eligible windows in ${job.batches?.length ?? 0} review batches` : `${plural(job.count, "session")} ready from ${job.eligible_sessions} eligible ${job.parent_id ? "tutor windows" : "notebook scopes"}` : job.status === "completed" ? `Finished: ${plural(job.progress.completed, "response")} saved, ${plural(job.progress.failed, "request")} failed` : job.status === "failed" ? "Could not prepare this export" : "Analysis stopped; saved results are preserved"}</p>
-        {job.source && <small>{job.source.events.toLocaleString()} events · {new Date(job.source.first_event_at).toLocaleString()} – {new Date(job.source.last_event_at).toLocaleString()} · {job.minutes}-minute context</small>}
-        {job.source?.input_events && <p>{job.source.input_events.toLocaleString()} source records; {(job.source.duplicate_events ?? 0).toLocaleString()} repeated receipts counted once. {(job.source.missing_scope ?? 0).toLocaleString()} events lack a complete notebook identity and {(job.source.missing_occurrence_time ?? 0).toLocaleString()} lack an occurrence time; those records remain in the archive but cannot join a timed notebook window.</p>}
-        {job.coverage && <details open><summary>Export coverage</summary><p>Each eligible tutor request gets a bounded window. Windows can overlap and are not independent student attempts. Requests listed below as unavailable or excluded have not received a negative finding.</p><ul>{Object.entries(job.coverage).map(([key, value]) => <li key={key}>{({ tutor_requests: "All tutor-request records", eligible: "Eligible windows", not_tutor_mode: "Other or unknown tutor modes", missing_scope: "Missing notebook identity", missing_occurrence_time: "Missing event time", before_production_observation_start: "Occurred before the production boundary", awaiting_followup_window: "Too recent for the follow-up window", no_completed_response_for_anchor: "No matched completed tutor response", invalid_anchor_request: "Invalid request binding", invalid_observation_links: "Inconsistent evidence links", mixed_or_unknown_tutor_mode: "Mixed tutor modes in the window", oversized_window: "Over the evidence size limit", eligible_with_partial_start: "Eligible windows with incomplete earlier context" } as Record<string, string>)[key] ?? key}: {value.toLocaleString()}</li>)}</ul><a href={`/api/jobs/${job.id}/coverage`} download="pr100-coverage.private.jsonl">Download request coverage</a></details>}
-        {job.selection && <details><summary>Preparation coverage</summary><p>Windows are selected before analysis. Larger or inconsistent windows are excluded rather than shortened.</p><ul>{Object.entries(job.selection.exclusions).map(([key, value]) => <li key={key}>{({ missing_required_observation_family: "Windows without required observations", oversized_observation_window: "Windows over the analysis size limit", invalid_observation_links: "Windows with inconsistent event links", mixed_or_unknown_mode_window: "Windows with mixed or unknown tutor mode" } as Record<string, string>)[key] ?? "Other excluded windows"}: {value}</li>)}</ul>{!!job.selection.quality.missing_page_notebook_identity && <p>Records without a usable page/notebook identity: {job.selection.quality.missing_page_notebook_identity}</p>}</details>}
-        {job.error && <p role="alert">{job.error}</p>}
-        {running(job) && !sending && <button onClick={() => { epoch.current++; setJob(null); setError(""); callbacks.current.onDataset(null); }}>Leave job view (continues in service)</button>}
-        {["ready", "stopped", "interrupted"].includes(job.status) && <button className="analyze-button" disabled={!job.count || !service.gemini_configured || busy || disabled} onClick={() => { void analyze(); }}>{job.status === "ready" ? job.kind === "collection" ? `Analyze all ${job.count.toLocaleString()} windows with Gemini` : `Analyze ${plural(job.count, "session")} with Gemini` : "Continue untouched sessions with Gemini"}</button>}
-        {!service.gemini_configured && <p>The service needs a Gemini key to analyze. Database credentials are not needed.</p>}
-        {job.kind !== "collection" && ["ready", "completed", "stopped", "interrupted"].includes(job.status) && <a href={`/api/jobs/${job.id}/bundle`} download="pr100-review.private.json">Download review bundle</a>}
-        {!!job.batches?.length && <div className="review-batches"><h3>Review batches</h3><p>Open a batch to preview, analyze, review or download it. Completed batches can be reviewed while the remaining analysis runs.</p><ul>{job.batches.map((batch, index) => <li key={batch.id}><button disabled={sending || (running(job) && batch.status !== "completed") || job.status === "failed"} onClick={() => { void open(batch.id); }}>Batch {index + 1} · {batch.count} windows · {batch.status} · {batch.progress.completed} saved</button></li>)}</ul></div>}
+    </div>
+    {!service ? <div className="inline-notice"><span>Local service unavailable.</span><button onClick={() => { void refresh().catch(() => setError("Start the local upload service, then reconnect.")); }}>Reconnect</button></div> : <>
+      {(!job || showUpload) && <div className="upload-form">
+        <label className="file-control upload-drop">Upload PR100 export<input aria-label="Upload PR100 export" type="file" accept=".jsonl,.gz" disabled={busy || disabled} onChange={e => { void upload(e.target.files?.[0]); e.target.value = ""; }} /></label>
+        <p>Choose a .jsonl.gz export. Uploading does not start analysis.</p>
+        <details className="upload-options"><summary>Import settings</summary><div className="upload-controls">
+          <label>Coverage<select aria-label="Coverage" value={mode} disabled={busy || disabled} onChange={e => setMode(e.target.value)}><option value="all">All eligible tutor windows</option><option value="sample">Small development sample</option></select></label>
+          {mode === "sample" && <label>Sessions to analyze<input aria-label="Sessions to analyze" type="number" min="1" max="20" value={count} disabled={busy || disabled} onChange={e => setCount(Math.max(1, Math.min(20, Number(e.target.value) || 1)))} /></label>}
+          <label>Context per session<select aria-label="Context per session" value={minutes} disabled={busy || disabled} onChange={e => setMinutes(Number(e.target.value))}><option value="25">25 minutes (recommended)</option><option value="10">10 minutes</option></select></label>
+        </div></details>
       </div>}
-      {!!jobs.length && <details className="saved-uploads"><summary>Saved uploads ({jobs.length})</summary><ul>{jobs.map(item => <li key={item.id}><button disabled={busy || disabled} onClick={() => { void open(item.id); }}>{item.filename} · {item.status} · {new Date(item.created_at).toLocaleString()}</button></li>)}</ul></details>}
+      {sending && <p role="status" className="request-status"><LoaderCircle size={16} /> Loading…</p>}
+      {job && <div className="upload-job">
+        <div className="job-overview">
+          <div className="job-status"><span className={`status-dot status-dot--${job.status}`} /> <strong role="status">{status}</strong>
+            {collection && job.status !== "preparing" && <span className="job-count">{job.count.toLocaleString()} windows · {plural(job.batches?.length ?? 0, "batch")}</span>}
+          </div>
+          <div className="job-actions">
+            {job.parent_id && <button className="quiet-button" disabled={sending} onClick={() => { void open(job.parent_id!); }}><ArrowLeft size={14} /> All batches</button>}
+            {collection && nextBatch && !running(job) && job.status !== "failed" && <button className="primary-button" disabled={sending || disabled} onClick={() => { void open(nextBatch.id); }}>{nextBatch.status === "completed" ? "Review results" : "Open next batch"}<ArrowRight size={15} /></button>}
+            {!collection && readyToAnalyze && <button className="primary-button" disabled={!job.count || !service.gemini_configured || busy || disabled} onClick={() => { void analyze(); }}>{job.status === "ready" ? `Analyze ${plural(job.count, "window")}` : "Continue analysis"}<ArrowRight size={15} /></button>}
+            {!collection && job.status === "completed" && <span className="completion-label"><CheckCircle2 size={16} /> Results ready below</span>}
+          </div>
+        </div>
+        {job.status === "preparing" && <p className="processing-copy">{job.import_progress?.phase ?? "Preparing uploaded events"}{job.import_progress?.events ? ` · ${job.import_progress.events.toLocaleString()} events read` : job.import_progress?.requests ? ` · ${job.import_progress.requests.toLocaleString()} requests checked` : ""}</p>}
+        {job.count > 0 && (running(job) && job.status === "analyzing" || savedCount > 0) && <div className="analysis-progress"><progress aria-label="Analysis progress" max={job.count} value={savedCount} /><span>{job.progress.completed.toLocaleString()} / {job.count.toLocaleString()} analyzed{job.progress.failed > 0 ? ` · ${job.progress.failed} failed` : ""}</span></div>}
+        {!collection && readyToAnalyze && <p className="model-disclosure">Analysis sends these {job.count} windows to Gemini.</p>}
+        {job.error && <p role="alert" className="job-error">{job.error}</p>}
+        {!service.gemini_configured && readyToAnalyze && <p className="job-error">Add a Gemini key to the local service to analyze.</p>}
+        {!!job.batches?.length && <BatchList key={job.id} batches={job.batches} disabled={sending || disabled || job.status === "failed"} active={running(job)} onOpen={id => { void open(id); }} />}
+        {collection && readyToAnalyze && <details className="bulk-analysis"><summary>Analyze the full export</summary><div><p>This starts {job.count.toLocaleString()} windows with Gemini. Saved results are reused.</p><button disabled={!job.count || !service.gemini_configured || busy || disabled} onClick={() => { void analyze(); }}>Analyze all {job.count.toLocaleString()} windows</button></div></details>}
+        {(job.source || job.coverage || job.selection) && <details className="data-details"><summary>Data details & coverage</summary><div className="details-content">
+          <p className="source-filename">{job.filename}</p>
+          {job.source && <p>{job.source.events.toLocaleString()} events · {dateRange}</p>}
+          {job.source?.input_events && <p>{(job.source.duplicate_events ?? 0).toLocaleString()} duplicate receipts removed. {(job.source.missing_scope ?? 0).toLocaleString()} events lack notebook identity; {(job.source.missing_occurrence_time ?? 0).toLocaleString()} lack an occurrence time. These remain in the source archive.</p>}
+          {job.coverage && <><p>Excluded requests are not negative findings. Windows can overlap.</p><dl className="coverage-counts">{Object.entries(job.coverage).map(([key, value]) => <div key={key}><dt>{coverageLabels[key] ?? key.replaceAll("_", " ")}</dt><dd>{value.toLocaleString()}</dd></div>)}</dl><a href={`/api/jobs/${job.id}/coverage`} download="pr100-coverage.private.jsonl">Download coverage</a></>}
+          {job.selection && <dl className="coverage-counts">{Object.entries(job.selection.exclusions).map(([key, value]) => <div key={key}><dt>{coverageLabels[key] ?? key.replaceAll("_", " ")}</dt><dd>{value}</dd></div>)}</dl>}
+          <p>{job.minutes === 25 ? "25-minute windows include 5 minutes before and 20 after a request." : "10-minute windows include 3 minutes before and 7 after a request."} Later activity outside that window is unavailable to the assessment.</p>
+          {job.kind !== "collection" && ["ready", "completed", "stopped", "interrupted"].includes(job.status) && <a href={`/api/jobs/${job.id}/bundle`} download="pr100-review.private.json">Download review bundle</a>}
+        </div></details>}
+        {running(job) && !sending && <button className="quiet-button leave-job" onClick={() => { epoch.current++; setJob(null); setError(""); callbacks.current.onDataset(null); }}>Leave this view · continues in background</button>}
+      </div>}
     </>}
-    {error && <p role="alert" className="import-error">{error}</p>}
+    {error && <p role="alert" className="job-error">{error}</p>}
+  </section>;
+}
+
+const shortDate = (value: string) => new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+const coverageLabels: Record<string, string> = {
+  tutor_requests: "Tutor requests", eligible: "Ready for analysis", not_tutor_mode: "Other tutor modes", missing_scope: "Missing notebook identity", missing_occurrence_time: "Missing event time",
+  before_production_observation_start: "Before production start", awaiting_followup_window: "Awaiting follow-up", no_completed_response_for_anchor: "No completed response", invalid_anchor_request: "Invalid request binding",
+  invalid_observation_links: "Inconsistent evidence links", mixed_or_unknown_tutor_mode: "Mixed tutor modes", oversized_window: "Over the size limit", eligible_with_partial_start: "Partial earlier context",
+  missing_required_observation_family: "Missing observations", oversized_observation_window: "Over the size limit", mixed_or_unknown_mode_window: "Mixed tutor modes",
+};
+
+function BatchList({ batches, disabled, active, onOpen }: { batches: NonNullable<Job["batches"]>; disabled: boolean; active: boolean; onOpen: (id: string) => void }) {
+  const [page, setPage] = useState(0);
+  const pageSize = 6;
+  const start = page * pageSize;
+  const labels: Record<string, string> = { ready: "Ready", completed: "Analyzed", analyzing: "Analyzing", stopped: "Paused", interrupted: "Paused", failed: "Failed" };
+  return <section className="review-batches" aria-label="Review batches"><div className="batch-list-heading"><h3>Review batches</h3><span>{batches.length.toLocaleString()} total</span></div>
+    <div className="batch-table-wrap"><table><thead><tr><th>Batch</th><th>Windows</th><th>Status</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>
+      {batches.slice(start, start + pageSize).map((batch, index) => <tr key={batch.id}><td>{start + index + 1}</td><td>{batch.count}</td><td><span className={`batch-status batch-status--${batch.status}`}>{labels[batch.status] ?? batch.status}</span></td><td><button aria-label={`Open batch ${start + index + 1}`} disabled={disabled || (active && batch.status !== "completed")} onClick={() => onOpen(batch.id)}>{batch.status === "completed" ? "Review" : "Open"}<ArrowRight size={14} /></button></td></tr>)}
+    </tbody></table></div>
+    {batches.length > pageSize && <nav className="batch-pagination" aria-label="Batch pages"><span>{start + 1}–{Math.min(start + pageSize, batches.length)} of {batches.length}</span><div><button disabled={page === 0} aria-label="Previous batches" onClick={() => setPage(value => value - 1)}>Previous</button><button disabled={start + pageSize >= batches.length} aria-label="Next batches" onClick={() => setPage(value => value + 1)}>Next</button></div></nav>}
   </section>;
 }
