@@ -1,5 +1,8 @@
 # Extract fresh production data, upload it, and review findings
 
+For the separate optimization branch, use [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md).
+Do not restart an active analysis to apply that branch without Austin's go-ahead.
+
 Use the integration branch `codex/session-findings-real-data` in
 `dstl-lab/chatsight-summer`. Run the commands below from its `anomaly-review`
 directory. The dashboard runs on your computer. Database access belongs to the

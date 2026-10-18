@@ -1,6 +1,7 @@
 """Local upload/analysis dashboard. No database client or extraction endpoint."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from dataclasses import asdict
 import gzip
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,11 +11,13 @@ import os
 from pathlib import Path
 import re
 import threading
+import time
 from urllib.parse import parse_qs, unquote, urlsplit
 import uuid
 
 from . import analyze_sessions as analyzer
 from . import bulk, bundle, historical, recent, runner, production
+from . import grouped, native_batch, optimized, provider
 
 MAX_UPLOAD = 50 * 1024 * 1024
 MAX_EXPANDED = 300 * 1024 * 1024
@@ -65,11 +68,16 @@ def inspect_upload(path):
 
 
 class Jobs:
-    def __init__(self, root, *, model="gemini-3.8-flash", generate=None):
+    def __init__(self, root, *, model="gemini-3.8-flash", generate=None, optimization=None, group_overlap=False, optimized_generate=None, batch_api_factory=None):
         self.root = Path(root).resolve()
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.model = model
         self.generate = generate
+        self.optimization = optimization
+        self.group_overlap = group_overlap
+        self.optimized_generate = optimized_generate
+        self.batch_api_factory = batch_api_factory
+        self.limiters = {}
         self.lock = threading.RLock()
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.futures = []
@@ -108,6 +116,13 @@ class Jobs:
             children = [self.summary(child) for child in state.get("children", [])]
             state["batches"] = [{key: child.get(key) for key in ("id", "filename", "status", "count", "progress")} for child in children]
             state["progress"] = {key: sum(child["progress"][key] for child in children) for key in ("completed", "failed", "pending")}
+            if state.get("optimization"):
+                state["runtime"] = self.optimized_runtime(state, [self.folder(child) / "prepared" for child in state["children"]])
+            return state
+        if state.get("optimization"):
+            metrics = self.optimized_runtime(state, [self.folder(job_id) / "prepared"])
+            state["runtime"] = metrics
+            state["progress"] = {key: metrics[key] for key in ("completed", "failed", "pending")}
             return state
         counts = {"completed": 0, "failed": 0, "pending": 0}
         for path in (self.folder(job_id) / "prepared" / "analysis").glob("*.json"):
@@ -120,6 +135,21 @@ class Jobs:
                 counts[receipt["status"]] += 1
         state["progress"] = counts
         return state
+
+    def optimized_runtime(self, state, paths):
+        metrics = optimized.statistics(paths)
+        options = provider.Options(**state["optimization"])
+        remaining = max(0, state["count"] - metrics["completed"] - metrics["failed"])
+        mean = metrics["mean_call_seconds"]
+        if options.transport == "concurrent" and mean is not None:
+            measured = max(1, metrics["completed"] - metrics["reused"])
+            token_mean = metrics["sent_characters"] / 3 / measured + options.max_output_tokens
+            metrics["estimated_remaining_seconds"] = max(remaining * mean / options.workers, remaining * 60 / options.rpm, remaining * token_mean * 60 / options.tpm)
+        else: metrics["estimated_remaining_seconds"] = None
+        metrics["eta_is_estimate"] = True
+        metrics["workers"] = options.workers if options.transport == "concurrent" else None
+        metrics["transport"] = options.transport
+        return metrics
 
     def listing(self):
         jobs = []
@@ -156,7 +186,7 @@ class Jobs:
             fingerprint = sha.hexdigest()
             with self.lock:
                 for old in self.listing():
-                    if old.get("kind") == "collection" and old.get("source_sha256") == fingerprint and old["minutes"] == minutes and old["status"] != "failed":
+                    if old.get("kind") == "collection" and old.get("source_sha256") == fingerprint and old["minutes"] == minutes and old["status"] != "failed" and old.get("optimization") == (asdict(self.optimization) if self.optimization else None) and bool(old.get("grouped")) == self.group_overlap:
                         source.unlink()
                         folder.rmdir()
                         return old
@@ -165,6 +195,7 @@ class Jobs:
                     "created_at": datetime.now(timezone.utc).isoformat(), "status": "preparing", "count": 0, "minutes": minutes,
                     "model": self.model, "error": None, "source_file": source.name, "source_sha256": fingerprint,
                     "source": None, "children": [], "coverage": None, "import_progress": {"phase": "Starting import"}}
+                if self.optimization: state.update(optimization=asdict(self.optimization), grouped=self.group_overlap)
                 self.save(job_id, state)
                 self.futures.append(self.executor.submit(self.prepare_collection, job_id))
             return self.summary(job_id)
@@ -183,7 +214,8 @@ class Jobs:
         try:
             source = bulk.index_source(folder / state["source_file"], folder / "events.sqlite", progress=progress)
             state["source"] = source
-            prepared = bulk.prepare_batches(folder / "events.sqlite", folder / "batches", source, minutes=state["minutes"], progress=progress)
+            prepare_function = grouped.prepare_batches if state.get("grouped") else bulk.prepare_batches
+            prepared = prepare_function(folder / "events.sqlite", folder / "batches", source, minutes=state["minutes"], progress=progress)
             state["coverage"] = prepared["coverage"]
             state["coverage_note"] = prepared["note"]
             for number, batch in enumerate(prepared["batches"], 1):
@@ -195,11 +227,12 @@ class Jobs:
                     "created_at": state["created_at"], "status": "ready", "count": batch["count"], "minutes": state["minutes"],
                     "model": state["model"], "error": None, "source": {k: source[k] for k in ("events", "first_event_at", "last_event_at")},
                     "selection": None, "eligible_sessions": prepared["coverage"].get("eligible", 0)}
+                if state.get("optimization"): child_state.update(optimization=state["optimization"], grouped=state.get("grouped", False))
                 self.save(child_id, child_state)
                 state["children"].append(child_id)
                 state["import_progress"] = {"phase": "Registering review batches", "requests": prepared["coverage"]["tutor_requests"]}
                 self.save(job_id, state)
-            state.update(status="ready", count=prepared["coverage"].get("eligible", 0), import_progress=None)
+            state.update(status="ready", count=sum(b["count"] for b in prepared["batches"]), import_progress=None)
         except (ValueError, OSError, EOFError, KeyError, TypeError):
             state.update(status="failed", error="Import failed. Check the export format, boundaries, event identities and size. No model calls were made.")
         except Exception:
@@ -241,6 +274,7 @@ class Jobs:
                  "created_at": datetime.now(timezone.utc).isoformat(), "status": "preparing",
                  "count": count, "minutes": minutes, "model": self.model, "error": None,
                  "source_file": source.name, "source": None, "selection": None, "eligible_sessions": None}
+        if self.optimization: state.update(optimization=asdict(self.optimization), grouped=False)
         self.save(job_id, state)
         self.futures.append(self.executor.submit(self.prepare, job_id))
         return self.summary(job_id)
@@ -275,7 +309,10 @@ class Jobs:
         folder = self.folder(job_id)
         state = self.read(job_id)
         manifest, sessions, context, evidence = historical.load_prepared(folder / "prepared")
-        results = runner.saved_results(folder / "prepared" / "analysis", sessions, evidence, state["model"])
+        if state.get("optimization"):
+            results = optimized.saved_results(folder / "prepared", state["model"], provider.Options(**state["optimization"]))
+        else:
+            results = runner.saved_results(folder / "prepared" / "analysis", sessions, evidence, state["model"])
         doc = bundle.build(sessions, input_hash=manifest["input_file_sha256"], context=context, results=results,
             model=state["model"] if results else None, source="Saved Gemini assessments from uploaded PR100 data" if results else "Uploaded PR100 data; not analyzed")
         runner.atomic_json(folder / "bundle.private.json", doc)
@@ -289,8 +326,16 @@ class Jobs:
                 raise InputError("The export is still processing or failed preparation. Open the export first.")
             if state.get("kind") != "collection" and not (self.folder(job_id) / "prepared" / "manifest.json").exists():
                 raise InputError("Preparation was interrupted. Upload the file again.")
-            if self.generate is None and not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
+            if self.generate is None and self.optimized_generate is None and self.batch_api_factory is None and not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
                 raise InputError("The analysis service needs a Gemini API key. Database access is not needed.")
+            if state.get("optimization"):
+                if state.get("kind") == "collection":
+                    if not state.get("children"): raise InputError("No eligible analysis units")
+                    if any(self.read(child)["status"] == "analyzing" for child in state["children"]): raise InputError("A batch is already running")
+                state.update(status="analyzing", error=None, analysis_started_at=datetime.now(timezone.utc).isoformat())
+                self.save(job_id, state)
+                self.futures.append(self.executor.submit(self.analyze_optimized, job_id))
+                return self.summary(job_id)
             if state.get("kind") == "collection":
                 if not state.get("children"):
                     raise InputError("No eligible windows. Inspect the coverage counts before exporting another range.")
@@ -306,6 +351,59 @@ class Jobs:
             self.save(job_id, state)
             self.futures.append(self.executor.submit(self.analyze, job_id))
         return self.summary(job_id)
+
+    def analyze_optimized(self, job_id):
+        state = self.read(job_id)
+        options = provider.Options(**state["optimization"])
+        children = state["children"] if state.get("kind") == "collection" else [job_id]
+        paths = [self.folder(child) / "prepared" for child in children]
+        path_ids = {str(path): child for path, child in zip(paths, children)}
+        for child in children:
+            if child == job_id: continue
+            value = self.read(child)
+            value.update(status="analyzing", error=None)
+            self.save(child, value)
+        def progress(value):
+            for path in value.get("changed_prepared_paths", []):
+                child = path_ids[path]; item = self.read(child)
+                stats = optimized.statistics([path])
+                if stats["completed"] + stats["failed"] >= item["count"]:
+                    item["status"] = "completed"; self.save(child, item); self.write_bundle(child)
+        try:
+            if options.transport == "concurrent":
+                key = (options.rpm, options.tpm)
+                limiter = self.limiters.setdefault(key, optimized.RateLimiter(*key))
+                report = optimized.run_many(paths, model=state["model"], options=options, send=True, generate=self.optimized_generate,
+                    cache_folder=self.root / "optimized-cache", progress=progress, limiter=limiter)
+            else:
+                remote = self.folder(job_id) / "native-batch"
+                if not (remote / "batch-state.private.json").exists():
+                    native_batch.prepare(paths, remote, model=state["model"], options=options, cache_folder=self.root / "optimized-cache")
+                api = self.batch_api_factory(options) if self.batch_api_factory else provider.client(options)
+                try:
+                    while True:
+                        native_batch.submit(remote, options=options, api=api, send=True)
+                        report = native_batch.collect(remote, options=options, api=api)
+                        progress({"changed_prepared_paths": list(path_ids)})
+                        if report["provider_status"] == "completed": break
+                        time.sleep(15)
+                finally:
+                    api.close()
+            runner.atomic_json(self.folder(job_id) / "optimization-report.private.json", report)
+            finished = report["completed"] + report["failed"]
+            state.update(status="completed" if finished >= state["count"] and not report.get("stopped_reason") else "stopped",
+                error=report.get("stopped_reason"), analysis_finished_at=datetime.now(timezone.utc).isoformat())
+        except Exception:
+            state.update(status="interrupted", error="Optimized analysis stopped. Receipts and remote job IDs are preserved; no uncertain request will be resent.")
+        for child in children:
+            if child == job_id: continue
+            item = self.read(child); stats = optimized.statistics([self.folder(child) / "prepared"])
+            item["status"] = "completed" if stats["completed"] + stats["failed"] >= item["count"] else "stopped"
+            self.save(child, item)
+        for child in children:
+            try: self.write_bundle(child)
+            except Exception: pass
+        self.save(job_id, state)
 
     def analyze(self, job_id):
         state = self.read(job_id)
@@ -378,7 +476,8 @@ def handler_for(jobs, frontend, port):
             try:
                 if path == "/api/status":
                     return self.send(200, {"ready": True, "model": jobs.model, "max_upload_bytes": production.MAX_UPLOAD,
-                        "gemini_configured": bool(jobs.generate or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))})
+                        "optimization": asdict(jobs.optimization) if jobs.optimization else None, "grouped": jobs.group_overlap,
+                        "gemini_configured": bool(jobs.generate or jobs.optimized_generate or jobs.batch_api_factory or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))})
                 if path == "/api/jobs":
                     return self.send(200, {"jobs": jobs.listing()})
                 coverage_match = re.fullmatch(r"/api/jobs/([a-f0-9]{32})/coverage", path)
@@ -440,13 +539,35 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8765)
-    parser.add_argument("--storage", type=Path, default=Path("private-data/uploads"))
+    parser.add_argument("--storage", type=Path)
     parser.add_argument("--model", default="gemini-3.8-flash")
     parser.add_argument("--key-file", type=Path, help="Explicit dotenv file; reads only GEMINI_API_KEY or GOOGLE_API_KEY, never database credentials.")
+    parser.add_argument("--optimized", action="store_true", help="Opt-in measured parallel/compact runner for NEW imports")
+    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--rpm", type=int, default=30)
+    parser.add_argument("--tpm", type=int, default=200000)
+    parser.add_argument("--group-overlap", action="store_true", help="Opt-in bounded grouping; changes the analysis unit")
+    parser.add_argument("--provider-mode", choices=["concurrent", "batch"], default="concurrent")
+    parser.add_argument("--thinking", choices=["default", "low", "medium", "high"], default="default")
+    parser.add_argument("--original-prompt", action="store_true")
+    parser.add_argument("--max-output-tokens", type=int, default=8192)
+    parser.add_argument("--max-requests", type=int, default=0)
+    parser.add_argument("--max-estimated-tokens", type=int, default=0)
+    parser.add_argument("--batch-enqueued-tokens", type=int, default=0)
+    parser.add_argument("--recover-saved-jobs", action="store_true", help="Only after the prior service has stopped: recover saved in-progress jobs")
     parser.add_argument("--frontend", type=Path, default=Path(__file__).resolve().parents[2] / "frontend" / "dist")
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("Choose a port between 1 and 65535.")
+    if (args.group_overlap or args.provider_mode == "batch") and not args.optimized:
+        parser.error("Grouping and native batch processing require --optimized")
+    args.storage = args.storage or Path("private-data/optimized-uploads" if args.optimized else "private-data/uploads")
+    if args.optimized and not args.recover_saved_jobs:
+        for path in args.storage.glob("*/state.private.json"):
+            if json.loads(path.read_text()).get("status") in {"preparing", "analyzing"}:
+                parser.error("Storage has in-progress jobs. Use separate storage; recover only after its prior service has stopped.")
+    if args.optimized and args.provider_mode == "batch" and args.batch_enqueued_tokens < 1:
+        parser.error("Native Batch API requires an explicit --batch-enqueued-tokens allowance from the account's quota")
     if args.key_file:
         from dotenv import dotenv_values
         values = dotenv_values(args.key_file)
@@ -454,7 +575,10 @@ def main():
         if not key: parser.error("The selected file has no Gemini API key.")
         os.environ["GEMINI_API_KEY"] = key
     os.umask(0o077)
-    jobs = Jobs(args.storage, model=args.model)
+    options = provider.Options(workers=args.workers, rpm=args.rpm, tpm=args.tpm, compact=not args.original_prompt,
+        thinking=args.thinking, max_output_tokens=args.max_output_tokens, max_requests=args.max_requests,
+        max_estimated_tokens=args.max_estimated_tokens, transport=args.provider_mode, batch_enqueued_tokens=args.batch_enqueued_tokens) if args.optimized else None
+    jobs = Jobs(args.storage, model=args.model, optimization=options, group_overlap=args.group_overlap)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(jobs, args.frontend, args.port))
     print(f"Local upload dashboard: http://127.0.0.1:{args.port}. No database access is configured.", flush=True)
     try:

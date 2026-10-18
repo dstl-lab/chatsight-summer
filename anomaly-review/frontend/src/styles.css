@@ -538,3 +538,5 @@ main { width: 100%; }
 .app-header .dataset-tools > summary { margin:0; padding:4px 0; }
 .app-header .dataset-tools[open] { flex:1 0 100%; width:100%; }
 .app-header .dataset-tools[open] > summary { margin-left:auto; }
+
+.eta-estimate { grid-column:1 / -1; margin:10px 0 0; font-size:12px !important; color:var(--muted); }

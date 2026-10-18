@@ -5,6 +5,10 @@ JSONL preparation, and local review-bundle imports are available here. Start wit
 [FINDINGS_INTEGRATION.md](FINDINGS_INTEGRATION.md) for the combined workflow.
 The original pipeline and synthetic demo below remain available.
 
+The opt-in [optimized PR100 workflow](OPTIMIZATION_GUIDE.md) adds bounded parallel
+requests, compact evidence, optional overlap grouping and native Gemini Batch.
+It is isolated from existing running jobs and requires a separate launch/storage.
+
 This is an isolated offline project for event normalization, question-session reconstruction, and evidence-linked behavioral metrics. It does not modify the ChatSight application and does not contain production student data.
 
 ```bash
