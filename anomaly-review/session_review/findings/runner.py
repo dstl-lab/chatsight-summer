@@ -63,7 +63,7 @@ def saved_results(folder, sessions, evidence, model):
     return results
 
 
-def run(folder, sessions, evidence, *, model, send=False, generate=None):
+def run(folder, sessions, evidence, *, model, send=False, generate=None, cache_folder=None):
     if not send:
         raise ValueError("Analysis requires --send; selected evidence will be sent to Gemini.")
     if len(sessions) > 20:
@@ -87,8 +87,31 @@ def run(folder, sessions, evidence, *, model, send=False, generate=None):
             "provider_attempts": "SDK transport attempts unmeasured", "assessment": None}
         private_json(path, receipt)  # Exclusive create guards concurrent duplicate sends.
         try:
-            assessment = generate(item, model)
+            cache_path = None
+            reused = False
+            if cache_folder is not None:
+                cache = Path(cache_folder)
+                cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+                # Evidence/configuration, not export filename or batch membership,
+                # determines reuse. A changed window must be analyzed separately.
+                cache_key = digest(configuration([session], [item], model))
+                cache_path = cache / (cache_key + ".json")
+                if cache_path.exists():
+                    if cache_path.is_symlink():
+                        raise ValueError("Invalid cache path")
+                    saved = json.loads(cache_path.read_text())
+                    if saved.get("status") != "completed":
+                        raise ValueError("Prior identical request is unresolved; no automatic resend")
+                    assessment = analyzer.Assessment.model_validate(saved["assessment"])
+                    reused = True
+                else:
+                    private_json(cache_path, {"status": "pending"})
+            if not reused:
+                assessment = generate(item, model)
+                if cache_path:
+                    atomic_json(cache_path, {"status": "completed", "assessment": assessment.model_dump(mode="json")})
             receipt.update(status="completed", assessment=assessment.model_dump(mode="json"))
+            receipt["reused_identical_assessment"] = reused
             stop_batch = False
         except Exception as error:
             # Provider diagnostics may contain prompts/credentials; preserve only its type.

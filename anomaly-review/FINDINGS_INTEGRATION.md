@@ -1,5 +1,11 @@
 # Session findings in the review frontend
 
+**For the current full production export → upload → batch review workflow, use
+[PR100_QUICKSTART.md](PR100_QUICKSTART.md).** It includes commands for Austin's
+machine, the verified production-observation cutoff, complete range exports,
+disk-backed imports and all eligible request windows. The small-sample and
+offline pilot commands below remain available for reproducing earlier tests.
+
 This branch connects Austin's standalone evidence-based analyzer to Steven's
 React review interface. It branches from Steven's `codex/anomaly-review-phase2c-phase3b`
 (`9dc2f2678ab5b3216bcedbdabd5237e175f3e49b`). The original analyzer comes from
@@ -74,7 +80,7 @@ database connection and configure standard `PGHOST`, `PGPORT`, `PGDATABASE`,
 
 ```sh
 uv sync --locked --extra extract
-uv run session-findings-extract --scopes 20 --output private-data/pr100-export
+uv run --extra extract session-findings-extract --scopes 20 --output private-data/pr100-export
 ```
 
 The default range is the last 24 hours. `--since` and `--until` accept timezone-aware

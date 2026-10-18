@@ -37,9 +37,36 @@ function setup(saved = false) {
 }
 
 describe("raw PR100 upload", () => {
+  it("defaults to complete coverage, opens batches without dispatching analysis", async () => {
+    const child = "2".repeat(32);
+    const collection = { id, kind: "collection", filename: "week.jsonl.gz", status: "ready", count: 21, minutes: 25,
+      created_at: "2026-10-17T12:00:00Z", error: null, source: null, coverage: { tutor_requests: 22, eligible: 21, awaiting_followup_window: 1 },
+      progress: { completed: 0, failed: 0, pending: 0 }, batches: [{ id: child, filename: "batch 1", status: "ready", count: 20, progress: { completed: 0, failed: 0, pending: 0 } }] };
+    const fetcher = vi.fn(async (path: string) => {
+      const value = path === "/api/status" ? { ready: true, gemini_configured: true, max_upload_bytes: 2 * 1024 ** 3 } :
+        path === "/api/jobs" ? { jobs: [] } : path.startsWith("/api/uploads") ? collection :
+        path === `/api/jobs/${child}` ? { ...collection, kind: undefined, parent_id: id, id: child, count: 1, eligible_sessions: 21 } :
+        path === `/api/jobs/${child}/bundle` ? bundle() : null;
+      if (!value) throw new Error("Unexpected request");
+      return new Response(JSON.stringify(value), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const onDataset = vi.fn();
+    render(<UploadPanel onDataset={onDataset} onBusy={vi.fn()} />);
+    fireEvent.change(await screen.findByLabelText("Upload PR100 export"), { target: { files: [new File(["fictional"], "week.jsonl.gz")] } });
+    await screen.findByText("21 eligible windows in 1 review batches");
+    expect(fetcher.mock.calls.some(([path]) => path.includes("mode=all"))).toBe(true);
+    expect(fetcher.mock.calls.some(([path]) => path.endsWith("/analyze") || path === `/api/jobs/${id}/bundle`)).toBe(false);
+    expect(screen.getByRole("button", { name: "Analyze all 21 windows with Gemini" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: /Batch 1 · 20 windows/ }));
+    await screen.findByText("Back to full export");
+    await waitFor(() => expect(onDataset).toHaveBeenLastCalledWith(expect.objectContaining({ sessions: expect.any(Array) })));
+  });
+
   it("previews without analysis and runs Gemini only through the explicit button", async () => {
     const { fetcher, onDataset } = setup();
     const input = await screen.findByLabelText("Upload PR100 export");
+    fireEvent.change(screen.getByLabelText("Coverage"), { target: { value: "sample" } });
     fireEvent.change(screen.getByLabelText("Sessions to analyze"), { target: { value: "1" } });
     fireEvent.change(input, { target: { files: [new File(["fictional raw events"], "fictional.jsonl")] } });
     await screen.findByText("1 session ready from 1 eligible notebook scopes");
