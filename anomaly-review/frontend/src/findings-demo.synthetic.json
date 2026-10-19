@@ -8,7 +8,7 @@
     "priority_method": "No automatic priority score",
     "input_sha256": "b72c8c4e70699ee187d83732c5ff3fca829b2a6074abfca4f0abee1cc57003f4",
     "model": null,
-    "prompt_sha256": "e714506a006852cad999df85ac513e8dcfac3565e9c1f521f04e702d7c757738",
+    "prompt_sha256": "1da752048a8d36b2ee215c8f6be8dc8aaed0f93174873294aebfdb8c9bd038c8",
     "analysis_version": "session-findings-integration-v2-pr100"
   },
   "summary": {
@@ -101,7 +101,7 @@
       "reasons": [
         {
           "id": "finding-1",
-          "title": "Difficulty persisted after help",
+          "title": "Possible continuing difficulty",
           "description": "The edit implements the stated operator change, but failure and the reported empty result persist; guidance repeats.",
           "supporting_refs": [
             "M1",
@@ -1124,7 +1124,7 @@
       "reasons": [
         {
           "id": "finding-1",
-          "title": "Response missed the student's request",
+          "title": "Possible request mismatch",
           "description": "The response supplies replacement code despite a request for explanation, and the student explicitly corrects the mismatch.",
           "supporting_refs": [
             "M1",
@@ -2390,7 +2390,7 @@
       "reasons": [
         {
           "id": "finding-1",
-          "title": "Obstacle associated with tutor advice",
+          "title": "Possible obstacle after tutor advice",
           "description": "The attempted method matches the advice and the execution reports that method as unavailable. The tutor corrects it, followed by recovery.",
           "supporting_refs": [
             "M1",

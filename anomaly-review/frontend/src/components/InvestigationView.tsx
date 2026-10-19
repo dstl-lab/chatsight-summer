@@ -4,7 +4,7 @@ import type { DemoSession, ReviewRecord } from "../types";
 import { MetricStrip } from "./MetricStrip";
 import { ReviewPanel } from "./ReviewPanel";
 import { Timeline } from "./Timeline";
-import { decisionLabel } from "../bundle";
+import { decisionLabel, findingLabel } from "../bundle";
 
 interface InvestigationViewProps {
   session: DemoSession;
@@ -47,10 +47,10 @@ export function InvestigationView({ session, review, onSaveReview }: Investigati
 
       <section className="reason-section" aria-labelledby="reason-heading">
         <div className="reason-heading">
-          <h3 id="reason-heading">{session.analysis ? "Session findings" : "Why was this flagged?"}</h3>
+          <h3 id="reason-heading">{session.analysis ? "Review flags" : "Why was this flagged?"}</h3>
           {!session.analysis && <span className="placeholder-note">Illustrative evidence</span>}
         </div>
-        <div className="reason-list">
+        {!session.analysis && <div className="reason-list">
           {session.reasons.map((reason) => (
             <button key={reason.id} className="reason-item"
                     onClick={() => jumpToEvidence(reason.supporting_refs, reason.supporting_event_ids)}>
@@ -59,17 +59,28 @@ export function InvestigationView({ session, review, onSaveReview }: Investigati
               <span className="reason-action">View in timeline <ArrowDown size={13} /></span>
             </button>
           ))}
-        </div>
+        </div>}
         {session.analysis && <div className="analysis-details">
-          <p>{session.analysis.state === "not_analyzed" ? "Analyze this batch to generate findings." : session.analysis.summary}</p>
+          {!!session.analysis.findings.length && <p className="certainty-note">Possible interpretations, not confirmed tutor errors. You make the assessment.</p>}
+          {!session.analysis.findings.length && <p>{session.analysis.state === "not_analyzed" ? "Analyze this batch to generate review flags." : session.analysis.summary}</p>}
           {!!session.analysis.validation_errors.length && <ul>{session.analysis.validation_errors.map((error, index) => <li key={index}>{error}</li>)}</ul>}
-          {session.analysis.findings.map((finding, index) => <details key={index} className="finding-detail">
-            <summary>Evidence and uncertainty · finding {index + 1}</summary>
-            {finding.interpretations.map((item, itemIndex) => <p key={itemIndex}>{item.statement} <button onClick={() => jumpToEvidence(item.evidence_ids, [])}>Show cited evidence</button></p>)}
-            {!!finding.recovery_evidence_ids.length && <button onClick={() => jumpToEvidence(finding.recovery_evidence_ids, [])}>Show later recovery or correction</button>}
-            <ul>{finding.uncertainties.map((notice, noticeIndex) => <li key={noticeIndex}>{notice}</li>)}</ul>
-            <p>Evidence checks do not establish that the interpretation is correct or that the tutor caused an outcome.</p>
-          </details>)}
+          {session.analysis.findings.map((finding, index) => <article key={index} className="review-flag">
+            <div className="flag-title-row"><h4>{findingLabel(finding.category)}</h4>
+              <button onClick={() => jumpToEvidence([...finding.highlight_ids, ...finding.recovery_evidence_ids], [])}>View evidence <ArrowDown size={13} aria-hidden="true" /></button>
+            </div>
+            <p className="flag-excerpt">{finding.explanation}</p>
+            <p className="flag-limit"><strong>Uncertain:</strong> {finding.uncertainties[0]}</p>
+            <details className="finding-detail">
+              <summary>Full interpretation &amp; evidence · flag {index + 1}</summary>
+              <p><strong>Possible interpretation:</strong> {finding.explanation}</p>
+              <h5>Evidence to inspect</h5>
+              {finding.interpretations.map((item, itemIndex) => <p key={itemIndex}>{item.statement} <button onClick={() => jumpToEvidence(item.evidence_ids, [])}>Show cited evidence</button></p>)}
+              {!!finding.recovery_evidence_ids.length && <button onClick={() => jumpToEvidence(finding.recovery_evidence_ids, [])}>Show later recovery or correction</button>}
+              <h5>Limits on this interpretation</h5>
+              <ul>{finding.uncertainties.map((notice, noticeIndex) => <li key={noticeIndex}>{notice}</li>)}</ul>
+              <p>References and event links are checked; responsibility and correctness remain for you to assess. Missing recovery in this window does not establish that the session ended without recovery.</p>
+            </details>
+          </article>)}
         </div>}
         {!!session.quality_warnings.length && <details className="quality-notices"><summary>Evidence coverage and missing information ({session.quality_warnings.length})</summary><ul>{session.quality_warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></details>}
       </section>
