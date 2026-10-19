@@ -27,10 +27,7 @@ def field(value, key, default=None):
 
 
 def generation_config(config):
-    names = {"temperature": "temperature", "response_mime_type": "responseMimeType", "response_json_schema": "responseJsonSchema", "max_output_tokens": "maxOutputTokens"}
-    result = {names[k]: v for k, v in config.items() if k in names}
-    if "thinking_config" in config: result["thinkingConfig"] = {"thinkingLevel": config["thinking_config"]["thinking_level"].upper()}
-    return result
+    return provider.wire_config(config)
 
 
 def prepare(prepared_paths, folder, *, model, options, cache_folder, max_chunk_bytes=64 * 1024**2):

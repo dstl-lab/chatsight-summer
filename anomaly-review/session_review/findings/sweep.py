@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -42,6 +43,32 @@ def inspect(paths, options, limit=50):
         "token_estimates_are_not_provider_measurements": True, "model_calls": 0}
 
 
+def count_inputs(paths, options, *, model, cache_folder, limit=20, send=False, measure=None):
+    if not send: raise ValueError("--send is required: counting sends evidence to the provider, without generation")
+    if not 1 <= limit <= 1000: raise ValueError("Choose 1–1,000 inputs to count")
+    cache = provider.InputTokenCache(Path(cache_folder) / "input-token-counts")
+    limiter, stop = optimized.RateLimiter(min(options.rpm, 30), 1), threading.Event()
+    totals = {"counted_units": 0, "count_requests": 0, "provider_input_tokens": 0,
+        "previous_estimated_reservation": 0, "new_input_rate_reservation": 0,
+        "separate_input_plus_output_run_budget": 0, "generation_calls": 0}
+    def counted(*args):
+        limiter.acquire(0, stop)
+        return (measure or provider.count_input_tokens)(*args)
+    for path in paths:
+        _, _, _, evidence = h.load_prepared(path)
+        for item in evidence:
+            if totals["counted_units"] >= limit: return totals
+            text, config, metrics = provider.payload(item, options)
+            count, reused = cache.count(text, config, model, options, measure=counted)
+            accounted = provider.input_accounting(metrics, options, counted=count)
+            totals["counted_units"] += 1; totals["count_requests"] += not reused
+            totals["provider_input_tokens"] += count
+            totals["previous_estimated_reservation"] += (len(text) + 2) // 3 + options.max_output_tokens
+            totals["new_input_rate_reservation"] += accounted["rate_limit_input_tokens"]
+            totals["separate_input_plus_output_run_budget"] += accounted["run_budget_tokens"]
+    return totals
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -52,7 +79,7 @@ def main(argv=None):
     prepare.add_argument("--minutes", type=int, choices=[10,25], default=25)
     prepare.add_argument("--group-gap", type=int, default=10)
     prepare.add_argument("--max-span", type=int, default=60)
-    for name in ("run", "inspect", "report", "batch-prepare"):
+    for name in ("run", "inspect", "report", "count", "batch-prepare"):
         command = sub.add_parser(name)
         command.add_argument("prepared", type=Path)
         if name != "report":
@@ -65,7 +92,11 @@ def main(argv=None):
             command.add_argument("--max-output-tokens", type=int, default=8192)
             command.add_argument("--max-requests", type=int, default=0)
             command.add_argument("--max-estimated-tokens", type=int, default=0)
-        if name == "run": command.add_argument("--send", action="store_true")
+            if name != "count": command.add_argument("--token-counting", choices=["provider", "estimate"], default="provider")
+        if name in {"run", "count"}: command.add_argument("--send", action="store_true")
+        if name == "count":
+            command.add_argument("--limit", type=int, default=20)
+            command.add_argument("--cache", type=Path)
         if name == "batch-prepare":
             command.add_argument("--output", type=Path, required=True)
             command.add_argument("--enqueued-tokens", type=int, required=True, help="Operator's configured native batch token allowance")
@@ -125,10 +156,13 @@ def main(argv=None):
         options = provider.Options(workers=args.workers, rpm=args.rpm, tpm=args.tpm, compact=not args.original_prompt,
             thinking=args.thinking, max_output_tokens=args.max_output_tokens, max_requests=args.max_requests,
             max_estimated_tokens=args.max_estimated_tokens, transport="batch" if args.command == "batch-prepare" else "concurrent",
-            batch_enqueued_tokens=args.enqueued_tokens if args.command == "batch-prepare" else 0)
+            batch_enqueued_tokens=args.enqueued_tokens if args.command == "batch-prepare" else 0, token_counting=getattr(args, "token_counting", "provider"))
         if args.command == "inspect":
             print(json.dumps(inspect(paths, options))); return 0
         cache = args.prepared.parent / "optimized-assessment-cache"
+        if args.command == "count":
+            result = count_inputs(paths, options, model=args.model, cache_folder=args.cache or cache, limit=args.limit, send=args.send)
+            print(json.dumps(result)); return 0
         if args.command == "batch-prepare":
             result = native_batch.prepare(paths, args.output, model=args.model, options=options, cache_folder=cache)
             print(json.dumps({"requests": result["requests"], "estimated_tokens": result["estimated_tokens"], "chunks": len(result["chunks"]), "model_calls": 0})); return 0

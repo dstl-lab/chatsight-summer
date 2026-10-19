@@ -11,7 +11,7 @@ start competing Gemini work until Austin gives the go-ahead.
 | Feature | Behavior | Limit |
 | --- | --- | --- |
 | Parallel requests | Four reusable worker connections by default; configurable 1–16 | Throughput still depends on provider quotas and response time |
-| Rate controls | Shared rolling request/minute and estimated-token/minute reservations within one service | Other processes using the same account are outside this limiter |
+| Rate controls | Shared rolling request/minute and input-token/minute reservations within one service | Other processes using the same project are outside this limiter |
 | Run budgets | Optional maximum new requests and estimated reserved tokens per invocation | Estimates are not a dollar cap or exact provider token counts |
 | Compact evidence | Factor repeated fields, warnings and exact code/output strings into tables | Different wire representation requires a quality comparison |
 | Saved responses | Reuse exact evidence/model/prompt/configuration matches; persist before dispatch | Changed evidence/configuration is a new assessment |
@@ -19,6 +19,35 @@ start competing Gemini work until Austin gives the go-ahead.
 | Native Gemini Batch | Optional durable provider jobs, file chunks and quota waves | Asynchronous, with provider completion delays |
 | Measurements | Actual reported token usage, mean/p95 call time, reuse and prompt size | Missing usage remains unknown; native jobs have no invented per-call latency |
 | Thinking level | Optional `low`, `medium`, `high`; default preserves the model setting | Lower thinking may change findings; compare before adoption |
+
+### Input accounting update, October 19
+
+Concurrent runs now default to `--token-counting provider`. Before an untouched
+assessment, Google's tokenizer counts the complete request, including its response
+schema. This sends the prepared evidence to the same provider but generates no
+assessment. Counts are cached under the exact existing request fingerprint. The
+model, evidence, prompt, output budget and thinking setting are unchanged.
+
+TPM reservations cover input only, with a small margin (2% or 32 tokens, whichever
+is larger), and are reconciled to reported input usage after a response. The separate
+`--max-estimated-tokens` run budget continues to reserve input plus maximum output.
+If required counting fails, dispatch pauses with that analysis untouched. Explicit
+`--token-counting estimate` avoids tokenizer calls, but character estimates are
+approximate. Accounting mode is operational; it does not invalidate identical saved
+assessments. Offline preparation, inspection and native Batch preparation do not
+silently call the tokenizer. Native queue estimates remain estimates.
+
+A heavy original-format 20-window batch measured **2,201,943 input tokens** in
+20 tokenizer calls (7.26 seconds), with zero generation calls. The former character
+estimate plus output reservation was 1,586,759, so it underestimated this data.
+Token counting fixes an accuracy problem as well as separating unnecessary output
+allowance from TPM. It does not guarantee a speedup at the same local setting.
+
+Using those measured counts, a simulation with four workers, 30 RPM and assumed
+15–60 second call durations takes **14.25–15 minutes at the local 200,000 input TPM**.
+At a hypothetical 1,000,000 input TPM it takes 2.5–5 minutes. These are scheduling
+simulations, not live generation benchmarks or verified account quotas. No quota has
+been changed. Verify the existing project's limits before raising the local setting.
 
 The backend still validates assessments against the complete original evidence.
 Compaction verifies an exact decode round trip for every request. It retains IDs,
@@ -61,7 +90,7 @@ prompt formats or grouping do not qualify as an identical cached request.
 
 Use the new worktree, a new environment, a separate port and separate storage.
 The existing service can remain open alongside it. Configure the account's actual
-limits before scaling up; the defaults (4 workers, 30 RPM, estimated 200,000 TPM)
+limits before scaling up; the defaults (4 workers, 30 RPM, 200,000 input TPM)
 are local settings, not a claim about your account's allowance.
 
 ```sh
@@ -137,9 +166,14 @@ uv run --locked session-findings-sweep prepare /path/to/events.jsonl.gz \
 # Inspect a bounded sample of at most 50 prompts, offline.
 uv run --locked session-findings-sweep inspect private-data/new-sweep
 
+# Tokenizer-only measurement of 20 inputs; sends evidence but generates nothing.
+# Use --original-prompt here and on run to preserve the original JSON representation.
+uv run --locked session-findings-sweep count private-data/new-sweep \
+  --limit 20 --original-prompt --send
+
 # Standard concurrent requests; save each response independently.
 uv run --locked session-findings-sweep run private-data/new-sweep \
-  --workers 4 --rpm 30 --tpm 200000 --max-requests 100 --send
+  --workers 4 --rpm 30 --tpm 200000 --max-requests 100 --original-prompt --send
 
 uv run --locked session-findings-sweep report private-data/new-sweep
 

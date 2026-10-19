@@ -143,7 +143,7 @@ class Jobs:
         mean = metrics["mean_call_seconds"]
         if options.transport == "concurrent" and mean is not None:
             measured = max(1, metrics["completed"] - metrics["reused"])
-            token_mean = metrics["sent_characters"] / 3 / measured + options.max_output_tokens
+            token_mean = (metrics["reserved_input_tokens"] or metrics["sent_characters"] / 3) / measured
             metrics["estimated_remaining_seconds"] = max(remaining * mean / options.workers, remaining * 60 / options.rpm, remaining * token_mean * 60 / options.tpm)
         else: metrics["estimated_remaining_seconds"] = None
         metrics["eta_is_estimate"] = True
@@ -374,7 +374,8 @@ class Jobs:
                 key = (options.rpm, options.tpm)
                 limiter = self.limiters.setdefault(key, optimized.RateLimiter(*key))
                 report = optimized.run_many(paths, model=state["model"], options=options, send=True, generate=self.optimized_generate,
-                    cache_folder=self.root / "optimized-cache", progress=progress, limiter=limiter)
+                    cache_folder=self.root / "optimized-cache", progress=progress, limiter=limiter,
+                    count_limiter=self.limiters.setdefault(("count", options.rpm), optimized.RateLimiter(min(options.rpm, 30), 1)))
             else:
                 remote = self.folder(job_id) / "native-batch"
                 if not (remote / "batch-state.private.json").exists():
@@ -551,6 +552,7 @@ def main():
     parser.add_argument("--thinking", choices=["default", "low", "medium", "high"], default="default")
     parser.add_argument("--original-prompt", action="store_true")
     parser.add_argument("--max-output-tokens", type=int, default=8192)
+    parser.add_argument("--token-counting", choices=["provider", "estimate"], default="provider", help="Concurrent input TPM accounting; provider counts do not generate assessments")
     parser.add_argument("--max-requests", type=int, default=0)
     parser.add_argument("--max-estimated-tokens", type=int, default=0)
     parser.add_argument("--batch-enqueued-tokens", type=int, default=0)
@@ -577,7 +579,8 @@ def main():
     os.umask(0o077)
     options = provider.Options(workers=args.workers, rpm=args.rpm, tpm=args.tpm, compact=not args.original_prompt,
         thinking=args.thinking, max_output_tokens=args.max_output_tokens, max_requests=args.max_requests,
-        max_estimated_tokens=args.max_estimated_tokens, transport=args.provider_mode, batch_enqueued_tokens=args.batch_enqueued_tokens) if args.optimized else None
+        max_estimated_tokens=args.max_estimated_tokens, transport=args.provider_mode, batch_enqueued_tokens=args.batch_enqueued_tokens,
+        token_counting=args.token_counting) if args.optimized else None
     jobs = Jobs(args.storage, model=args.model, optimization=options, group_overlap=args.group_overlap)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(jobs, args.frontend, args.port))
     print(f"Local upload dashboard: http://127.0.0.1:{args.port}. No database access is configured.", flush=True)
