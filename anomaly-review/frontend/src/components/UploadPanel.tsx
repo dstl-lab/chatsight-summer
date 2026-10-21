@@ -4,6 +4,9 @@ import { parseBundle } from "../bundle";
 import type { DemoDataset } from "../types";
 
 interface Job {
+  grouped?: boolean;
+  optimization?: { workers: number; compact: boolean; thinking: string; transport: string };
+  runtime?: { estimated_remaining_seconds: number | null; mean_call_seconds: number | null; p95_call_seconds: number | null; reused: number; transport: string; workers: number | null; usage: Record<string, number>; original_characters: number; sent_characters: number };
   kind?: "collection"; parent_id?: string;
   batches?: { id: string; filename: string; status: string; count: number; progress: { completed: number; failed: number; pending: number } }[];
   coverage?: Record<string, number> | null;
@@ -14,7 +17,16 @@ interface Job {
   selection?: { exclusions: Record<string, number>; quality: Record<string, number> } | null;
   progress: { completed: number; failed: number; pending: number };
 }
-interface Service { ready: boolean; model_configured: boolean; max_upload_bytes: number; model: string; provider: string }
+interface Service {
+  ready: boolean;
+  model_configured?: boolean;
+  gemini_configured?: boolean;
+  max_upload_bytes: number;
+  model?: string;
+  provider?: string;
+  optimization?: Job["optimization"] | null;
+  grouped?: boolean;
+}
 const running = (job: Job | null) => !!job && ["preparing", "analyzing"].includes(job.status);
 const plural = (value: number, word: string) => `${value} ${word}${value === 1 ? "" : word.endsWith("ch") ? "es" : "s"}`;
 
@@ -143,6 +155,10 @@ export function UploadPanel({ onDataset, onBusy, disabled = false, autoRestore =
   }
 
   const collection = job?.kind === "collection";
+  const unitName = job?.grouped ? "sequence" : "window";
+  const modelConfigured = service?.model_configured ?? service?.gemini_configured ?? false;
+  const providerName = service?.provider ?? "Gemini";
+  const modelName = service?.model ? ` using ${service.model}` : "";
   const savedCount = job ? job.progress.completed + job.progress.failed : 0;
   const readyToAnalyze = job && ["ready", "stopped", "interrupted"].includes(job.status);
   const nextBatch = job?.batches?.find(batch => ["ready", "interrupted", "stopped"].includes(batch.status)) ?? job?.batches?.[0];
@@ -153,7 +169,7 @@ export function UploadPanel({ onDataset, onBusy, disabled = false, autoRestore =
   return <section className={`upload-panel ${job && !collection ? "upload-panel--batch" : ""}`} aria-label="Upload recent PR100 data">
     <div className="upload-heading">
       <div className="data-title"><Database size={20} aria-hidden="true" /><div><h2>{title}</h2>
-        {job && <p className="source-caption" title={job.filename}>{job.parent_id ? `${job.count} windows · ${job.minutes}-minute context · ${status}` : dateRange || job.filename}</p>}
+        {job && <p className="source-caption" title={job.filename}>{job.parent_id ? `${plural(job.count, unitName)} · ${job.grouped ? "grouped context" : `${job.minutes}-minute context`} · ${status}` : dateRange || job.filename}</p>}
       </div></div>
       <div className="data-switcher">
         {!!jobs.length && <label><span className="sr-only">Saved exports</span><select aria-label="Saved exports" disabled={busy || disabled} value={job?.parent_id ?? job?.id ?? ""} onChange={e => { if (e.target.value) void open(e.target.value); }}>
@@ -176,29 +192,38 @@ export function UploadPanel({ onDataset, onBusy, disabled = false, autoRestore =
       {job && <div className="upload-job">
         <div className="job-overview">
           <div className="job-status"><span className={`status-dot status-dot--${job.status}`} /> <strong role="status">{status}</strong>
-            {collection && job.status !== "preparing" && <span className="job-count">{job.count.toLocaleString()} windows · {plural(job.batches?.length ?? 0, "batch")}</span>}
+            {collection && job.status !== "preparing" && <span className="job-count">{job.count.toLocaleString()} {unitName}s · {plural(job.batches?.length ?? 0, "batch")}</span>}
           </div>
           <div className="job-actions">
             {job.parent_id && <button className="quiet-button" disabled={sending} onClick={() => { void open(job.parent_id!); }}><ArrowLeft size={14} /> All batches</button>}
             {collection && nextBatch && !running(job) && job.status !== "failed" && <button className="primary-button" disabled={sending || disabled} onClick={() => { void open(nextBatch.id); }}>{nextBatch.status === "completed" ? "Review results" : "Open next batch"}<ArrowRight size={15} /></button>}
-            {!collection && readyToAnalyze && <button className="primary-button" disabled={!job.count || !service.model_configured || busy || disabled} onClick={() => { void analyze(); }}>{job.status === "ready" ? `Analyze ${plural(job.count, "window")}` : "Continue analysis"}<ArrowRight size={15} /></button>}
+            {!collection && readyToAnalyze && <button className="primary-button" disabled={!job.count || !modelConfigured || busy || disabled} onClick={() => { void analyze(); }}>{job.status === "ready" ? `Analyze ${plural(job.count, unitName)}` : "Continue analysis"}<ArrowRight size={15} /></button>}
             {!collection && job.status === "completed" && <span className="completion-label"><CheckCircle2 size={16} /> Results ready below</span>}
           </div>
         </div>
         {job.status === "preparing" && <p className="processing-copy">{job.import_progress?.phase ?? "Preparing uploaded events"}{job.import_progress?.events ? ` · ${job.import_progress.events.toLocaleString()} events read` : job.import_progress?.requests ? ` · ${job.import_progress.requests.toLocaleString()} requests checked` : ""}</p>}
         {job.count > 0 && (running(job) && job.status === "analyzing" || savedCount > 0) && <div className="analysis-progress"><progress aria-label="Analysis progress" max={job.count} value={savedCount} /><span>{job.progress.completed.toLocaleString()} / {job.count.toLocaleString()} analyzed{job.progress.failed > 0 ? ` · ${job.progress.failed} failed` : ""}</span></div>}
-        {!collection && readyToAnalyze && <p className="model-disclosure">Analysis sends these {job.count} windows to {service.provider} using {service.model}.</p>}
+        {!collection && readyToAnalyze && <p className="model-disclosure">Analysis sends these {job.count} {unitName}s to {providerName}{modelName}.</p>}
+        {job.runtime?.estimated_remaining_seconds != null && job.status === "analyzing" && <p className="eta-estimate">Est. {formatRemaining(job.runtime.estimated_remaining_seconds)} remaining · based on saved calls and configured limits</p>}
         {job.error && <p role="alert" className="job-error">{job.error}</p>}
-        {!service.model_configured && readyToAnalyze && <p className="job-error">Add an API key for {service.provider} to the local service to analyze.</p>}
-        {!!job.batches?.length && <BatchList key={job.id} batches={job.batches} disabled={sending || disabled || job.status === "failed"} active={running(job)} onOpen={id => { void open(id); }} />}
-        {collection && readyToAnalyze && <details className="bulk-analysis"><summary>Analyze the full export</summary><div><p>This starts {job.count.toLocaleString()} windows with {service.provider}. Saved results are reused.</p><button disabled={!job.count || !service.model_configured || busy || disabled} onClick={() => { void analyze(); }}>Analyze all {job.count.toLocaleString()} windows</button></div></details>}
+        {!modelConfigured && readyToAnalyze && <p className="job-error">Add an API key for {providerName} to the local service to analyze.</p>}
+        {!!job.batches?.length && <BatchList key={job.id} batches={job.batches} disabled={sending || disabled || job.status === "failed"} active={running(job)} grouped={job.grouped} onOpen={id => { void open(id); }} />}
+        {collection && readyToAnalyze && <details className="bulk-analysis"><summary>Analyze the full export</summary><div><p>This starts {job.count.toLocaleString()} {unitName}s with {providerName}. Saved results are reused.</p><button disabled={!job.count || !modelConfigured || busy || disabled} onClick={() => { void analyze(); }}>Analyze all {job.count.toLocaleString()} {unitName}s</button></div></details>}
         {(job.source || job.coverage || job.selection) && <details className="data-details"><summary>Data details & coverage</summary><div className="details-content">
           <p className="source-filename">{job.filename}</p>
+          {job.optimization && <p>{job.optimization.transport === "batch" ? "Google Batch API" : `${job.optimization.workers} parallel workers`} · {job.optimization.compact ? "Lossless compact prompts" : "Original prompt format"} · Thinking: {job.optimization.thinking}</p>}
+          {job.grouped && <p>Time-based sequences can include several requests or questions. Groups have a 60-minute span cap; the coverage download maps requests to sequences.</p>}
+          {job.runtime && <dl className="coverage-counts">
+            <div><dt>Average call time</dt><dd>{job.runtime.mean_call_seconds == null ? "Not measured" : `${job.runtime.mean_call_seconds.toFixed(1)} sec`}</dd></div>
+            <div><dt>Saved assessments reused</dt><dd>{job.runtime.reused}</dd></div>
+            {Object.entries(job.runtime.usage).map(([key,value]) => <div key={key}><dt>{key.replaceAll("_", " ")}</dt><dd>{value.toLocaleString()}</dd></div>)}
+            {job.runtime.original_characters > 0 && <div><dt>Input characters saved</dt><dd>{Math.round(100*(1-job.runtime.sent_characters/job.runtime.original_characters))}%</dd></div>}
+          </dl>}
           {job.source && <p>{job.source.events.toLocaleString()} events · {dateRange}</p>}
           {job.source?.input_events && <p>{(job.source.duplicate_events ?? 0).toLocaleString()} duplicate receipts removed. {(job.source.missing_scope ?? 0).toLocaleString()} events lack notebook identity; {(job.source.missing_occurrence_time ?? 0).toLocaleString()} lack an occurrence time. These remain in the source archive.</p>}
           {job.coverage && <><p>Excluded requests are not negative findings. Windows can overlap.</p><dl className="coverage-counts">{Object.entries(job.coverage).map(([key, value]) => <div key={key}><dt>{coverageLabels[key] ?? key.replaceAll("_", " ")}</dt><dd>{value.toLocaleString()}</dd></div>)}</dl><a href={`/api/jobs/${job.id}/coverage`} download="pr100-coverage.private.jsonl">Download coverage</a></>}
           {job.selection && <dl className="coverage-counts">{Object.entries(job.selection.exclusions).map(([key, value]) => <div key={key}><dt>{coverageLabels[key] ?? key.replaceAll("_", " ")}</dt><dd>{value}</dd></div>)}</dl>}
-          <p>{job.minutes === 25 ? "25-minute windows include 5 minutes before and 20 after a request." : "10-minute windows include 3 minutes before and 7 after a request."} Later activity outside that window is unavailable to the assessment.</p>
+          <p>{job.grouped ? "Grouped context includes the before/after windows of its member requests." : job.minutes === 25 ? "25-minute windows include 5 minutes before and 20 after a request." : "10-minute windows include 3 minutes before and 7 after a request."} Later activity outside that window is unavailable to the assessment.</p>
           {job.kind !== "collection" && ["ready", "completed", "stopped", "interrupted"].includes(job.status) && <a href={`/api/jobs/${job.id}/bundle`} download="pr100-review.private.json">Download review bundle</a>}
         </div></details>}
         {running(job) && !sending && <button className="quiet-button leave-job" onClick={() => { epoch.current++; setJob(null); setError(""); callbacks.current.onDataset(null); }}>Leave this view · continues in background</button>}
@@ -210,21 +235,26 @@ export function UploadPanel({ onDataset, onBusy, disabled = false, autoRestore =
 
 const shortDate = (value: string) => new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 const coverageLabels: Record<string, string> = {
-  tutor_requests: "Tutor requests", eligible: "Ready for analysis", not_tutor_mode: "Other tutor modes", missing_scope: "Missing notebook identity", missing_occurrence_time: "Missing event time",
+  analysis_units: "Analysis sequences", tutor_requests: "Tutor requests", eligible: "Ready for analysis", not_tutor_mode: "Other tutor modes", missing_scope: "Missing notebook identity", missing_occurrence_time: "Missing event time",
   before_production_observation_start: "Before production start", awaiting_followup_window: "Awaiting follow-up", no_completed_response_for_anchor: "No completed response", invalid_anchor_request: "Invalid request binding",
   invalid_observation_links: "Inconsistent evidence links", mixed_or_unknown_tutor_mode: "Mixed tutor modes", oversized_window: "Over the size limit", eligible_with_partial_start: "Partial earlier context",
   missing_required_observation_family: "Missing observations", oversized_observation_window: "Over the size limit", mixed_or_unknown_mode_window: "Mixed tutor modes",
 };
 
-function BatchList({ batches, disabled, active, onOpen }: { batches: NonNullable<Job["batches"]>; disabled: boolean; active: boolean; onOpen: (id: string) => void }) {
+function BatchList({ batches, disabled, active, grouped = false, onOpen }: { batches: NonNullable<Job["batches"]>; disabled: boolean; active: boolean; grouped?: boolean; onOpen: (id: string) => void }) {
   const [page, setPage] = useState(0);
   const pageSize = 6;
   const start = page * pageSize;
   const labels: Record<string, string> = { ready: "Ready", completed: "Analyzed", analyzing: "Analyzing", stopped: "Paused", interrupted: "Paused", failed: "Failed" };
   return <section className="review-batches" aria-label="Review batches"><div className="batch-list-heading"><h3>Review batches</h3><span>{batches.length.toLocaleString()} total</span></div>
-    <div className="batch-table-wrap"><table><thead><tr><th>Batch</th><th>Windows</th><th>Status</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>
+    <div className="batch-table-wrap"><table><thead><tr><th>Batch</th><th>{grouped ? "Sequences" : "Windows"}</th><th>Status</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>
       {batches.slice(start, start + pageSize).map((batch, index) => <tr key={batch.id}><td>{start + index + 1}</td><td>{batch.count}</td><td><span className={`batch-status batch-status--${batch.status}`}>{labels[batch.status] ?? batch.status}</span></td><td><button aria-label={`Open batch ${start + index + 1}`} disabled={disabled || (active && batch.status !== "completed")} onClick={() => onOpen(batch.id)}>{batch.status === "completed" ? "Review" : "Open"}<ArrowRight size={14} /></button></td></tr>)}
     </tbody></table></div>
     {batches.length > pageSize && <nav className="batch-pagination" aria-label="Batch pages"><span>{start + 1}–{Math.min(start + pageSize, batches.length)} of {batches.length}</span><div><button disabled={page === 0} aria-label="Previous batches" onClick={() => setPage(value => value - 1)}>Previous</button><button disabled={start + pageSize >= batches.length} aria-label="Next batches" onClick={() => setPage(value => value + 1)}>Next</button></div></nav>}
   </section>;
+}
+
+function formatRemaining(seconds: number) {
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }

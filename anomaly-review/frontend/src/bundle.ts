@@ -1,7 +1,7 @@
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import schema from "./review-schema.json";
-import type { DemoDataset, DemoSession, ReviewRecord } from "./types";
+import type { DemoDataset, DemoSession, Finding, ReviewRecord } from "./types";
 
 const ajv = new Ajv({ strict: false, allErrors: false });
 addFormats(ajv);
@@ -79,6 +79,12 @@ export function decisionLabel(session: DemoSession): string {
   if (session.analysis.state === "rejected") return "Insufficient evidence · rejected";
   if (session.analysis.state === "failed") return "Insufficient evidence · failed";
   return ({ surface: "Flag for review", no_supported_finding: "No supported finding", insufficient_evidence: "Insufficient evidence" })[session.analysis.decision ?? "insufficient_evidence"];
+}
+
+export function findingLabel(category: Finding["category"]): string {
+  return { persistent_difficulty: "Possible continuing difficulty",
+    request_mismatch: "Possible request mismatch",
+    advice_linked_obstacle: "Possible obstacle after tutor advice" }[category];
 }
 
 export function reviewStorageKey(dataset: DemoDataset): string {

@@ -1,8 +1,10 @@
 # Extract fresh production data, upload it, and review findings
 
-Use the integration branch `codex/session-findings-real-data` in
-`dstl-lab/chatsight-summer`. Run the commands below from its `anomaly-review`
-directory. The dashboard runs on your computer. Database access belongs to the
+For optional bounded parallelism, compact prompts, grouping, or native Gemini
+Batch, use [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md).
+
+Run the commands below from the repository's `anomaly-review` directory. The
+dashboard runs on your computer. Database access belongs to the
 person extracting data; someone receiving the export does not need that access.
 
 ## Which data does this include?
@@ -26,15 +28,15 @@ Prerequisites: `uv`, working `kubectl` access to the production logging pod in t
 correct context/namespace, and the PostgreSQL password. Neither an export nor
 opening the dashboard changes the production database.
 
-On Austin's current checkout:
+From the approved operator's checkout:
 
 ```sh
-cd /Users/austinflippo/Documents/GitHub/dsc10-tutor-jlab/local-analytics/workspaces/chatsight-session-findings/anomaly-review
+cd /path/to/chatsight-summer/anomaly-review
 
 uv run --locked --extra extract session-findings-extract \
   --all \
   --port-forward \
-  --env-file /Users/austinflippo/Documents/GitHub/chatsight/.env \
+  --env-file /private/path/to/database.env \
   --output "private-data/pr100-$(date -u +%Y%m%dT%H%M%SZ)"
 ```
 
@@ -82,14 +84,15 @@ Start the service and leave this terminal running:
 uv run --locked session-findings-app \
   --port 8766 \
   --storage private-data/full-uploads \
-  --key-file /Users/austinflippo/Documents/GitHub/chatsight/.env
+  --key-file /private/path/to/model-keys.env
 ```
 
 Open **http://127.0.0.1:8766**. On another person's machine, use a separate
-private file containing `GEMINI_API_KEY=...`, or set that variable in the service
-environment and omit `--key-file`. This command reads only the Gemini key from
-the selected file. The dashboard has no database connection or extraction route.
-Previewing works without a Gemini key; analyzing requires it.
+private file containing the selected provider key, or set that variable in the
+service environment and omit `--key-file`. The dashboard has no database
+connection or extraction route. Previewing works without a model key; analyzing
+requires one. Standard mode supports Gemini and OpenAI model names. Optimized mode
+is Gemini-only.
 
 If the app is already running on that port, use the existing app. After updating
 the code, stop the old service with Ctrl+C, rebuild the frontend, and restart.

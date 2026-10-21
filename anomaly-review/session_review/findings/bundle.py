@@ -9,9 +9,9 @@ from .contract import ReviewBundle
 from .historical import digest
 
 VERSION = "session-findings-integration-v2-pr100"
-TITLES = {"persistent_difficulty": "Difficulty persisted after help",
-          "request_mismatch": "Response missed the student's request",
-          "advice_linked_obstacle": "Obstacle associated with tutor advice"}
+TITLES = {"persistent_difficulty": "Possible continuing difficulty",
+          "request_mismatch": "Possible request mismatch",
+          "advice_linked_obstacle": "Possible obstacle after tutor advice"}
 
 
 def unknown(reason):

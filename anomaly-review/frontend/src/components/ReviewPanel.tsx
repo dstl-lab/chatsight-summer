@@ -36,7 +36,7 @@ export function ReviewPanel({ sessionId, review, onSave }: ReviewPanelProps) {
   return (
     <section className="review-panel" aria-labelledby="review-heading">
       <h3 id="review-heading">Instructor assessment</h3>
-      <p className="review-intro">Record your interpretation of the evidence. Saved only in this browser.</p>
+      <p className="review-intro">The flag is a suggestion. Record your assessment; saved only in this browser.</p>
       <form onSubmit={submit}>
         <fieldset className="review-options">
           <legend className="sr-only">Session classification</legend>

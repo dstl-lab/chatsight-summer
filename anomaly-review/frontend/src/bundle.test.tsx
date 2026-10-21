@@ -51,7 +51,7 @@ describe("review bundle validation", () => {
     render(<App dataset={parseBundle(JSON.stringify(doc))} />);
     fireEvent.click(screen.getByRole("button", { name: /Notebook Source captured at execution/ }));
     expect(screen.getByText("Captured source")).toBeInTheDocument();
-    expect(screen.getByText("fictional_capture = 1")).toBeInTheDocument();
+    expect(screen.getByText("fictional_capture = 1", { selector: "code" })).toBeInTheDocument();
     expect(screen.getByText(/PR100 notebook observation window/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Notebook$/ }));
     expect(screen.getByRole("button", { name: /Notebook Source captured at execution/ })).toBeInTheDocument();
@@ -68,12 +68,12 @@ describe("integrated review UI", () => {
     render(<App dataset={demoDataset} />);
     fireEvent.click(screen.getByText("Examples & files"));
     fireEvent.click(screen.getByRole("button", { name: "Findings demo" }));
-    expect(await screen.findByRole("heading", { name: "Session findings" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Review flags" })).toBeInTheDocument();
     expect(screen.getByText(/No model inference/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Checks$/ }));
     const student = screen.queryByRole("button", { name: /Student Student message/ });
     expect(student).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Difficulty persisted after help/ }));
+    fireEvent.click(screen.getAllByRole("button", { name: "View evidence" })[0]);
     await waitFor(() => expect(screen.getByRole("button", { name: "All events" })).toHaveAttribute("aria-pressed", "true"));
     expect(screen.getAllByRole("button", { name: /Student Student message/ }).length).toBeGreaterThan(0);
   });
@@ -102,7 +102,7 @@ describe("integrated review UI", () => {
     fireEvent.change(screen.getByLabelText("Open local review bundle"), { target: { files: [new File(["{}"], "invalid.json")] } });
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Could not open this review bundle"));
     expect(screen.queryByText("Authored import test")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Session findings" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Review flags" })).not.toBeInTheDocument();
   });
   it("imports reviews into the same session without retaining stale form values", async () => {
     const dataset = parseBundle(JSON.stringify(raw));

@@ -1,9 +1,14 @@
 # Tutor Session Review Research Pipeline
 
-**Integration branch:** Austin’s evidence-backed findings, private historical
-JSONL preparation, and local review-bundle imports are available here. Start with
-[FINDINGS_INTEGRATION.md](FINDINGS_INTEGRATION.md) for the combined workflow.
-The original pipeline and synthetic demo below remain available.
+This branch combines the evidence-backed PR100 ingestion and analysis workflow
+with question-level behavioral metrics, explainable ranking, deterministic
+metric-model fusion, and the instructor review interface. Start with
+[FINDINGS_INTEGRATION.md](FINDINGS_INTEGRATION.md) for the data contracts and
+[PR100_QUICKSTART.md](PR100_QUICKSTART.md) for the approved export workflow.
+
+The opt-in [optimized PR100 workflow](OPTIMIZATION_GUIDE.md) adds bounded parallel
+requests, compact evidence, optional overlap grouping and native Gemini Batch.
+It is isolated from existing running jobs and requires a separate launch/storage.
 
 This is an isolated offline project for event normalization, question-session reconstruction, and evidence-linked behavioral metrics. It does not modify the ChatSight application and does not contain production student data.
 
@@ -33,9 +38,12 @@ uv run session-real-validate fixtures/phase2c_export.synthetic.json \
   --quality-output /tmp/phase2c-quality.json
 ```
 
-## Instructor UI prototype
+## Instructor review app
 
-The UI uses React, TypeScript, Vite, and Lucide icons. It is a static single-page application with no backend, model calls, or database access.
+The UI uses React, TypeScript, Vite, and Lucide icons. The browser has no database
+access. A local Python service can ingest an approved deidentified PR100 export,
+prepare bounded evidence windows, run model analysis, and serve private review
+bundles. The committed synthetic demonstrations remain usable without that service.
 
 ```bash
 cd anomaly-review/frontend
@@ -44,6 +52,19 @@ npm run dev
 ```
 
 Open `http://127.0.0.1:4173`. The committed synthetic data is ready to use. Instructor reviews are stored only in the browser's local storage.
+
+For the local upload and analysis workflow, build the frontend and run:
+
+```bash
+cd anomaly-review/frontend
+npm run build
+cd ..
+uv run session-findings-app --port 8766 --storage private-data/uploads
+```
+
+Add `--key-file /private/path/to/model-keys.env` when model analysis is needed.
+Standard mode supports Gemini and OpenAI models. The optimized transport is
+currently Gemini-only; see [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md).
 
 Run its checks with:
 

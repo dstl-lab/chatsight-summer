@@ -80,6 +80,22 @@ describe("raw PR100 upload", () => {
     expect(fetcher.mock.calls.some(([path]) => path.endsWith("/analyze"))).toBe(false);
   });
 
+  it("keeps grouped analysis counts distinct from eligible requests and details collapsed", async () => {
+    const collection = { id, kind: "collection", grouped: true, filename: "fictional-grouped.jsonl.gz", status: "ready", count: 2950, minutes: 25,
+      created_at: "2026-10-18T12:00:00Z", source: null, coverage: { tutor_requests: 10295, eligible: 8284, analysis_units: 2950 },
+      optimization: { workers: 4, compact: true, thinking: "default", transport: "concurrent" },
+      progress: { completed: 0, failed: 0, pending: 0 }, batches: [{ id: "2".repeat(32), filename: "batch 1", count: 20, status: "ready", progress: { completed: 0, failed: 0, pending: 0 } }] };
+    const fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === "/api/status" ? { ready: true, gemini_configured: true } : path === "/api/jobs" ? { jobs: [collection] } : collection), { status: 200 }));
+    vi.stubGlobal("fetch", fetcher);
+    render(<UploadPanel onDataset={vi.fn()} onBusy={vi.fn()} autoRestore />);
+    await screen.findByText("2,950 sequences · 1 batch");
+    expect(screen.getByRole("columnheader", { name: "Sequences" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Analyze all 2,950 sequences" })).toBeEnabled();
+    expect(screen.getByText("Data details & coverage").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText("8,284")).toBeInTheDocument();
+    expect(fetcher.mock.calls.some(([path]) => path.endsWith("/analyze"))).toBe(false);
+  });
+
   it("previews without analysis and runs Gemini only through the explicit button", async () => {
     const { fetcher, onDataset } = setup();
     const input = await screen.findByLabelText("Upload PR100 export");
