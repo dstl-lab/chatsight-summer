@@ -23,7 +23,7 @@ class Metric(Model):
 
 
 class ReferenceTime(Model):
-    status: Literal["illustrative", "unknown"]
+    status: Literal["illustrative", "calculated", "unknown"]
     lower_seconds: float | None = None
     upper_seconds: float | None = None
     basis: str
@@ -96,11 +96,61 @@ class Analysis(Model):
         return self
 
 
+class MetricSignal(Model):
+    status: Literal["strong_outlier", "moderate_outlier", "no_outlier", "insufficient_data"]
+    episode_id: str | None = None
+    score: float | None = None
+    above_threshold_metrics: list[str] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+    source_event_ids: list[str] = Field(default_factory=list)
+    data_limitations: list[str] = Field(default_factory=list)
+
+
+class LlmSignal(Model):
+    status: Literal["supported_finding", "no_supported_finding", "insufficient_evidence", "not_analyzed"]
+    model: str | None = None
+    finding_categories: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+    source_event_ids: list[str] = Field(default_factory=list)
+    data_limitations: list[str] = Field(default_factory=list)
+
+
+class FusionConfigView(Model):
+    strong_composite_score: float
+    strong_single_tail_score: float
+    strong_contribution_count: int
+
+
+class CombinedPriority(Model):
+    status: Literal["scored", "insufficient_data"]
+    priority: Literal["high", "medium", "low", "none", "insufficient_data"]
+    rule: str
+    summary: str
+    metric_signal: MetricSignal
+    llm_signal: LlmSignal
+    shared_evidence_refs: list[str] = Field(default_factory=list)
+    shared_source_event_ids: list[str] = Field(default_factory=list)
+    config: FusionConfigView
+    interpretation: str
+
+    @model_validator(mode="after")
+    def consistent(self):
+        if (self.status == "insufficient_data") != (self.priority == "insufficient_data"):
+            raise ValueError("Insufficient fusion status and priority must agree.")
+        if self.priority == "high":
+            if self.metric_signal.status != "strong_outlier" or self.llm_signal.status != "supported_finding":
+                raise ValueError("High priority requires both strong metric and supported LLM signals.")
+            if not self.shared_evidence_refs and not self.shared_source_event_ids:
+                raise ValueError("High priority requires overlapping evidence.")
+        return self
+
+
 class ReviewSession(Model):
     id: str
     review_rank: int
     flagged: bool
-    priority: Literal["high", "medium", "routine"] | None = None
+    priority: Literal["high", "medium", "low", "none", "insufficient_data", "routine"] | None = None
     priority_basis: str
     scenario: str
     synthetic: bool
@@ -124,6 +174,7 @@ class ReviewSession(Model):
     source_event_refs: list[str]
     quality_warnings: list[str]
     analysis: Analysis
+    fusion: CombinedPriority | None = None
 
     @model_validator(mode="after")
     def evidence(self):
@@ -131,8 +182,15 @@ class ReviewSession(Model):
         refs = set(ids)
         if len(ids) != len(refs):
             raise ValueError("Duplicate timeline references.")
-        if self.flagged != (self.analysis.state == "completed" and self.analysis.decision == "surface"):
-            raise ValueError("Flag status must derive from validated findings.")
+        expected_flag = (
+            self.fusion.priority in {"high", "medium", "low"}
+            if self.fusion else
+            self.analysis.state == "completed" and self.analysis.decision == "surface"
+        )
+        if self.flagged != expected_flag:
+            raise ValueError("Flag status must derive from the active validated review method.")
+        if self.fusion and self.priority != self.fusion.priority:
+            raise ValueError("Session and combined priorities disagree.")
         cited = set(self.source_event_refs)
         for reason in self.reasons:
             cited.update(reason.supporting_refs)
@@ -150,6 +208,14 @@ class ReviewSession(Model):
                      "failed_checks_after_help", "tutor_requests", "completed_tutor_responses",
                      "repeated_failures", "continued_after_help", "resumed_after_help"):
             cited.update(getattr(self, name).evidence_refs)
+        if self.fusion:
+            cited.update(self.fusion.llm_signal.evidence_refs)
+            cited.update(self.fusion.shared_evidence_refs)
+            timeline_source_ids = {event.source_event_id for event in self.timeline if event.source_event_id}
+            if not set(self.fusion.metric_signal.source_event_ids) <= timeline_source_ids:
+                raise ValueError("Metric source evidence is missing from the review timeline.")
+            if not set(self.fusion.shared_source_event_ids) <= timeline_source_ids:
+                raise ValueError("Shared source evidence is missing from the review timeline.")
         if not cited <= refs:
             raise ValueError("Review bundle cites missing timeline events.")
         return self
@@ -171,10 +237,14 @@ class Summary(Model):
     total_sessions: int
     flagged_sessions: int
     high_priority_sessions: int
+    medium_priority_sessions: int = 0
+    low_priority_sessions: int = 0
+    no_priority_sessions: int = 0
+    insufficient_data_sessions: int = 0
 
 
 class ReviewBundle(Model):
-    contract_version: Literal[2] = 2
+    contract_version: Literal[2, 3] = 2
     dataset: DatasetInfo
     summary: Summary
     sessions: list[ReviewSession]
@@ -189,4 +259,16 @@ class ReviewBundle(Model):
             raise ValueError("Summary counts disagree with sessions.")
         if self.summary.high_priority_sessions != sum(s.priority == "high" for s in self.sessions):
             raise ValueError("Priority count disagrees with sessions.")
+        if self.contract_version == 3 and any(session.fusion is None for session in self.sessions):
+            raise ValueError("Contract version 3 requires combined priority for every session.")
+        if self.contract_version == 2 and any(session.fusion is not None for session in self.sessions):
+            raise ValueError("Combined priority requires contract version 3.")
+        expected = {
+            "medium_priority_sessions": sum(s.priority == "medium" for s in self.sessions),
+            "low_priority_sessions": sum(s.priority == "low" for s in self.sessions),
+            "no_priority_sessions": sum(s.priority == "none" for s in self.sessions),
+            "insufficient_data_sessions": sum(s.priority == "insufficient_data" for s in self.sessions),
+        }
+        if any(getattr(self.summary, key) != value for key, value in expected.items()):
+            raise ValueError("Combined priority counts disagree with sessions.")
         return self

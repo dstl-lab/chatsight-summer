@@ -289,7 +289,7 @@ def validate_assessment(session: Session, evidence: dict, assessment: Assessment
     }
 
 
-def generate(evidence: dict, model: str) -> Assessment:
+def generate_gemini(evidence: dict, model: str) -> Assessment:
     from google import genai
 
     key = os.environ.get("GEMINI_API_KEY")
@@ -311,6 +311,50 @@ def generate(evidence: dict, model: str) -> Assessment:
         return Assessment.model_validate_json(response.text)
     finally:
         client.close()
+
+
+def generate_openai(evidence: dict, model: str) -> Assessment:
+    """Run the same structured assessment through an explicitly selected GPT model."""
+    from openai import OpenAI
+
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise ValueError("Set OPENAI_API_KEY; credentials are never written to reports.")
+    client = OpenAI()
+    response = client.responses.parse(
+        model=model,
+        input=[
+            {"role": "system", "content": PROMPT},
+            {"role": "user", "content": json.dumps(evidence, ensure_ascii=False)},
+        ],
+        text_format=Assessment,
+    )
+    if response.output_parsed is None:
+        raise ValueError("OpenAI returned no parsed assessment.")
+    return Assessment.model_validate(response.output_parsed)
+
+
+def provider_for_model(model: str) -> Literal["Gemini", "OpenAI"]:
+    if model.startswith("gemini-"):
+        return "Gemini"
+    if model.startswith(("gpt-", "o1", "o3", "o4")):
+        return "OpenAI"
+    raise ValueError("Model provider is ambiguous; use an explicit Gemini or OpenAI model ID.")
+
+
+def provider_configured(model: str) -> bool:
+    provider = provider_for_model(model)
+    return bool(
+        os.environ.get("OPENAI_API_KEY") if provider == "OpenAI"
+        else os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    )
+
+
+def generate(evidence: dict, model: str) -> Assessment:
+    """Dispatch without silently substituting one provider for another."""
+    provider = provider_for_model(model)
+    if provider == "Gemini":
+        return generate_gemini(evidence, model)
+    return generate_openai(evidence, model)
 
 
 def report(results: list[dict], mode: str) -> str:
@@ -356,8 +400,8 @@ def main(argv=None):
     parser.add_argument("input", type=Path)
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--assessments", type=Path, help="Offline replay of authored or saved assessments; no model inference")
-    source.add_argument("--model", help="Gemini model ID; requires --send")
-    parser.add_argument("--send", action="store_true", help="Explicitly transmit all supplied session evidence to Gemini")
+    source.add_argument("--model", help="Explicit Gemini or OpenAI model ID; requires --send")
+    parser.add_argument("--send", action="store_true", help="Explicitly transmit all supplied session evidence to the selected provider")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.model and not args.send:
@@ -384,7 +428,7 @@ def main(argv=None):
         if len(cached) != len(cached_list) or set(cached) != {s.session_id for s in sessions}:
             raise ValueError("offline assessments must match session IDs exactly")
     results = assess_sessions(sessions, evidence, cached=cached, model=args.model)
-    mode = "offline replay (authored/saved assessments; NOT model inference)" if cached is not None else f"Gemini: {args.model}"
+    mode = "offline replay (authored/saved assessments; NOT model inference)" if cached is not None else f"Model: {args.model}"
     payload = {"version": 1, "assessment_source": mode, "input_sha256": hashlib.sha256(raw).hexdigest(),
                "prompt_sha256": hashlib.sha256(PROMPT.encode()).hexdigest(), "results": results}
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -16,6 +16,8 @@ uv run session-review fixtures/synthetic_sessions.json --output /tmp/sessions.js
 uv run session-metrics /tmp/sessions.json --output /tmp/metrics.json
 uv run session-rank /tmp/sessions.json --output /tmp/ranking.json
 uv run session-ranking-demo --output /tmp/synthetic-ranking.json
+uv run session-fuse /tmp/review.json /tmp/ranking.json \
+  --mapping /tmp/session-map.json --output /tmp/combined.json
 ```
 
 Outputs are create-only so an existing analysis file cannot be overwritten accidentally.
@@ -60,3 +62,4 @@ See `FRONTEND_PROTOTYPE.md` for the data boundary, placeholders, and future inte
 - `FRONTEND_PROTOTYPE.md`: instructor UI architecture and prototype limitations.
 - `PHASE3B_RANKING.md`: question baselines, eligibility, ranking formulas, and integration contract.
 - `PHASE3B_SYNTHETIC_COMPARISON.md`: illustrative comparison of ranking methods.
+- `COMBINED_PRIORITY.md`: metric plus validated-LLM priority rules, provider behavior, and evidence joining.

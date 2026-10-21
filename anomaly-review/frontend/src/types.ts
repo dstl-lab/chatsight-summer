@@ -1,5 +1,5 @@
 export type MetricStatus = "known" | "unknown";
-export type Priority = "high" | "medium" | "routine";
+export type Priority = "high" | "medium" | "low" | "none" | "insufficient_data" | "routine";
 export type ReviewClassification = "tutor_issue" | "student_struggle" | "insufficient" | "";
 
 export interface Metric<T = number> {
@@ -10,7 +10,7 @@ export interface Metric<T = number> {
 }
 
 export interface ReferenceTime {
-  status: "illustrative" | "unknown";
+  status: "illustrative" | "calculated" | "unknown";
   lower_seconds: number | null;
   upper_seconds: number | null;
   basis: string;
@@ -91,6 +91,7 @@ export interface DemoSession {
   quality_warnings: string[];
   scope?: "conversation" | "question_episode" | "notebook_session";
   analysis?: Analysis;
+  fusion?: CombinedPriority | null;
 }
 
 export interface DemoDataset {
@@ -110,6 +111,10 @@ export interface DemoDataset {
     total_sessions: number;
     flagged_sessions: number;
     high_priority_sessions: number;
+    medium_priority_sessions?: number;
+    low_priority_sessions?: number;
+    no_priority_sessions?: number;
+    insufficient_data_sessions?: number;
   };
   sessions: DemoSession[];
 }
@@ -140,4 +145,40 @@ export interface Analysis {
   model: string | null;
   source: string;
   semantic_interpretations_verified: false;
+}
+
+export type MetricSignalStatus = "strong_outlier" | "moderate_outlier" | "no_outlier" | "insufficient_data";
+export interface MetricSignal {
+  status: MetricSignalStatus;
+  episode_id: string | null;
+  score: number | null;
+  above_threshold_metrics: string[];
+  reasons: string[];
+  evidence_refs: string[];
+  source_event_ids: string[];
+  data_limitations: string[];
+}
+export interface LlmSignal {
+  status: "supported_finding" | "no_supported_finding" | "insufficient_evidence" | "not_analyzed";
+  model: string | null;
+  finding_categories: string[];
+  evidence_refs: string[];
+  source_event_ids: string[];
+  data_limitations: string[];
+}
+export interface CombinedPriority {
+  status: "scored" | "insufficient_data";
+  priority: "high" | "medium" | "low" | "none" | "insufficient_data";
+  rule: string;
+  summary: string;
+  metric_signal: MetricSignal;
+  llm_signal: LlmSignal;
+  shared_evidence_refs: string[];
+  shared_source_event_ids: string[];
+  config: {
+    strong_composite_score: number;
+    strong_single_tail_score: number;
+    strong_contribution_count: number;
+  };
+  interpretation: string;
 }

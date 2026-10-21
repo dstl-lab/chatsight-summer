@@ -14,6 +14,9 @@ interface SessionQueueProps {
 const priorityLabel: Record<Priority, string> = {
   high: "High",
   medium: "Medium",
+  low: "Low",
+  none: "No priority",
+  insufficient_data: "Insufficient data",
   routine: "Routine",
 };
 
@@ -47,7 +50,7 @@ export function SessionQueue({ sessions, selectedId, reviewedIds, onSelect }: Se
           <input value={query} onChange={(event) => setQuery(event.target.value)}
                  placeholder="Search student or question" />
         </label>
-        {hasAnalysis ? <label className="select-control">
+        {hasAnalysis ? <><label className="select-control">
           <span className="sr-only">Filter by analysis decision</span>
           <select value={decision} onChange={event => setDecision(event.target.value)}>
             <option value="all">All analysis states</option>
@@ -56,12 +59,23 @@ export function SessionQueue({ sessions, selectedId, reviewedIds, onSelect }: Se
             <option value="insufficient_evidence">Insufficient evidence</option>
             <option value="not_analyzed">Not analyzed</option>
           </select>
-        </label> : <label className="select-control">
+        </label>{sessions.some(session => session.fusion) && <label className="select-control">
+          <span className="sr-only">Filter by combined priority</span>
+          <select value={priority} onChange={(event) => setPriority(event.target.value as "all" | Priority)}>
+            <option value="all">All priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+            <option value="none">No priority</option>
+            <option value="insufficient_data">Insufficient data</option>
+          </select>
+        </label>}</> : <label className="select-control">
           <span className="sr-only">Filter by priority</span>
           <select value={priority} onChange={(event) => setPriority(event.target.value as "all" | Priority)}>
             <option value="all">All priorities</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
+              <option value="low">Low</option>
             <option value="routine">Routine</option>
           </select>
         </label>}

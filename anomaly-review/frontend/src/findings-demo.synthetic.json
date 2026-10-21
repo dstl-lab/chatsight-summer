@@ -14,7 +14,11 @@
   "summary": {
     "total_sessions": 6,
     "flagged_sessions": 3,
-    "high_priority_sessions": 0
+    "high_priority_sessions": 0,
+    "medium_priority_sessions": 0,
+    "low_priority_sessions": 0,
+    "no_priority_sessions": 0,
+    "insufficient_data_sessions": 0
   },
   "sessions": [
     {
@@ -505,7 +509,8 @@
         "model": null,
         "source": "authored offline assessments, not model inference",
         "semantic_interpretations_verified": false
-      }
+      },
+      "fusion": null
     },
     {
       "id": "S02-progress",
@@ -1038,7 +1043,8 @@
         "model": null,
         "source": "authored offline assessments, not model inference",
         "semantic_interpretations_verified": false
-      }
+      },
+      "fusion": null
     },
     {
       "id": "S03-mismatch",
@@ -1262,7 +1268,8 @@
         "model": null,
         "source": "authored offline assessments, not model inference",
         "semantic_interpretations_verified": false
-      }
+      },
+      "fusion": null
     },
     {
       "id": "S04-other-question",
@@ -1735,7 +1742,8 @@
         "model": null,
         "source": "authored offline assessments, not model inference",
         "semantic_interpretations_verified": false
-      }
+      },
+      "fusion": null
     },
     {
       "id": "S05-unchanged-retries",
@@ -2303,7 +2311,8 @@
         "model": null,
         "source": "authored offline assessments, not model inference",
         "semantic_interpretations_verified": false
-      }
+      },
+      "fusion": null
     },
     {
       "id": "S06-recovered-obstacle",
@@ -2934,7 +2943,8 @@
         "model": null,
         "source": "authored offline assessments, not model inference",
         "semantic_interpretations_verified": false
-      }
+      },
+      "fusion": null
     }
   ]
 }

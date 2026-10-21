@@ -268,7 +268,7 @@ class Jobs:
             matched = re.match(r"Only (\d+) recent notebook scopes", message)
             state.update(status="failed", error=f"Only {matched[1]} eligible notebook sessions fit these settings. Choose fewer sessions or upload a larger export." if matched else "The export could not be prepared. Check its format and observation identities.")
         except Exception:
-            state.update(status="failed", error="Preparation failed. The source is saved locally; no data was sent to Gemini.")
+            state.update(status="failed", error="Preparation failed. The source is saved locally; no data was sent to a model provider.")
         self.save(job_id, state)
 
     def write_bundle(self, job_id):
@@ -276,8 +276,9 @@ class Jobs:
         state = self.read(job_id)
         manifest, sessions, context, evidence = historical.load_prepared(folder / "prepared")
         results = runner.saved_results(folder / "prepared" / "analysis", sessions, evidence, state["model"])
+        provider = analyzer.provider_for_model(state["model"])
         doc = bundle.build(sessions, input_hash=manifest["input_file_sha256"], context=context, results=results,
-            model=state["model"] if results else None, source="Saved Gemini assessments from uploaded PR100 data" if results else "Uploaded PR100 data; not analyzed")
+            model=state["model"] if results else None, source=f"Saved {provider} assessments from uploaded PR100 data" if results else "Uploaded PR100 data; not analyzed")
         runner.atomic_json(folder / "bundle.private.json", doc)
 
     def start(self, job_id):
@@ -289,8 +290,8 @@ class Jobs:
                 raise InputError("The export is still processing or failed preparation. Open the export first.")
             if state.get("kind") != "collection" and not (self.folder(job_id) / "prepared" / "manifest.json").exists():
                 raise InputError("Preparation was interrupted. Upload the file again.")
-            if self.generate is None and not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
-                raise InputError("The analysis service needs a Gemini API key. Database access is not needed.")
+            if self.generate is None and not analyzer.provider_configured(state["model"]):
+                raise InputError(f"The analysis service needs an {analyzer.provider_for_model(state['model'])} API key. Database access is not needed.")
             if state.get("kind") == "collection":
                 if not state.get("children"):
                     raise InputError("No eligible windows. Inspect the coverage counts before exporting another range.")
@@ -312,7 +313,7 @@ class Jobs:
         folder = self.folder(job_id)
         try:
             _, sessions, _, evidence = historical.load_prepared(folder / "prepared")
-            if not os.environ.get("GEMINI_API_KEY") and os.environ.get("GOOGLE_API_KEY"):
+            if analyzer.provider_for_model(state["model"]) == "Gemini" and not os.environ.get("GEMINI_API_KEY") and os.environ.get("GOOGLE_API_KEY"):
                 os.environ["GEMINI_API_KEY"] = os.environ["GOOGLE_API_KEY"]
             results = runner.run(folder / "prepared" / "analysis", sessions, evidence,
                                  model=state["model"], send=True, generate=self.generate, cache_folder=self.root / "assessment-cache")
@@ -377,8 +378,11 @@ def handler_for(jobs, frontend, port):
             path = unquote(urlsplit(self.path).path)
             try:
                 if path == "/api/status":
-                    return self.send(200, {"ready": True, "model": jobs.model, "max_upload_bytes": production.MAX_UPLOAD,
-                        "gemini_configured": bool(jobs.generate or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))})
+                    provider = analyzer.provider_for_model(jobs.model)
+                    configured = bool(jobs.generate or analyzer.provider_configured(jobs.model))
+                    return self.send(200, {"ready": True, "model": jobs.model, "provider": provider,
+                        "max_upload_bytes": production.MAX_UPLOAD, "model_configured": configured,
+                        "gemini_configured": configured if provider == "Gemini" else False})
                 if path == "/api/jobs":
                     return self.send(200, {"jobs": jobs.listing()})
                 coverage_match = re.fullmatch(r"/api/jobs/([a-f0-9]{32})/coverage", path)
@@ -442,7 +446,7 @@ def main():
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--storage", type=Path, default=Path("private-data/uploads"))
     parser.add_argument("--model", default="gemini-3.8-flash")
-    parser.add_argument("--key-file", type=Path, help="Explicit dotenv file; reads only GEMINI_API_KEY or GOOGLE_API_KEY, never database credentials.")
+    parser.add_argument("--key-file", type=Path, help="Explicit dotenv file; reads only the selected model provider's API key, never database credentials.")
     parser.add_argument("--frontend", type=Path, default=Path(__file__).resolve().parents[2] / "frontend" / "dist")
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
@@ -450,9 +454,15 @@ def main():
     if args.key_file:
         from dotenv import dotenv_values
         values = dotenv_values(args.key_file)
-        key = values.get("GEMINI_API_KEY") or values.get("GOOGLE_API_KEY")
-        if not key: parser.error("The selected file has no Gemini API key.")
-        os.environ["GEMINI_API_KEY"] = key
+        provider = analyzer.provider_for_model(args.model)
+        if provider == "OpenAI":
+            key = values.get("OPENAI_API_KEY")
+            if not key: parser.error("The selected file has no OpenAI API key.")
+            os.environ["OPENAI_API_KEY"] = key
+        else:
+            key = values.get("GEMINI_API_KEY") or values.get("GOOGLE_API_KEY")
+            if not key: parser.error("The selected file has no Gemini API key.")
+            os.environ["GEMINI_API_KEY"] = key
     os.umask(0o077)
     jobs = Jobs(args.storage, model=args.model)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(jobs, args.frontend, args.port))

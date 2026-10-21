@@ -25,12 +25,12 @@ export function MetricStrip({ session }: { session: DemoSession }) {
         <div className="metric-label"><Clock3 size={15} /> Active time</div>
         <div className="metric-value">{metricDuration(session.active_time)}</div>
         <div className="comparison-track" aria-hidden="true">
-          {reference.status === "illustrative" &&
+          {reference.status !== "unknown" &&
             <span className="reference-band" style={{ left: `${bandLeft}%`, width: `${bandWidth}%` }} />}
           {active !== null && <span className="active-marker" style={{ left: `${activeWidth}%` }} />}
         </div>
         <div className="metric-detail">
-          {reference.status === "illustrative" ? "Illustrative reference" : "Reference unavailable"}: {referenceLabel(reference.lower_seconds, reference.upper_seconds)} · Post-help: {metricDuration(session.post_help_active_time)}
+          {reference.status === "illustrative" ? "Illustrative reference" : reference.status === "calculated" ? "Same-question reference" : "Reference unavailable"}: {referenceLabel(reference.lower_seconds, reference.upper_seconds)} · Post-help: {metricDuration(session.post_help_active_time)}
         </div>
       </div>
       <div className="metric-cell">

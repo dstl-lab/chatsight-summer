@@ -14,7 +14,7 @@ interface Job {
   selection?: { exclusions: Record<string, number>; quality: Record<string, number> } | null;
   progress: { completed: number; failed: number; pending: number };
 }
-interface Service { ready: boolean; gemini_configured: boolean; max_upload_bytes: number; model: string }
+interface Service { ready: boolean; model_configured: boolean; max_upload_bytes: number; model: string; provider: string }
 const running = (job: Job | null) => !!job && ["preparing", "analyzing"].includes(job.status);
 const plural = (value: number, word: string) => `${value} ${word}${value === 1 ? "" : word.endsWith("ch") ? "es" : "s"}`;
 
@@ -181,17 +181,17 @@ export function UploadPanel({ onDataset, onBusy, disabled = false, autoRestore =
           <div className="job-actions">
             {job.parent_id && <button className="quiet-button" disabled={sending} onClick={() => { void open(job.parent_id!); }}><ArrowLeft size={14} /> All batches</button>}
             {collection && nextBatch && !running(job) && job.status !== "failed" && <button className="primary-button" disabled={sending || disabled} onClick={() => { void open(nextBatch.id); }}>{nextBatch.status === "completed" ? "Review results" : "Open next batch"}<ArrowRight size={15} /></button>}
-            {!collection && readyToAnalyze && <button className="primary-button" disabled={!job.count || !service.gemini_configured || busy || disabled} onClick={() => { void analyze(); }}>{job.status === "ready" ? `Analyze ${plural(job.count, "window")}` : "Continue analysis"}<ArrowRight size={15} /></button>}
+            {!collection && readyToAnalyze && <button className="primary-button" disabled={!job.count || !service.model_configured || busy || disabled} onClick={() => { void analyze(); }}>{job.status === "ready" ? `Analyze ${plural(job.count, "window")}` : "Continue analysis"}<ArrowRight size={15} /></button>}
             {!collection && job.status === "completed" && <span className="completion-label"><CheckCircle2 size={16} /> Results ready below</span>}
           </div>
         </div>
         {job.status === "preparing" && <p className="processing-copy">{job.import_progress?.phase ?? "Preparing uploaded events"}{job.import_progress?.events ? ` · ${job.import_progress.events.toLocaleString()} events read` : job.import_progress?.requests ? ` · ${job.import_progress.requests.toLocaleString()} requests checked` : ""}</p>}
         {job.count > 0 && (running(job) && job.status === "analyzing" || savedCount > 0) && <div className="analysis-progress"><progress aria-label="Analysis progress" max={job.count} value={savedCount} /><span>{job.progress.completed.toLocaleString()} / {job.count.toLocaleString()} analyzed{job.progress.failed > 0 ? ` · ${job.progress.failed} failed` : ""}</span></div>}
-        {!collection && readyToAnalyze && <p className="model-disclosure">Analysis sends these {job.count} windows to Gemini.</p>}
+        {!collection && readyToAnalyze && <p className="model-disclosure">Analysis sends these {job.count} windows to {service.provider} using {service.model}.</p>}
         {job.error && <p role="alert" className="job-error">{job.error}</p>}
-        {!service.gemini_configured && readyToAnalyze && <p className="job-error">Add a Gemini key to the local service to analyze.</p>}
+        {!service.model_configured && readyToAnalyze && <p className="job-error">Add an API key for {service.provider} to the local service to analyze.</p>}
         {!!job.batches?.length && <BatchList key={job.id} batches={job.batches} disabled={sending || disabled || job.status === "failed"} active={running(job)} onOpen={id => { void open(id); }} />}
-        {collection && readyToAnalyze && <details className="bulk-analysis"><summary>Analyze the full export</summary><div><p>This starts {job.count.toLocaleString()} windows with Gemini. Saved results are reused.</p><button disabled={!job.count || !service.gemini_configured || busy || disabled} onClick={() => { void analyze(); }}>Analyze all {job.count.toLocaleString()} windows</button></div></details>}
+        {collection && readyToAnalyze && <details className="bulk-analysis"><summary>Analyze the full export</summary><div><p>This starts {job.count.toLocaleString()} windows with {service.provider}. Saved results are reused.</p><button disabled={!job.count || !service.model_configured || busy || disabled} onClick={() => { void analyze(); }}>Analyze all {job.count.toLocaleString()} windows</button></div></details>}
         {(job.source || job.coverage || job.selection) && <details className="data-details"><summary>Data details & coverage</summary><div className="details-content">
           <p className="source-filename">{job.filename}</p>
           {job.source && <p>{job.source.events.toLocaleString()} events · {dateRange}</p>}

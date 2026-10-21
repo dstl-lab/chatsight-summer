@@ -9,7 +9,7 @@ const validShape = ajv.compile<DemoDataset>(schema);
 
 export function parseBundle(text: string): DemoDataset {
   const value: unknown = JSON.parse(text);
-  if (!validShape(value)) throw new Error("Unsupported or invalid review bundle. Export contract version 2 with session-findings.");
+  if (!validShape(value)) throw new Error("Unsupported or invalid review bundle. Export contract version 2 or 3 with session-findings.");
   const dataset = value;
   if (dataset.sessions.length > 1000) throw new Error("Bundle exceeds the 1,000-session browser limit.");
   const sessions = new Set<string>();
@@ -25,11 +25,16 @@ export function parseBundle(text: string): DemoDataset {
     if (analysis.state === "not_analyzed" && analysis.decision !== null) throw new Error("Unanalyzed session has a decision.");
     if (["failed", "rejected"].includes(analysis.state) && analysis.decision !== "insufficient_evidence") throw new Error("Failed analysis has an unsafe decision.");
     if (analysis.state === "completed" && (analysis.decision === null || (analysis.decision === "surface") !== !!analysis.findings.length)) throw new Error("Decision and findings disagree.");
-    if (session.flagged !== (analysis.state === "completed" && analysis.decision === "surface")) throw new Error("Flag does not match validated analysis.");
+    const expectedFlag = session.fusion
+      ? ["high", "medium", "low"].includes(session.fusion.priority)
+      : analysis.state === "completed" && analysis.decision === "surface";
+    if (session.flagged !== expectedFlag) throw new Error("Flag does not match the active validated review method.");
+    if (session.fusion && session.priority !== session.fusion.priority) throw new Error("Combined and session priorities disagree.");
     const cited = [...session.source_event_refs, ...session.reasons.flatMap(reason => reason.supporting_refs),
       ...analysis.findings.flatMap(finding => [...finding.highlight_ids, ...finding.recovery_evidence_ids,
         ...finding.interpretations.flatMap(item => item.evidence_ids),
-        ...finding.facts.flatMap(fact => fact.related_id ? [fact.record_id, fact.related_id] : [fact.record_id])])];
+        ...finding.facts.flatMap(fact => fact.related_id ? [fact.record_id, fact.related_id] : [fact.record_id])]),
+      ...(session.fusion?.llm_signal.evidence_refs ?? []), ...(session.fusion?.shared_evidence_refs ?? [])];
     for (const finding of analysis.findings) {
       const highlights = new Set([...finding.highlight_ids, ...finding.recovery_evidence_ids]);
       if (finding.interpretations.some(item => item.evidence_ids.some(ref => !highlights.has(ref)))) throw new Error("Interpretation evidence is not highlighted or recovery evidence.");
@@ -40,14 +45,35 @@ export function parseBundle(text: string): DemoDataset {
       session.completed_tutor_responses, session.repeated_failures, session.continued_after_help, session.resumed_after_help]) {
       if ((metric.status === "unknown") !== (metric.value === null) || metric.evidence_refs.some(ref => !refs.has(ref))) throw new Error("Invalid metric or metric evidence.");
     }
+    if (session.fusion) {
+      const sourceIds = new Set(session.timeline.flatMap(event => event.source_event_id ? [event.source_event_id] : []));
+      if (session.fusion.metric_signal.source_event_ids.some(id => !sourceIds.has(id)) ||
+          session.fusion.shared_source_event_ids.some(id => !sourceIds.has(id))) throw new Error("Combined priority cites source evidence missing from the timeline.");
+    }
   }
   if (dataset.summary.total_sessions !== dataset.sessions.length ||
       dataset.summary.flagged_sessions !== dataset.sessions.filter(session => session.flagged).length ||
       dataset.summary.high_priority_sessions !== dataset.sessions.filter(session => session.priority === "high").length) throw new Error("Summary counts disagree with data.");
+  if (dataset.contract_version === 3) {
+    const expected = {
+      medium_priority_sessions: dataset.sessions.filter(session => session.priority === "medium").length,
+      low_priority_sessions: dataset.sessions.filter(session => session.priority === "low").length,
+      no_priority_sessions: dataset.sessions.filter(session => session.priority === "none").length,
+      insufficient_data_sessions: dataset.sessions.filter(session => session.priority === "insufficient_data").length,
+    };
+    if (Object.entries(expected).some(([key, count]) => dataset.summary[key as keyof typeof expected] !== count)) throw new Error("Combined priority counts disagree with data.");
+  }
   return dataset;
 }
 
 export function decisionLabel(session: DemoSession): string {
+  if (session.fusion) return ({
+    high: "High review priority",
+    medium: "Medium review priority",
+    low: "Low review priority",
+    none: "No review signal",
+    insufficient_data: "Insufficient data",
+  })[session.fusion.priority];
   if (!session.analysis) return session.flagged ? "Illustratively flagged" : "Demo reference";
   if (session.analysis.state === "not_analyzed") return "Not analyzed";
   if (session.analysis.state === "rejected") return "Insufficient evidence · rejected";
@@ -56,7 +82,7 @@ export function decisionLabel(session: DemoSession): string {
 }
 
 export function reviewStorageKey(dataset: DemoDataset): string {
-  return `anomaly-review-instructor-reviews-v2:${dataset.dataset.id}:${dataset.dataset.input_sha256 ?? "authored-demo"}`;
+  return `anomaly-review-instructor-reviews-v3:${dataset.dataset.id}:${dataset.dataset.input_sha256 ?? "authored-demo"}`;
 }
 
 export function validateReviews(value: unknown, dataset: DemoDataset): Record<string, ReviewRecord> {

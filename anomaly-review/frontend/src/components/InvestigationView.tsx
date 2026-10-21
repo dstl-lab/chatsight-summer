@@ -14,6 +14,9 @@ interface InvestigationViewProps {
 
 export function InvestigationView({ session, review, onSaveReview }: InvestigationViewProps) {
   const [highlightedRefs, setHighlightedRefs] = useState<Set<string>>(new Set());
+  const supportedFindings = session.analysis?.decision === "surface" ? session.analysis.findings : [];
+  const analysisModel = session.analysis?.model;
+  const modelLabel = analysisModel?.toLowerCase().includes("gemini") ? "Gemini" : analysisModel ?? "the model";
 
   function jumpToEvidence(refs: string[], eventIds: string[]) {
     setHighlightedRefs(new Set(refs));
@@ -47,7 +50,7 @@ export function InvestigationView({ session, review, onSaveReview }: Investigati
 
       <section className="reason-section" aria-labelledby="reason-heading">
         <div className="reason-heading">
-          <h3 id="reason-heading">{session.analysis ? "Session findings" : "Why was this flagged?"}</h3>
+          <h3 id="reason-heading">{session.fusion ? "Combined review evidence" : session.analysis ? "Session findings" : "Why was this flagged?"}</h3>
           {!session.analysis && <span className="placeholder-note">Illustrative evidence</span>}
         </div>
         <div className="reason-list">
@@ -60,6 +63,28 @@ export function InvestigationView({ session, review, onSaveReview }: Investigati
             </button>
           ))}
         </div>
+        {session.fusion && <div className="fusion-summary" aria-label="Combined priority explanation">
+          <p><strong>{decisionLabel(session)}</strong> · {session.fusion.summary}</p>
+          <dl>
+            <div><dt>Metrics</dt><dd>{session.fusion.metric_signal.status.replaceAll("_", " ")}{session.fusion.metric_signal.score !== null ? ` · score ${session.fusion.metric_signal.score.toFixed(1)}` : ""}</dd></div>
+            <div><dt>Model</dt><dd>{session.fusion.llm_signal.status.replaceAll("_", " ")}</dd></div>
+            <div><dt>Shared evidence</dt><dd>{session.fusion.shared_source_event_ids.length || session.fusion.shared_evidence_refs.length ? "Yes" : "No"}</dd></div>
+          </dl>
+          <p>{session.fusion.interpretation}</p>
+        </div>}
+        {session.analysis?.state === "completed" && <section className="model-rationale" aria-labelledby="model-rationale-heading">
+          <div className="model-rationale-heading">
+            <h4 id="model-rationale-heading">Why {supportedFindings.length ? `${modelLabel} supports review` : `${modelLabel} does not support review`}</h4>
+            {!analysisModel && <span>Synthetic example, not Gemini output</span>}
+          </div>
+          <p>{session.analysis.summary}</p>
+          {supportedFindings.map((finding, index) => <div className="model-rationale-finding" key={index}>
+            <strong>{finding.category.replaceAll("_", " ")}</strong>
+            <p>{finding.explanation}</p>
+            <button onClick={() => jumpToEvidence(finding.highlight_ids, [])}>Show the evidence used</button>
+          </div>)}
+          {!supportedFindings.length && <p>The analysis did not find enough cited evidence to recommend review.</p>}
+        </section>}
         {session.analysis && <div className="analysis-details">
           <p>{session.analysis.state === "not_analyzed" ? "Analyze this batch to generate findings." : session.analysis.summary}</p>
           {!!session.analysis.validation_errors.length && <ul>{session.analysis.validation_errors.map((error, index) => <li key={index}>{error}</li>)}</ul>}

@@ -80,18 +80,21 @@ def main(argv=None):
         analysis = args.analysis or args.prepared / "analysis"
         if args.command == "analyze":
             if not args.send:
-                parser.error("--send is required. Prepared evidence, including any code/output records, will be sent to Gemini.")
-            if not os.environ.get("GEMINI_API_KEY"):
+                parser.error("--send is required. Prepared evidence, including any code/output records, will be sent to the selected provider.")
+            provider = analyzer.provider_for_model(args.model)
+            if provider == "Gemini" and not os.environ.get("GEMINI_API_KEY"):
                 key = os.environ.get("GOOGLE_API_KEY")
                 if not key:
                     parser.error("Set GEMINI_API_KEY or GOOGLE_API_KEY in the environment.")
                 os.environ["GEMINI_API_KEY"] = key
+            elif provider == "OpenAI" and not os.environ.get("OPENAI_API_KEY"):
+                parser.error("Set OPENAI_API_KEY in the environment.")
             results = runner.run(analysis, sessions, evidence, model=args.model, send=True)
         else:
             results = runner.saved_results(analysis, sessions, evidence, args.model)
         data = bundle.build(sessions, input_hash=manifest["input_file_sha256"], context=context,
                             results=results, model=args.model if results else None,
-                            source="saved Gemini assessments" if results else "not analyzed")
+                            source=f"saved {analyzer.provider_for_model(args.model)} assessments" if results else "not analyzed")
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     historical.private_json(args.output, data)
     print(json.dumps({"output": str(args.output), "sessions": len(data["sessions"]),

@@ -117,6 +117,77 @@
       "title": "CodeDiff",
       "type": "object"
     },
+    "CombinedPriority": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "scored",
+            "insufficient_data"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "none",
+            "insufficient_data"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "metric_signal": {
+          "$ref": "#/$defs/MetricSignal"
+        },
+        "llm_signal": {
+          "$ref": "#/$defs/LlmSignal"
+        },
+        "shared_evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Shared Evidence Refs",
+          "type": "array"
+        },
+        "shared_source_event_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Shared Source Event Ids",
+          "type": "array"
+        },
+        "config": {
+          "$ref": "#/$defs/FusionConfigView"
+        },
+        "interpretation": {
+          "title": "Interpretation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "priority",
+        "rule",
+        "summary",
+        "metric_signal",
+        "llm_signal",
+        "config",
+        "interpretation"
+      ],
+      "title": "CombinedPriority",
+      "type": "object"
+    },
     "DatasetInfo": {
       "additionalProperties": false,
       "properties": {
@@ -298,6 +369,30 @@
       "title": "Finding",
       "type": "object"
     },
+    "FusionConfigView": {
+      "additionalProperties": false,
+      "properties": {
+        "strong_composite_score": {
+          "title": "Strong Composite Score",
+          "type": "number"
+        },
+        "strong_single_tail_score": {
+          "title": "Strong Single Tail Score",
+          "type": "number"
+        },
+        "strong_contribution_count": {
+          "title": "Strong Contribution Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "strong_composite_score",
+        "strong_single_tail_score",
+        "strong_contribution_count"
+      ],
+      "title": "FusionConfigView",
+      "type": "object"
+    },
     "Interpretation": {
       "additionalProperties": false,
       "properties": {
@@ -320,6 +415,66 @@
         "evidence_ids"
       ],
       "title": "Interpretation",
+      "type": "object"
+    },
+    "LlmSignal": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "supported_finding",
+            "no_supported_finding",
+            "insufficient_evidence",
+            "not_analyzed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "finding_categories": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Finding Categories",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "source_event_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Event Ids",
+          "type": "array"
+        },
+        "data_limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Data Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "LlmSignal",
       "type": "object"
     },
     "Metadata": {
@@ -396,6 +551,85 @@
       "title": "Metric",
       "type": "object"
     },
+    "MetricSignal": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "strong_outlier",
+            "moderate_outlier",
+            "no_outlier",
+            "insufficient_data"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "episode_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Episode Id"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "above_threshold_metrics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Above Threshold Metrics",
+          "type": "array"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "source_event_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Event Ids",
+          "type": "array"
+        },
+        "data_limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Data Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "MetricSignal",
+      "type": "object"
+    },
     "Reason": {
       "additionalProperties": false,
       "properties": {
@@ -442,6 +676,7 @@
         "status": {
           "enum": [
             "illustrative",
+            "calculated",
             "unknown"
           ],
           "title": "Status",
@@ -504,6 +739,9 @@
               "enum": [
                 "high",
                 "medium",
+                "low",
+                "none",
+                "insufficient_data",
                 "routine"
               ],
               "type": "string"
@@ -627,6 +865,17 @@
         },
         "analysis": {
           "$ref": "#/$defs/Analysis"
+        },
+        "fusion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CombinedPriority"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -670,6 +919,26 @@
         },
         "high_priority_sessions": {
           "title": "High Priority Sessions",
+          "type": "integer"
+        },
+        "medium_priority_sessions": {
+          "default": 0,
+          "title": "Medium Priority Sessions",
+          "type": "integer"
+        },
+        "low_priority_sessions": {
+          "default": 0,
+          "title": "Low Priority Sessions",
+          "type": "integer"
+        },
+        "no_priority_sessions": {
+          "default": 0,
+          "title": "No Priority Sessions",
+          "type": "integer"
+        },
+        "insufficient_data_sessions": {
+          "default": 0,
+          "title": "Insufficient Data Sessions",
           "type": "integer"
         }
       },
@@ -809,8 +1078,11 @@
   "additionalProperties": false,
   "properties": {
     "contract_version": {
-      "const": 2,
       "default": 2,
+      "enum": [
+        2,
+        3
+      ],
       "title": "Contract Version",
       "type": "integer"
     },

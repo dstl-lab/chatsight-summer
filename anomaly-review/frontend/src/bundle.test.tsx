@@ -3,11 +3,20 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { App } from "./App";
 import { demoDataset } from "./data";
 import raw from "./findings-demo.synthetic.json";
+import combinedRaw from "./combined-demo.synthetic.json";
 import { parseBundle, reviewStorageKey, validateReviews } from "./bundle";
 
 function bundle() { return structuredClone(raw); }
 
 describe("review bundle validation", () => {
+  it("accepts the Python-produced combined contract and preserves all priority categories", () => {
+    const dataset = parseBundle(JSON.stringify(combinedRaw));
+    expect(dataset.contract_version).toBe(3);
+    expect(new Set(dataset.sessions.map(session => session.priority))).toEqual(
+      new Set(["high", "medium", "low", "none", "insufficient_data"]),
+    );
+    expect(dataset.sessions[0].fusion?.shared_source_event_ids.length).toBeGreaterThan(0);
+  });
   it("accepts the Python-produced contract and rejects invented evidence", () => {
     expect(parseBundle(JSON.stringify(raw)).sessions).toHaveLength(6);
     const changed = bundle();
@@ -59,7 +68,7 @@ describe("integrated review UI", () => {
     render(<App dataset={demoDataset} />);
     fireEvent.click(screen.getByText("Examples & files"));
     fireEvent.click(screen.getByRole("button", { name: "Findings demo" }));
-    expect(screen.getByRole("heading", { name: "Session findings" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Session findings" })).toBeInTheDocument();
     expect(screen.getByText(/No model inference/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Checks$/ }));
     const student = screen.queryByRole("button", { name: /Student Student message/ });
@@ -67,6 +76,18 @@ describe("integrated review UI", () => {
     fireEvent.click(screen.getByRole("button", { name: /Difficulty persisted after help/ }));
     await waitFor(() => expect(screen.getByRole("button", { name: "All events" })).toHaveAttribute("aria-pressed", "true"));
     expect(screen.getAllByRole("button", { name: /Student Student message/ }).length).toBeGreaterThan(0);
+  });
+  it("shows metric and model signals separately in the combined demonstration", async () => {
+    render(<App dataset={demoDataset} />);
+    fireEvent.click(screen.getByText("Examples & files"));
+    fireEvent.click(screen.getByRole("button", { name: "Combined priority demo" }));
+    expect((await screen.findAllByText("High review priority")).length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Combined priority explanation")).toHaveTextContent("strong outlier");
+    expect(screen.getByLabelText("Combined priority explanation")).toHaveTextContent("supported finding");
+    expect(screen.getByLabelText("Combined priority explanation")).toHaveTextContent("Shared evidenceYes");
+    expect(screen.getByRole("heading", { name: "Why the model supports review" })).toBeInTheDocument();
+    expect(screen.getByText("Synthetic example, not Gemini output")).toBeInTheDocument();
+    expect(screen.getAllByText(/edit implements the stated operator change/)).toHaveLength(2);
   });
   it("imports recorded-origin bundles locally and clears the old dataset on invalid imports", async () => {
     render(<App dataset={demoDataset} />);

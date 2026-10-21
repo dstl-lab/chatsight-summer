@@ -117,14 +117,33 @@ class EvidenceTests(unittest.TestCase):
         client = MagicMock()
         client.models.generate_content.return_value.text = json.dumps(self.assessments[0])
         with patch.dict(app.os.environ, {"GEMINI_API_KEY": "invented-test-key"}), patch("google.genai.Client", return_value=client):
-            assessment = app.generate(evidence, "test-model")
+            assessment = app.generate(evidence, "gemini-test-model")
         call = client.models.generate_content.call_args.kwargs
-        self.assertEqual(call["model"], "test-model")
+        self.assertEqual(call["model"], "gemini-test-model")
         self.assertIn('"executes_revision"', call["contents"])
         self.assertIn('"origin": "synthetic"', call["contents"])
         self.assertEqual(call["config"]["response_mime_type"], "application/json")
         self.assertEqual(assessment.session_id, session.session_id)
         client.close.assert_called_once()
+
+    def test_openai_adapter_uses_the_same_structured_assessment_contract(self):
+        session = app.Session.model_validate(self.inputs["sessions"][0])
+        evidence = app.assemble(session)
+        client = MagicMock()
+        client.responses.parse.return_value.output_parsed = self.assessments[0]
+        with patch.dict(app.os.environ, {"OPENAI_API_KEY": "invented-test-key"}), patch(
+            "openai.OpenAI", return_value=client
+        ):
+            assessment = app.generate(evidence, "gpt-test-model")
+        call = client.responses.parse.call_args.kwargs
+        self.assertEqual(call["model"], "gpt-test-model")
+        self.assertIs(call["text_format"], app.Assessment)
+        self.assertIn('"executes_revision"', call["input"][1]["content"])
+        self.assertEqual(assessment.session_id, session.session_id)
+
+    def test_model_provider_must_be_explicit(self):
+        with self.assertRaisesRegex(ValueError, "provider is ambiguous"):
+            app.provider_for_model("fictional-model")
 
     def test_model_failure_is_preserved_without_echoing_provider_diagnostics(self):
         with tempfile.TemporaryDirectory() as directory:

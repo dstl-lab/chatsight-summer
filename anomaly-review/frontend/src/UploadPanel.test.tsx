@@ -20,7 +20,7 @@ function setup(saved = false) {
   let analyzed = saved;
   const fetcher = vi.fn(async (path: string, options?: RequestInit) => {
     let data: unknown;
-    if (path === "/api/status") data = { ready: true, gemini_configured: true, max_upload_bytes: 50 * 1024 * 1024, model: "fictional-model" };
+    if (path === "/api/status") data = { ready: true, model_configured: true, provider: "Authored test", max_upload_bytes: 50 * 1024 * 1024, model: "fictional-model" };
     else if (path === "/api/jobs") data = { jobs: saved ? [job] : [] };
     else if (path.startsWith("/api/uploads")) data = job;
     else if (path === `/api/jobs/${id}/analyze` && options?.method === "POST") {
@@ -43,7 +43,7 @@ describe("raw PR100 upload", () => {
       created_at: "2026-10-17T12:00:00Z", error: null, source: null, coverage: { tutor_requests: 22, eligible: 21, awaiting_followup_window: 1 },
       progress: { completed: 0, failed: 0, pending: 0 }, batches: [{ id: child, filename: "batch 1", status: "ready", count: 20, progress: { completed: 0, failed: 0, pending: 0 } }] };
     const fetcher = vi.fn(async (path: string) => {
-      const value = path === "/api/status" ? { ready: true, gemini_configured: true, max_upload_bytes: 2 * 1024 ** 3 } :
+      const value = path === "/api/status" ? { ready: true, model_configured: true, provider: "Authored test", model: "fictional-model", max_upload_bytes: 2 * 1024 ** 3 } :
         path === "/api/jobs" ? { jobs: [] } : path.startsWith("/api/uploads") ? collection :
         path === `/api/jobs/${child}` ? { ...collection, kind: undefined, parent_id: id, id: child, count: 1, eligible_sessions: 21 } :
         path === `/api/jobs/${child}/bundle` ? bundle() : null;
@@ -68,7 +68,7 @@ describe("raw PR100 upload", () => {
     const batches = Array.from({ length: 13 }, (_, i) => ({ id: String(i + 1).padStart(32, "0"), status: "ready", count: 20, filename: `batch ${i + 1}`, progress: { completed: 0, failed: 0, pending: 0 } }));
     const collection = { id, kind: "collection", filename: "fictional-week.jsonl.gz", status: "ready", count: 260, minutes: 25,
       created_at: "2026-10-17T12:00:00Z", source: null, progress: { completed: 0, failed: 0, pending: 0 }, batches };
-    const fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === "/api/status" ? { ready: true, gemini_configured: true } : path === "/api/jobs" ? { jobs: [collection] } : collection), { status: 200 }));
+    const fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === "/api/status" ? { ready: true, model_configured: true, provider: "Authored test", model: "fictional-model" } : path === "/api/jobs" ? { jobs: [collection] } : collection), { status: 200 }));
     vi.stubGlobal("fetch", fetcher);
     render(<UploadPanel onDataset={vi.fn()} onBusy={vi.fn()} autoRestore />);
     await screen.findByRole("button", { name: "Open batch 1" });
