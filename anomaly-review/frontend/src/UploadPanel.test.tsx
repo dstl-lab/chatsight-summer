@@ -42,7 +42,8 @@ describe("raw PR100 upload", () => {
     expect(await screen.findByRole("heading", { name: "No local PR100 data found" })).toBeInTheDocument();
     expect(screen.getByText(/session-findings-extract/)).toHaveTextContent("--port-forward");
     expect(screen.getByText(/session-findings-extract/)).toHaveTextContent("--output");
-    expect(screen.getByText(/securely transfer the generated folder/)).toBeInTheDocument();
+    expect(screen.getByText(/Run these commands if authorized/)).toBeInTheDocument();
+    expect(screen.getByText(/Securely transfer the generated folder/)).toBeInTheDocument();
     cleanup();
     setup(true);
     await screen.findByLabelText("Saved exports");

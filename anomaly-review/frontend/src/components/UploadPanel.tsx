@@ -198,15 +198,15 @@ export function UploadPanel({ onDataset, onBusy, disabled = false, autoRestore =
       {!job && jobs.length === 0 && <section className="data-access-setup" aria-labelledby="data-access-heading">
         <div className="data-access-title"><ShieldCheck size={18} aria-hidden="true" /><div>
           <h3 id="data-access-heading">No local PR100 data found</h3>
-          <p>An authorized teammate must create a read-only, deidentified export before this dashboard can analyze real sessions.</p>
+          <p>A read-only, deidentified export is required before this dashboard can analyze real sessions.</p>
         </div></div>
         <ol>
-          <li><strong>Authorized teammate:</strong> run this from their approved checkout with working database and NRP access.</li>
+          <li><strong>Run these commands if authorized</strong> from an approved checkout with working database and NRP access.</li>
         </ol>
         <div className="extraction-command"><span><TerminalSquare size={14} aria-hidden="true" /> Extraction command</span><pre><code>{extractionCommand}</code></pre></div>
         <ol start={2}>
-          <li><strong>Teammate:</strong> securely transfer the generated folder. Keep <code>manifest.json</code> with the export and do not send it through public channels.</li>
-          <li><strong>You:</strong> choose the folder's <code>events.jsonl.gz</code> file using <strong>Upload PR100 export</strong> above.</li>
+          <li>Securely transfer the generated folder if it was created on another machine. Keep <code>manifest.json</code> with the export and do not send it through public channels.</li>
+          <li>Choose the folder's <code>events.jsonl.gz</code> file using <strong>Upload PR100 export</strong> above.</li>
         </ol>
         <p className="data-access-limit">The dashboard cannot request production access or run this extraction on your behalf. It never connects to the production database.</p>
       </section>}
