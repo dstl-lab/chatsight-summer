@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Database, LoaderCircle, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Database, LoaderCircle, ShieldCheck, TerminalSquare, Upload } from "lucide-react";
 import { parseBundle } from "../bundle";
 import type { DemoDataset } from "../types";
 
@@ -29,6 +29,13 @@ interface Service {
 }
 const running = (job: Job | null) => !!job && ["preparing", "analyzing"].includes(job.status);
 const plural = (value: number, word: string) => `${value} ${word}${value === 1 ? "" : word.endsWith("ch") ? "es" : "s"}`;
+const extractionCommand = `cd /path/to/chatsight-summer/anomaly-review
+uv sync --locked --extra extract
+uv run --locked --extra extract session-findings-extract \\
+  --all \\
+  --port-forward \\
+  --env-file /private/path/to/database.env \\
+  --output "private-data/pr100-$(date -u +%Y%m%dT%H%M%SZ)"`;
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, options);
@@ -188,6 +195,21 @@ export function UploadPanel({ onDataset, onBusy, disabled = false, autoRestore =
           <label>Context per session<select aria-label="Context per session" value={minutes} disabled={busy || disabled} onChange={e => setMinutes(Number(e.target.value))}><option value="25">25 minutes (recommended)</option><option value="10">10 minutes</option></select></label>
         </div></details>
       </div>}
+      {!job && jobs.length === 0 && <section className="data-access-setup" aria-labelledby="data-access-heading">
+        <div className="data-access-title"><ShieldCheck size={18} aria-hidden="true" /><div>
+          <h3 id="data-access-heading">No local PR100 data found</h3>
+          <p>An authorized teammate must create a read-only, deidentified export before this dashboard can analyze real sessions.</p>
+        </div></div>
+        <ol>
+          <li><strong>Authorized teammate:</strong> run this from their approved checkout with working database and NRP access.</li>
+        </ol>
+        <div className="extraction-command"><span><TerminalSquare size={14} aria-hidden="true" /> Extraction command</span><pre><code>{extractionCommand}</code></pre></div>
+        <ol start={2}>
+          <li><strong>Teammate:</strong> securely transfer the generated folder. Keep <code>manifest.json</code> with the export and do not send it through public channels.</li>
+          <li><strong>You:</strong> choose the folder's <code>events.jsonl.gz</code> file using <strong>Upload PR100 export</strong> above.</li>
+        </ol>
+        <p className="data-access-limit">The dashboard cannot request production access or run this extraction on your behalf. It never connects to the production database.</p>
+      </section>}
       {sending && <p role="status" className="request-status"><LoaderCircle size={16} /> Loading…</p>}
       {job && <div className="upload-job">
         <div className="job-overview">

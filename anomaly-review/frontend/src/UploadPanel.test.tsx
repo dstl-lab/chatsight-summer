@@ -37,6 +37,18 @@ function setup(saved = false) {
 }
 
 describe("raw PR100 upload", () => {
+  it("shows the authorized extraction workflow only when no local upload exists", async () => {
+    setup();
+    expect(await screen.findByRole("heading", { name: "No local PR100 data found" })).toBeInTheDocument();
+    expect(screen.getByText(/session-findings-extract/)).toHaveTextContent("--port-forward");
+    expect(screen.getByText(/session-findings-extract/)).toHaveTextContent("--output");
+    expect(screen.getByText(/securely transfer the generated folder/)).toBeInTheDocument();
+    cleanup();
+    setup(true);
+    await screen.findByLabelText("Saved exports");
+    expect(screen.queryByRole("heading", { name: "No local PR100 data found" })).not.toBeInTheDocument();
+  });
+
   it("defaults to complete coverage, opens batches without dispatching analysis", async () => {
     const child = "2".repeat(32);
     const collection = { id, kind: "collection", filename: "week.jsonl.gz", status: "ready", count: 21, minutes: 25,
