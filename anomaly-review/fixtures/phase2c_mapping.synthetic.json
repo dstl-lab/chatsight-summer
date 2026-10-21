@@ -1,0 +1,93 @@
+{
+  "mapping_version": 1,
+  "status": "provisional",
+  "adapter_name": "synthetic-export-example-v1",
+  "records_pointer": "/records",
+  "event_type_pointer": "/kind",
+  "common_fields": {
+    "event_id": "/uid",
+    "occurred_at": "/time",
+    "received_at": "/received",
+    "learner_id": "/scope/student_key",
+    "course_id": "/scope/course_key",
+    "cohort_id": "/scope/cohort_key",
+    "assignment_id": "/scope/assignment_key",
+    "assignment_version": "/scope/assignment_version",
+    "notebook_id": "/scope/notebook_key",
+    "conversation_id": "/scope/conversation_key",
+    "order_stream_id": "/ordering/stream",
+    "sequence": "/ordering/sequence"
+  },
+  "question": {
+    "question_id_pointer": "/scope/question_key",
+    "certain_basis": "explicit",
+    "candidates_pointer": "/scope/question_candidates"
+  },
+  "event_types": {
+    "learner.message": {
+      "canonical_type": "student_message",
+      "fields": {
+        "text": "/payload/body",
+        "request_id": "/payload/request_key"
+      }
+    },
+    "tutor.response": {
+      "canonical_type": "tutor_response",
+      "fields": {
+        "text": "/payload/body",
+        "request_id": "/payload/request_key",
+        "response_id": "/payload/response_key",
+        "status": "/payload/state",
+        "completion_basis": "/payload/completion_evidence"
+      }
+    },
+    "notebook.edit": {
+      "canonical_type": "code_edit",
+      "fields": {
+        "cell_id": "/payload/cell_key",
+        "previous_revision_id": "/payload/previous_revision",
+        "revision_id": "/payload/revision",
+        "before_source": "/payload/before",
+        "after_source": "/payload/after"
+      }
+    },
+    "notebook.execute": {
+      "canonical_type": "execution",
+      "fields": {
+        "execution_id": "/payload/execution_key",
+        "cell_id": "/payload/cell_key",
+        "revision_id": "/payload/revision",
+        "status": "/payload/state",
+        "submitted_source": "/payload/source",
+        "output": "/payload/result"
+      }
+    },
+    "grader.result": {
+      "canonical_type": "check_result",
+      "fields": {
+        "check_id": "/payload/check_key",
+        "grader_id": "/payload/grader_key",
+        "grader_version": "/payload/grader_version",
+        "execution_id": "/payload/execution_key",
+        "revision_id": "/payload/revision",
+        "scope": "/payload/check_scope",
+        "outcome": "/payload/result"
+      },
+      "value_maps": {
+        "outcome": {
+          "passed": "pass",
+          "failed": "fail",
+          "errored": "error",
+          "not_known": "unknown"
+        }
+      }
+    },
+    "question.state": {
+      "canonical_type": "question_status",
+      "fields": {
+        "status": "/payload/state",
+        "evidence_basis": "/payload/evidence"
+      }
+    }
+  }
+}

@@ -1,0 +1,1588 @@
+{
+  "contract_version": 1,
+  "dataset": {
+    "id": "invented-instructor-ui-demo",
+    "synthetic": true,
+    "label": "Synthetic HCI workflow demonstration",
+    "notice": "All students, conversations, metrics, reference ranges, and priorities shown here are synthetic.",
+    "priority_method": "Manual illustrative ordering. No anomaly-ranking algorithm is implemented."
+  },
+  "summary": {
+    "total_sessions": 4,
+    "flagged_sessions": 3,
+    "high_priority_sessions": 2
+  },
+  "sessions": [
+    {
+      "id": "episode-0513b892fa9b2f1e6735b8c1900c2d07974222838e830160903500ec1ff35f1f",
+      "review_rank": 1,
+      "flagged": true,
+      "priority": "high",
+      "priority_basis": "Illustrative manual priority for the UI demonstration, not an anomaly score.",
+      "scenario": "Repeated failures after tutor help",
+      "synthetic": true,
+      "student_id": "STU-104",
+      "question_id": "Q5.1",
+      "assignment_id": "lab-arrays",
+      "outcome": {
+        "status": "known",
+        "value": "unfinished",
+        "reason": null,
+        "evidence_refs": [
+          "ev-1487bcd353a6fb5a276e1a4781111f31758314f4053c740cb04086517517f49c"
+        ]
+      },
+      "active_time": {
+        "status": "known",
+        "value": 87.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-0029911e9a6eeabd0ee726e18199ee344dc92d16b0ee5ceff00b8fa3c91f0037",
+          "ev-e4dadd70f5500b9a4bc9bca70220f32dc8716cf955082b6b4b167176bda3f045",
+          "ev-0ec6e1064b403d8d9196e58890732d3762032cc9f8018c2bf5356349883f2eb4",
+          "ev-f22928b6b9b0b62ac5e4047f923cd19e3dc23651d023d20affc82c16bca822f7",
+          "ev-080eeb0e9f9ff5b462f77dd38bcb83c6e5687858204fb8132418dd09df3ba63f",
+          "ev-caca3f1a7672319e11cab6e5e1343feffeac1c9dc8c7cee121d678a87d8932bc",
+          "ev-8762c1f78017bd39e42771912cf1302cd064d5d50c136db7834c3e1dba4d0af9",
+          "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+          "ev-0824904be79ee1344d487da5749ca9b7139cd68276127d1b7b9abe59c3bc9ac4",
+          "ev-08379bf1e7465d7ed922d25aa9a9694770710c075e2287f7e5e5da964b295fa7",
+          "ev-ad8d86465a8486ea491f18bd2285abbda3cfdfdfd91410757c0746ffe7effd26",
+          "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13"
+        ]
+      },
+      "post_help_active_time": {
+        "status": "known",
+        "value": 77.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-0ec6e1064b403d8d9196e58890732d3762032cc9f8018c2bf5356349883f2eb4",
+          "ev-f22928b6b9b0b62ac5e4047f923cd19e3dc23651d023d20affc82c16bca822f7",
+          "ev-080eeb0e9f9ff5b462f77dd38bcb83c6e5687858204fb8132418dd09df3ba63f",
+          "ev-caca3f1a7672319e11cab6e5e1343feffeac1c9dc8c7cee121d678a87d8932bc",
+          "ev-8762c1f78017bd39e42771912cf1302cd064d5d50c136db7834c3e1dba4d0af9",
+          "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+          "ev-0824904be79ee1344d487da5749ca9b7139cd68276127d1b7b9abe59c3bc9ac4",
+          "ev-08379bf1e7465d7ed922d25aa9a9694770710c075e2287f7e5e5da964b295fa7",
+          "ev-ad8d86465a8486ea491f18bd2285abbda3cfdfdfd91410757c0746ffe7effd26",
+          "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13"
+        ]
+      },
+      "elapsed_time": {
+        "status": "known",
+        "value": 2160.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-0029911e9a6eeabd0ee726e18199ee344dc92d16b0ee5ceff00b8fa3c91f0037",
+          "ev-1487bcd353a6fb5a276e1a4781111f31758314f4053c740cb04086517517f49c"
+        ]
+      },
+      "reference_active_time": {
+        "status": "illustrative",
+        "lower_seconds": 35,
+        "upper_seconds": 70,
+        "basis": "Illustrative UI reference only. No research baseline has been calculated."
+      },
+      "failed_checks_after_help": {
+        "status": "known",
+        "value": 3,
+        "reason": null,
+        "evidence_refs": [
+          "ev-080eeb0e9f9ff5b462f77dd38bcb83c6e5687858204fb8132418dd09df3ba63f",
+          "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+          "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13"
+        ]
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 1,
+        "reason": null,
+        "evidence_refs": [
+          "ev-0029911e9a6eeabd0ee726e18199ee344dc92d16b0ee5ceff00b8fa3c91f0037"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "known",
+        "value": 1,
+        "reason": null,
+        "evidence_refs": [
+          "ev-80ef124de34d559d61eaa42904392f2c2440739298f35970b017b8f88bd3a264"
+        ]
+      },
+      "repeated_failures": {
+        "status": "known",
+        "value": 3,
+        "reason": null,
+        "evidence_refs": [
+          "ev-e4dadd70f5500b9a4bc9bca70220f32dc8716cf955082b6b4b167176bda3f045",
+          "ev-080eeb0e9f9ff5b462f77dd38bcb83c6e5687858204fb8132418dd09df3ba63f",
+          "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+          "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13"
+        ]
+      },
+      "continued_after_help": {
+        "status": "known",
+        "value": true,
+        "reason": null,
+        "evidence_refs": [
+          "ev-80ef124de34d559d61eaa42904392f2c2440739298f35970b017b8f88bd3a264",
+          "ev-0ec6e1064b403d8d9196e58890732d3762032cc9f8018c2bf5356349883f2eb4",
+          "ev-f22928b6b9b0b62ac5e4047f923cd19e3dc23651d023d20affc82c16bca822f7",
+          "ev-080eeb0e9f9ff5b462f77dd38bcb83c6e5687858204fb8132418dd09df3ba63f",
+          "ev-caca3f1a7672319e11cab6e5e1343feffeac1c9dc8c7cee121d678a87d8932bc",
+          "ev-8762c1f78017bd39e42771912cf1302cd064d5d50c136db7834c3e1dba4d0af9",
+          "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+          "ev-08379bf1e7465d7ed922d25aa9a9694770710c075e2287f7e5e5da964b295fa7",
+          "ev-ad8d86465a8486ea491f18bd2285abbda3cfdfdfd91410757c0746ffe7effd26",
+          "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13"
+        ]
+      },
+      "resumed_after_help": {
+        "status": "known",
+        "value": true,
+        "reason": null,
+        "evidence_refs": [
+          "ev-80ef124de34d559d61eaa42904392f2c2440739298f35970b017b8f88bd3a264",
+          "ev-08379bf1e7465d7ed922d25aa9a9694770710c075e2287f7e5e5da964b295fa7",
+          "ev-ad8d86465a8486ea491f18bd2285abbda3cfdfdfd91410757c0746ffe7effd26",
+          "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13"
+        ]
+      },
+      "reasons": [
+        {
+          "id": "post-help-failures",
+          "title": "Repeated failed checks after help",
+          "description": "Three failed question checks were observed after the completed tutor response.",
+          "supporting_refs": [
+            "ev-080eeb0e9f9ff5b462f77dd38bcb83c6e5687858204fb8132418dd09df3ba63f",
+            "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+            "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13"
+          ],
+          "supporting_event_ids": [
+            "b06",
+            "b09",
+            "b13"
+          ]
+        },
+        {
+          "id": "resumed-work",
+          "title": "Work resumed after an inactivity gap",
+          "description": "The session resumed in a later work bout after more than 30 minutes without an observed event.",
+          "supporting_refs": [
+            "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+            "ev-0824904be79ee1344d487da5749ca9b7139cd68276127d1b7b9abe59c3bc9ac4",
+            "ev-08379bf1e7465d7ed922d25aa9a9694770710c075e2287f7e5e5da964b295fa7"
+          ],
+          "supporting_event_ids": [
+            "b09",
+            "b10",
+            "b11"
+          ]
+        },
+        {
+          "id": "unfinished-outcome",
+          "title": "Question remained unfinished",
+          "description": "The final explicit status in this synthetic session is unfinished, not failed.",
+          "supporting_refs": [
+            "ev-1487bcd353a6fb5a276e1a4781111f31758314f4053c740cb04086517517f49c"
+          ],
+          "supporting_event_ids": [
+            "b14"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "ev-0029911e9a6eeabd0ee726e18199ee344dc92d16b0ee5ceff00b8fa3c91f0037",
+          "source_event_id": "b01",
+          "occurred_at": "2026-02-01T10:00:00+00:00",
+          "phase": "before_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/7"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Request",
+              "value": "req-b1"
+            }
+          ],
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "I changed the index but the array check still fails. What am I missing?"
+        },
+        {
+          "id": "ev-e4dadd70f5500b9a4bc9bca70220f32dc8716cf955082b6b4b167176bda3f045",
+          "source_event_id": "b02",
+          "occurred_at": "2026-02-01T10:00:10+00:00",
+          "phase": "before_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/8"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-b1"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q51"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "A question check reported fail."
+        },
+        {
+          "id": "ev-80ef124de34d559d61eaa42904392f2c2440739298f35970b017b8f88bd3a264",
+          "source_event_id": "b03",
+          "occurred_at": "2026-02-01T10:01:00+00:00",
+          "phase": "help_boundary",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/9"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Status",
+              "value": "completed"
+            },
+            {
+              "label": "Response",
+              "value": "resp-b1"
+            }
+          ],
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Compare the array length with the largest valid index. Which value should be one smaller?"
+        },
+        {
+          "id": "ev-0ec6e1064b403d8d9196e58890732d3762032cc9f8018c2bf5356349883f2eb4",
+          "source_event_id": "b04",
+          "occurred_at": "2026-02-01T10:01:30+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/10"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "last = values[len(values)]"
+          },
+          "metadata": [
+            {
+              "label": "Revision",
+              "value": "b-rev1"
+            }
+          ],
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Cell answer-5-1 changed to revision b-rev1."
+        },
+        {
+          "id": "ev-f22928b6b9b0b62ac5e4047f923cd19e3dc23651d023d20affc82c16bca822f7",
+          "source_event_id": "b05",
+          "occurred_at": "2026-02-01T10:01:45+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/11"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "last = values[len(values)]"
+          },
+          "metadata": [
+            {
+              "label": "Execution",
+              "value": "exec-b1"
+            },
+            {
+              "label": "Status",
+              "value": "error"
+            }
+          ],
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "IndexError: index is out of bounds"
+        },
+        {
+          "id": "ev-080eeb0e9f9ff5b462f77dd38bcb83c6e5687858204fb8132418dd09df3ba63f",
+          "source_event_id": "b06",
+          "occurred_at": "2026-02-01T10:01:46+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/12"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-b2"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q51"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "A question check reported fail."
+        },
+        {
+          "id": "ev-caca3f1a7672319e11cab6e5e1343feffeac1c9dc8c7cee121d678a87d8932bc",
+          "source_event_id": "b07",
+          "occurred_at": "2026-02-01T10:02:10+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/13"
+          ],
+          "code_diff": {
+            "before": "last = values[len(values)]",
+            "after": "last = values[len(values + 1)]"
+          },
+          "metadata": [
+            {
+              "label": "Revision",
+              "value": "b-rev2"
+            }
+          ],
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Cell answer-5-1 changed to revision b-rev2."
+        },
+        {
+          "id": "ev-8762c1f78017bd39e42771912cf1302cd064d5d50c136db7834c3e1dba4d0af9",
+          "source_event_id": "b08",
+          "occurred_at": "2026-02-01T10:02:25+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/14"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "last = values[len(values + 1)]"
+          },
+          "metadata": [
+            {
+              "label": "Execution",
+              "value": "exec-b2"
+            },
+            {
+              "label": "Status",
+              "value": "error"
+            }
+          ],
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "TypeError: can only concatenate list to list"
+        },
+        {
+          "id": "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+          "source_event_id": "b09",
+          "occurred_at": "2026-02-01T10:02:26+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/15"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-b3"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q51"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "A question check reported fail."
+        },
+        {
+          "id": "gap-6709a60ca5-59c3bc9ac4",
+          "kind": "inactivity",
+          "actor": "Observed gap",
+          "title": "Inactivity or unobserved work",
+          "body": "No event was observed during this interval. This is not treated as active work or as failure.",
+          "occurred_at": "2026-02-01T10:35:00+00:00",
+          "duration_seconds": 1954.0,
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_event_id": null,
+          "source_pointers": [],
+          "supporting_refs": [
+            "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+            "ev-0824904be79ee1344d487da5749ca9b7139cd68276127d1b7b9abe59c3bc9ac4"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Boundary",
+              "value": "observed_event_gap"
+            }
+          ]
+        },
+        {
+          "id": "ev-0824904be79ee1344d487da5749ca9b7139cd68276127d1b7b9abe59c3bc9ac4",
+          "source_event_id": "b10",
+          "occurred_at": "2026-02-01T10:35:00+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/16"
+          ],
+          "code_diff": null,
+          "metadata": [],
+          "kind": "activity",
+          "actor": "Activity log",
+          "title": "Work resume",
+          "body": "The activity stream recorded resume."
+        },
+        {
+          "id": "ev-08379bf1e7465d7ed922d25aa9a9694770710c075e2287f7e5e5da964b295fa7",
+          "source_event_id": "b11",
+          "occurred_at": "2026-02-01T10:35:10+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/17"
+          ],
+          "code_diff": {
+            "before": "last = values[len(values + 1)]",
+            "after": "last = values[-len(values)]"
+          },
+          "metadata": [
+            {
+              "label": "Revision",
+              "value": "b-rev3"
+            }
+          ],
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Cell answer-5-1 changed to revision b-rev3."
+        },
+        {
+          "id": "ev-ad8d86465a8486ea491f18bd2285abbda3cfdfdfd91410757c0746ffe7effd26",
+          "source_event_id": "b12",
+          "occurred_at": "2026-02-01T10:35:20+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/18"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "last = values[-len(values)]"
+          },
+          "metadata": [
+            {
+              "label": "Execution",
+              "value": "exec-b3"
+            },
+            {
+              "label": "Status",
+              "value": "completed"
+            }
+          ],
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution finished with status: completed."
+        },
+        {
+          "id": "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13",
+          "source_event_id": "b13",
+          "occurred_at": "2026-02-01T10:35:21+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/19"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-b4"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q51"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "A question check reported fail."
+        },
+        {
+          "id": "ev-1487bcd353a6fb5a276e1a4781111f31758314f4053c740cb04086517517f49c",
+          "source_event_id": "b14",
+          "occurred_at": "2026-02-01T10:36:00+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/20"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Status",
+              "value": "unfinished"
+            }
+          ],
+          "kind": "question_status",
+          "actor": "Session",
+          "title": "Question status updated",
+          "body": "The explicit question status became unfinished."
+        }
+      ],
+      "source_event_refs": [
+        "ev-0029911e9a6eeabd0ee726e18199ee344dc92d16b0ee5ceff00b8fa3c91f0037",
+        "ev-e4dadd70f5500b9a4bc9bca70220f32dc8716cf955082b6b4b167176bda3f045",
+        "ev-80ef124de34d559d61eaa42904392f2c2440739298f35970b017b8f88bd3a264",
+        "ev-0ec6e1064b403d8d9196e58890732d3762032cc9f8018c2bf5356349883f2eb4",
+        "ev-f22928b6b9b0b62ac5e4047f923cd19e3dc23651d023d20affc82c16bca822f7",
+        "ev-080eeb0e9f9ff5b462f77dd38bcb83c6e5687858204fb8132418dd09df3ba63f",
+        "ev-caca3f1a7672319e11cab6e5e1343feffeac1c9dc8c7cee121d678a87d8932bc",
+        "ev-8762c1f78017bd39e42771912cf1302cd064d5d50c136db7834c3e1dba4d0af9",
+        "ev-9895d0179a5032f6eda9968aaac3fd57eb331419c5c7eac5561b226709a60ca5",
+        "ev-0824904be79ee1344d487da5749ca9b7139cd68276127d1b7b9abe59c3bc9ac4",
+        "ev-08379bf1e7465d7ed922d25aa9a9694770710c075e2287f7e5e5da964b295fa7",
+        "ev-ad8d86465a8486ea491f18bd2285abbda3cfdfdfd91410757c0746ffe7effd26",
+        "ev-68a1588c732ac5528b9850095535b8066bcf432db192517892dc933b9c75bc13",
+        "ev-1487bcd353a6fb5a276e1a4781111f31758314f4053c740cb04086517517f49c"
+      ],
+      "quality_warnings": [
+        "observation_coverage_incomplete_or_unknown"
+      ]
+    },
+    {
+      "id": "episode-b917122e841adfd6ad4f8bf21e9380600969a0e1370142960774b5567965be1d",
+      "review_rank": 2,
+      "flagged": true,
+      "priority": "medium",
+      "priority_basis": "Illustrative manual priority for the UI demonstration, not an anomaly score.",
+      "scenario": "Multiple tutor responses before recovery",
+      "synthetic": true,
+      "student_id": "STU-067",
+      "question_id": "Q2.4",
+      "assignment_id": "lab-tables",
+      "outcome": {
+        "status": "known",
+        "value": "completed",
+        "reason": null,
+        "evidence_refs": [
+          "ev-6d87d7678221987bb9e192e25cce442da80f8aab76792716149849fd5d71ef7b"
+        ]
+      },
+      "active_time": {
+        "status": "known",
+        "value": 63.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-e41c0b0cda945b7c57699812d8db5cace77164c0ad17212f75b789b6645e5588",
+          "ev-c44ef947aba4c753ae63e33c962606b0d6038b1bc817b9acce5dbe96d6cb0000",
+          "ev-c1e12f874b5689568f01c4039cddca7906eb747d09ac18d2abbbb71fd64b9d60",
+          "ev-33f1c5dfe15882b8a56140f31ee56638ebfc064e0c4f347efa85657aa4034aca",
+          "ev-8452de8a44a92f08f2eb61005923d207f0bfbc6f474e8ab3d73239c0fc45ccc2",
+          "ev-e416601b1c3c75fdbf2db09d52d3df9345dd9a8dc6ffc03dd78cd78b788b8793",
+          "ev-932172a1110a0fa4ea19b327e85772641f6f7251dcd9211ec395f4a0d97667d8",
+          "ev-fd01ab0439311eca3031ac4e2cf85ab6a93b070f451233cba8c5085eb7227cc9",
+          "ev-52ff83384b158fa362540d9027d16f09023d948539b56285d46e57342cc0c35f"
+        ]
+      },
+      "post_help_active_time": {
+        "status": "known",
+        "value": 51.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-c1e12f874b5689568f01c4039cddca7906eb747d09ac18d2abbbb71fd64b9d60",
+          "ev-33f1c5dfe15882b8a56140f31ee56638ebfc064e0c4f347efa85657aa4034aca",
+          "ev-8452de8a44a92f08f2eb61005923d207f0bfbc6f474e8ab3d73239c0fc45ccc2",
+          "ev-e416601b1c3c75fdbf2db09d52d3df9345dd9a8dc6ffc03dd78cd78b788b8793",
+          "ev-932172a1110a0fa4ea19b327e85772641f6f7251dcd9211ec395f4a0d97667d8",
+          "ev-fd01ab0439311eca3031ac4e2cf85ab6a93b070f451233cba8c5085eb7227cc9",
+          "ev-52ff83384b158fa362540d9027d16f09023d948539b56285d46e57342cc0c35f"
+        ]
+      },
+      "elapsed_time": {
+        "status": "known",
+        "value": 197.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-e41c0b0cda945b7c57699812d8db5cace77164c0ad17212f75b789b6645e5588",
+          "ev-6d87d7678221987bb9e192e25cce442da80f8aab76792716149849fd5d71ef7b"
+        ]
+      },
+      "reference_active_time": {
+        "status": "illustrative",
+        "lower_seconds": 30,
+        "upper_seconds": 75,
+        "basis": "Illustrative UI reference only. No research baseline has been calculated."
+      },
+      "failed_checks_after_help": {
+        "status": "known",
+        "value": 1,
+        "reason": null,
+        "evidence_refs": [
+          "ev-8452de8a44a92f08f2eb61005923d207f0bfbc6f474e8ab3d73239c0fc45ccc2"
+        ]
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 2,
+        "reason": null,
+        "evidence_refs": [
+          "ev-e41c0b0cda945b7c57699812d8db5cace77164c0ad17212f75b789b6645e5588",
+          "ev-e416601b1c3c75fdbf2db09d52d3df9345dd9a8dc6ffc03dd78cd78b788b8793"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "known",
+        "value": 2,
+        "reason": null,
+        "evidence_refs": [
+          "ev-94c356c43403ce670b556d6344a8241b0fdc3428c66cbc4af06a978b7a512820",
+          "ev-ee33ac0fa8b57c5ac238a03f4d5b26d959664786e735802bbbccf6c1c21da5d0"
+        ]
+      },
+      "repeated_failures": {
+        "status": "known",
+        "value": 1,
+        "reason": null,
+        "evidence_refs": [
+          "ev-c44ef947aba4c753ae63e33c962606b0d6038b1bc817b9acce5dbe96d6cb0000",
+          "ev-8452de8a44a92f08f2eb61005923d207f0bfbc6f474e8ab3d73239c0fc45ccc2"
+        ]
+      },
+      "continued_after_help": {
+        "status": "known",
+        "value": true,
+        "reason": null,
+        "evidence_refs": [
+          "ev-94c356c43403ce670b556d6344a8241b0fdc3428c66cbc4af06a978b7a512820",
+          "ev-c1e12f874b5689568f01c4039cddca7906eb747d09ac18d2abbbb71fd64b9d60",
+          "ev-33f1c5dfe15882b8a56140f31ee56638ebfc064e0c4f347efa85657aa4034aca",
+          "ev-8452de8a44a92f08f2eb61005923d207f0bfbc6f474e8ab3d73239c0fc45ccc2",
+          "ev-e416601b1c3c75fdbf2db09d52d3df9345dd9a8dc6ffc03dd78cd78b788b8793",
+          "ev-932172a1110a0fa4ea19b327e85772641f6f7251dcd9211ec395f4a0d97667d8",
+          "ev-fd01ab0439311eca3031ac4e2cf85ab6a93b070f451233cba8c5085eb7227cc9",
+          "ev-52ff83384b158fa362540d9027d16f09023d948539b56285d46e57342cc0c35f"
+        ]
+      },
+      "resumed_after_help": {
+        "status": "known",
+        "value": false,
+        "reason": null,
+        "evidence_refs": [
+          "ev-94c356c43403ce670b556d6344a8241b0fdc3428c66cbc4af06a978b7a512820",
+          "ev-6d87d7678221987bb9e192e25cce442da80f8aab76792716149849fd5d71ef7b"
+        ]
+      },
+      "reasons": [
+        {
+          "id": "multiple-help",
+          "title": "Multiple tutor interactions before recovery",
+          "description": "The student requested help twice before a question-level passing check was observed.",
+          "supporting_refs": [
+            "ev-94c356c43403ce670b556d6344a8241b0fdc3428c66cbc4af06a978b7a512820",
+            "ev-e416601b1c3c75fdbf2db09d52d3df9345dd9a8dc6ffc03dd78cd78b788b8793",
+            "ev-ee33ac0fa8b57c5ac238a03f4d5b26d959664786e735802bbbccf6c1c21da5d0",
+            "ev-52ff83384b158fa362540d9027d16f09023d948539b56285d46e57342cc0c35f"
+          ],
+          "supporting_event_ids": [
+            "c03",
+            "c07",
+            "c08",
+            "c11"
+          ]
+        },
+        {
+          "id": "failed-after-first-help",
+          "title": "A failed check followed the first response",
+          "description": "The first code attempt after tutor help was followed by another failed question check.",
+          "supporting_refs": [
+            "ev-94c356c43403ce670b556d6344a8241b0fdc3428c66cbc4af06a978b7a512820",
+            "ev-c1e12f874b5689568f01c4039cddca7906eb747d09ac18d2abbbb71fd64b9d60",
+            "ev-33f1c5dfe15882b8a56140f31ee56638ebfc064e0c4f347efa85657aa4034aca",
+            "ev-8452de8a44a92f08f2eb61005923d207f0bfbc6f474e8ab3d73239c0fc45ccc2"
+          ],
+          "supporting_event_ids": [
+            "c03",
+            "c04",
+            "c05",
+            "c06"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "ev-e41c0b0cda945b7c57699812d8db5cace77164c0ad17212f75b789b6645e5588",
+          "source_event_id": "c01",
+          "occurred_at": "2026-02-01T11:00:00+00:00",
+          "phase": "before_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/21"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Request",
+              "value": "req-c1"
+            }
+          ],
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "My grouped table has the wrong column names. Can you point me in the right direction?"
+        },
+        {
+          "id": "ev-c44ef947aba4c753ae63e33c962606b0d6038b1bc817b9acce5dbe96d6cb0000",
+          "source_event_id": "c02",
+          "occurred_at": "2026-02-01T11:00:12+00:00",
+          "phase": "before_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/22"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-c1"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q24"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "A question check reported fail."
+        },
+        {
+          "id": "ev-94c356c43403ce670b556d6344a8241b0fdc3428c66cbc4af06a978b7a512820",
+          "source_event_id": "c03",
+          "occurred_at": "2026-02-01T11:01:00+00:00",
+          "phase": "help_boundary",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/23"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Status",
+              "value": "completed"
+            },
+            {
+              "label": "Response",
+              "value": "resp-c1"
+            }
+          ],
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Look at the name of the column used in your grouping operation. What column name does the result produce?"
+        },
+        {
+          "id": "ev-c1e12f874b5689568f01c4039cddca7906eb747d09ac18d2abbbb71fd64b9d60",
+          "source_event_id": "c04",
+          "occurred_at": "2026-02-01T11:01:25+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/24"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "summary = sales.groupby('region').count()"
+          },
+          "metadata": [
+            {
+              "label": "Revision",
+              "value": "c-rev1"
+            }
+          ],
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Cell answer-2-4 changed to revision c-rev1."
+        },
+        {
+          "id": "ev-33f1c5dfe15882b8a56140f31ee56638ebfc064e0c4f347efa85657aa4034aca",
+          "source_event_id": "c05",
+          "occurred_at": "2026-02-01T11:01:40+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/25"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "summary = sales.groupby('region').count()"
+          },
+          "metadata": [
+            {
+              "label": "Execution",
+              "value": "exec-c1"
+            },
+            {
+              "label": "Status",
+              "value": "completed"
+            }
+          ],
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution finished with status: completed."
+        },
+        {
+          "id": "ev-8452de8a44a92f08f2eb61005923d207f0bfbc6f474e8ab3d73239c0fc45ccc2",
+          "source_event_id": "c06",
+          "occurred_at": "2026-02-01T11:01:41+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/26"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-c2"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q24"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "A question check reported fail."
+        },
+        {
+          "id": "ev-e416601b1c3c75fdbf2db09d52d3df9345dd9a8dc6ffc03dd78cd78b788b8793",
+          "source_event_id": "c07",
+          "occurred_at": "2026-02-01T11:02:00+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/27"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Request",
+              "value": "req-c2"
+            }
+          ],
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "I see a count column, but the question expects total_sales. Should I rename it?"
+        },
+        {
+          "id": "ev-ee33ac0fa8b57c5ac238a03f4d5b26d959664786e735802bbbccf6c1c21da5d0",
+          "source_event_id": "c08",
+          "occurred_at": "2026-02-01T11:02:30+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/28"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Status",
+              "value": "completed"
+            },
+            {
+              "label": "Response",
+              "value": "resp-c2"
+            }
+          ],
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Renaming changes the label, but first check whether count is the aggregation the question asks for. Which aggregation produces total sales?"
+        },
+        {
+          "id": "ev-932172a1110a0fa4ea19b327e85772641f6f7251dcd9211ec395f4a0d97667d8",
+          "source_event_id": "c09",
+          "occurred_at": "2026-02-01T11:03:00+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/29"
+          ],
+          "code_diff": {
+            "before": "summary = sales.groupby('region').count()",
+            "after": "summary = sales.groupby('region').sum().rename(columns={'sales': 'total_sales'})"
+          },
+          "metadata": [
+            {
+              "label": "Revision",
+              "value": "c-rev2"
+            }
+          ],
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Cell answer-2-4 changed to revision c-rev2."
+        },
+        {
+          "id": "ev-fd01ab0439311eca3031ac4e2cf85ab6a93b070f451233cba8c5085eb7227cc9",
+          "source_event_id": "c10",
+          "occurred_at": "2026-02-01T11:03:15+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/30"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "summary = sales.groupby('region').sum().rename(columns={'sales': 'total_sales'})"
+          },
+          "metadata": [
+            {
+              "label": "Execution",
+              "value": "exec-c2"
+            },
+            {
+              "label": "Status",
+              "value": "completed"
+            }
+          ],
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution finished with status: completed."
+        },
+        {
+          "id": "ev-52ff83384b158fa362540d9027d16f09023d948539b56285d46e57342cc0c35f",
+          "source_event_id": "c11",
+          "occurred_at": "2026-02-01T11:03:16+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/31"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-c3"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q24"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check pass",
+          "body": "A question check reported pass."
+        },
+        {
+          "id": "ev-6d87d7678221987bb9e192e25cce442da80f8aab76792716149849fd5d71ef7b",
+          "source_event_id": "c12",
+          "occurred_at": "2026-02-01T11:03:17+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/32"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Status",
+              "value": "completed"
+            }
+          ],
+          "kind": "question_status",
+          "actor": "Session",
+          "title": "Question status updated",
+          "body": "The explicit question status became completed."
+        }
+      ],
+      "source_event_refs": [
+        "ev-e41c0b0cda945b7c57699812d8db5cace77164c0ad17212f75b789b6645e5588",
+        "ev-c44ef947aba4c753ae63e33c962606b0d6038b1bc817b9acce5dbe96d6cb0000",
+        "ev-94c356c43403ce670b556d6344a8241b0fdc3428c66cbc4af06a978b7a512820",
+        "ev-c1e12f874b5689568f01c4039cddca7906eb747d09ac18d2abbbb71fd64b9d60",
+        "ev-33f1c5dfe15882b8a56140f31ee56638ebfc064e0c4f347efa85657aa4034aca",
+        "ev-8452de8a44a92f08f2eb61005923d207f0bfbc6f474e8ab3d73239c0fc45ccc2",
+        "ev-e416601b1c3c75fdbf2db09d52d3df9345dd9a8dc6ffc03dd78cd78b788b8793",
+        "ev-ee33ac0fa8b57c5ac238a03f4d5b26d959664786e735802bbbccf6c1c21da5d0",
+        "ev-932172a1110a0fa4ea19b327e85772641f6f7251dcd9211ec395f4a0d97667d8",
+        "ev-fd01ab0439311eca3031ac4e2cf85ab6a93b070f451233cba8c5085eb7227cc9",
+        "ev-52ff83384b158fa362540d9027d16f09023d948539b56285d46e57342cc0c35f",
+        "ev-6d87d7678221987bb9e192e25cce442da80f8aab76792716149849fd5d71ef7b"
+      ],
+      "quality_warnings": [
+        "observation_coverage_incomplete_or_unknown"
+      ]
+    },
+    {
+      "id": "episode-19967b4f17d25e3f0bafc0d47b362aae6356f29a62cb7e794672067ef1739ea3",
+      "review_rank": 3,
+      "flagged": true,
+      "priority": "high",
+      "priority_basis": "Illustrative manual priority for the UI demonstration, not an anomaly score.",
+      "scenario": "Missing or ambiguous activity data",
+      "synthetic": true,
+      "student_id": "STU-088",
+      "question_id": "Q4.3",
+      "assignment_id": "lab-probability",
+      "outcome": {
+        "status": "unknown",
+        "value": null,
+        "reason": "question_outcome_unknown",
+        "evidence_refs": []
+      },
+      "active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "activity_order_ambiguous",
+        "evidence_refs": [
+          "ev-92c5744e87670cf1e8bb6babb16154bc4a6de587de455fe53790fa6a02d3b620"
+        ]
+      },
+      "post_help_active_time": {
+        "status": "unknown",
+        "value": null,
+        "reason": "activity_position_relative_to_help_ambiguous",
+        "evidence_refs": [
+          "ev-92c5744e87670cf1e8bb6babb16154bc4a6de587de455fe53790fa6a02d3b620"
+        ]
+      },
+      "elapsed_time": {
+        "status": "known",
+        "value": 75.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-79f0c0548a9b2e5b665ee9966fb1f8007277c7c02b50fefb5a038585b6342ebc",
+          "ev-8f1c973a32247a1cf20adb086895ccdb85af579c331571d43ea7dd81884e854a"
+        ]
+      },
+      "reference_active_time": {
+        "status": "unknown",
+        "lower_seconds": null,
+        "upper_seconds": null,
+        "basis": "Illustrative UI reference only. No research baseline has been calculated."
+      },
+      "failed_checks_after_help": {
+        "status": "known",
+        "value": 0,
+        "reason": null,
+        "evidence_refs": []
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 1,
+        "reason": null,
+        "evidence_refs": [
+          "ev-92c5744e87670cf1e8bb6babb16154bc4a6de587de455fe53790fa6a02d3b620"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "known",
+        "value": 1,
+        "reason": null,
+        "evidence_refs": [
+          "ev-79f0c0548a9b2e5b665ee9966fb1f8007277c7c02b50fefb5a038585b6342ebc"
+        ]
+      },
+      "repeated_failures": {
+        "status": "known",
+        "value": 0,
+        "reason": null,
+        "evidence_refs": []
+      },
+      "continued_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "post_help_activity_order_ambiguous",
+        "evidence_refs": [
+          "ev-79f0c0548a9b2e5b665ee9966fb1f8007277c7c02b50fefb5a038585b6342ebc",
+          "ev-92c5744e87670cf1e8bb6babb16154bc4a6de587de455fe53790fa6a02d3b620"
+        ]
+      },
+      "resumed_after_help": {
+        "status": "unknown",
+        "value": null,
+        "reason": "post_help_activity_order_ambiguous",
+        "evidence_refs": [
+          "ev-79f0c0548a9b2e5b665ee9966fb1f8007277c7c02b50fefb5a038585b6342ebc",
+          "ev-92c5744e87670cf1e8bb6babb16154bc4a6de587de455fe53790fa6a02d3b620"
+        ]
+      },
+      "reasons": [
+        {
+          "id": "ambiguous-order",
+          "title": "Message and response order is uncertain",
+          "description": "The student message and completed response share a timestamp without a trusted ordering sequence.",
+          "supporting_refs": [
+            "ev-92c5744e87670cf1e8bb6babb16154bc4a6de587de455fe53790fa6a02d3b620",
+            "ev-79f0c0548a9b2e5b665ee9966fb1f8007277c7c02b50fefb5a038585b6342ebc"
+          ],
+          "supporting_event_ids": [
+            "d01",
+            "d02"
+          ]
+        },
+        {
+          "id": "unknown-outcome",
+          "title": "Outcome was not observed",
+          "description": "The final check result and question outcome are unknown in the available events.",
+          "supporting_refs": [
+            "ev-8f1c973a32247a1cf20adb086895ccdb85af579c331571d43ea7dd81884e854a"
+          ],
+          "supporting_event_ids": [
+            "d04"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "ev-79f0c0548a9b2e5b665ee9966fb1f8007277c7c02b50fefb5a038585b6342ebc",
+          "source_event_id": "d02",
+          "occurred_at": "2026-02-01T13:00:00+00:00",
+          "phase": "help_boundary",
+          "order_uncertain": true,
+          "source_pointers": [
+            "/events/34"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Status",
+              "value": "completed"
+            },
+            {
+              "label": "Response",
+              "value": "resp-d1"
+            }
+          ],
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "What quantity does the denominator represent, and what range should a probability fall in?"
+        },
+        {
+          "id": "ev-92c5744e87670cf1e8bb6babb16154bc4a6de587de455fe53790fa6a02d3b620",
+          "source_event_id": "d01",
+          "occurred_at": "2026-02-01T13:00:00+00:00",
+          "phase": "ambiguous",
+          "order_uncertain": true,
+          "source_pointers": [
+            "/events/33"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Request",
+              "value": "req-d1"
+            }
+          ],
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "I am not sure whether this should be a probability or a count."
+        },
+        {
+          "id": "ev-c2c2d2970d5a836ee0b7307abe44d50d93a6e62f97b90e756dc8a5262f0c13e4",
+          "source_event_id": "d03",
+          "occurred_at": "2026-02-01T13:01:00+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/35"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "answer = favorable / total"
+          },
+          "metadata": [
+            {
+              "label": "Revision",
+              "value": "d-rev1"
+            }
+          ],
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Cell answer-4-3 changed to revision d-rev1."
+        },
+        {
+          "id": "ev-8f1c973a32247a1cf20adb086895ccdb85af579c331571d43ea7dd81884e854a",
+          "source_event_id": "d04",
+          "occurred_at": "2026-02-01T13:01:15+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/36"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-d1"
+            },
+            {
+              "label": "Grader",
+              "value": "unknown"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check unknown",
+          "body": "A question check reported unknown."
+        }
+      ],
+      "source_event_refs": [
+        "ev-79f0c0548a9b2e5b665ee9966fb1f8007277c7c02b50fefb5a038585b6342ebc",
+        "ev-92c5744e87670cf1e8bb6babb16154bc4a6de587de455fe53790fa6a02d3b620",
+        "ev-c2c2d2970d5a836ee0b7307abe44d50d93a6e62f97b90e756dc8a5262f0c13e4",
+        "ev-8f1c973a32247a1cf20adb086895ccdb85af579c331571d43ea7dd81884e854a"
+      ],
+      "quality_warnings": [
+        "timestamp_order_ambiguous",
+        "observation_coverage_incomplete_or_unknown"
+      ]
+    },
+    {
+      "id": "episode-35cc3b7064750415e8816acc413c557a39317daebcdc72f7832b08be6be2249e",
+      "review_rank": 4,
+      "flagged": false,
+      "priority": "routine",
+      "priority_basis": "Illustrative manual priority for the UI demonstration, not an anomaly score.",
+      "scenario": "Quick recovery after tutor assistance",
+      "synthetic": true,
+      "student_id": "STU-021",
+      "question_id": "Q3.2",
+      "assignment_id": "lab-dictionaries",
+      "outcome": {
+        "status": "known",
+        "value": "completed",
+        "reason": null,
+        "evidence_refs": [
+          "ev-3812ce323c05a21b6eaa463fa43b310bab1fde777fe96e88aefa04f4a8cb94c1"
+        ]
+      },
+      "active_time": {
+        "status": "known",
+        "value": 31.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-a846ce13f39b51940e02c9185d351ac976f97206e6dca4a6067a89341ad8c2b3",
+          "ev-3394a4b38f02b2bf74bd8b3fdce75fe2484284a743fc9e320486860fcbe69222",
+          "ev-2fc994e75bdb16e71fa7ee780baaaec51715fe9e91ada17e39886db34278ac29",
+          "ev-2afc7dd2b6a5de8160822ac6d0725c37920d099ce8a124becb7fcf4d7bd20db3",
+          "ev-83182a469e8b34953d58ba1a8163faee70d2d008ff97da38c1afb4b376238a25"
+        ]
+      },
+      "post_help_active_time": {
+        "status": "known",
+        "value": 21.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-2fc994e75bdb16e71fa7ee780baaaec51715fe9e91ada17e39886db34278ac29",
+          "ev-2afc7dd2b6a5de8160822ac6d0725c37920d099ce8a124becb7fcf4d7bd20db3",
+          "ev-83182a469e8b34953d58ba1a8163faee70d2d008ff97da38c1afb4b376238a25"
+        ]
+      },
+      "elapsed_time": {
+        "status": "known",
+        "value": 102.0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-a846ce13f39b51940e02c9185d351ac976f97206e6dca4a6067a89341ad8c2b3",
+          "ev-3812ce323c05a21b6eaa463fa43b310bab1fde777fe96e88aefa04f4a8cb94c1"
+        ]
+      },
+      "reference_active_time": {
+        "status": "illustrative",
+        "lower_seconds": 20,
+        "upper_seconds": 60,
+        "basis": "Illustrative UI reference only. No research baseline has been calculated."
+      },
+      "failed_checks_after_help": {
+        "status": "known",
+        "value": 0,
+        "reason": null,
+        "evidence_refs": []
+      },
+      "tutor_requests": {
+        "status": "known",
+        "value": 1,
+        "reason": null,
+        "evidence_refs": [
+          "ev-a846ce13f39b51940e02c9185d351ac976f97206e6dca4a6067a89341ad8c2b3"
+        ]
+      },
+      "completed_tutor_responses": {
+        "status": "known",
+        "value": 1,
+        "reason": null,
+        "evidence_refs": [
+          "ev-ff9f1c0ffe76d107ebcf94aa4f285984a7375c4c209b613d7b670d5302e0f477"
+        ]
+      },
+      "repeated_failures": {
+        "status": "known",
+        "value": 0,
+        "reason": null,
+        "evidence_refs": [
+          "ev-3394a4b38f02b2bf74bd8b3fdce75fe2484284a743fc9e320486860fcbe69222"
+        ]
+      },
+      "continued_after_help": {
+        "status": "known",
+        "value": true,
+        "reason": null,
+        "evidence_refs": [
+          "ev-ff9f1c0ffe76d107ebcf94aa4f285984a7375c4c209b613d7b670d5302e0f477",
+          "ev-2fc994e75bdb16e71fa7ee780baaaec51715fe9e91ada17e39886db34278ac29",
+          "ev-2afc7dd2b6a5de8160822ac6d0725c37920d099ce8a124becb7fcf4d7bd20db3",
+          "ev-83182a469e8b34953d58ba1a8163faee70d2d008ff97da38c1afb4b376238a25"
+        ]
+      },
+      "resumed_after_help": {
+        "status": "known",
+        "value": false,
+        "reason": null,
+        "evidence_refs": [
+          "ev-ff9f1c0ffe76d107ebcf94aa4f285984a7375c4c209b613d7b670d5302e0f477",
+          "ev-3812ce323c05a21b6eaa463fa43b310bab1fde777fe96e88aefa04f4a8cb94c1"
+        ]
+      },
+      "reasons": [
+        {
+          "id": "quick-recovery",
+          "title": "Reference recovery pattern",
+          "description": "One edit and execution followed the response, then the question-level check passed.",
+          "supporting_refs": [
+            "ev-ff9f1c0ffe76d107ebcf94aa4f285984a7375c4c209b613d7b670d5302e0f477",
+            "ev-2fc994e75bdb16e71fa7ee780baaaec51715fe9e91ada17e39886db34278ac29",
+            "ev-2afc7dd2b6a5de8160822ac6d0725c37920d099ce8a124becb7fcf4d7bd20db3",
+            "ev-83182a469e8b34953d58ba1a8163faee70d2d008ff97da38c1afb4b376238a25"
+          ],
+          "supporting_event_ids": [
+            "a03",
+            "a04",
+            "a05",
+            "a06"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "ev-a846ce13f39b51940e02c9185d351ac976f97206e6dca4a6067a89341ad8c2b3",
+          "source_event_id": "a01",
+          "occurred_at": "2026-02-01T09:00:00+00:00",
+          "phase": "before_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/0"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Request",
+              "value": "req-a1"
+            }
+          ],
+          "kind": "student_message",
+          "actor": "Student",
+          "title": "Student message",
+          "body": "Why does my dictionary lookup keep returning an error?"
+        },
+        {
+          "id": "ev-3394a4b38f02b2bf74bd8b3fdce75fe2484284a743fc9e320486860fcbe69222",
+          "source_event_id": "a02",
+          "occurred_at": "2026-02-01T09:00:10+00:00",
+          "phase": "before_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/1"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-a1"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q32"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check fail",
+          "body": "A question check reported fail."
+        },
+        {
+          "id": "ev-ff9f1c0ffe76d107ebcf94aa4f285984a7375c4c209b613d7b670d5302e0f477",
+          "source_event_id": "a03",
+          "occurred_at": "2026-02-01T09:01:00+00:00",
+          "phase": "help_boundary",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/2"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Status",
+              "value": "completed"
+            },
+            {
+              "label": "Response",
+              "value": "resp-a1"
+            }
+          ],
+          "kind": "tutor_response",
+          "actor": "AI tutor",
+          "title": "Tutor response",
+          "body": "Check whether the key you are requesting exactly matches one of the keys stored in the dictionary. What do you see if you print the keys?"
+        },
+        {
+          "id": "ev-2fc994e75bdb16e71fa7ee780baaaec51715fe9e91ada17e39886db34278ac29",
+          "source_event_id": "a04",
+          "occurred_at": "2026-02-01T09:01:20+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/3"
+          ],
+          "code_diff": {
+            "before": "result = scores['Final']",
+            "after": "result = scores['final']"
+          },
+          "metadata": [
+            {
+              "label": "Revision",
+              "value": "a-rev1"
+            }
+          ],
+          "kind": "code_edit",
+          "actor": "Notebook",
+          "title": "Code edited",
+          "body": "Cell answer-3-2 changed to revision a-rev1."
+        },
+        {
+          "id": "ev-2afc7dd2b6a5de8160822ac6d0725c37920d099ce8a124becb7fcf4d7bd20db3",
+          "source_event_id": "a05",
+          "occurred_at": "2026-02-01T09:01:40+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/4"
+          ],
+          "code_diff": {
+            "before": null,
+            "after": "result = scores['final']"
+          },
+          "metadata": [
+            {
+              "label": "Execution",
+              "value": "exec-a1"
+            },
+            {
+              "label": "Status",
+              "value": "completed"
+            }
+          ],
+          "kind": "execution",
+          "actor": "Notebook",
+          "title": "Cell executed",
+          "body": "Execution finished with status: completed."
+        },
+        {
+          "id": "ev-83182a469e8b34953d58ba1a8163faee70d2d008ff97da38c1afb4b376238a25",
+          "source_event_id": "a06",
+          "occurred_at": "2026-02-01T09:01:41+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/5"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Check",
+              "value": "check-a2"
+            },
+            {
+              "label": "Grader",
+              "value": "grader-q32"
+            }
+          ],
+          "kind": "check_result",
+          "actor": "Autograder",
+          "title": "Check pass",
+          "body": "A question check reported pass."
+        },
+        {
+          "id": "ev-3812ce323c05a21b6eaa463fa43b310bab1fde777fe96e88aefa04f4a8cb94c1",
+          "source_event_id": "a07",
+          "occurred_at": "2026-02-01T09:01:42+00:00",
+          "phase": "after_help",
+          "order_uncertain": false,
+          "source_pointers": [
+            "/events/6"
+          ],
+          "code_diff": null,
+          "metadata": [
+            {
+              "label": "Status",
+              "value": "completed"
+            }
+          ],
+          "kind": "question_status",
+          "actor": "Session",
+          "title": "Question status updated",
+          "body": "The explicit question status became completed."
+        }
+      ],
+      "source_event_refs": [
+        "ev-a846ce13f39b51940e02c9185d351ac976f97206e6dca4a6067a89341ad8c2b3",
+        "ev-3394a4b38f02b2bf74bd8b3fdce75fe2484284a743fc9e320486860fcbe69222",
+        "ev-ff9f1c0ffe76d107ebcf94aa4f285984a7375c4c209b613d7b670d5302e0f477",
+        "ev-2fc994e75bdb16e71fa7ee780baaaec51715fe9e91ada17e39886db34278ac29",
+        "ev-2afc7dd2b6a5de8160822ac6d0725c37920d099ce8a124becb7fcf4d7bd20db3",
+        "ev-83182a469e8b34953d58ba1a8163faee70d2d008ff97da38c1afb4b376238a25",
+        "ev-3812ce323c05a21b6eaa463fa43b310bab1fde777fe96e88aefa04f4a8cb94c1"
+      ],
+      "quality_warnings": [
+        "observation_coverage_incomplete_or_unknown"
+      ]
+    }
+  ]
+}
