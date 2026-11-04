@@ -1,0 +1,37 @@
+[project]
+name = "tutor-session-review"
+version = "0.1.0"
+description = "Independent event validation and question-session reconstruction"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.0,<3", "google-genai>=1.0.0", "openai>=2.0,<3", "python-dotenv>=1.2.1"]
+
+[project.optional-dependencies]
+extract = ["psycopg2-binary>=2.9,<3"]
+
+[dependency-groups]
+dev = ["pytest>=9,<10"]
+
+[project.scripts]
+session-review = "session_review.cli:main"
+session-metrics = "session_review.metrics_cli:main"
+session-demo-export = "session_review.demo_export:main"
+session-rank = "session_review.ranking_cli:main"
+session-ranking-demo = "session_review.phase3b_demo:main"
+session-real-validate = "session_review.phase2c_cli:main"
+session-fuse = "session_review.fusion_cli:main"
+session-fusion-demo = "session_review.fusion_demo:main"
+session-findings = "session_review.findings.cli:main"
+session-findings-app = "session_review.findings.web:main"
+session-findings-extract = "session_review.findings.extract:main"
+session-findings-sweep = "session_review.findings.sweep:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["session_review"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

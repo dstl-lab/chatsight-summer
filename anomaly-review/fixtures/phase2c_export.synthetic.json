@@ -1,0 +1,140 @@
+{
+  "fixture_notice": "Entirely synthetic. Field names are examples, not verified AI tutor export fields.",
+  "records": [
+    {
+      "uid": "synthetic-event-1",
+      "kind": "learner.message",
+      "time": "2026-01-10T10:00:00Z",
+      "received": "2026-01-10T10:00:01Z",
+      "scope": {
+        "student_key": "synthetic-learner-a",
+        "course_key": "synthetic-course",
+        "cohort_key": "synthetic-term",
+        "assignment_key": "synthetic-lab",
+        "assignment_version": "v1",
+        "notebook_key": "synthetic-notebook-a",
+        "conversation_key": "synthetic-conversation-a",
+        "question_key": "q1"
+      },
+      "ordering": {"stream": "synthetic-stream-a", "sequence": 1},
+      "payload": {"body": "Synthetic help request", "request_key": "synthetic-request-1"}
+    },
+    {
+      "uid": "synthetic-event-2",
+      "kind": "tutor.response",
+      "time": "2026-01-10T10:01:00Z",
+      "received": "2026-01-10T10:01:01Z",
+      "scope": {
+        "student_key": "synthetic-learner-a",
+        "course_key": "synthetic-course",
+        "cohort_key": "synthetic-term",
+        "assignment_key": "synthetic-lab",
+        "assignment_version": "v1",
+        "notebook_key": "synthetic-notebook-a",
+        "conversation_key": "synthetic-conversation-a",
+        "question_key": "q1"
+      },
+      "ordering": {"stream": "synthetic-stream-a", "sequence": 2},
+      "payload": {
+        "body": "Synthetic tutor response",
+        "request_key": "synthetic-request-1",
+        "response_key": "synthetic-response-1",
+        "state": "completed",
+        "completion_evidence": "server_completed"
+      }
+    },
+    {
+      "uid": "synthetic-event-3",
+      "kind": "notebook.edit",
+      "time": "2026-01-10T10:02:00Z",
+      "received": "2026-01-10T10:02:01Z",
+      "scope": {
+        "student_key": "synthetic-learner-a",
+        "course_key": "synthetic-course",
+        "cohort_key": "synthetic-term",
+        "assignment_key": "synthetic-lab",
+        "assignment_version": "v1",
+        "notebook_key": "synthetic-notebook-a",
+        "conversation_key": "synthetic-conversation-a",
+        "question_key": "q1"
+      },
+      "ordering": {"stream": "synthetic-stream-a", "sequence": 3},
+      "payload": {
+        "cell_key": "synthetic-cell-1",
+        "previous_revision": "synthetic-revision-1",
+        "revision": "synthetic-revision-2",
+        "before": "value = 1",
+        "after": "value = 2"
+      }
+    },
+    {
+      "uid": "synthetic-event-4",
+      "kind": "notebook.execute",
+      "time": "2026-01-10T10:03:00Z",
+      "received": "2026-01-10T10:03:01Z",
+      "scope": {
+        "student_key": "synthetic-learner-a",
+        "course_key": "synthetic-course",
+        "cohort_key": "synthetic-term",
+        "assignment_key": "synthetic-lab",
+        "assignment_version": "v1",
+        "notebook_key": "synthetic-notebook-a",
+        "conversation_key": "synthetic-conversation-a",
+        "question_key": "q1"
+      },
+      "ordering": {"stream": "synthetic-stream-a", "sequence": 4},
+      "payload": {
+        "execution_key": "synthetic-execution-1",
+        "cell_key": "synthetic-cell-1",
+        "revision": "synthetic-revision-2",
+        "state": "completed",
+        "source": "value = 2",
+        "result": "2"
+      }
+    },
+    {
+      "uid": "synthetic-event-5",
+      "kind": "grader.result",
+      "time": "2026-01-10T10:04:00Z",
+      "received": "2026-01-10T10:04:01Z",
+      "scope": {
+        "student_key": "synthetic-learner-a",
+        "course_key": "synthetic-course",
+        "cohort_key": "synthetic-term",
+        "assignment_key": "synthetic-lab",
+        "assignment_version": "v1",
+        "notebook_key": "synthetic-notebook-a",
+        "conversation_key": "synthetic-conversation-a",
+        "question_key": "q1"
+      },
+      "ordering": {"stream": "synthetic-stream-a", "sequence": 5},
+      "payload": {
+        "check_key": "synthetic-check-1",
+        "grader_key": "synthetic-grader-1",
+        "grader_version": "v1",
+        "execution_key": "synthetic-execution-1",
+        "revision": "synthetic-revision-2",
+        "check_scope": "question",
+        "result": "passed"
+      }
+    },
+    {
+      "uid": "synthetic-event-6",
+      "kind": "question.state",
+      "time": "2026-01-10T10:05:00Z",
+      "received": "2026-01-10T10:05:01Z",
+      "scope": {
+        "student_key": "synthetic-learner-a",
+        "course_key": "synthetic-course",
+        "cohort_key": "synthetic-term",
+        "assignment_key": "synthetic-lab",
+        "assignment_version": "v1",
+        "notebook_key": "synthetic-notebook-a",
+        "conversation_key": "synthetic-conversation-a",
+        "question_key": "q1"
+      },
+      "ordering": {"stream": "synthetic-stream-a", "sequence": 6},
+      "payload": {"state": "completed", "evidence": "synthetic submission event"}
+    }
+  ]
+}
