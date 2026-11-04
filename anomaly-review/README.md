@@ -81,6 +81,7 @@ See `FRONTEND_PROTOTYPE.md` for the data boundary, placeholders, and future inte
 - `METRICS.md`: Phase 3A definitions and limitations.
 - `SYNTHETIC_EXAMPLE.md`: expected results from invented sessions.
 - `FRONTEND_PROTOTYPE.md`: instructor UI architecture and prototype limitations.
+- `TIMELINE_COMPACTION.md`: evidence-preserving same-second action grouping and real-data assumptions.
 - `PHASE3B_RANKING.md`: question baselines, eligibility, ranking formulas, and integration contract.
 - `PHASE3B_SYNTHETIC_COMPARISON.md`: illustrative comparison of ranking methods.
 - `COMBINED_PRIORITY.md`: metric plus validated-LLM priority rules, provider behavior, and evidence joining.

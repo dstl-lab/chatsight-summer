@@ -39,7 +39,7 @@
       "activity": [
         {
           "id": "R1",
-          "timestamp": "2026-10-01T12:00:00Z",
+          "timestamp": "2026-10-01T12:00:00.100Z",
           "origin": "synthetic",
           "question_id": "Q1",
           "type": "revision",
@@ -49,7 +49,7 @@
         },
         {
           "id": "E1",
-          "timestamp": "2026-10-01T12:01:00Z",
+          "timestamp": "2026-10-01T12:00:00.350Z",
           "origin": "synthetic",
           "question_id": "Q1",
           "type": "execution",
@@ -60,7 +60,7 @@
         },
         {
           "id": "C1",
-          "timestamp": "2026-10-01T12:02:00Z",
+          "timestamp": "2026-10-01T12:00:00.800Z",
           "origin": "synthetic",
           "question_id": "Q1",
           "type": "check",
@@ -71,7 +71,7 @@
         },
         {
           "id": "R2",
-          "timestamp": "2026-10-01T12:04:00Z",
+          "timestamp": "2026-10-01T12:04:00.100Z",
           "origin": "synthetic",
           "question_id": "Q1",
           "type": "revision",
@@ -81,7 +81,7 @@
         },
         {
           "id": "E2",
-          "timestamp": "2026-10-01T12:05:00Z",
+          "timestamp": "2026-10-01T12:04:00.350Z",
           "origin": "synthetic",
           "question_id": "Q1",
           "type": "execution",
@@ -92,7 +92,7 @@
         },
         {
           "id": "C2",
-          "timestamp": "2026-10-01T12:06:00Z",
+          "timestamp": "2026-10-01T12:04:00.800Z",
           "origin": "synthetic",
           "question_id": "Q1",
           "type": "check",

@@ -49,6 +49,12 @@ The investigation view includes:
 - before-and-after code views where source is available;
 - canonical event IDs and normalized evidence references.
 
+The timeline applies an evidence-preserving display compaction after filtering.
+Related notebook events in the same one-second bucket can appear as one action row;
+the row expands to every original event and all citations continue to use raw event
+references. This transformation never changes behavioral metrics or rankings. See
+`TIMELINE_COMPACTION.md` for grouping rules and unverified real-data assumptions.
+
 ### Instructor review
 
 An instructor can classify a session as a potential tutor issue, student struggle without apparent tutor issue, or insufficient evidence. Notes and labels are stored in browser local storage only. There is no shared persistence or export in this prototype.

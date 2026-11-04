@@ -8,6 +8,18 @@ import { parseBundle, reviewStorageKey, validateReviews } from "./bundle";
 
 function bundle() { return structuredClone(raw); }
 
+function cardFor(ref: string): HTMLElement {
+  return document.getElementById(`ref-${ref}`)!.closest<HTMLElement>(".timeline-card")!;
+}
+
+function openGroupedEvent(ref: string): HTMLDetailsElement {
+  const card = cardFor(ref);
+  fireEvent.click(card.querySelector<HTMLButtonElement>(":scope > .event-content > .event-toggle")!);
+  const details = card.querySelector<HTMLDetailsElement>(`.grouped-event[data-source-ref="${ref}"]`)!;
+  fireEvent.click(details.querySelector("summary")!);
+  return details;
+}
+
 describe("review bundle validation", () => {
   it("accepts the Python-produced combined contract and preserves all priority categories", () => {
     const dataset = parseBundle(JSON.stringify(combinedRaw));
@@ -49,12 +61,12 @@ describe("review bundle validation", () => {
     event.title = "Source captured at execution";
     event.code_diff = { before: null, after: "fictional_capture = 1" };
     render(<App dataset={parseBundle(JSON.stringify(doc))} />);
-    fireEvent.click(screen.getByRole("button", { name: /Notebook Source captured at execution/ }));
+    openGroupedEvent(event.id);
     expect(screen.getByText("Captured source")).toBeInTheDocument();
     expect(screen.getByText("fictional_capture = 1", { selector: "code" })).toBeInTheDocument();
     expect(screen.getByText(/PR100 notebook observation window/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Notebook$/ }));
-    expect(screen.getByRole("button", { name: /Notebook Source captured at execution/ })).toBeInTheDocument();
+    expect(cardFor(event.id)).toBeInTheDocument();
   });
 });
 
@@ -119,7 +131,7 @@ describe("integrated review UI", () => {
     doc.sessions[0].timeline[0].body = '<img src=x onerror="alert(1)">';
     const dataset = parseBundle(JSON.stringify(doc));
     render(<App dataset={dataset} />);
-    fireEvent.click(screen.getAllByRole("button", { name: /Notebook Code edited/ })[0]);
+    openGroupedEvent(doc.sessions[0].timeline[0].id);
     expect(document.querySelector("img[src=x]")).toBeNull();
   });
 });

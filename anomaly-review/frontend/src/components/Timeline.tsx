@@ -5,6 +5,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { filterTimeline, formatDuration, formatTimestamp, type TimelineFilter } from "../data";
 import type { TimelineEvent } from "../types";
+import { compactTimeline, type TimelineAction } from "../timeline-compaction";
 
 interface TimelineProps {
   events: TimelineEvent[];
@@ -74,63 +75,105 @@ function rowLabel(event: TimelineEvent): string {
     code_capture: "Code capture", execution: "Run", inactivity: "Gap" } as Partial<Record<TimelineEvent["kind"], string>>)[event.kind] ?? event.title;
 }
 
-function TimelineCard({ event, highlighted, openCited }: { event: TimelineEvent; highlighted: boolean; openCited: boolean }) {
+function EventDetails({ event, heading = true }: { event: TimelineEvent; heading?: boolean }) {
   const isMessage = event.kind === "student_message" || event.kind === "tutor_response";
+  return (
+    <>
+      {heading && <h4>{event.title}</h4>}
+      {event.order_uncertain && <div className="uncertain-notice">Relative order at this timestamp is unknown.</div>}
+      {event.kind === "inactivity" && event.duration_seconds !== undefined && (
+        <div className="gap-duration">Observed gap: {formatDuration(event.duration_seconds)}</div>
+      )}
+      <p className={isMessage ? "message-copy" : "event-copy"}>
+        {readableText(event.body)}
+      </p>
+      {event.code_diff && <CodeDiff before={event.code_diff.before} after={event.code_diff.after} capture={event.kind === "code_capture"} />}
+      <details className="event-provenance"><summary>Source details</summary>
+      {!!event.metadata.length && (
+        <dl className="event-metadata">
+          {event.metadata.map((item) => (
+            <div key={`${item.label}-${item.value}`}><dt>{item.label}</dt><dd>{item.value}</dd></div>
+          ))}
+        </dl>
+      )}
+      <footer className="trace-row">
+        <TerminalSquare size={13} aria-hidden="true" />
+        {event.source_event_id ? (
+          <><span>Source event {event.source_event_id}</span><code>{event.id}</code></>
+        ) : (
+          <span>Derived from adjacent source events</span>
+        )}
+      </footer>
+      </details>
+    </>
+  );
+}
+
+function TimelineCard({ action, highlightedRefs, openCited }: {
+  action: TimelineAction;
+  highlightedRefs: Set<string>;
+  openCited: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
-  const excerpt = preview(event);
+  const event = action.representative;
+  const citedEvents = action.events.filter((item) => highlightedRefs.has(item.id));
+  const highlighted = citedEvents.length > 0;
+  const excerpt = action.compacted ? action.summary : preview(event);
 
   useEffect(() => {
     if (highlighted && openCited) setExpanded(true);
   }, [highlighted, openCited]);
 
-  const checkTone = event.kind === "check_result"
-    ? event.title.toLowerCase().includes("pass") ? "timeline-card--check-pass" : "timeline-card--check-fail"
+  const checks = action.events.filter((item) => item.kind === "check_result");
+  const checkTone = checks.length
+    ? checks.some((item) => item.title.toLowerCase().includes("fail") || item.title.toLowerCase().includes("error"))
+      ? "timeline-card--check-fail"
+      : "timeline-card--check-pass"
     : "";
+  const detailsId = `details-${action.events[0].id}`;
+  const displayLabel = action.compacted ? action.label : rowLabel(event);
+  const displayTitle = action.compacted ? "Compacted notebook action" : event.title;
 
   return (
-    <article id={`ref-${event.id}`}
-             data-source-ref={event.id}
-             className={`timeline-card timeline-card--${event.kind} ${checkTone} ${highlighted ? "is-highlighted" : ""}`}>
+    <article id={action.compacted ? undefined : `ref-${event.id}`}
+             data-source-ref={action.events.map((item) => item.id).join(" ")}
+             className={`timeline-card timeline-card--${event.kind} ${action.compacted ? "timeline-card--group" : ""} ${checkTone} ${highlighted ? "is-highlighted" : ""}`}>
+      {action.compacted && action.events.map((item) => <span key={item.id} id={`ref-${item.id}`} className="event-ref-anchor" />)}
       <div className="event-content">
         <button className="event-toggle" type="button" onClick={() => setExpanded((value) => !value)}
-                aria-label={`${event.actor} ${event.title} · ${formatTimestamp(event.occurred_at)} · ${excerpt}${event.order_uncertain ? " · Ordering uncertain" : ""}${highlighted ? " · Cited" : ""}`}
-                aria-expanded={expanded} aria-controls={`details-${event.id}`}>
-          <time className="event-time" dateTime={event.occurred_at} title={formatTimestamp(event.occurred_at)}>{new Date(event.occurred_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hourCycle: "h23" })}</time>
+                aria-label={`${action.actor} ${displayTitle} · ${formatTimestamp(action.occurred_at)} · ${excerpt}${action.order_uncertain ? " · Ordering uncertain" : ""}${highlighted ? " · Cited" : ""}`}
+                aria-expanded={expanded} aria-controls={detailsId}>
+          <time className="event-time" dateTime={action.occurred_at} title={formatTimestamp(action.occurred_at)}>{new Date(action.occurred_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hourCycle: "h23" })}</time>
           <span className="timeline-node" aria-hidden="true"><EventIcon event={event} /></span>
-          <span className="event-label" title={event.title}>{rowLabel(event)}</span>
+          <span className="event-label" title={displayTitle}>{displayLabel}</span>
           <span className="event-preview">{excerpt}</span>
-          {event.order_uncertain && <span className="row-order-warning" title="Relative order at this timestamp is unknown" aria-label="Ordering uncertain">?</span>}
-          {highlighted && <span className="row-citation">Cited</span>}
+          {action.order_uncertain && <span className="row-order-warning" title="Relative order at this timestamp is unknown" aria-label="Ordering uncertain">?</span>}
+          {action.compacted && <span className="event-count">{action.events.length} events</span>}
+          {highlighted && <span className="row-citation">{citedEvents.length > 1 ? `${citedEvents.length} cited` : "Cited"}</span>}
           <ChevronDown size={16} className={`event-chevron ${expanded ? "is-expanded" : ""}`} aria-hidden="true" />
         </button>
         {expanded && (
-          <div className="event-details" id={`details-${event.id}`}>
-            <h4>{event.title}</h4>
-            {event.order_uncertain && <div className="uncertain-notice">Relative order at this timestamp is unknown.</div>}
-            {event.kind === "inactivity" && event.duration_seconds !== undefined && (
-              <div className="gap-duration">Observed gap: {formatDuration(event.duration_seconds)}</div>
-            )}
-            <p className={isMessage ? "message-copy" : "event-copy"}>
-              {readableText(event.body)}
-            </p>
-            {event.code_diff && <CodeDiff before={event.code_diff.before} after={event.code_diff.after} capture={event.kind === "code_capture"} />}
-            <details className="event-provenance"><summary>Source details</summary>
-            {!!event.metadata.length && (
-              <dl className="event-metadata">
-                {event.metadata.map((item) => (
-                  <div key={`${item.label}-${item.value}`}><dt>{item.label}</dt><dd>{item.value}</dd></div>
-                ))}
-              </dl>
-            )}
-            <footer className="trace-row">
-              <TerminalSquare size={13} aria-hidden="true" />
-              {event.source_event_id ? (
-                <><span>Source event {event.source_event_id}</span><code>{event.id}</code></>
-              ) : (
-                <span>Derived from adjacent source events</span>
-              )}
-            </footer>
-            </details>
+          <div className="event-details" id={detailsId}>
+            {action.compacted ? (
+              <>
+                <div className="compaction-note">Grouped for display only. All {action.events.length} source events remain available below.</div>
+                <div className="grouped-events">
+                  {action.events.map((item) => {
+                    const cited = highlightedRefs.has(item.id);
+                    return <details className={`grouped-event ${cited ? "is-cited" : ""}`} key={item.id}
+                                    data-source-ref={item.id} open={cited && openCited}>
+                      <summary>
+                        <time dateTime={item.occurred_at}>{new Date(item.occurred_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hourCycle: "h23" })}</time>
+                        <span>{rowLabel(item)}</span>
+                        <strong>{item.title}</strong>
+                        {cited && <em>Cited</em>}
+                      </summary>
+                      <div className="grouped-event-details"><EventDetails event={item} heading={false} /></div>
+                    </details>;
+                  })}
+                </div>
+              </>
+            ) : <EventDetails event={event} />}
           </div>
         )}
       </div>
@@ -142,6 +185,7 @@ export function Timeline({ events, highlightedRefs }: TimelineProps) {
   const [filter, setFilter] = useState<TimelineFilter>("all");
   useEffect(() => { if (highlightedRefs.size) setFilter("all"); }, [highlightedRefs]);
   const visible = useMemo(() => filterTimeline(events, filter), [events, filter]);
+  const actions = useMemo(() => compactTimeline(visible), [visible]);
   let previousPhase: TimelineEvent["phase"] | null = null;
   let previousDay: string | null = null;
 
@@ -150,7 +194,7 @@ export function Timeline({ events, highlightedRefs }: TimelineProps) {
       <div className="section-heading-row">
         <div>
           <h3 id="timeline-heading">Session timeline</h3>
-          <p>{visible.length} events · Click a row for full evidence.</p>
+          <p>{actions.length} actions from {visible.length} events · Click a row for full evidence.</p>
         </div>
         <div className="segmented-control" aria-label="Filter timeline events">
           {filters.map((item) => (
@@ -162,21 +206,21 @@ export function Timeline({ events, highlightedRefs }: TimelineProps) {
         </div>
       </div>
       <div className="timeline">
-        {visible.map((event) => {
-          const title = event.phase !== previousPhase ? phaseTitle(event.phase) : null;
-          previousPhase = event.phase;
-          const day = new Date(event.occurred_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZoneName: "short" });
+        {actions.map((action) => {
+          const title = action.phase !== previousPhase ? phaseTitle(action.phase) : null;
+          previousPhase = action.phase;
+          const day = new Date(action.occurred_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZoneName: "short" });
           const newDay = day !== previousDay;
           previousDay = day;
           return (
-            <div key={event.id}>
+            <div key={action.id}>
               {newDay && <div className="timeline-day">{day}</div>}
-              {title && <div className={`phase-divider phase-divider--${event.phase}`}>{title}</div>}
-              <TimelineCard event={event} highlighted={highlightedRefs.has(event.id)} openCited={highlightedRefs.size === 1} />
+              {title && <div className={`phase-divider phase-divider--${action.phase}`}>{title}</div>}
+              <TimelineCard action={action} highlightedRefs={highlightedRefs} openCited={highlightedRefs.size === 1} />
             </div>
           );
         })}
-        {!visible.length && <p className="empty-state">No events match this timeline filter.</p>}
+        {!actions.length && <p className="empty-state">No events match this timeline filter.</p>}
       </div>
     </section>
   );

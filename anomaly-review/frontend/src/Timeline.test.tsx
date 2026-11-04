@@ -3,22 +3,37 @@ import { describe, expect, it } from "vitest";
 import { Timeline } from "./components/Timeline";
 import { InvestigationView } from "./components/InvestigationView";
 import { parseBundle } from "./bundle";
+import { compactTimeline } from "./timeline-compaction";
 import raw from "./findings-demo.synthetic.json";
 
 const session = parseBundle(JSON.stringify(raw)).sessions[0];
+
+function cardFor(ref: string): HTMLElement {
+  return document.getElementById(`ref-${ref}`)!.closest<HTMLElement>(".timeline-card")!;
+}
+
+function outerToggle(ref: string): HTMLButtonElement {
+  return cardFor(ref).querySelector<HTMLButtonElement>(":scope > .event-content > .event-toggle")!;
+}
+
+function groupedEvent(ref: string): HTMLDetailsElement | null {
+  return cardFor(ref).querySelector<HTMLDetailsElement>(`.grouped-event[data-source-ref="${ref}"]`);
+}
 
 describe("compact evidence review", () => {
   it("starts every event collapsed and keeps complete messages and code behind each row", () => {
     render(<Timeline events={session.timeline} highlightedRefs={new Set()} />);
     const rows = [...document.querySelectorAll<HTMLButtonElement>(".event-toggle")];
-    expect(rows).toHaveLength(session.timeline.length);
+    expect(rows).toHaveLength(compactTimeline(session.timeline).length);
     expect(rows.every(row => row.getAttribute("aria-expanded") === "false")).toBe(true);
     const message = session.timeline.find(event => event.kind === "tutor_response")!;
-    fireEvent.click(document.getElementById(`ref-${message.id}`)!.querySelector("button")!);
+    fireEvent.click(outerToggle(message.id));
     expect(document.getElementById(`details-${message.id}`)).toHaveTextContent(message.body);
     const code = session.timeline.find(event => event.code_diff?.after)!;
-    fireEvent.click(document.getElementById(`ref-${code.id}`)!.querySelector("button")!);
-    expect(document.getElementById(`details-${code.id}`)).toHaveTextContent(code.code_diff!.after!);
+    fireEvent.click(outerToggle(code.id));
+    const rawCode = groupedEvent(code.id)!;
+    fireEvent.click(rawCode.querySelector("summary")!);
+    expect(rawCode).toHaveTextContent(code.code_diff!.after!);
   });
 
   it("reveals filtered citations without opening every highlighted event", async () => {
@@ -29,12 +44,15 @@ describe("compact evidence review", () => {
     rerender(<Timeline events={session.timeline} highlightedRefs={refs} />);
     await waitFor(() => expect(screen.getByRole("button", { name: "All events" })).toHaveAttribute("aria-pressed", "true"));
     for (const ref of refs) {
-      expect(document.getElementById(`ref-${ref}`)).toHaveClass("is-highlighted");
-      expect(document.getElementById(`ref-${ref}`)!.querySelector("button")).toHaveAttribute("aria-expanded", "false");
+      expect(cardFor(ref)).toHaveClass("is-highlighted");
+      expect(outerToggle(ref)).toHaveAttribute("aria-expanded", "false");
     }
     const single = [...refs][0];
     rerender(<Timeline events={session.timeline} highlightedRefs={new Set([single])} />);
-    await waitFor(() => expect(document.getElementById(`details-${single}`)).not.toBeNull());
+    await waitFor(() => expect(outerToggle(single)).toHaveAttribute("aria-expanded", "true"));
+    const citedRawEvent = groupedEvent(single);
+    if (citedRawEvent) expect(citedRawEvent).toHaveAttribute("open");
+    else expect(document.getElementById(`details-${single}`)).not.toBeNull();
   });
 
   it("puts interpretation limits beside the flag without duplicating the session summary or deciding the instructor review", () => {
