@@ -6,6 +6,8 @@ import { InvestigationView } from "./components/InvestigationView";
 import { SessionQueue } from "./components/SessionQueue";
 import { SummaryBar } from "./components/SummaryBar";
 import { UploadPanel } from "./components/UploadPanel";
+import { AssignmentInsights } from "./components/AssignmentInsights";
+import { assignmentDemo } from "./assignment-demo";
 import type { DemoDataset, ReviewRecord } from "./types";
 
 function initialSelectedId(dataset: DemoDataset): string {
@@ -19,6 +21,8 @@ export function App({ dataset: initialDataset }: { dataset?: DemoDataset }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
+  const [view, setView] = useState<"sessions" | "assignments">("sessions");
+  const [evidenceRef, setEvidenceRef] = useState<string | undefined>();
   const selected = useMemo(() => dataset?.sessions.find(session => session.id === selectedId) ?? dataset?.sessions[0], [dataset, selectedId]);
   useEffect(() => {
     if (!dataset) { setReviews({}); return; }
@@ -32,7 +36,7 @@ export function App({ dataset: initialDataset }: { dataset?: DemoDataset }) {
     window.history.replaceState({}, "", url);
   }, [selectedId]);
   const choose = useCallback((next: DemoDataset | null) => {
-    setDataset(next); setSelectedId(next?.sessions[0]?.id ?? ""); setReviews({}); setError("");
+    setDataset(next); setSelectedId(next?.sessions[0]?.id ?? ""); setReviews({}); setEvidenceRef(undefined); setError("");
   }, []);
   async function chooseExample(loader: () => Promise<{ default: unknown }>) {
     setLoading(true);
@@ -74,6 +78,7 @@ export function App({ dataset: initialDataset }: { dataset?: DemoDataset }) {
       <button onClick={() => choose(demoDataset)} disabled={loading || uploadBusy}>Steven’s demo</button>
       <button onClick={() => { void chooseExample(() => import("./findings-demo.synthetic.json")); }} disabled={loading || uploadBusy}>Findings demo</button>
       <button onClick={() => { void chooseExample(() => import("./combined-demo.synthetic.json")); }} disabled={loading || uploadBusy}>Combined priority demo</button>
+      <button onClick={() => { choose(assignmentDemo()); setView("assignments"); }} disabled={loading || uploadBusy}>Assignment insights demo</button>
       <label className="file-control">Open local review bundle<input aria-label="Open local review bundle" type="file" accept=".json" disabled={loading || uploadBusy} onChange={event => { void importBundle(event.target.files?.[0]); event.target.value = ""; }} /></label>
       <button disabled={!dataset || loading || uploadBusy} onClick={() => { if (dataset) downloadReviews(dataset, reviews); }}>Download reviews</button>
       <label className="file-control">Import reviews<input aria-label="Import reviews" type="file" accept=".json" disabled={!dataset || loading || uploadBusy} onChange={event => { void importReviews(event.target.files?.[0]); event.target.value = ""; }} /></label>
@@ -83,9 +88,13 @@ export function App({ dataset: initialDataset }: { dataset?: DemoDataset }) {
     {error && <p role="alert" className="import-error">{error}</p>}
     {loading && <p role="status" className="dataset-notice">Reading local bundle. No network request.</p>}
     {dataset && <div className="dataset-notice" role="note"><Info size={16} aria-hidden="true" /><details><summary><strong>{dataset.contract_version === 1 ? "Demonstration only." : dataset.dataset.label}</strong> · {dataset.dataset.synthetic ? "Synthetic examples" : "Model findings need your review"}</summary><p>{dataset.dataset.notice} {dataset.contract_version === 1 ? "Illustrative priorities. No anomaly ranking is implemented." : "Model interpretations are not verified tutor errors. Viewing makes no model calls."}</p></details></div>}
-    {dataset && selected ? <main><SummaryBar summary={dataset.summary} reviewed={Object.keys(reviews).length} analyzed={dataset.contract_version >= 2 ? dataset.sessions.filter(session => session.analysis?.state === "completed").length : undefined} /><div className="workspace">
-      <SessionQueue key={dataset.dataset.id} sessions={dataset.sessions} selectedId={selected.id} reviewedIds={new Set(Object.keys(reviews))} onSelect={setSelectedId} />
-      <InvestigationView key={`${dataset.dataset.id}:${selected.id}`} session={selected} review={reviews[selected.id]} onSaveReview={saveReview} />
+    {dataset && <nav className="insights-nav" aria-label="Dashboard views"><button className={view === "sessions" ? "is-active" : ""} aria-current={view === "sessions" ? "page" : undefined} onClick={() => setView("sessions")}>Session review</button><button className={view === "assignments" ? "is-active" : ""} aria-current={view === "assignments" ? "page" : undefined} onClick={() => setView("assignments")}>Assignment insights</button></nav>}
+    {dataset && selected ? view === "assignments" ? <AssignmentInsights key={dataset.dataset.id} dataset={dataset} onInspect={(sessionId, eventId) => {
+      setSelectedId(sessionId); setEvidenceRef(eventId); setView("sessions");
+      window.setTimeout(() => document.getElementById(`ref-${eventId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 40);
+    }} /> : <main><SummaryBar summary={dataset.summary} reviewed={Object.keys(reviews).length} analyzed={dataset.contract_version >= 2 ? dataset.sessions.filter(session => session.analysis?.state === "completed").length : undefined} /><div className="workspace">
+      <SessionQueue key={dataset.dataset.id} sessions={dataset.sessions} selectedId={selected.id} reviewedIds={new Set(Object.keys(reviews))} onSelect={id => { setEvidenceRef(undefined); setSelectedId(id); }} />
+      <InvestigationView key={`${dataset.dataset.id}:${selected.id}:${evidenceRef ?? ""}`} session={selected} review={reviews[selected.id]} onSaveReview={saveReview} initialEvidenceRef={evidenceRef} />
     </div></main> : !loading && !uploadBusy && <main className="empty-app">Upload a PR100 export, open a saved review bundle, or select a synthetic demo to begin.</main>}
   </div>;
 }

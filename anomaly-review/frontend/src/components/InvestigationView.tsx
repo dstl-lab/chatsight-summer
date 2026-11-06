@@ -10,10 +10,11 @@ interface InvestigationViewProps {
   session: DemoSession;
   review?: ReviewRecord;
   onSaveReview: (review: ReviewRecord) => boolean | void;
+  initialEvidenceRef?: string;
 }
 
-export function InvestigationView({ session, review, onSaveReview }: InvestigationViewProps) {
-  const [highlightedRefs, setHighlightedRefs] = useState<Set<string>>(new Set());
+export function InvestigationView({ session, review, onSaveReview, initialEvidenceRef }: InvestigationViewProps) {
+  const [highlightedRefs, setHighlightedRefs] = useState<Set<string>>(() => new Set(initialEvidenceRef ? [initialEvidenceRef] : []));
   const supportedFindings = session.analysis?.decision === "surface" ? session.analysis.findings : [];
   const analysisModel = session.analysis?.model;
   const modelLabel = analysisModel?.toLowerCase().includes("gemini") ? "Gemini" : analysisModel ?? "the model";
