@@ -31,3 +31,23 @@ export function assignmentDemo(): DemoDataset {
     notice: "All questions and students are invented for this demonstration." },
     summary: { total_sessions: sessions.length, flagged_sessions: 0, high_priority_sessions: 0 }, sessions };
 }
+
+export function studentStudyDemo(): DemoDataset {
+  const dataset = assignmentDemo();
+  dataset.dataset.id = "student-study-synthetic";
+  const first = dataset.sessions[0];
+  const sample = first.timeline[0];
+  first.timeline = first.timeline.map(event => ({ ...event, metadata: [{ label: "Question", value: "Q1" }] }));
+  const extra = [
+    { id: "study-example-index", question: "Q2", kind: "student_message" as const, title: "Student message", body: "Why does the array index go out of bounds?", occurred_at: "2026-10-02T12:00:00Z" },
+    { id: "study-example-group", question: "Q3", kind: "student_message" as const, title: "Student message", body: "How does grouping work before calculating a mean?", occurred_at: "2026-10-03T12:00:00Z" },
+    { id: "study-edit-before", question: "Q1", kind: "code_edit" as const, title: "Code edited", body: "Recorded edit", occurred_at: "2026-10-01T12:00:05Z", code_diff: { before: null, after: "df.get('age') > '18'" } },
+    { id: "study-run-error", question: "Q1", kind: "execution" as const, title: "Cell executed", body: "TypeError: cannot compare numbers with a string", occurred_at: "2026-10-01T12:00:10Z" },
+    { id: "study-check-fail", question: "Q1", kind: "check_result" as const, title: "Check fail", body: "One check did not pass.", occurred_at: "2026-10-01T12:00:15Z" },
+    { id: "study-edit-after", question: "Q1", kind: "code_edit" as const, title: "Code edited", body: "Recorded edit", occurred_at: "2026-10-01T12:00:40Z", code_diff: { before: "df.get('age') > '18'", after: "df.get('age') >= 18" } },
+    { id: "study-check-pass", question: "Q1", kind: "check_result" as const, title: "Check pass", body: "One check passed; overall completion is unknown.", occurred_at: "2026-10-01T12:00:50Z" },
+  ].map(({ question, ...item }) => ({ ...sample, ...item, actor: item.kind === "student_message" ? "Student" : item.kind === "check_result" ? "Autograder" : "Notebook", source_event_id: `source-${item.id}`, metadata: [{ label: "Question", value: question }] }));
+  first.timeline = [...first.timeline, ...extra].sort((a, b) => a.occurred_at.localeCompare(b.occurred_at));
+  first.source_event_refs = [...first.source_event_refs, ...extra.map(event => event.id)];
+  return dataset;
+}

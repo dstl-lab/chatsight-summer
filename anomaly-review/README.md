@@ -83,6 +83,7 @@ See `FRONTEND_PROTOTYPE.md` for the data boundary, placeholders, and future inte
 - `FRONTEND_PROTOTYPE.md`: instructor UI architecture and prototype limitations.
 - `TIMELINE_COMPACTION.md`: evidence-preserving same-second action grouping and real-data assumptions.
 - `ASSIGNMENT_INSIGHTS.md`: assignment question browsing, keyword topics, and coverage limitations.
+- `STUDENT_STUDY_PROTOTYPE.md`: synthetic student study view and conditions for real-data use.
 - `PHASE3B_RANKING.md`: question baselines, eligibility, ranking formulas, and integration contract.
 - `PHASE3B_SYNTHETIC_COMPARISON.md`: illustrative comparison of ranking methods.
 - `COMBINED_PRIORITY.md`: metric plus validated-LLM priority rules, provider behavior, and evidence joining.
